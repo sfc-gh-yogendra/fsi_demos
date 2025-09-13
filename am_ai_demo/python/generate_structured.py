@@ -376,23 +376,57 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             WHERE s.AssetClass = 'Equity'  -- Focus on equities for transaction generation
         ),
         portfolio_securities AS (
-            -- Step 2: Assign securities to portfolios based on priority ranking
-            -- Each portfolio gets a cross-product with all securities, then ranked by priority
+            -- Step 2: Assign securities to portfolios with specific logic for Technology & Infrastructure
             SELECT 
                 p.PortfolioID,
+                p.PortfolioName,
                 s.SecurityID,
+                s.Ticker,
                 s.priority,
+                -- Special prioritization for Technology & Infrastructure portfolio
+                CASE 
+                    WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
+                        CASE 
+                            -- Guarantee top 3 positions for demo scenario
+                            WHEN s.Ticker = 'AAPL' THEN 1
+                            WHEN s.Ticker = 'CMC' THEN 2  
+                            WHEN s.Ticker = 'RBBN' THEN 3
+                            -- Other tech/infrastructure companies
+                            WHEN s.Ticker IN ('MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 4
+                            ELSE 999  -- Exclude non-tech companies from this portfolio
+                        END
+                    ELSE s.priority  -- Use normal priority for other portfolios
+                END as portfolio_priority,
                 -- Random ordering within priority groups for portfolio diversification
-                ROW_NUMBER() OVER (PARTITION BY p.PortfolioID ORDER BY s.priority, RANDOM()) as rn
+                ROW_NUMBER() OVER (PARTITION BY p.PortfolioID ORDER BY 
+                    CASE 
+                        WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
+                            CASE 
+                                WHEN s.Ticker = 'AAPL' THEN 1
+                                WHEN s.Ticker = 'CMC' THEN 2  
+                                WHEN s.Ticker = 'RBBN' THEN 3
+                                WHEN s.Ticker IN ('MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 4
+                                ELSE 999
+                            END
+                        ELSE s.priority
+                    END, 
+                    RANDOM()
+                ) as rn
             FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p
             CROSS JOIN major_us_securities s
         ),
         selected_holdings AS (
-            -- Step 3: Limit each portfolio to ~45 securities for realistic concentration
-            -- This creates the universe of securities each portfolio will hold
+            -- Step 3: Limit each portfolio to ~45 securities with theme-specific filtering
             SELECT PortfolioID, SecurityID
             FROM portfolio_securities
             WHERE rn <= 45  -- Typical large-cap equity portfolio size
+            AND (
+                -- For Technology & Infrastructure portfolio, only include tech/infrastructure companies
+                (PortfolioName = 'SAM Technology & Infrastructure' AND portfolio_priority < 999)
+                OR 
+                -- For all other portfolios, use normal selection
+                (PortfolioName != 'SAM Technology & Infrastructure')
+            )
         ),
         transaction_dates AS (
             -- Step 4: Generate weekly transaction dates over the past 12 months
@@ -416,8 +450,17 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             -- Transaction attributes
             'BUY' as TransactionType,  -- Simplified: mostly buys to build positions over time
             DATEADD(day, 2, td.trade_date) as SettleDate,  -- Standard T+2 settlement cycle
-            -- Realistic transaction amounts (100-10,000 shares)
-            UNIFORM(100, 10000, RANDOM()) as Quantity,
+            -- Strategic position sizing: larger positions for demo scenario companies
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1 FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s 
+                    JOIN {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p ON sh.PortfolioID = p.PortfolioID
+                    WHERE s.SecurityID = sh.SecurityID 
+                    AND p.PortfolioName = 'SAM Technology & Infrastructure'
+                    AND s.Ticker IN ('AAPL', 'CMC', 'RBBN')
+                ) THEN UNIFORM(50000, 100000, RANDOM())  -- Much larger positions for top 3
+                ELSE UNIFORM(100, 10000, RANDOM())  -- Normal positions for others
+            END as Quantity,
             -- Realistic stock prices ($50-$500 range)
             UNIFORM(50, 500, RANDOM()) as Price,
             -- Gross amount calculated elsewhere (NULL for now)
