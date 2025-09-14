@@ -19,6 +19,63 @@ This guide covers the enhanced data model with 14,000+ real securities, immutabl
 
 **Naming Standards**: See @naming-conventions.mdc for complete naming guidelines.
 
+## Critical Design Principle: OpenFIGI vs Ticker Identifiers
+
+### **🎯 Fundamental Rule: Tickers Are NOT Unique**
+
+**CRITICAL**: Never assume tickers are unique identifiers. The same ticker can represent multiple different assets across markets, exchanges, and instrument types.
+
+#### **✅ Correct Approach:**
+```python
+# Load ALL assets that meet quality criteria - do NOT deduplicate by ticker
+category_assets = real_assets_df[
+    (real_assets_df['ASSET_CATEGORY'] == asset_category) &
+    (real_assets_df['PRIMARY_TICKER'].notna()) &
+    (real_assets_df['PRIMARY_TICKER'].str.len() <= 15) &
+    (real_assets_df['TOP_LEVEL_OPENFIGI_ID'].notna())
+]
+# No .drop_duplicates(subset=['PRIMARY_TICKER']) - this would remove valid assets!
+```
+
+#### **❌ Wrong Approach:**
+```python
+# NEVER do this - removes valid assets due to ticker collisions
+category_assets = (...).drop_duplicates(subset=['PRIMARY_TICKER'], keep='first')
+```
+
+### **Real-World Example: CMC Ticker Collision**
+The ticker `CMC` represents multiple companies:
+- `BBG001S5PXG8` → Commercial Metals Co (USA) ✅ *Demo scenario company*
+- `BBG00BLXJ2S4` → Chaoprayamahanakorn PCL (Thailand)
+- `BBG001T6CS16` → Cielo Waste Solutions Corp (Canada)
+- `BBG001SSGJ60` → CMC Investment JSC (Vietnam)
+- `BBG007MM4S14` → Comeco SA (Poland)
+
+**If you deduplicate by ticker, you lose 4 valid companies and might keep the wrong one!**
+
+### **Design Principles:**
+1. **Tickers**: Non-unique, used for display and human reference
+2. **OpenFIGI IDs**: Globally unique, used for precise asset identification
+3. **Asset Loading**: Keep ALL assets, let OpenFIGI-based selection handle precision
+4. **Portfolio Selection**: Use OpenFIGI IDs for exact company matching
+5. **Demo Scenarios**: Always specify exact companies via OpenFIGI IDs
+
+### **Implementation Pattern:**
+```python
+# 1. Load all assets (no ticker deduplication)
+all_assets = load_all_real_assets_meeting_criteria()
+
+# 2. Use OpenFIGI IDs for precise selection
+demo_companies = {
+    'AAPL': 'BBG001S5N8V8',  # Apple Inc. (not Apple Inc-CDR)
+    'CMC': 'BBG001S5PXG8',   # Commercial Metals Co (not Thai company)
+    'RBBN': 'BBG00HW4CSH5'   # Ribbon Communications Inc.
+}
+
+# 3. Portfolio logic uses OpenFIGI for exact matching
+WHEN s.FIGI = 'BBG001S5PXG8' THEN 1  -- Exact company, no ambiguity
+```
+
 ## Enhanced Data Model Architecture
 
 ### 1.1 Core Dimension Tables (Industry Standard)
@@ -148,6 +205,9 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
 ```
 
 ### 2.2 Real Asset Data Integration (Enhanced)
+
+**⚠️ CRITICAL**: Follow the OpenFIGI vs Ticker principle above - never deduplicate by ticker when loading real assets!
+
 ```python
 # Enhanced real asset integration with issuer mapping
 def build_dim_issuer_from_real_data(session: Session):

@@ -170,7 +170,7 @@ def build_dim_issuer_from_real_data(session: Session):
         col("INDUSTRY_SECTOR").alias("GICS_Sector")  # Keep same column name for compatibility
     ))
     
-    # Save to database
+    # Save to database using overwrite mode (automatically recreates table)
     issuers_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_ISSUER")
     
     issuer_count = issuers_df.count()
@@ -224,32 +224,29 @@ def build_dim_security_from_real_data(session: Session, securities_count: dict):
     all_security_data = []
     security_id = 1
     
-    for asset_category, max_count in [('Equity', securities_count['equities']), 
-                                     ('Corporate Bond', securities_count['bonds']), 
-                                     ('ETF', securities_count['etfs'])]:
+    for asset_category in ['Equity', 'Corporate Bond', 'ETF']:
         
-        # Filter all available assets of this category (no limits)
+        # Load ALL available assets of this category that meet quality criteria
         if asset_category == 'Corporate Bond':
             # Corporate bonds have complex tickers with coupons, dates, etc.
-            category_assets = (real_assets_df[
+            category_assets = real_assets_df[
                 (real_assets_df['ASSET_CATEGORY'] == asset_category) &
                 (real_assets_df['PRIMARY_TICKER'].notna()) &
                 (real_assets_df['PRIMARY_TICKER'].str.len() <= 50) &  # More generous for bonds
                 (real_assets_df['TOP_LEVEL_OPENFIGI_ID'].notna())  # Ensure FIGI available
-            ].drop_duplicates(subset=['PRIMARY_TICKER'], keep='first')
-             .head(max_count))  # Apply reasonable limit to prevent excessive data
+            ]
         else:
-            # Equity and ETF filtering - prioritize clean tickers but allow more flexibility
-            category_assets = (real_assets_df[
+            # Equity and ETF filtering - load ALL assets that meet quality criteria
+            # Don't deduplicate by ticker since tickers are not unique across markets/exchanges
+            category_assets = real_assets_df[
                 (real_assets_df['ASSET_CATEGORY'] == asset_category) &
                 (real_assets_df['PRIMARY_TICKER'].notna()) &
                 (real_assets_df['PRIMARY_TICKER'].str.len() <= 15) &  # More flexible length
                 (real_assets_df['TOP_LEVEL_OPENFIGI_ID'].notna())     # Ensure FIGI available
-            ].drop_duplicates(subset=['PRIMARY_TICKER'], keep='first')
-             .head(max_count))  # Apply reasonable limit to prevent excessive data
+            ]
         
         available_count = len(category_assets)
-        print(f"  📊 Using {available_count} real {asset_category} securities (max: {max_count})")
+        print(f"  📊 Loading {available_count} real {asset_category} securities (all available assets)")
         
         # Batch process securities for this category
         for _, asset in category_assets.iterrows():
@@ -290,8 +287,34 @@ def build_dim_security_from_real_data(session: Session, securities_count: dict):
     
     # Save to database using Snowpark DataFrames
     if all_security_data:
+        # Debug: Check DataFrame structure before saving
+        print(f"📊 Creating DataFrame with {len(all_security_data)} securities...")
+        if all_security_data:
+            sample_record = all_security_data[0]
+            print(f"📋 Sample record keys: {list(sample_record.keys())}")
+            if 'FIGI' in sample_record:
+                print(f"✅ FIGI column present in data: {sample_record['FIGI']}")
+            else:
+                print("❌ FIGI column missing from data!")
+        
         securities_df = session.create_dataframe(all_security_data)
+        
+        # Debug: Check Snowpark DataFrame schema
+        print(f"📊 Snowpark DataFrame schema: {[field.name for field in securities_df.schema.fields]}")
+        
+        # Save using overwrite mode (automatically recreates table with correct schema)
         securities_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_SECURITY")
+        
+        # Verify table structure was created correctly
+        try:
+            columns = session.sql(f"DESCRIBE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY").collect()
+            column_names = [col['name'] for col in columns]
+            if 'FIGI' in column_names:
+                print("✅ FIGI column confirmed in DIM_SECURITY table")
+            else:
+                print(f"❌ FIGI column missing! Available columns: {column_names}")
+        except Exception as e:
+            print(f"⚠️ Could not verify table structure: {e}")
         
         print(f"✅ Created {len(all_security_data)} securities from real asset data (100% authentic) with direct TICKER and FIGI columns")
         
@@ -349,6 +372,17 @@ def build_dim_benchmark(session: Session):
 def build_fact_transaction(session: Session, test_mode: bool = False):
     """Generate synthetic transaction history."""
     
+    # Verify DIM_SECURITY table has FIGI column before proceeding
+    try:
+        columns = session.sql(f"DESCRIBE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY").collect()
+        column_names = [col['name'] for col in columns]
+        if 'FIGI' not in column_names:
+            raise Exception(f"DIM_SECURITY table missing FIGI column. Available columns: {column_names}")
+        print("✅ Verified DIM_SECURITY table has FIGI column")
+    except Exception as e:
+        print(f"❌ Table structure verification failed: {e}")
+        raise
+    
     # Generate transactions for the last 12 months that build up to current positions
     print("💱 Generating synthetic transaction history...")
     
@@ -364,15 +398,20 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             SELECT 
                 s.SecurityID,
                 s.Ticker,
+                s.FIGI,
                 CASE 
-                    -- Priority 1: Major stocks with guaranteed research coverage (demo scenario alignment)
-                    WHEN s.Ticker IN ('AAPL', 'CMC', 'RBBN', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL') THEN 1
-                    -- Priority 2: Clean US ticker symbols (1-5 characters, letters only)
-                    WHEN s.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(s.Ticker) <= 5 THEN 2
-                    -- Priority 3: All other securities (bonds, international, complex tickers)
-                    ELSE 3
+                    -- Priority 1: Demo scenario companies (OpenFIGI-based for precise identification)
+                    WHEN s.FIGI IN ('BBG001S5N8V8', 'BBG001S5PXG8', 'BBG00HW4CSH5', 'BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 1  -- Exact demo companies via OpenFIGI
+                    -- Priority 2: Other major US stocks with guaranteed research coverage
+                    WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL') 
+                         AND i.CountryOfIncorporation = 'US' THEN 2  -- Other major US companies
+                    -- Priority 3: Clean US ticker symbols (1-5 characters, letters only)
+                    WHEN s.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(s.Ticker) <= 5 THEN 3
+                    -- Priority 4: All other securities (bonds, international, complex tickers)
+                    ELSE 4
                 END as priority
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'  -- Focus on equities for transaction generation
         ),
         portfolio_securities AS (
@@ -387,12 +426,14 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
                 CASE 
                     WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
                         CASE 
-                            -- Guarantee top 3 positions for demo scenario
-                            WHEN s.Ticker = 'AAPL' THEN 1
-                            WHEN s.Ticker = 'CMC' THEN 2  
-                            WHEN s.Ticker = 'RBBN' THEN 3
+                            -- Guarantee top 3 positions for demo scenario (OpenFIGI-based)
+                            WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- Apple Inc.
+                            WHEN s.FIGI = 'BBG001S5PXG8' THEN 2  -- Commercial Metals Co
+                            WHEN s.FIGI = 'BBG00HW4CSH5' THEN 3  -- Ribbon Communications Inc.
+                            -- Other demo companies
+                            WHEN s.FIGI IN ('BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 4  -- MSFT, NVDA, GOOGL
                             -- Other tech/infrastructure companies
-                            WHEN s.Ticker IN ('MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 4
+                            WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 5
                             ELSE 999  -- Exclude non-tech companies from this portfolio
                         END
                     ELSE s.priority  -- Use normal priority for other portfolios
@@ -402,10 +443,12 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
                     CASE 
                         WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
                             CASE 
-                                WHEN s.Ticker = 'AAPL' THEN 1
-                                WHEN s.Ticker = 'CMC' THEN 2  
-                                WHEN s.Ticker = 'RBBN' THEN 3
-                                WHEN s.Ticker IN ('MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 4
+                                -- Use OpenFIGI IDs for precise ordering (matches portfolio_priority logic)
+                                WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- Apple Inc.
+                                WHEN s.FIGI = 'BBG001S5PXG8' THEN 2  -- Commercial Metals Co
+                                WHEN s.FIGI = 'BBG00HW4CSH5' THEN 3  -- Ribbon Communications Inc.
+                                WHEN s.FIGI IN ('BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 4  -- MSFT, NVDA, GOOGL
+                                WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 5
                                 ELSE 999
                             END
                         ELSE s.priority
@@ -457,7 +500,7 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
                     JOIN {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p ON sh.PortfolioID = p.PortfolioID
                     WHERE s.SecurityID = sh.SecurityID 
                     AND p.PortfolioName = 'SAM Technology & Infrastructure'
-                    AND s.Ticker IN ('AAPL', 'CMC', 'RBBN')
+                    AND s.FIGI IN ('BBG001S5N8V8', 'BBG001S5PXG8', 'BBG00HW4CSH5')  -- Exact demo companies via OpenFIGI
                 ) THEN UNIFORM(50000, 100000, RANDOM())  -- Much larger positions for top 3
                 ELSE UNIFORM(100, 10000, RANDOM())  -- Normal positions for others
             END as Quantity,
@@ -551,7 +594,7 @@ def build_fact_position_daily_abor(session: Session):
 def build_fact_marketdata_timeseries(session: Session, test_mode: bool = False):
     """Build synthetic market data for all securities."""
     
-    print("📝 Generating synthetic market data for all securities")
+    print("📝 Generating synthetic market data for portfolio securities only")
     build_marketdata_synthetic(session)
 
 def build_marketdata_synthetic(session: Session):
@@ -568,14 +611,25 @@ def build_marketdata_synthetic(session: Session):
             FROM TABLE(GENERATOR(rowcount => {365 * config.YEARS_OF_HISTORY}))  -- ~1,825 days total
             WHERE DAYOFWEEK(price_date) BETWEEN 2 AND 6  -- Monday=2 to Friday=6 only
         ),
-        securities_dates AS (
-            -- Step 2: Create cartesian product of all securities with all business dates
-            -- This ensures every security has price data for every trading day
-            SELECT 
+        portfolio_securities AS (
+            -- Step 2: Get only securities that are held in portfolios
+            SELECT DISTINCT 
                 s.SecurityID,
-                s.AssetClass,  -- Used for asset-class-specific price ranges
-                bd.price_date as PriceDate
+                s.AssetClass
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            WHERE EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
+        ),
+        securities_dates AS (
+            -- Step 3: Create cartesian product of portfolio securities with business dates
+            -- This ensures every portfolio security has price data for every trading day
+            SELECT 
+                ps.SecurityID,
+                ps.AssetClass,  -- Used for asset-class-specific price ranges
+                bd.price_date as PriceDate
+            FROM portfolio_securities ps
             CROSS JOIN business_dates bd
         )
         -- Step 3: Generate realistic OHLCV data with asset-class-appropriate price ranges
@@ -641,6 +695,10 @@ def build_fundamentals_and_estimates(session: Session):
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
         ),
         quarters AS (
             SELECT 
@@ -726,6 +784,10 @@ def build_esg_scores(session: Session):
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
         ),
         scoring_dates AS (
             SELECT DATEADD(quarter, seq4(), DATEADD(year, -{config.YEARS_OF_HISTORY}, CURRENT_DATE())) as SCORE_DATE
@@ -804,6 +866,10 @@ def build_factor_exposures(session: Session):
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
         ),
         monthly_dates AS (
             SELECT DATEADD(month, seq4(), DATEADD(year, -{config.YEARS_OF_HISTORY}, CURRENT_DATE())) as EXPOSURE_DATE
@@ -876,6 +942,10 @@ def build_benchmark_holdings(session: Session):
             FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
         ),
         benchmarks AS (
             SELECT BenchmarkID, BenchmarkName FROM {config.DATABASE_NAME}.CURATED.DIM_BENCHMARK

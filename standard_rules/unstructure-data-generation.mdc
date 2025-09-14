@@ -1,17 +1,20 @@
 ---
+description: Unstructured Data Generation Patterns and Best Practices
+globs: ["**/*.sql", "**/*.py"]
 alwaysApply: true
 ---
+ 
+# Unstructured Data Generation Instructions Standards
 
-# SAM Demo - Unstructured Data Generation Rules
-
-Complete patterns and standards for generating realistic unstructured documents across all document types in the SAM demo. This is the **single source of truth** for document generation patterns.
+Complete patterns and standards for generating realistic unstructured documents across multiple document types.
+This is the **single source of truth** for document generation patterns.
 
 ## Overview
 
-This guide provides standardized patterns for generating 7 document types that support the SAM demo scenarios, ensuring consistency, realism, and proper integration with the SecurityID-based data model.
+This guide provides standardized patterns for generating document types that support demo scenarios, ensuring consistency and realism.
 
 **Document Categories:**
-- **Security-Level**: broker_research, earnings_transcripts, press_releases
+- **Company-Level**: broker_research, earnings_transcripts, press_releases
 - **Issuer-Level**: ngo_reports, engagement_notes  
 - **Global**: policy_docs, sales_templates, philosophy_docs
 
@@ -475,65 +478,6 @@ def validate_generated_content(content: str, document_type: str) -> bool:
         return False
     
     return True
-```
-
-## Demo Coherence Requirements
-
-### Critical Challenge: Predictable Demo Flows
-Demo scenarios require specific companies to appear in search results for logical flow progression. Random document generation can break demo coherence when Step 2 references companies not mentioned in Step 1.
-
-### Solution: Enhanced Prompt Generation for Demo Companies
-```python
-# Demo coherence enhancement pattern
-def generate_broker_research_prompt(security: dict, report_num: int) -> dict:
-    # Identify key demo companies
-    demo_tech_companies = ['MSFT', 'AAPL', 'NVDA', 'AMZN', 'GOOGL', 'META']
-    is_demo_tech_company = security['TICKER'] in demo_tech_companies
-    
-    # Standard prompt generation...
-    prompt_text = f"""Standard research report prompt..."""
-    
-    # Add theme-specific guidance for demo companies
-    if is_demo_tech_company:
-        prompt_text += f"""
-        CRITICAL FOR DEMO COHERENCE: This report should emphasize {security['COMPANY_NAME']}'s role in technology sector opportunities, including themes such as:
-        - AI and machine learning innovation
-        - Cloud computing and digital transformation
-        - Technology infrastructure and platforms
-        
-        Ensure the report discusses how {security['COMPANY_NAME']} is positioned within broader "technology sector opportunities" and mention this specific phrase in your analysis."""
-```
-
-### Demo Coherence Best Practices
-1. **Identify Demo Dependencies**: Map which companies must appear in which scenario steps
-2. **Theme Enforcement**: Add specific theme guidance for key demo companies
-3. **Phrase Inclusion**: Ensure critical search phrases appear in generated content
-4. **Query Refinement**: Make demo queries more specific to increase hit probability
-5. **Validation Testing**: Test complete demo flows after document regeneration
-
-### Example: Research Copilot Demo Fix
-**Problem**: Step 1 "technology sector opportunities" didn't return Microsoft research, breaking Step 2 flow
-**Solution**: 
-- Enhanced Microsoft research prompts to include "technology sector opportunities" phrase
-- Refined Step 1 query to "AI and cloud computing opportunities in technology companies"
-- Result: Guaranteed Microsoft appears in Step 1 results for coherent Step 2 follow-up
-
-### Implementation Pattern for New Scenarios
-```python
-# 1. Identify demo company dependencies
-SCENARIO_DEMO_COMPANIES = {
-    'research_copilot': ['MSFT', 'AAPL', 'NVDA'],  # Must appear in tech research
-    'esg_guardian': ['XOM', 'BP', 'TSLA'],         # Must appear in ESG reports
-    'portfolio_copilot': ['AAPL', 'MSFT', 'NVDA'] # Must be in portfolio holdings
-}
-
-# 2. Add theme-specific enhancements
-def enhance_prompt_for_demo_coherence(prompt_text: str, security: dict, scenario: str):
-    if scenario == 'research_copilot' and security['TICKER'] in ['MSFT', 'AAPL', 'NVDA']:
-        prompt_text += "CRITICAL: Include 'technology sector opportunities' phrase..."
-    elif scenario == 'esg_guardian' and security['TICKER'] in ['XOM', 'BP']:
-        prompt_text += "CRITICAL: Include ESG controversy themes..."
-    return prompt_text
 ```
 
 ## Performance Optimization

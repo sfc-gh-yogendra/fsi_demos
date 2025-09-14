@@ -128,6 +128,53 @@ ESG_CONTROVERSY_KEYWORDS = {
     }
 }
 
+# Demo Scenario Company Mappings (OpenFIGI-based for precise identification)
+# These OpenFIGI IDs ensure we always get the exact US companies we want for demo scenarios
+DEMO_SCENARIO_COMPANIES = {
+    'AAPL': {
+        'openfigi_id': 'BBG001S5N8V8',
+        'ticker': 'AAPL',
+        'company_name': 'Apple Inc.',
+        'country': 'US',
+        'sector': 'Information Technology'
+    },
+    'CMC': {
+        'openfigi_id': 'BBG001S5PXG8', 
+        'ticker': 'CMC',
+        'company_name': 'Commercial Metals Co',
+        'country': 'US',
+        'sector': 'Materials'
+    },
+    'RBBN': {
+        'openfigi_id': 'BBG00HW4CSH5',
+        'ticker': 'RBBN', 
+        'company_name': 'Ribbon Communications Inc.',
+        'country': 'US',
+        'sector': 'Information Technology'
+    },
+    'MSFT': {
+        'openfigi_id': 'BBG001S5TD05',
+        'ticker': 'MSFT',
+        'company_name': 'Microsoft Corp',
+        'country': 'US', 
+        'sector': 'Information Technology'
+    },
+    'NVDA': {
+        'openfigi_id': 'BBG001S5TZJ6',
+        'ticker': 'NVDA',
+        'company_name': 'NVIDIA Corp',
+        'country': 'US',
+        'sector': 'Information Technology'
+    },
+    'GOOGL': {
+        'openfigi_id': 'BBG009S39JY5',
+        'ticker': 'GOOGL',
+        'company_name': 'Alphabet Inc.',
+        'country': 'US',
+        'sector': 'Communication Services'
+    }
+}
+
 # Benchmark configuration
 BENCHMARKS = [
     {'id': 'SP500', 'name': 'S&P 500', 'currency': 'USD', 'provider': 'PLM'},

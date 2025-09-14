@@ -80,12 +80,16 @@ def generate_prompts(session: Session, document_types: List[str], test_mode: boo
         JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER di ON ds.IssuerID = di.IssuerID
         WHERE ds.AssetClass = 'Equity'
         ORDER BY 
-            -- Prioritize major US stocks that are in portfolios and demo scenarios
+            -- Prioritize demo scenario companies (OpenFIGI-based for precise identification)
             CASE 
-                WHEN ds.Ticker IN ('AAPL', 'CMC', 'RBBN', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL') THEN 1
-                WHEN ds.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(ds.Ticker) <= 5 THEN 2  -- Other real US tickers
-                WHEN ds.Ticker RLIKE '^(EQ|CB|ETF)[0-9]+$' THEN 4  -- Synthetic tickers (shouldn't exist anymore)
-                ELSE 3  -- Other real tickers
+                WHEN ds.FIGI IN ('BBG001S5N8V8', 'BBG001S5PXG8', 'BBG00HW4CSH5', 'BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 1  -- Exact demo companies via OpenFIGI
+                -- Other major US stocks for research coverage
+                WHEN ds.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL') 
+                     AND di.CountryOfIncorporation = 'US' THEN 2  -- Other major US companies
+                WHEN ds.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(ds.Ticker) <= 5 AND di.CountryOfIncorporation = 'US' THEN 3  -- Other US tickers
+                WHEN ds.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(ds.Ticker) <= 5 THEN 4  -- Other real non-US tickers
+                WHEN ds.Ticker RLIKE '^(EQ|CB|ETF)[0-9]+$' THEN 6  -- Synthetic tickers (shouldn't exist anymore)
+                ELSE 5  -- Other real tickers
             END,
             -- Then order alphabetically within each group
             ds.Ticker
@@ -156,6 +160,10 @@ def generate_broker_research_prompt(security: dict, report_num: int) -> dict:
     broker_names = ['Goldman Sachs', 'Morgan Stanley', 'J.P. Morgan', 'Bank of America', 'Barclays', 'UBS']
     broker = random.choice(broker_names)
     
+    # Demo coherence enhancement: Ensure key demo companies get technology-themed research
+    demo_tech_companies = ['MSFT', 'AAPL', 'NVDA', 'AMZN', 'GOOGL', 'META']
+    is_demo_tech_company = security['TICKER'] in demo_tech_companies
+    
     prompt_text = f"""You are a senior equity research analyst at {broker}. Write a comprehensive research report for {security['COMPANY_NAME']} ({security['TICKER']}) with a {rating} rating.
 
 Structure your report as follows:
@@ -184,6 +192,18 @@ Write 2-3 sentences summarising your investment thesis and rating rationale for 
 Conclude with {rating} recommendation and key rationale.
 
 Use professional, confident tone. Include specific financial metrics and industry context. Write 700-1200 words in UK English."""
+    
+    # Demo coherence enhancement: Add technology theme guidance for key demo companies
+    if is_demo_tech_company:
+        prompt_text += f"""
+
+CRITICAL FOR DEMO COHERENCE: This report should emphasize {security['COMPANY_NAME']}'s role in technology sector opportunities, including themes such as:
+- AI and machine learning innovation
+- Cloud computing and digital transformation
+- Technology infrastructure and platforms
+- Digital innovation and emerging technologies
+
+Ensure the report discusses how {security['COMPANY_NAME']} is positioned within broader "technology sector opportunities" and mention this specific phrase in your analysis. Connect the company's strategy to major technology trends and sector-wide opportunities."""
     
     return {
         'PROMPT_ID': str(uuid.uuid4()),

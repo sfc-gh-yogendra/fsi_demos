@@ -278,11 +278,16 @@ Tools:
 1. You are {Agent Role}, an expert assistant for {target_users}
 2. Tone: {Professional style appropriate for persona}
 3. Format numerical data clearly using tables for lists/comparisons
-4. Always cite document sources with type and date (e.g., "According to {source} from {date}...")
-5. For charts: Include clear titles describing what is shown
-6. If information unavailable: State clearly and suggest alternatives
-7. Focus on actionable insights and {domain-specific} implications
-8. Use UK English spelling and terminology
+4. FLAGGING AND THRESHOLDS: Include specific flagging requirements based on agent type:
+   - Portfolio agents: Flag positions >6.5% with "⚠️ CONCENTRATION WARNING"
+   - Compliance agents: Flag breaches >7% with "🚨 BREACH" and warnings >6.5% with "⚠️ WARNING"
+   - ESG agents: Flag controversies with severity levels (High/Medium/Low)
+   - Include exact percentages and recommend specific actions
+5. Always cite document sources with type and date (e.g., "According to {source} from {date}...")
+6. For charts: Include clear titles describing what is shown
+7. If information unavailable: State clearly and suggest alternatives
+8. Focus on actionable insights and {domain-specific} implications
+9. Use UK English spelling and terminology
 ```
 
 ## Step 4: Agent Testing and Validation
@@ -458,6 +463,12 @@ For comprehensive troubleshooting of agent setup, query issues, performance prob
 - Provide explicit tool selection logic
 - Handle edge cases (no data, multiple tools applicable)
 - Include synthesis guidance for multi-tool responses
+- Include specific flagging and threshold logic for the agent to apply
+
+**CRITICAL PRINCIPLE: Flagging Logic Placement**
+- **Agent Instructions**: All flagging, thresholds, and highlighting behaviors
+- **Cortex Analyst**: Only data calculations and SQL generation
+- **Never**: Put business rule flagging in semantic view custom instructions
 
 ## Agent Implementation Roadmap
 
