@@ -1,0 +1,208 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Semantic Views Rules
+
+## File Organization
+- **SINGLE FILE**: All semantic view creation must be in `src/create_semantic_views.py`
+- **Phase 2 Integration**: Watchlist semantic views included in same file with `include_phase2` parameter
+- **NO SEPARATE FILES**: Do not create separate files for watchlist, ESG, or other themed semantic views
+
+## Views
+- `CLIENT_FINANCIALS_SV` (Phase 1): core portfolio metrics; issuer/sector; model portfolio dims; unique synonyms and comments.
+- `CLIENT_INTERACTIONS_SV` (Phase 1):
+  - Dimensions: `CLIENT_ID, ADVISOR_ID, CHANNEL, DATE`.
+  - Metrics: `COUNT_COMMUNICATIONS, AVG_LENGTH_MINUTES, LAST_CONTACT_DATE`.
+  - Ready for Phase 2 metric: `COUNT_THREADS`.
+- `WATCHLIST_ANALYTICS_SV` (Phase 2): thematic watchlist analytics; ESG scoring; Carbon Negative Leaders tracking.
+
+## Guidance
+- Use clear DIMENSIONS/METRICS with comments and `WITH SYNONYMS=(...)` ensuring uniqueness (see prior rules).
+- Validate with `SEMANTIC_VIEW(...)` queries for basic and mixed metric/dimension tests.
+
+## Critical Syntax Rules (Must Follow)
+```sql
+-- ✅ CORRECT table declaration
+HOLDINGS AS WAM_AI_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
+
+-- ✅ CORRECT relationship declaration
+HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID)
+
+-- ✅ CORRECT dimension syntax pattern
+table_alias.dimension_name AS column_name WITH SYNONYMS=('synonym1','synonym2')
+
+-- ✅ CORRECT dimension examples
+CLIENTS.CLIENT_FIRSTNAME AS FIRSTNAME WITH SYNONYMS=('client_first_name','first_name','sarah')
+SECURITIES.SECURITY_DESCRIPTION AS DESCRIPTION WITH SYNONYMS=('company','security_name')
+PORTFOLIOS.PORTFOLIO_NAME AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name')
+
+-- ✅ CORRECT metric (NO PUBLIC keyword)  
+HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MARKETVALUE_BASE) WITH SYNONYMS=('exposure','aum')
+
+-- ❌ WRONG dimension syntax
+CLIENTS.FIRSTNAME AS CLIENT_FIRSTNAME  -- Wrong: table_column AS dimension_alias
+SECURITIES: synonyms=('company_name')  -- Wrong: missing proper syntax
+```
+
+## Formatting Requirements (MANDATORY)
+- **Indentation**: Use tabs, not spaces
+- **Synonyms**: Use `WITH SYNONYMS=()` format (equals sign, no spaces)
+- **Comments**: Include meaningful comments for all elements
+- **Case Sensitivity**: Use exact column names from `DESCRIBE TABLE`
+- **No PUBLIC Keyword**: Never use PUBLIC in DIMENSIONS or METRICS sections
+- **Unique Synonyms**: Each synonym can only appear once across all dimensions and metrics
+
+## Complete CLIENT_FINANCIALS_SV Example
+```sql
+CREATE OR REPLACE SEMANTIC VIEW WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
+	TABLES (
+		HOLDINGS AS WAM_AI_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
+			PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID) 
+			WITH SYNONYMS=('positions','investments','allocations','holdings') 
+			COMMENT='Daily portfolio holdings and positions',
+		PORTFOLIOS AS WAM_AI_DEMO.CURATED.DIM_PORTFOLIO
+			PRIMARY KEY (PORTFOLIOID) 
+			WITH SYNONYMS=('funds','strategies','mandates','portfolios') 
+			COMMENT='Investment portfolios and fund information',
+		SECURITIES AS WAM_AI_DEMO.CURATED.DIM_SECURITY
+			PRIMARY KEY (SECURITYID) 
+			WITH SYNONYMS=('companies','stocks','bonds','instruments','securities') 
+			COMMENT='Master security reference data',
+		ISSUERS AS WAM_AI_DEMO.CURATED.DIM_ISSUER
+			PRIMARY KEY (ISSUERID) 
+			WITH SYNONYMS=('issuers','entities','corporates') 
+			COMMENT='Issuer and corporate hierarchy data'
+	)
+	RELATIONSHIPS (
+		HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		HOLDINGS_TO_SECURITIES AS HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		SECURITIES_TO_ISSUERS AS SECURITIES(ISSUERID) REFERENCES ISSUERS(ISSUERID)
+	)
+	DIMENSIONS (
+		-- Portfolio dimensions
+		PORTFOLIOS.PORTFOLIO_NAME AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio or fund name',
+		PORTFOLIOS.STRATEGY AS STRATEGY WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy type',
+		
+		-- Security dimensions  
+		SECURITIES.COMPANY_NAME AS DESCRIPTION WITH SYNONYMS=('company','security_name','description') COMMENT='Security description or company name',
+		SECURITIES.TICKER AS PRIMARYTICKER WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Primary trading symbol',
+		SECURITIES.ASSET_CLASS AS ASSETCLASS WITH SYNONYMS=('instrument_type','security_type','asset_class') COMMENT='Asset class: Equity, Corporate Bond, ETF',
+		
+		-- Issuer dimensions (for enhanced analysis)
+		ISSUERS.ISSUER_NAME AS LEGALNAME WITH SYNONYMS=('issuer_name','legal_name','company_name') COMMENT='Legal issuer name',
+		ISSUERS.SECTOR AS GICS_SECTOR WITH SYNONYMS=('sector','industry_sector','gics_sector') COMMENT='GICS Level 1 sector classification',
+		ISSUERS.COUNTRY AS COUNTRYOFINCORPORATION WITH SYNONYMS=('domicile','country_of_risk','country') COMMENT='Country of incorporation',
+		
+		-- Time dimensions
+		HOLDINGS.HOLDING_DATE AS HOLDINGDATE WITH SYNONYMS=('position_date','as_of_date','date') COMMENT='Holdings as-of date'
+	)
+	METRICS (
+		-- Core position metrics
+		HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MARKETVALUE_BASE) WITH SYNONYMS=('exposure','total_exposure','aum','market_value','position_value') COMMENT='Total market value in base currency',
+		HOLDINGS.HOLDING_COUNT AS COUNT(SECURITYID) WITH SYNONYMS=('position_count','number_of_holdings','holding_count','count') COMMENT='Count of portfolio positions',
+		
+		-- Portfolio weight metrics  
+		HOLDINGS.PORTFOLIO_WEIGHT AS SUM(PORTFOLIOWEIGHT) WITH SYNONYMS=('weight','allocation','portfolio_weight') COMMENT='Portfolio weight as decimal',
+		HOLDINGS.PORTFOLIO_WEIGHT_PCT AS SUM(PORTFOLIOWEIGHT) * 100 WITH SYNONYMS=('weight_percent','allocation_percent','percentage_weight') COMMENT='Portfolio weight as percentage',
+		
+		-- Issuer-level metrics (enhanced capability)
+		HOLDINGS.ISSUER_EXPOSURE AS SUM(MARKETVALUE_BASE) WITH SYNONYMS=('issuer_total','issuer_value','issuer_exposure') COMMENT='Total exposure to issuer across all securities',
+		
+		-- Concentration metrics
+		HOLDINGS.MAX_POSITION_WEIGHT AS MAX(PORTFOLIOWEIGHT) WITH SYNONYMS=('largest_position','max_weight','concentration') COMMENT='Largest single position weight'
+	)
+	COMMENT='Multi-asset semantic view for portfolio analytics with issuer hierarchy support';
+```
+
+## Validation and Testing
+### Basic Structure Validation
+```sql
+-- 1. Verify semantic view was created
+DESCRIBE SEMANTIC VIEW WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV;
+
+-- 2. Check that it has expected dimensions and metrics
+SHOW SEMANTIC VIEWS IN WAM_AI_DEMO.AI;
+```
+
+### Query Testing (MANDATORY)
+```sql
+-- Basic functionality test
+SELECT * FROM SEMANTIC_VIEW(
+    WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
+    METRICS TOTAL_MARKET_VALUE
+    DIMENSIONS PORTFOLIONAME
+) LIMIT 5;
+
+-- Complex query test
+SELECT * FROM SEMANTIC_VIEW(
+    WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
+    METRICS TOTAL_MARKET_VALUE, HOLDING_COUNT
+    DIMENSIONS PORTFOLIONAME, GICS_SECTOR, ASSETCLASS
+) LIMIT 10;
+```
+
+## Validation Checklist
+- [ ] Semantic view created without errors
+- [ ] `DESCRIBE SEMANTIC VIEW` returns structure information
+- [ ] Basic portfolio query returns data
+- [ ] Holdings analysis query works
+- [ ] Sector breakdown query functions
+- [ ] Issuer-level aggregation works
+- [ ] All planned synonyms are working
+- [ ] No duplicate synonym errors
+
+## Common Error Messages and Solutions
+
+**"invalid identifier 'TABLE.COLUMN'"**
+- **Cause**: Column name doesn't exist or wrong case
+- **Solution**: Run `DESCRIBE TABLE` to get exact column names
+
+**"duplicate synonym"**
+- **Cause**: Same synonym used in multiple dimensions/metrics
+- **Solution**: Use unique synonym sets for each dimension/metric
+
+**"cannot resolve reference"**
+- **Cause**: Foreign key relationship doesn't exist
+- **Solution**: Verify table relationships with sample JOINs
+
+**"unexpected COMMENT"**
+- **Cause**: Indentation issues (spaces instead of tabs)
+- **Solution**: Use tabs for indentation throughout
+
+**"Object found is of type 'SEMANTIC_VIEW', not specified type 'VIEW'"**
+- **Cause**: Trying to drop semantic view as regular view
+- **Solution**: Use `DROP SEMANTIC VIEW IF EXISTS` with try/catch
+
+**"Invalid dimension specified: must be related to base metric entity"**
+- **Cause**: Missing or incorrect RELATIONSHIPS between tables
+- **Solution**: Ensure proper foreign key relationships exist and are declared
+
+## Implementation Learnings (Proven)
+
+### Simplified Semantic Views for Testing
+```sql
+-- ✅ WORKING: Single table semantic view for initial testing
+CREATE OR REPLACE SEMANTIC VIEW DB.AI.VIEW_NAME
+    TABLES (
+        HOLDINGS AS DB.CURATED.FACT_POSITION_DAILY_ABOR
+            PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID)
+    )
+    DIMENSIONS (
+        HOLDINGS.PORTFOLIOID AS PORTFOLIOID WITH SYNONYMS=('portfolio_id','fund_id'),
+        HOLDINGS.SECURITYID AS SECURITYID WITH SYNONYMS=('security_id','instrument_id')
+    )
+    METRICS (
+        HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MARKETVALUE_BASE) WITH SYNONYMS=('exposure','aum')
+    )
+```
+
+### Drop Statement Pattern
+```python
+# ✅ CORRECT: Safe semantic view dropping
+try:
+    session.sql(f"DROP SEMANTIC VIEW IF EXISTS {view_name}").collect()
+except:
+    pass  # Ignore if doesn't exist
+```
+

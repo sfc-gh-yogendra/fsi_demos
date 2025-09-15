@@ -1,0 +1,370 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Naming Conventions and Table Schemas
+
+## Naming Conventions and Standards
+
+### Table Naming Standards
+
+**CURATED Schema (Industry-Standard Dimensional Model):**
+- **Dimension Tables**: Use `DIM_` prefix
+  - Examples: `DIM_SECURITY`, `DIM_ISSUER`, `DIM_PORTFOLIO`, `DIM_BENCHMARK`
+  - Purpose: Store descriptive attributes and reference data
+  - Special case: `DIM_SECURITY_IDENTIFIER_XREF` for cross-reference tables
+
+- **Fact Tables**: Use `FACT_` prefix
+  - Examples: `FACT_TRANSACTION`, `FACT_POSITION_DAILY_ABOR`, `FACT_MARKETDATA_TIMESERIES`
+  - Purpose: Store measurable events, transactions, and metrics
+  - Note: Never use abbreviations like `FA_` - always use full `FACT_` prefix
+
+**RAW Schema (Document and External Data):**
+- **Raw Document Tables**: Use `{DOCUMENT_TYPE}_RAW` suffix
+  - Examples: `BROKER_RESEARCH_RAW`, `EARNINGS_TRANSCRIPTS_RAW`
+  - Purpose: Store unprocessed documents from AI generation
+  
+- **Processed Corpus Tables**: Use `{DOCUMENT_TYPE}_CORPUS` suffix
+  - Examples: `COMMUNICATIONS_CORPUS`, `RESEARCH_CORPUS`, `REGULATORY_CORPUS`
+  - Purpose: Store processed documents ready for Cortex Search
+
+- **Temporary/Staging Tables**: Use `TEMP_` prefix
+  - Examples: `TEMP_REAL_MARKET_DATA`, `TEMP_GENERATION_PROMPTS`
+  - Purpose: Intermediate processing, should be dropped after use
+
+### Column Naming Standards
+
+**Primary Keys:**
+- Use singular form with `ID` suffix: `SecurityID`, `IssuerID`, `PortfolioID`
+- **CRITICAL**: All dimension tables MUST have IDENTITY primary keys (SecurityID, PortfolioID, IssuerID)
+- Fact tables reference these IDENTITY columns as foreign keys
+- Never use spaces or special characters
+- Use PascalCase for consistency
+
+**Foreign Keys:**
+- Match the primary key name exactly: `IssuerID` (FK) references `IssuerID` (PK)
+- Exception: Self-referencing keys add descriptor: `UltimateParentIssuerID`
+
+**Date/Time Columns:**
+- Date columns: Use descriptive names with `Date` suffix
+  - Examples: `TradeDate`, `SettleDate`, `ReportingDate`, `HoldingDate`
+- Timestamp columns: Use `_NTZ` suffix for clarity
+  - Examples: `RecordStartDate_NTZ`, `LastUpdated_NTZ`
+- Period indicators: `FiscalQuarter`, `FiscalYear`
+
+**Amount/Value Columns:**
+- Monetary values: Include currency indicator
+  - Examples: `MarketValue_USD`, `MarketValue_Local`, `MarketValue_Base`
+- Quantities: Use clear descriptive names
+  - Examples: `Quantity`, `SharesOutstanding`, `Volume`
+- Rates/Percentages: Include unit type
+  - Examples: `CouponRate`, `PortfolioWeight`, `ReturnPercent`
+
+**Indicator/Flag Columns:**
+- Boolean flags: Use `Is` prefix or `Flag` suffix
+  - Examples: `IsActive`, `IsPrimaryForType`, `CallableFlag`
+- Status columns: Use clear descriptive names
+  - Examples: `TransactionStatus`, `ApprovalStatus`
+
+**Text/Descriptor Columns:**
+- Use clear, business-friendly names
+  - Examples: `Description`, `LegalName`, `SecurityType`
+- Avoid abbreviations unless industry-standard
+  - Good: `GICS_Sector` (industry standard)
+  - Bad: `Desc`, `Nm`, `Typ`
+
+## Complete Table Schemas
+
+### Core Dimension Tables
+
+```sql
+-- Clients and Advisors
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_CLIENT (
+    ClientID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    AdvisorID BIGINT NOT NULL,
+    FirstName VARCHAR(100),
+    LastName VARCHAR(100),
+    Email VARCHAR(255),
+    Phone VARCHAR(50),
+    DateOfBirth DATE,
+    RiskTolerance VARCHAR(50),
+    InvestmentHorizon VARCHAR(50),
+    OnboardingDate DATE,
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_ADVISOR (
+    AdvisorID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    FirstName VARCHAR(100),
+    LastName VARCHAR(100),
+    Email VARCHAR(255),
+    Team VARCHAR(100),
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+-- Security Master with Enhanced Model
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_SECURITY (
+    SecurityID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    IssuerID BIGINT NOT NULL,
+    PrimaryTicker VARCHAR(50),
+    Description VARCHAR(255),
+    AssetClass VARCHAR(50),
+    SecurityType VARCHAR(100),
+    CountryOfRisk CHAR(2),
+    IssueDate DATE,
+    MaturityDate DATE,
+    CouponRate DECIMAL(18, 8),
+    RecordStartDate TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    RecordEndDate TIMESTAMP_NTZ DEFAULT '2099-12-31 23:59:59'::TIMESTAMP_NTZ,
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+-- Security Identifier Cross-Reference
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_SECURITY_IDENTIFIER_XREF (
+    SecurityIdentifierID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    SecurityID BIGINT NOT NULL,
+    IdentifierType VARCHAR(50) NOT NULL,
+    IdentifierValue VARCHAR(100) NOT NULL,
+    EffectiveStartDate DATE NOT NULL,
+    EffectiveEndDate DATE NOT NULL,
+    IsPrimaryForType BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (SecurityID) REFERENCES DIM_SECURITY(SecurityID)
+);
+
+-- Issuer with Corporate Hierarchy
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_ISSUER (
+    IssuerID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    UltimateParentIssuerID BIGINT,
+    LegalName VARCHAR(255) NOT NULL,
+    LEI VARCHAR(20),
+    CountryOfIncorporation CHAR(2),
+    GICS_Sector VARCHAR(100),
+    FOREIGN KEY (UltimateParentIssuerID) REFERENCES DIM_ISSUER(IssuerID)
+);
+
+-- Portfolio and Account Dimensions
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_PORTFOLIO (
+    PortfolioID BIGINT IDENTITY(1,1) PRIMARY KEY,  -- CRITICAL: IDENTITY primary key
+    PortfolioCode VARCHAR(100) UNIQUE NOT NULL,
+    PortfolioName VARCHAR(255),
+    Strategy VARCHAR(100),
+    BaseCurrency CHAR(3) DEFAULT 'USD',
+    InceptionDate DATE,
+    IsActive BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE WAM_AI_DEMO.CURATED.DIM_ACCOUNT (
+    AccountID VARCHAR(50) PRIMARY KEY,
+    ClientID BIGINT NOT NULL,
+    AccountType VARCHAR(50),
+    ModelPortfolioName VARCHAR(255),
+    OpenDate DATE,
+    IsActive BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (ClientID) REFERENCES DIM_CLIENT(ClientID)
+);
+```
+
+### Core Fact Tables
+
+```sql
+-- Transaction Log (Source of Truth)
+CREATE TABLE WAM_AI_DEMO.CURATED.FACT_TRANSACTION (
+    TransactionID BIGINT IDENTITY(1,1) PRIMARY KEY,
+    TransactionDate DATE NOT NULL,
+    PortfolioID BIGINT NOT NULL,
+    SecurityID BIGINT NOT NULL,
+    TransactionType VARCHAR(50) NOT NULL,
+    TradeDate DATE NOT NULL,
+    SettleDate DATE,
+    Quantity DECIMAL(38, 10),
+    Price DECIMAL(38, 10),
+    GrossAmount_Local DECIMAL(38, 10),
+    Commission_Local DECIMAL(38, 10),
+    Currency CHAR(3) DEFAULT 'USD',
+    SourceSystem VARCHAR(50) DEFAULT 'ABOR',
+    FOREIGN KEY (PortfolioID) REFERENCES DIM_PORTFOLIO(PortfolioID),
+    FOREIGN KEY (SecurityID) REFERENCES DIM_SECURITY(SecurityID)
+);
+
+-- ABOR Positions (Built from Transactions)
+CREATE TABLE WAM_AI_DEMO.CURATED.FACT_POSITION_DAILY_ABOR (
+    HoldingDate DATE NOT NULL,
+    PortfolioID BIGINT NOT NULL,
+    SecurityID BIGINT NOT NULL,
+    Quantity DECIMAL(38, 10),
+    MarketValue_Local DECIMAL(38, 10),
+    MarketValue_Base DECIMAL(38, 10),
+    CostBasis_Local DECIMAL(38, 10),
+    CostBasis_Base DECIMAL(38, 10),
+    AccruedInterest_Local DECIMAL(38, 10),
+    PortfolioWeight DECIMAL(18, 12),
+    PRIMARY KEY (HoldingDate, PortfolioID, SecurityID),
+    FOREIGN KEY (PortfolioID) REFERENCES DIM_PORTFOLIO(PortfolioID),
+    FOREIGN KEY (SecurityID) REFERENCES DIM_SECURITY(SecurityID)
+);
+
+-- Market Data Time Series
+CREATE TABLE WAM_AI_DEMO.CURATED.FACT_MARKETDATA_TIMESERIES (
+    PriceDate DATE NOT NULL,
+    SecurityID BIGINT NOT NULL,
+    Price_Close DECIMAL(38, 10),
+    Price_Open DECIMAL(38, 10),
+    Price_High DECIMAL(38, 10),
+    Price_Low DECIMAL(38, 10),
+    Volume BIGINT,
+    TotalReturnFactor_Daily DECIMAL(38, 15) DEFAULT 1.0,
+    PRIMARY KEY (PriceDate, SecurityID),
+    FOREIGN KEY (SecurityID) REFERENCES DIM_SECURITY(SecurityID)
+);
+```
+
+### Document Corpus Tables
+
+```sql
+-- Communications Corpus
+CREATE TABLE WAM_AI_DEMO.CURATED.COMMUNICATIONS_CORPUS (
+    COMMUNICATION_ID VARCHAR(100) PRIMARY KEY,
+    CLIENT_ID BIGINT,
+    ADVISOR_ID BIGINT,
+    TIMESTAMP TIMESTAMP_NTZ,
+    CHANNEL VARCHAR(50),
+    SUBJECT VARCHAR(500),
+    CONTENT TEXT,
+    SENTIMENT_SCORE DECIMAL(3,2),
+    FOREIGN KEY (CLIENT_ID) REFERENCES DIM_CLIENT(ClientID),
+    FOREIGN KEY (ADVISOR_ID) REFERENCES DIM_ADVISOR(AdvisorID)
+);
+
+-- Research Corpus
+CREATE TABLE WAM_AI_DEMO.CURATED.RESEARCH_CORPUS (
+    DOCUMENT_ID VARCHAR(100) PRIMARY KEY,
+    DOCUMENT_TITLE VARCHAR(500),
+    DOCUMENT_TYPE VARCHAR(100),
+    TICKER VARCHAR(50),
+    PUBLISH_DATE DATE,
+    SOURCE VARCHAR(100),
+    LANGUAGE VARCHAR(10) DEFAULT 'en',
+    DOCUMENT_TEXT TEXT
+);
+
+-- Regulatory Corpus
+CREATE TABLE WAM_AI_DEMO.CURATED.REGULATORY_CORPUS (
+    DOCUMENT_ID VARCHAR(100) PRIMARY KEY,
+    REGULATOR VARCHAR(100),
+    RULE_ID VARCHAR(50),
+    TITLE VARCHAR(500),
+    PUBLISH_DATE DATE,
+    CONTENT TEXT
+);
+```
+
+### Supporting Tables
+
+```sql
+-- Client Interactions Summary (for CLIENT_INTERACTIONS_SV)
+CREATE VIEW WAM_AI_DEMO.CURATED.VW_CLIENT_INTERACTIONS AS
+SELECT 
+    CLIENT_ID,
+    ADVISOR_ID,
+    CHANNEL,
+    DATE(TIMESTAMP) as INTERACTION_DATE,
+    COUNT(*) as COUNT_COMMUNICATIONS,
+    AVG(CASE 
+        WHEN CHANNEL IN ('Phone', 'Meeting') THEN 30 
+        ELSE 5 
+    END) as AVG_LENGTH_MINUTES,
+    MAX(TIMESTAMP) as LAST_CONTACT_DATE
+FROM WAM_AI_DEMO.CURATED.COMMUNICATIONS_CORPUS
+GROUP BY CLIENT_ID, ADVISOR_ID, CHANNEL, DATE(TIMESTAMP);
+```
+
+## Schema Organization
+
+```
+WAM_AI_DEMO/
+├── RAW/                          # External and unprocessed data
+│   ├── *_RAW tables             # Raw document storage
+│   ├── TEMP_* tables            # Temporary processing
+│   ├── GENERATION_PROMPTS       # AI generation metadata
+│   └── CLIENT_DOCS (Stage)      # PDF storage
+├── CURATED/                      # Business-ready dimensional model
+│   ├── DIM_* tables             # Dimension tables
+│   ├── FACT_* tables            # Fact tables
+│   ├── *_CORPUS tables          # Processed documents
+│   └── VW_* views               # Supporting views
+└── AI/                          # AI/ML components
+    ├── Semantic Views           # CLIENT_FINANCIALS_SV, CLIENT_INTERACTIONS_SV
+    └── Search Services          # COMMUNICATIONS_SEARCH, RESEARCH_SEARCH, REGULATORY_SEARCH
+```
+
+## Best Practices
+
+1. **Consistency**: Always follow the established pattern for similar objects
+2. **Clarity**: Names should be self-documenting and business-friendly
+3. **No Abbreviations**: Avoid abbreviations except industry-standard ones (USD, ABOR, CUSIP)
+4. **Case Sensitivity**: Use UPPERCASE for SQL objects, PascalCase for columns
+5. **Reserved Words**: Never use Snowflake reserved words
+6. **Foreign Keys**: Always define explicit foreign key relationships
+7. **Defaults**: Provide sensible defaults for optional columns
+8. **Comments**: Add comments to complex tables and columns
+
+## Critical Design Decisions
+
+### Primary Key Strategy
+**Decision**: Use PORTFOLIOID (IDENTITY) as primary key for DIM_PORTFOLIO, not PORTFOLIOCODE
+**Rationale**: 
+- FACT_POSITION_DAILY_ABOR and FACT_TRANSACTION reference PortfolioID
+- IDENTITY columns provide better performance and referential integrity
+- Follows industry-standard dimensional modeling practices
+- Enables proper foreign key relationships for semantic views
+
+### Table Creation Order (CRITICAL)
+```sql
+-- 1. Create dimension tables with IDENTITY columns first
+CREATE TABLE DIM_ISSUER (IssuerID BIGINT IDENTITY(1,1) PRIMARY KEY, ...)
+CREATE TABLE DIM_SECURITY (SecurityID BIGINT IDENTITY(1,1) PRIMARY KEY, IssuerID BIGINT, ...)
+CREATE TABLE DIM_PORTFOLIO (PortfolioID BIGINT IDENTITY(1,1) PRIMARY KEY, ...)
+
+-- 2. Then create fact tables that reference these IDENTITY columns
+CREATE TABLE FACT_POSITION_DAILY_ABOR (PortfolioID BIGINT, SecurityID BIGINT, ...)
+```
+
+### Critical Implementation Issue (IDENTIFIED)
+**Problem**: Snowpark DataFrame `.save_as_table()` method recreates tables WITHOUT IDENTITY columns
+**Impact**: Breaks foreign key relationships between fact and dimension tables
+**Solution**: Use SQL INSERT statements for all dimension table data population
+
+**Current Status (Post-Build Analysis)**:
+- ❌ **DIM_ISSUER**: Missing IssuerID IDENTITY column (overwritten by DataFrame)
+- ❌ **DIM_SECURITY**: Missing SecurityID IDENTITY column (overwritten by DataFrame)  
+- ✅ **DIM_PORTFOLIO**: Has PortfolioID IDENTITY column (manually preserved)
+- ✅ **All fact tables**: Have correct foreign key column structure
+
+**Future Fix Required**: Convert all dimension table data generation to use SQL INSERT statements instead of Snowpark DataFrames to preserve IDENTITY columns.
+
+## Validation Queries
+
+```sql
+-- Verify table structure
+DESCRIBE TABLE WAM_AI_DEMO.CURATED.DIM_SECURITY;
+
+-- Check foreign key relationships
+SELECT 
+    table_name,
+    column_name,
+    constraint_name,
+    constraint_type
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu 
+    ON tc.constraint_name = kcu.constraint_name
+WHERE tc.table_schema = 'CURATED'
+AND tc.constraint_type = 'FOREIGN KEY';
+
+-- Validate data quality
+SELECT 
+    COUNT(*) as total_securities,
+    COUNT(DISTINCT IssuerID) as unique_issuers,
+    COUNT(DISTINCT AssetClass) as asset_classes
+FROM WAM_AI_DEMO.CURATED.DIM_SECURITY
+WHERE IsActive = TRUE;
+```

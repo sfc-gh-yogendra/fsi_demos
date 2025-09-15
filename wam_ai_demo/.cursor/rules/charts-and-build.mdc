@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Charts & Build Modes Rules
+
+## Charts
+- Agents may generate charts on request via a `data_to_chart` capability (e.g., "Show asset-class distribution for portfolio X").
+- Encourage concise tables when charts are not requested.
+
+## Build Modes
+- `replace_all`: recreate data, semantic views, search services.
+- `data_only`: regenerate structured/unstructured data.
+- `semantics_and_search_only`: recreate semantic views and search services without touching data.
+
+## Build Results (Validated)
+- ✅ **Test Mode**: Successfully creates simplified demo with real asset integration
+- ✅ **Real Data**: 2,539 real securities + 22,974 market data records integrated
+- ✅ **AI Services**: 2 semantic views + 3 search services working
+- ✅ **Sample Data**: Golden ticker positions with authentic prices (AAPL $239,230)
+- ✅ **Phase 2**: 3 thematic watchlists (Carbon Negative Leaders, AI Innovation, ESG Leaders)
+- ✅ **Enhanced ESG**: 18 ESG/sustainability documents searchable via Cortex Search
+
+## Implementation Status (FIXED)
+- ✅ **IDENTITY Columns**: All dimension tables now have proper IDENTITY primary keys
+- ✅ **Foreign Key Relationships**: Portfolio-Security and Security-Issuer joins working
+- ✅ **Real Data Integration**: Authentic securities with proper relationships
+- ✅ **Business Value**: All agent scenarios working with enhanced data model
+- ✅ **Enhanced Semantic Views**: Full multi-table structure with PORTFOLIONAME, GICS_SECTOR, LEGALNAME
+- ✅ **Rich Analytics**: Issuer hierarchy, sector analysis, portfolio strategy insights available
+
+## Test Mode Implementation (Proven)
+```python
+# ✅ WORKING: Test mode with reduced volumes
+if test_mode:
+    config.NUM_ADVISORS = 2
+    config.CLIENTS_PER_ADVISOR = 5
+    # Use simplified sample data generation instead of full pipeline
+    from src.generate_structured import generate_simplified_positions, generate_market_data
+    from src.generate_unstructured import generate_unstructured_data
+    generate_simplified_positions(session)
+    generate_market_data(session)
+    generate_unstructured_data(session, test_mode=True)
+```
+
+## Phased Plan
+- Phase 1: Baseline (per finalized functional design) – Wealth Manager first; anchor portfolios; golden tickers; two semantic views; three search services; PDFs in stage.
+- Phase 2: Enhancements – watchlists (Carbon Negative Leaders), expanded views and metrics, richer ESG, chart gallery prompts, upload-to-stage onboarding runbook.
+- Phase 3: Stretch – additional risk/performance views, deeper cross-scenario automations.
+

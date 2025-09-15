@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Unstructured Data Generation Rules
+
+## General
+- Store dynamic prompts in a Snowflake table (per corpus) with: `ID, PROMPT_TEXT, CONTEXT_KEYS (VARIANT)`.
+- Use Snowpark DataFrames to apply `snowflake.cortex.complete` across rows.
+- Parameterize model/temperature per corpus and scenario.
+
+## Communications corpus
+- Volume: ~50 communications per client over lifespan.
+- Mix: 45% emails (25% threads), 30% phone transcripts (15–45 min), 25% online meetings (15–45 min).
+- Sentiment distribution: 60% neutral, 25% positive, 15% negative; topic-aware.
+- Grounding: reference at least one owned ticker on/near the date; inject minor noise (2–5%).
+
+## Research corpus
+- ~15 docs per golden ticker; spread over time windows.
+- Include ESG (carbon neutrality) content in Phase 1.
+
+## Regulatory corpus
+- Curated subset focusing on rules referenced in scenarios.
+
+## PDFs (Onboarding)
+- AI-generate two PDFs per client (questionnaire, advisory agreement) and store in `@WAM_AI_DEMO.RAW.CLIENT_DOCS`.
+- Later: support upload-to-stage processing flow.
+
+## Determinism
+- Use deterministic seeds by client/ticker/date to enable idempotent rebuilds.
+
+## References
+- Cortex complete API: [complete](mdc:https://docs.snowflake.com/en/developer-guide/snowpark-ml/reference/latest/api/cortex/snowflake.cortex.complete)
+

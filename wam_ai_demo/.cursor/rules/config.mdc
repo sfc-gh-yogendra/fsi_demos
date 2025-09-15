@@ -1,0 +1,86 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Configuration Rules
+
+Centralized, parameterized configuration to enable deterministic rebuilds and easy scenario tuning.
+
+## Connection & Runtime
+- Use Snowpark Session via `connections.toml` with connection name from config. Default connection name is allowed.
+  - Docs: Creating a Session with connections.toml
+  - The Session MUST be created with: key `"connection_name"` → `<your_connection>`.
+
+## Database, Warehouses, Stages
+- Database: `WAM_AI_DEMO`
+- Warehouse prefix: `WAM_AI_` (e.g., `WAM_AI_BUILD_WH`, `WAM_AI_CORTEX_WH`)
+- Stage for PDFs: `@WAM_AI_DEMO.RAW.CLIENT_DOCS`
+
+## Parameterization Keys (examples)
+- Volumes and windows
+  - `num_advisors = 5`
+  - `clients_per_advisor = 25`
+  - `accounts_per_client = 2`
+  - `min_holdings_per_account = 12`
+  - `max_holdings_per_account = 18`
+  - `history_start_date`
+  - `history_end_date`
+  - `unstructured_docs_per_ticker = 15`
+  - `comms_per_client = 50`
+
+- Market integration
+  - `use_hybrid_market_data = true`
+  - `market_real_portfolios = ["US MegaTech Focus", "US Financials Core"]`
+  - `region_mix = { us: 0.8, eu: 0.2 }`
+
+- Golden tickers (easy to change)
+  - `golden_tickers = ["AAPL","MSFT","NVDA","JPM","V","SAP"]`
+
+- Real data integration
+  - `use_real_assets_csv = true`
+  - `real_assets_csv_path = './data/real_assets.csv'`
+  - `extract_real_assets = false`  # Set to true to extract from Marketplace
+  - `use_real_market_data = true`
+  - `real_market_data_csv_path = './data/real_market_data.csv'`
+  - `extract_real_market_data = false`  # Set to true to extract from Marketplace
+
+- Cortex complete (per-corpus overrides)
+  - `model_by_corpus = { communications: "llama3.1-70b", research: "llama3.1-70b", regulatory: "llama3.1-70b" }`
+  - `temperature_by_corpus = { communications: 0.7, research: 0.4, regulatory: 0.4 }`
+  - Allow overrides per scenario when needed.
+
+- Search Services
+  - `search_target_lag = '5 minutes'` for all services
+
+- Build modes
+  - `mode = 'replace_all' | 'data_only' | 'semantics_and_search_only'`
+
+## Identifier Rules
+- **CRITICAL**: Do NOT use `quote_identifiers=False` with Snowpark `save_as_table()` - parameter not supported
+- When using pandas fallback with `write_pandas()`, ensure valid unquoted identifiers per Snowflake rules
+- Use SQL INSERT statements for tables with IDENTITY columns
+
+## Connection Patterns (Proven)
+```python
+# ✅ CORRECT: Default connection handling
+def create_session(connection_name: str = None) -> Session:
+    if connection_name is None:
+        connection_name = config.get_connection_name()
+    
+    if connection_name:
+        session = Session.builder.config("connection_name", connection_name).create()
+    else:
+        # Use default connection from ~/.snowflake/connections.toml
+        session = Session.builder.create()
+    return session
+```
+
+## Build Mode Implementation (Tested)
+- ✅ **replace_all**: Full database setup + data + AI services (working)
+- ✅ **test-mode**: Reduced volumes for faster testing (working)
+- ✅ **Early return**: Extraction commands exit immediately after completion (working)
+
+## References
+- Connections via TOML: https://docs.snowflake.com/en/developer-guide/snowpark/python/creating-session#connect-by-using-the-connections-toml-file
+- Cortex complete: https://docs.snowflake.com/en/developer-guide/snowpark-ml/reference/latest/api/cortex/snowflake.cortex.complete
+

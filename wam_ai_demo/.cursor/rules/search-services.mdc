@@ -1,0 +1,240 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Cortex Search Services Rules
+
+## Services and ATTRIBUTES (Phase 1)
+- `COMMUNICATIONS_SEARCH` on content column of communications text
+  - ATTRIBUTES: `CLIENT_ID, ADVISOR_ID, TIMESTAMP, CHANNEL`
+  - TARGET_LAG: '5 minutes'
+- `RESEARCH_SEARCH`
+  - ATTRIBUTES: `TICKER, DOCUMENT_TYPE, PUBLISH_DATE, SOURCE`
+  - TARGET_LAG: '5 minutes'
+- `REGULATORY_SEARCH`
+  - ATTRIBUTES: `REGULATOR, RULE_ID, PUBLISH_DATE, TITLE`
+  - TARGET_LAG: '5 minutes'
+
+## Quality
+- Maintain a curated "golden" subset for the golden tickers to guarantee strong answers.
+- Validate each service with `SEARCH_PREVIEW` smoke tests.
+
+## Correct Syntax Format (CRITICAL)
+
+**Service Creation Pattern:**
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE <service_name>
+    ON <content_column>
+    ATTRIBUTES <attribute1>, <attribute2>, <attribute3>
+    WAREHOUSE = <warehouse_name>
+    TARGET_LAG = '<time_period>'
+    AS 
+    SELECT 
+        <id_column>,
+        <title_column> AS <title_alias>,
+        <content_column> AS <content_alias>,
+        <attribute_columns>
+    FROM <corpus_table>
+```
+
+**Critical Requirements:**
+- **ATTRIBUTES must match SELECT columns**: If SELECT has `TITLE`, ATTRIBUTES must include `TITLE`
+- **ON content_column**: Specify the searchable content column
+- **WAREHOUSE is mandatory**: Use dedicated warehouse or `CURRENT_WAREHOUSE()`
+- **AS SELECT pattern**: Complete SELECT with proper column aliases
+- **TARGET_LAG considerations**: Use '5 minutes' for demos (faster refresh)
+
+## Complete Working Examples
+
+### COMMUNICATIONS_SEARCH Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH
+    ON CONTENT
+    ATTRIBUTES CLIENT_ID, ADVISOR_ID, TIMESTAMP, CHANNEL
+    WAREHOUSE = WAM_AI_CORTEX_WH
+    TARGET_LAG = '5 minutes'
+    AS 
+    SELECT 
+        COMMUNICATION_ID,
+        SUBJECT AS TITLE,
+        CONTENT,
+        CLIENT_ID,
+        ADVISOR_ID,
+        TIMESTAMP,
+        CHANNEL
+    FROM WAM_AI_DEMO.CURATED.COMMUNICATIONS_CORPUS;
+```
+
+### RESEARCH_SEARCH Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE WAM_AI_DEMO.AI.RESEARCH_SEARCH
+    ON DOCUMENT_TEXT
+    ATTRIBUTES TICKER, DOCUMENT_TYPE, PUBLISH_DATE, SOURCE
+    WAREHOUSE = WAM_AI_CORTEX_WH
+    TARGET_LAG = '5 minutes'
+    AS 
+    SELECT 
+        DOCUMENT_ID,
+        DOCUMENT_TITLE AS TITLE,
+        DOCUMENT_TEXT,
+        TICKER,
+        DOCUMENT_TYPE,
+        PUBLISH_DATE,
+        SOURCE
+    FROM WAM_AI_DEMO.CURATED.RESEARCH_CORPUS;
+```
+
+### REGULATORY_SEARCH Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE WAM_AI_DEMO.AI.REGULATORY_SEARCH
+    ON CONTENT
+    ATTRIBUTES REGULATOR, RULE_ID, PUBLISH_DATE, TITLE
+    WAREHOUSE = WAM_AI_CORTEX_WH
+    TARGET_LAG = '5 minutes'
+    AS 
+    SELECT 
+        DOCUMENT_ID,
+        TITLE,
+        CONTENT,
+        REGULATOR,
+        RULE_ID,
+        PUBLISH_DATE
+    FROM WAM_AI_DEMO.CURATED.REGULATORY_CORPUS;
+```
+
+## Validation and Testing (MANDATORY)
+
+### Basic Service Validation
+```sql
+-- 1. Verify service was created
+SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
+
+-- 2. Check service details
+DESCRIBE CORTEX SEARCH SERVICE WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH;
+```
+
+### Search Testing Pattern
+```sql
+-- Basic functionality test
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH',
+    '{"query": "portfolio performance", "limit": 1}'
+);
+
+-- Domain-specific test
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'WAM_AI_DEMO.AI.RESEARCH_SEARCH',
+    '{"query": "ESG sustainability", "limit": 3}'
+);
+
+-- Filter test (if attributes support filtering)
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'WAM_AI_DEMO.AI.RESEARCH_SEARCH',
+    '{"query": "earnings", "filter": {"TICKER": "AAPL"}, "limit": 2}'
+);
+```
+
+## Validation Checklist
+- [ ] Search service created without errors
+- [ ] `SHOW CORTEX SEARCH SERVICES` lists the service
+- [ ] Basic search returns results
+- [ ] Domain-specific searches return relevant content
+- [ ] Attribute filtering works (if applicable)
+- [ ] No performance issues during search
+
+## Common Error Messages and Solutions
+
+**"Missing option WAREHOUSE"**
+- **Cause**: WAREHOUSE parameter not specified
+- **Solution**: Add `WAREHOUSE = <warehouse_name>` to service definition
+
+**"invalid identifier"**
+- **Cause**: ATTRIBUTES don't match SELECT column aliases
+- **Solution**: Ensure ATTRIBUTES exactly match SELECT column names/aliases
+
+**"table not found"**
+- **Cause**: Corpus table doesn't exist or not accessible
+- **Solution**: Verify corpus table exists with `SELECT COUNT(*) FROM {corpus_table}`
+
+**"syntax error"**
+- **Cause**: Incorrect AS SELECT pattern or column mappings
+- **Solution**: Verify AS SELECT syntax and column aliases
+
+## Service Configuration for Agents
+
+For Snowflake Intelligence agent setup:
+- **Service Name**: Full path (e.g., `WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH`)
+- **ID Column**: `COMMUNICATION_ID` / `DOCUMENT_ID`
+- **Title Column**: Use alias from SELECT (e.g., `TITLE`)
+- **Description**: Clear guidance on when agents should use each service
+
+### Agent Tool Descriptions
+```yaml
+# For advisor_ai agent
+search_communications:
+  Service: WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH
+  ID Column: COMMUNICATION_ID
+  Title Column: TITLE
+  Description: "Search client communications including emails, call transcripts, and meeting notes. Use for finding client preferences, concerns, or past discussions."
+
+search_research:
+  Service: WAM_AI_DEMO.AI.RESEARCH_SEARCH
+  ID Column: DOCUMENT_ID
+  Title Column: TITLE
+  Description: "Search research reports and analyst coverage. Use for finding investment opinions, ratings, and market commentary on specific securities."
+
+search_regulatory:
+  Service: WAM_AI_DEMO.AI.REGULATORY_SEARCH
+  ID Column: DOCUMENT_ID
+  Title Column: TITLE
+  Description: "Search regulatory documents and compliance rules. Use for finding specific regulations, compliance requirements, or policy guidance."
+```
+
+## Performance and Quality Issues
+
+**Search returns no results:**
+- Check if corpus table has content: `SELECT COUNT(*) FROM {corpus_table}`
+- Verify DOCUMENT_TEXT column has searchable text
+- Test with simpler queries first
+
+**Poor search relevance:**
+- Ensure content columns contain clean, readable text
+- Check for encoding or formatting issues in text
+- Verify document language matches expected content
+
+**Slow search performance:**
+- Consider TARGET_LAG settings (5 minutes for demos, 1 day for production)
+- Monitor warehouse size during service creation
+- Split large document collections into multiple services
+
+## Implementation Learnings (Proven)
+
+### Corpus Table Validation Pattern
+```python
+# ✅ CORRECT: Table-specific content column detection
+def verify_corpus_table(session: Session, table_name: str):
+    if 'COMMUNICATIONS_CORPUS' in table_name:
+        content_column = 'CONTENT'
+    elif 'RESEARCH_CORPUS' in table_name:
+        content_column = 'DOCUMENT_TEXT'
+    else:
+        content_column = 'CONTENT'
+    
+    # Check content quality
+    result = session.sql(f"""
+        SELECT COUNT(*) as total_docs,
+               COUNT(CASE WHEN LENGTH({content_column}) > 100 THEN 1 END) as docs_with_content
+        FROM {table_name}
+    """).collect()
+```
+
+### Search Service Testing Results (Validated)
+- ✅ **COMMUNICATIONS_SEARCH**: Works with CONTENT column, supports channel filtering
+- ✅ **RESEARCH_SEARCH**: Works with DOCUMENT_TEXT column, supports ticker filtering (AAPL, MSFT tested)
+- ✅ **REGULATORY_SEARCH**: Works with CONTENT column, supports regulator filtering (FINRA tested)
+
+### Content Quality Requirements
+- **Minimum content length**: 100 characters for meaningful search results
+- **SQL escaping**: Always escape single quotes in content before SQL INSERT
+- **Column consistency**: COMMUNICATIONS uses CONTENT, RESEARCH uses DOCUMENT_TEXT
+
