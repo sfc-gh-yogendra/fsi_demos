@@ -6,13 +6,13 @@ This script orchestrates the creation of the complete SAM demo environment,
 including structured data generation, unstructured content creation, and AI component setup.
 
 Usage:
-    python main.py [--connection-name CONNECTION] [--scenarios SCENARIO_LIST] [--scope SCOPE]
+    python main.py --connection-name CONNECTION [--scenarios SCENARIO_LIST] [--scope SCOPE]
 
 Examples:
-    python main.py                                    # Build everything with defaults
-    python main.py --scenarios portfolio_copilot     # Build foundation + portfolio scenario
-    python main.py --scope data                      # Build only data layer
-    python main.py --connection-name my_demo         # Use specific connection
+    python main.py --connection-name my_demo                              # Build everything 
+    python main.py --connection-name my_demo --scenarios portfolio_copilot # Build foundation + portfolio scenario
+    python main.py --connection-name my_demo --scope data                # Build only data layer
+    python main.py --connection-name my_demo --test-mode                 # Use test mode
 """
 
 import argparse
@@ -36,8 +36,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--connection-name',
         type=str,
-        default=DEFAULT_CONNECTION_NAME,
-        help=f'Snowflake connection name from ~/.snowflake/connections.toml (default: {DEFAULT_CONNECTION_NAME})'
+        required=True,
+        help='Snowflake connection name from ~/.snowflake/connections.toml (required)'
     )
     
     parser.add_argument(
@@ -106,11 +106,14 @@ def create_snowpark_session(connection_name: str):
         
     except ImportError:
         print("❌ Error: snowflake-snowpark-python not installed")
-        print("Install with: pip install snowflake-snowpark-python")
+        print("Install with: pip install -r requirements.txt")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Connection failed: {str(e)}")
-        print(f"Ensure ~/.snowflake/connections.toml is configured with connection '{connection_name}'")
+        print(f"Please ensure:")
+        print(f"  1. Connection '{connection_name}' exists in ~/.snowflake/connections.toml")
+        print(f"  2. Connection details (account, user, password, etc.) are correct")
+        print(f"  3. Your Snowflake account has the required permissions")
         sys.exit(1)
 
 def create_demo_warehouses(session):

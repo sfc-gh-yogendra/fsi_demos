@@ -1,0 +1,221 @@
+---
+alwaysApply: false
+description: Generic structured data generation rules and contracts for financial demos
+globs:
+- "python/generate_structured.py"
+- "docs/data_model.md"
+- ".cursor/generic_rules/data-generation.mdc"
+---
+
+# Generic Data Generation Rules (Contracts + Tokens)
+
+## Purpose
+This rule provides patterns for generating structured data (dimensions and facts) for financial services demos. It defines table contracts, generation patterns, and validation procedures that ensure data quality and consistency.
+
+## Prerequisites
+- Snowflake account with appropriate permissions
+- Python environment with snowflake-snowpark-python
+- Optional: Real asset data CSV for authentic securities
+
+## Token Catalogue
+### Database/Schema Tokens
+- {DB}: target database name
+- {CURATED_SCHEMA}: schema for dimension and fact tables
+- {RAW_SCHEMA}: schema for staging/temporary data
+
+### Data Source Tokens
+- {USE_REAL_ASSETS}: boolean flag for using real asset data
+- {REAL_ASSETS_CSV_PATH}: path to real assets CSV file
+- {MARKETPLACE_DATABASE}: Snowflake Marketplace database for real data
+- {OPENFIGI_SCHEMA}: schema containing OpenFIGI data
+
+### Volume and History Tokens
+- {YEARS_OF_HISTORY}: number of years of historical data to generate
+- {SYNTHETIC_TRANSACTION_MONTHS}: months of transaction history
+- {SECURITIES_COUNT}: target number of securities by asset class
+- {PORTFOLIOS_COUNT}: number of portfolios to generate
+- {RNG_SEED}: random seed for deterministic generation
+
+### Business Configuration Tokens
+- {BASE_CURRENCY}: base currency for reporting (e.g., USD)
+- {TRADING_CALENDAR}: trading calendar type (e.g., NYSE, LSE)
+- {PORTFOLIO_STRATEGIES}: list of investment strategies
+- {ASSET_CLASSES}: list of asset classes to include
+
+## Core Table Contracts (Required Columns)
+```sql
+-- DIM_ISSUER (min)
+IssuerID BIGINT, LegalName VARCHAR, CountryOfIncorporation CHAR(2), GICS_Sector VARCHAR
+
+-- DIM_SECURITY (min)
+SecurityID BIGINT, IssuerID BIGINT, Ticker VARCHAR, FIGI VARCHAR, Description VARCHAR, AssetClass VARCHAR
+
+-- DIM_PORTFOLIO (min)
+PortfolioID BIGINT, PortfolioCode VARCHAR, PortfolioName VARCHAR, Strategy VARCHAR, BaseCurrency CHAR(3)
+
+-- FACT_TRANSACTION (min)
+TransactionID BIGINT, TransactionDate DATE, PortfolioID BIGINT, SecurityID BIGINT,
+TransactionType VARCHAR, TradeDate DATE, Quantity DECIMAL(38,10), Price DECIMAL(38,10)
+
+-- FACT_POSITION_DAILY_ABOR (min)
+HoldingDate DATE, PortfolioID BIGINT, SecurityID BIGINT, Quantity DECIMAL(38,10), MarketValue_Base DECIMAL(38,10), PortfolioWeight DECIMAL(18,12)
+
+-- FACT_MARKETDATA_TIMESERIES (min)
+PriceDate DATE, SecurityID BIGINT, Price_Close DECIMAL(38,10), Volume BIGINT
+```
+
+## Table Relationships and Dependencies
+```
+DIM_ISSUER (no dependencies)
+    ↓
+DIM_SECURITY (depends on IssuerID)
+    ↓
+DIM_PORTFOLIO (no dependencies) ←→ FACT_TRANSACTION (depends on PortfolioID, SecurityID)
+    ↓                                    ↓
+DIM_BENCHMARK (no dependencies)    FACT_POSITION_DAILY_ABOR (derived from transactions)
+                                        ↓
+                                   FACT_MARKETDATA_TIMESERIES (depends on SecurityID)
+```
+
+## Build Order (Critical)
+1. **DIM_ISSUER** - Build first (no dependencies)
+2. **DIM_SECURITY** - Requires issuers
+3. **DIM_PORTFOLIO** - Can be parallel with securities
+4. **DIM_BENCHMARK** - Can be parallel with portfolios
+5. **FACT_TRANSACTION** - Requires portfolios and securities
+6. **FACT_POSITION_DAILY_ABOR** - Derived from transactions
+7. **FACT_MARKETDATA_TIMESERIES** - Requires securities
+8. **Additional fact tables** - As needed (ESG scores, fundamentals, etc.)
+
+## Key Design Principles
+
+### Real Identifier Principle
+- **Rule**: Never deduplicate by ticker - tickers are NOT unique globally
+- **Example**: 'CMC' represents 5 different companies across markets
+- **Implementation**: Always use FIGI for exact security identification
+- **Pattern**: Keep all securities that meet quality criteria, regardless of ticker duplication
+
+### Transaction-Based Holdings
+- **Principle**: Holdings are derived from transaction history (audit trail)
+- **Benefits**: Complete reconciliation, corporate action handling, compliance
+- **Pattern**: Generate realistic transaction patterns, then aggregate to positions
+
+### Scenario Coherence
+- **Requirement**: Demo scenarios need specific entities in data
+- **Solution**: Accept `entities.must_include` list with FIGIs/tickers
+- **Implementation**: Prioritize these entities in portfolio allocation and document generation
+
+## Implementation Patterns
+
+### Python Function Pattern
+```python
+def build_dimension_table(session: Session, table_name: str, config: dict):
+    """Build dimension table using configuration."""
+    
+    if config.get('USE_REAL_ASSETS') and table_name in ['DIM_SECURITY', 'DIM_ISSUER']:
+        # Load from real assets
+        real_assets_df = load_real_assets(config['REAL_ASSETS_CSV_PATH'])
+        build_from_real_data(session, table_name, real_assets_df, config)
+    else:
+        # Generate synthetic data
+        build_synthetic_data(session, table_name, config)
+    
+    # Validate results
+    validate_table_quality(session, table_name, config)
+```
+
+### SQL Generation Pattern
+```sql
+-- For large-scale data generation, use SQL
+CREATE OR REPLACE TABLE {DB}.{CURATED_SCHEMA}.FACT_POSITION_DAILY_ABOR AS
+WITH transaction_aggregation AS (
+    SELECT 
+        PortfolioID,
+        SecurityID,
+        SUM(CASE WHEN TransactionType = 'BUY' THEN Quantity 
+                 WHEN TransactionType = 'SELL' THEN -Quantity 
+                 ELSE 0 END) as NetQuantity,
+        AVG(Price) as AvgPrice
+    FROM {DB}.{CURATED_SCHEMA}.FACT_TRANSACTION
+    WHERE SettleDate <= CURRENT_DATE
+    GROUP BY PortfolioID, SecurityID
+),
+position_dates AS (
+    SELECT DISTINCT HoldingDate
+    FROM (
+        SELECT LAST_DAY(DATEADD(month, seq4(), 
+               DATEADD(year, -{YEARS_OF_HISTORY}, CURRENT_DATE()))) as HoldingDate
+        FROM TABLE(GENERATOR(rowcount => {12 * YEARS_OF_HISTORY}))
+    )
+)
+SELECT 
+    pd.HoldingDate,
+    ta.PortfolioID,
+    ta.SecurityID,
+    ta.NetQuantity as Quantity,
+    ta.NetQuantity * ta.AvgPrice as MarketValue_Base,
+    ta.NetQuantity * ta.AvgPrice / 
+        SUM(ta.NetQuantity * ta.AvgPrice) OVER (PARTITION BY pd.HoldingDate, ta.PortfolioID) 
+        as PortfolioWeight
+FROM position_dates pd
+CROSS JOIN transaction_aggregation ta
+WHERE ta.NetQuantity > 0;
+```
+
+## Data Quality Validations
+
+### Required Validations
+```python
+def validate_data_quality(session: Session, config: dict):
+    """Comprehensive data quality validation."""
+    
+    validations = {
+        'portfolio_weights': """
+            SELECT PortfolioID, SUM(PortfolioWeight) as TotalWeight
+            FROM {DB}.{CURATED_SCHEMA}.FACT_POSITION_DAILY_ABOR
+            WHERE HoldingDate = (SELECT MAX(HoldingDate) FROM {DB}.{CURATED_SCHEMA}.FACT_POSITION_DAILY_ABOR)
+            GROUP BY PortfolioID
+            HAVING ABS(SUM(PortfolioWeight) - 1.0) > 0.001
+        """,
+        'security_identifiers': """
+            SELECT COUNT(*) as missing_identifiers
+            FROM {DB}.{CURATED_SCHEMA}.DIM_SECURITY
+            WHERE Ticker IS NULL OR FIGI IS NULL
+        """,
+        'transaction_balance': """
+            SELECT COUNT(*) as imbalances
+            FROM (transaction vs position reconciliation query)
+            WHERE ABS(transaction_quantity - position_quantity) > 0.01
+        """
+    }
+    
+    for check_name, query in validations.items():
+        result = session.sql(query.format(**config)).collect()
+        assert len(result) == 0, f"Data quality check failed: {check_name}"
+```
+
+## Common Issues and Solutions
+
+### Issue: Foreign key constraint violations
+- **Cause**: Building tables out of order
+- **Solution**: Follow the build order strictly
+
+### Issue: Portfolio weights don't sum to 100%
+- **Cause**: Rounding errors or incomplete position data
+- **Solution**: Use window functions for weight calculation
+
+### Issue: Duplicate securities with same ticker
+- **Cause**: This is correct behavior - tickers aren't unique
+- **Solution**: Use FIGI for exact identification
+
+## Definition of Done (Data Generation)
+- [ ] All dimension tables created with required columns
+- [ ] All fact tables populated with consistent data
+- [ ] Portfolio weights sum to 100% (±0.1% tolerance)
+- [ ] Transaction history reconciles to positions
+- [ ] Security identifiers (Ticker and FIGI) populated
+- [ ] Foreign key relationships valid
+- [ ] No negative prices or quantities
+- [ ] Date ranges consistent across tables
+- [ ] Required entities from `must_include` present in data
+

@@ -90,7 +90,8 @@ Specific Guidelines:
 - For risk overview, tabulate per entity/UBO counts by doc_type and risk_signal.
 - For external communications (RFIs, SARs): USE document templates from document_templates_search tool, populate required variables with case-specific information.
 - When drafting formal letters: Search for appropriate template by type (RFI, SAR) and customize with specific details from your analysis.
-- For professional reports: USE pdf_report_generator to create downloadable PDF reports from your analysis content. Format content in markdown with headers, tables, and key findings.
+- For professional reports: When using pdf_report_generator, format content in markdown with headers, tables, and key findings.
+- For PDF generation responses: ALWAYS format as "📄 [Document Name](download_url) - Brief description of the generated report."
 - Provide an audit summary on request listing tools used, searches performed, and documents cited.
 - Present findings in clear, structured format suitable for compliance reporting.
 - ALWAYS end every response with the demo data disclaimer above.
@@ -107,7 +108,7 @@ Specific Logic:
 - For adverse media screening: USE news_adverse_media_search to find negative news, regulatory investigations, and political exposure
 - For internal compliance records: USE compliance_docs_search for PEP/sanctions screening and internal memos
 - For external communications: USE document_templates_search to find appropriate templates (RFI, SAR), then customize with case findings
-- For professional PDF reports: USE pdf_report_generator with markdown-formatted analysis content and appropriate report type (AML/CREDIT)
+- For professional PDF reports: USE pdf_report_generator ONLY when user explicitly requests PDF generation with phrases like "generate a PDF", "create a report", "export as PDF", or "provide a downloadable report". DO NOT use for normal analysis requests like "Compile an EDD on [entity]", "Analyze [entity]", "Assess [entity]", or "Review [entity]". When used, format analysis content in markdown and use appropriate report type (AML/CREDIT).
 - For comprehensive EDD: COMBINE all tools in sequence - risk analysis first, then document searches, then templates/PDFs for outputs
 - Always cross-reference structured data findings with document evidence for complete analysis
 ```
@@ -178,7 +179,8 @@ Specific Guidelines:
 - Summaries of business plan sections should be crisp with document/page references.
 - For external communications (credit memos, decline letters): USE document templates from document_templates_search tool, populate required variables with case-specific analysis.
 - When preparing committee presentations: Search for credit memo template and customize with specific ratio analysis and policy assessments.
-- For professional reports: USE pdf_report_generator to create downloadable PDF reports from your credit analysis. Format content in markdown with financial ratios, policy compliance, and recommendations.
+- For professional reports: When using pdf_report_generator, format content in markdown with financial ratios, policy compliance, and recommendations.
+- For PDF generation responses: ALWAYS format as "📄 [Document Name](download_url) - Brief description of the generated report."
 - Present analysis in structured format suitable for credit committee review.
 - Include specific recommendations for risk mitigation when policy breaches are identified.
 - ALWAYS end every response with the demo data disclaimer above.
@@ -195,7 +197,7 @@ Specific Logic:
 - For document summaries: use loan_documents_search filtered by applicant name and document section.
 - For external communications: use document_templates_search to find credit memo or decline letter templates, then populate with analysis.
 - For committee presentations: search for credit memo template and customize with ratio analysis, policy compliance, and recommendations.
-- For professional PDF reports: use pdf_report_generator with markdown-formatted credit analysis and CREDIT report type.
+- For professional PDF reports: use pdf_report_generator ONLY when user explicitly requests PDF generation with phrases like "generate a PDF", "create a report", "export as PDF", or "provide a downloadable report". DO NOT use for normal analysis requests like "Compile an EDD on [entity]", "Analyze [entity]", "Assess [entity]", or "Review [entity]". When used, format credit analysis in markdown and use CREDIT report type.
 - Always provide specific policy references and effective dates for threshold breaches.
 ```
 
@@ -243,15 +245,21 @@ Configure these thresholds in your agent knowledge or ensure they're available i
    ```
    "Compile an EDD on Global Trade Ventures S.A.: risk profile, structure, UBOs, adverse media."
    ```
-   **Expected**: Should start with risk analysis, then find onboarding document, identify Marcus Weber and Elena Rossi as UBOs, and locate Elena Rossi adverse media from both compliance docs and news sources.
+   **Expected**: Should start with risk analysis, then find onboarding document, identify Marcus Weber and Elena Rossi as UBOs, and locate Elena Rossi adverse media from both compliance docs and news sources. Should NOT generate PDF (no explicit PDF request).
 
-3. **Adverse Media Screening Test**:
+3. **PDF Generation Test**:
+   ```
+   "Generate a PDF report for Global Trade Ventures S.A. EDD analysis."
+   ```
+   **Expected**: Should perform complete EDD analysis AND generate PDF with formatted response: "📄 [AML Report - Global Trade Ventures S.A.](url) - Professional aml analysis report generated successfully."
+
+4. **Adverse Media Screening Test**:
    ```
    "Screen for any adverse media or regulatory investigations involving Italian Transport Ministry connections."
    ```
    **Expected**: Should search both compliance documents and news/research for political scandals and regulatory content.
 
-4. **Document Analysis Test**:
+5. **Document Analysis Test**:
    ```
    "Summarise the specific allegations in any adverse media documents related to Italian political exposure."
    ```

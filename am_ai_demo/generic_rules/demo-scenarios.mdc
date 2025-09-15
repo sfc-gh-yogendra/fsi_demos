@@ -1,0 +1,343 @@
+---
+alwaysApply: false
+description: Generic demo scenarios rules with scenario YAML spec driving builds
+globs:
+- "docs/demo_scenarios.md"
+- "python/main.py"
+- ".cursor/generic_rules/demo-scenarios.mdc"
+---
+
+# Generic Demo Scenarios Rules
+
+## Purpose
+This rule provides patterns for defining demo scenarios that can be built programmatically. It defines scenario specifications, validation patterns, and orchestration approaches that ensure coherent, impressive demonstrations for financial services prospects.
+
+## Prerequisites
+- Understanding of target demo audience and use cases
+- Knowledge of required agent capabilities
+- Clear demo flow and expected outcomes
+
+## Scenario Specification Format
+
+### Complete Scenario YAML
+```yaml
+# scenarios/{scenario_name}.yaml
+name: {scenario_name}
+display_name: "{Human Readable Scenario Name}"
+description: "{Business context and value proposition}"
+org_profile: profiles/{org}.yaml
+scope: all  # all|data|semantic|search|agents
+
+datasets:
+  use_real_assets: true
+  test_mode: true
+
+entities:
+  must_include:
+    figi: ['BBGxxxx']
+    tickers: ['AAPL']
+
+themes:
+  keywords: ['AI and cloud','technology sector opportunities']
+
+documents:
+  types: ['broker_research','earnings_transcripts','press_releases']
+
+agents:
+  - id: portfolio_copilot
+    tools:
+      analyst_views: ['ANALYST_VIEW']
+      search_services: ['BROKER_RESEARCH','EARNINGS_TRANSCRIPTS','PRESS_RELEASES']
+```
+
+## Demo Flow Definition
+
+### Step Structure
+```yaml
+demo_flow:
+  target_audience: "{e.g., Portfolio Managers, Risk Officers}"
+  duration_minutes: {15-20}
+  
+  steps:
+    - id: step1
+      title: "{Step Title}"
+      query: "{Natural language query}"
+      expected_response:
+        format: {table|chart|narrative}
+        key_points:
+          - "{Expected insight 1}"
+          - "{Expected insight 2}"
+        flags: # Optional
+          - type: concentration_warning
+            threshold: {FLAG_CONCENTRATION_WARNING}
+      talking_points:
+        - "{Business value point}"
+        - "{Technical differentiator}"
+      
+    - id: step2
+      title: "{Step Title}"
+      query: "{Query that builds on step1}"
+      depends_on: step1  # Requires entities from step1
+      expected_response:
+        # ...
+```
+
+### Coherence Requirements
+```yaml
+coherence:
+  entity_dependencies:
+    step2:
+      requires_from: step1
+      entity_type: securities
+      min_overlap: 3  # At least 3 securities from step1 must appear
+  
+  theme_consistency:
+    global_themes: ["AI transformation", "efficiency gains"]
+    step_themes:
+      step1: ["portfolio analysis", "risk management"]
+      step2: ["investment research", "market insights"]
+```
+
+## Implementation Patterns
+
+### Scenario Builder Pattern
+```python
+def build_scenario(scenario_spec: dict, config: dict):
+    """Build complete scenario from specification."""
+    
+    # Load and merge configurations
+    org_config = load_org_profile(scenario_spec['org_profile'])
+    scenario_config = merge_configs(org_config, scenario_spec, config)
+    
+    # Build based on scope
+    if scenario_config['scope'] in ['all', 'data']:
+        build_scenario_data(scenario_config)
+    
+    if scenario_config['scope'] in ['all', 'semantic']:
+        build_semantic_components(scenario_config)
+    
+    if scenario_config['scope'] in ['all', 'search']:
+        build_search_services(scenario_config)
+    
+    if scenario_config['scope'] in ['all', 'agents']:
+        configure_agents(scenario_config)
+    
+    # Validate scenario readiness
+    validate_scenario(scenario_config)
+```
+
+### Data Coherence Pattern
+```python
+def ensure_data_coherence(scenario_config: dict):
+    """Ensure data supports demo flow requirements."""
+    
+    # Extract must-include entities
+    must_include_entities = scenario_config['entities']['must_include']
+    
+    # Prioritize in portfolio holdings
+    prioritize_holdings(must_include_entities)
+    
+    # Ensure document coverage
+    for doc_type in scenario_config['documents']['types']:
+        ensure_document_coverage(doc_type, must_include_entities)
+    
+    # Inject themes into content
+    for theme in scenario_config['themes']['keywords']:
+        inject_theme_into_documents(theme, must_include_entities)
+```
+
+### Demo Flow Validation
+```python
+def validate_demo_flow(scenario_config: dict, session: Session):
+    """Validate each step of the demo flow."""
+    
+    context = {}  # Accumulate context between steps
+    
+    for step in scenario_config['demo_flow']['steps']:
+        # Check dependencies
+        if 'depends_on' in step:
+            required_entities = context.get(step['depends_on'], {})
+            validate_step_dependencies(step, required_entities)
+        
+        # Simulate query
+        results = simulate_query(session, step['query'], scenario_config)
+        
+        # Validate expected response
+        validate_response(results, step['expected_response'])
+        
+        # Store context for dependent steps
+        context[step['id']] = extract_entities(results)
+    
+    print(f"✅ Demo flow validated: {len(scenario_config['demo_flow']['steps'])} steps")
+```
+
+## Scenario Types and Patterns
+
+### Portfolio Analysis Scenario
+```yaml
+scenarios:
+  portfolio_analysis:
+    focus: quantitative_analytics
+    primary_tools: [cortex_analyst]
+    secondary_tools: [cortex_search]
+    key_metrics: [holdings, performance, risk]
+    impressive_moments:
+      - "Instant portfolio decomposition"
+      - "Real-time risk calculations"
+      - "Integrated research insights"
+```
+
+### Research & Intelligence Scenario
+```yaml
+scenarios:
+  research_intelligence:
+    focus: qualitative_insights
+    primary_tools: [cortex_search]
+    secondary_tools: [cortex_analyst]
+    document_types: [broker_research, earnings_transcripts]
+    impressive_moments:
+      - "Comprehensive research synthesis"
+      - "Cross-document insights"
+      - "Thematic trend identification"
+```
+
+### Compliance & ESG Scenario
+```yaml
+scenarios:
+  compliance_esg:
+    focus: risk_and_governance
+    primary_tools: [cortex_analyst, cortex_search]
+    document_types: [policy_docs, ngo_reports]
+    key_checks: [concentration_limits, esg_ratings]
+    impressive_moments:
+      - "Automated compliance monitoring"
+      - "ESG controversy detection"
+      - "Policy violation flagging"
+```
+
+## Organization Profile Pattern
+
+```yaml
+# profiles/{org}.yaml
+organization:
+  name: "{Company Name}"
+  type: "{asset_manager|hedge_fund|pension_fund|wealth_manager}"
+  region: "{UK|EU|US}"
+  
+database:
+  name: {DB}
+  schemas:
+    ai: {AI_SCHEMA}
+    curated: {CURATED_SCHEMA}
+    raw: {RAW_SCHEMA}
+
+warehouses:
+  execution: {WAREHOUSE_EXEC}
+  cortex: {WAREHOUSE_CORTEX}
+
+naming:
+  service_prefix: {SERVICE_PREFIX}
+  view_suffix: "_VIEW"
+
+business_rules:
+  language: {LANGUAGE}
+  currency: {CURRENCY}
+  thresholds:
+    concentration_warning: {FLAG_CONCENTRATION_WARNING}
+    breach: {FLAG_BREACH}
+    esg_minimum: {FLAG_ESG_MINIMUM}
+    
+localization:
+  date_format: "DD/MM/YYYY"
+  number_format: "1,234.56"
+  terminology:
+    portfolio: "portfolio"  # vs "fund", "mandate", etc.
+    security: "security"    # vs "instrument", "asset", etc.
+```
+
+## Validation Patterns
+
+### Pre-Demo Validation
+```python
+def validate_scenario_readiness(scenario_name: str, config: dict):
+    """Comprehensive scenario validation before demo."""
+    
+    validations = {
+        'data_exists': validate_data_tables,
+        'semantic_views_work': validate_semantic_views,
+        'search_returns_results': validate_search_services,
+        'agents_configured': validate_agent_configs,
+        'demo_flow_coherent': validate_demo_flow,
+        'performance_acceptable': validate_performance
+    }
+    
+    results = {}
+    for check_name, check_func in validations.items():
+        try:
+            check_func(scenario_name, config)
+            results[check_name] = "✅ PASS"
+        except Exception as e:
+            results[check_name] = f"❌ FAIL: {str(e)}"
+    
+    return results
+```
+
+### Performance Validation
+```python
+def validate_performance(scenario_name: str, config: dict):
+    """Ensure demo performs well."""
+    
+    benchmarks = {
+        'semantic_view_query': 2.0,  # seconds
+        'search_query': 1.5,         # seconds
+        'agent_response': 5.0        # seconds
+    }
+    
+    for query_type, max_time in benchmarks.items():
+        elapsed = measure_query_time(query_type, config)
+        assert elapsed < max_time, f"{query_type} too slow: {elapsed}s"
+```
+
+## Common Issues and Solutions
+
+### Issue: Demo flow breaks between steps
+- **Cause**: Required entities not present in data
+- **Solution**: Use `entities.must_include` to guarantee presence
+- **Check**: Validate entity dependencies between steps
+
+### Issue: Search results not relevant
+- **Cause**: Missing theme keywords in documents
+- **Solution**: Use `themes.keywords` in document generation
+- **Check**: Validate document content includes themes
+
+### Issue: Agent gives generic responses
+- **Cause**: Insufficient context or poor prompts
+- **Solution**: Enhance agent instructions with specific examples
+- **Check**: Test with exact demo queries
+
+## Definition of Done (Demo Scenario)
+
+### Data Layer
+- [ ] All required tables exist with data
+- [ ] Must-include entities present in holdings
+- [ ] Document corpus covers required entities
+- [ ] Theme keywords appear in documents
+
+### AI Components  
+- [ ] Semantic views return data for test queries
+- [ ] Search services return relevant results
+- [ ] Agents configured with appropriate tools
+- [ ] Response formatting matches expectations
+
+### Demo Flow
+- [ ] Each step returns expected results
+- [ ] Dependencies between steps work correctly
+- [ ] Impressive moments clearly visible
+- [ ] Performance acceptable for live demo
+
+### Business Validation
+- [ ] Talking points align with value proposition
+- [ ] Technical differentiators highlighted
+- [ ] Industry terminology correct
+- [ ] Compliance/risk flags working
+

@@ -162,11 +162,15 @@ class GlacierDemoOrchestrator:
             logger.info("Creating stages for PDF generation...")
             self.session.sql('''
                 CREATE STAGE IF NOT EXISTS BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE
+                ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+                DIRECTORY = (ENABLE = TRUE)
                 COMMENT = 'Stage for storing AI-generated PDF reports'
             ''').collect()
             
             self.session.sql('''
                 CREATE STAGE IF NOT EXISTS BANK_AI_DEMO.AGENT_FRAMEWORK.PROC_STAGE
+                ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+                DIRECTORY = (ENABLE = TRUE)
                 COMMENT = 'Stage for storing Python stored procedures code'
             ''').collect()
             
@@ -297,7 +301,9 @@ class GlacierDemoOrchestrator:
                         f"SELECT GET_PRESIGNED_URL('@BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE', '{pdf_filename}') AS url"
                     ).collect()[0]['URL']
                     
-                    return f"PDF report generated successfully: {pdf_filename}. Download URL: {presigned_url}"
+                    # Format response with document name as a clickable link
+                    report_display_name = f"{report_type.upper()} Report - {entity_name}"
+                    return f"📄 [{report_display_name}]({presigned_url}) - Professional {report_type.lower()} analysis report generated successfully."
             
             logger.info("PDF generation stored procedure created successfully")
             

@@ -1,0 +1,204 @@
+---
+alwaysApply: false
+description: Generic agent configuration rules with tokenised profiles and scenarios for financial demos
+globs:
+- "python/build_ai.py"
+- "docs/agents_setup.md"
+- ".cursor/generic_rules/agent-config.mdc"
+---
+
+# Generic Agent Configuration Rules (Tokenised)
+
+## Purpose
+This rule provides patterns for configuring Snowflake Intelligence agents across financial services demos. It defines agent archetypes, tool configurations, and validation patterns that can be parameterized for specific implementations.
+
+## Token Catalogue
+### Database/Schema Tokens
+- {DB}: target database name
+- {AI_SCHEMA}: AI schema containing semantic views and search services
+- {CURATED_SCHEMA}: curated schema containing dimension/fact tables and document corpora
+- {RAW_SCHEMA}: raw schema containing generation prompts and raw documents
+
+### Naming Convention Tokens
+- {SERVICE_PREFIX}: search service name prefix (usually company/demo code)
+- {ANALYST_VIEW}: semantic view name for Cortex Analyst
+- {WAREHOUSE_EXEC}: execution warehouse for data generation
+- {WAREHOUSE_CORTEX}: dedicated warehouse for Cortex Search services
+
+### Business Configuration Tokens
+- {LANGUAGE}: response language (e.g., en-GB, en-US)
+- {CURRENCY}: base currency for reporting (e.g., USD, GBP, EUR)
+- {FLAG_CONCENTRATION_WARNING}: threshold percentage for concentration warnings (e.g., 6.5)
+- {FLAG_BREACH}: threshold percentage for compliance breaches (e.g., 7.0)
+- {FLAG_ESG_MINIMUM}: minimum ESG rating for ESG-labelled portfolios (e.g., BBB)
+
+### Agent Personalisation Tokens
+- {COMPANY_NAME}: name of the financial institution (e.g., "Snowcrest Asset Management")
+- {AGENT_ROLE}: specific role description (e.g., "Senior Portfolio Manager", "ESG Analyst")
+- {TARGET_USERS}: target user description (e.g., "portfolio managers", "compliance officers")
+
+## Agent Archetypes
+
+### Multi-Tool Hybrid Agent (Cortex Analyst + Search)
+Used for comprehensive analysis combining quantitative data and qualitative research.
+
+### Search-Only Agent  
+Used for document research and content synthesis without quantitative analytics.
+
+### Analytics-Only Agent
+Used for pure quantitative analysis with charts and calculations.
+
+### Multiple Cortex Analyst Agent
+Used for cross-domain quantitative analysis with multiple semantic views.
+
+## Agent Configuration Templates
+
+```yaml
+Agent Name: {agent_name}
+Display Name: {Agent Display Name}
+Description: {Business context and capabilities}
+Orchestration Model: Claude 4
+
+Tools:
+  - {analyst_tool} (Cortex Analyst)
+    - Semantic View: {DB}.{AI_SCHEMA}.{ANALYST_VIEW}
+    - Description: "Use for quantitative analytics and charts"
+  - search_{doc_type} (Cortex Search)
+    - Service: {DB}.{AI_SCHEMA}.{SERVICE_PREFIX}_{DOC_TYPE}
+    - ID Column: DOCUMENT_ID
+    - Title Column: DOCUMENT_TITLE
+    - Description: "Search {doc_type} corpus for qualitative context"
+```
+
+## Planning Instructions (Insert into Agent)
+```
+1. Detect sub-questions and classify as QUANTITATIVE or QUALITATIVE
+2. QUANTITATIVE → use {analyst_tool} on {ANALYST_VIEW}
+3. QUALITATIVE → use appropriate search_{doc_type}
+4. Mixed → run analytics first, then search using analytics context
+5. Synthesize results in a single answer with clear tables for numbers
+```
+
+## Response Instructions (Tokenised thresholds and locale)
+```
+1. You are {Agent Role}, serving {target_users}
+2. Tone: professional; language: {LANGUAGE}
+3. Present numerical results in tables for lists/comparisons
+4. Flagging:
+   - Positions >{FLAG_CONCENTRATION_WARNING}% → "⚠️ CONCENTRATION WARNING"
+   - Breaches >{FLAG_BREACH}% → "🚨 BREACH"
+5. Cite documents with type and date
+6. Title all charts clearly
+7. If data missing: state limits and offer alternatives
+```
+
+## Tool Smoke Tests (Tokenised)
+```python
+# Cortex Analyst test
+session.sql(f"""
+    SELECT * FROM SEMANTIC_VIEW(
+        {DB}.{AI_SCHEMA}.{ANALYST_VIEW}
+        METRICS TOTAL_MARKET_VALUE
+        DIMENSIONS PORTFOLIONAME
+    ) LIMIT 5
+""").collect()
+
+# Cortex Search test
+session.sql(f"""
+    SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+        '{DB}.{AI_SCHEMA}.{SERVICE_PREFIX}_{DOC_TYPE}',
+        '{{"query": "test", "limit": 1}}'
+    )
+""").collect()
+```
+
+## Profiles and Scenarios
+
+```yaml
+# profiles/acme.yaml
+org:
+  db: ACME_DEMO
+  schemas: { ai: AI, curated: CURATED, raw: RAW }
+warehouses: { exec: ACME_EXEC_WH, cortex: ACME_CORTEX_WH }
+service_prefix: ACME
+language: en-GB
+thresholds: { concentration_warning: 6.5, breach: 7.0 }
+
+# scenarios/portfolio_copilot.yaml
+name: portfolio_copilot
+org_profile: profiles/acme.yaml
+agents:
+  - id: portfolio_copilot
+    tools:
+      analyst_views: ['ANALYST_VIEW']
+      search_services: ['BROKER_RESEARCH','EARNINGS_TRANSCRIPTS','PRESS_RELEASES']
+```
+
+## Implementation Patterns
+
+### Python Function Pattern
+```python
+def create_{agent_name}_agent(session: Session, config: dict):
+    """Create agent using configuration tokens."""
+    
+    # Validate required AI components exist
+    validate_semantic_views(session, config['analyst_views'])
+    validate_search_services(session, config['search_services'])
+    
+    # Agent configuration would be created here
+    # This is typically done through Snowflake UI or API
+    print(f"Agent {config['agent_name']} configuration ready")
+```
+
+### Validation Pattern
+```python
+def validate_agent_functionality(session: Session, agent_config: dict):
+    """Validate agent components are working."""
+    
+    # Test Cortex Analyst tools
+    for view in agent_config.get('analyst_views', []):
+        test_query = f"""
+            SELECT * FROM SEMANTIC_VIEW(
+                {agent_config['DB']}.{agent_config['AI_SCHEMA']}.{view}
+                METRICS TOTAL_MARKET_VALUE
+                DIMENSIONS PORTFOLIONAME
+            ) LIMIT 5
+        """
+        result = session.sql(test_query).collect()
+        assert len(result) > 0, f"Semantic view {view} not returning data"
+    
+    # Test Cortex Search tools
+    for service in agent_config.get('search_services', []):
+        test_query = f"""
+            SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+                '{agent_config['DB']}.{agent_config['AI_SCHEMA']}.{agent_config['SERVICE_PREFIX']}_{service}',
+                '{{"query": "test", "limit": 1}}'
+            )
+        """
+        result = session.sql(test_query).collect()
+        assert result[0][0] is not None, f"Search service {service} not returning results"
+```
+
+## Common Issues and Solutions
+
+### Issue: Agent not responding to queries
+- **Solution**: Verify all AI components exist using validation patterns above
+- **Check**: Warehouse permissions and AI feature enablement
+
+### Issue: Incorrect flagging or thresholds
+- **Solution**: Ensure threshold tokens are numeric values in agent instructions
+- **Check**: Agent response instructions include exact flagging logic
+
+### Issue: Search results not relevant
+- **Solution**: Verify search service has appropriate content
+- **Check**: Document corpus contains expected entities and themes
+
+## Definition of Done (Agent Configuration)
+- [ ] All required tokens defined in project configuration
+- [ ] Semantic view(s) respond to test queries with data
+- [ ] Search service(s) return relevant results for test queries
+- [ ] Agent responds to mixed queries with proper tool selection
+- [ ] Flagging thresholds work correctly in responses
+- [ ] Business language and tone match configuration
+- [ ] Performance acceptable for demo scenarios
+

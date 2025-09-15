@@ -69,6 +69,7 @@ This document provides complete demo scenarios for presenting the Glacier First 
 - Corporate structure summary from onboarding documents
 - Beneficial ownership identification: Marcus Weber (60%) and Elena Rossi (40%)
 - PEP flag for Elena Rossi (daughter of former Italian Transport Minister)
+- Recent transaction activity: €5M deposit received (flagged for PEP source-of-funds review)
 - Adverse media screening from both compliance docs and news sources
 - Cross-source validation and risk assessment summary
 

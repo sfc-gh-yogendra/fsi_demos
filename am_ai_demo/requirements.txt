@@ -1,0 +1,10 @@
+# SAM Demo - Python Dependencies
+# Generated from codebase analysis - only includes libraries not part of standard Python distribution
+
+# Snowflake connectivity and data processing
+# Used for: Database connections, Snowpark DataFrames, Cortex functions, pandas integration
+# The [pandas] extra ensures compatible pandas version is installed automatically
+snowflake-snowpark-python[pandas]>=1.11.0
+
+# Installation command:
+# pip install -r requirements.txt

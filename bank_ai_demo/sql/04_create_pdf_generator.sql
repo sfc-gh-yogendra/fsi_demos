@@ -5,14 +5,22 @@ USE DATABASE BANK_AI_DEMO;
 USE WAREHOUSE BANK_AI_DEMO_COMPUTE_WH;
 
 -- =============================================================================
--- STAGES FOR PDF GENERATION
+-- SECURE STAGES FOR PDF GENERATION
 -- =============================================================================
 
+-- Note: Both stages include enterprise security features:
+-- - ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE'): Server-side encryption for data at rest
+-- - DIRECTORY = (ENABLE = TRUE): Directory table for file tracking and metadata
+
 CREATE STAGE IF NOT EXISTS BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE
-COMMENT = 'Stage for storing AI-generated PDF reports';
+ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+DIRECTORY = (ENABLE = TRUE)
+COMMENT = 'Secure stage for storing AI-generated PDF reports with encryption';
 
 CREATE STAGE IF NOT EXISTS BANK_AI_DEMO.AGENT_FRAMEWORK.PROC_STAGE
-COMMENT = 'Stage for storing Python stored procedures code';
+ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+DIRECTORY = (ENABLE = TRUE)
+COMMENT = 'Secure stage for storing Python stored procedures code with encryption';
 
 -- =============================================================================
 -- PDF GENERATION STORED PROCEDURE (CUSTOM TOOL)

@@ -478,6 +478,25 @@ class DemoDataGenerator:
         """Generate transactions for a specific customer."""
         transactions = []
         
+        # Add specific €5M deposit for Global Trade Ventures (demo scenario requirement)
+        if customer['CUSTOMER_ID'] == 'CUST_GTV_SA_001':
+            # Recent €5M deposit that will trigger EDD review
+            large_deposit = {
+                'TRANSACTION_ID': f'TXN_{customer["CUSTOMER_ID"]}_LARGE_001',
+                'CUSTOMER_ID': customer['CUSTOMER_ID'],
+                'TRANSACTION_DATE': datetime.now() - timedelta(days=7),  # Recent deposit
+                'AMOUNT': 5000000.00,  # €5M
+                'CURRENCY': 'EUR',
+                'TRANSACTION_TYPE': 'CREDIT',
+                'COUNTERPARTY_NAME': 'International Trade Finance Ltd',
+                'COUNTERPARTY_COUNTRY': 'CHE',  # Switzerland
+                'DESCRIPTION': 'Large trade settlement - source of funds verification required',
+                'RISK_SCORE': 0.85,  # High risk score for large PEP-related deposit
+                'SUSPICIOUS_ACTIVITY_FLAG': True,  # Flagged for review
+                'CREATED_DATE': datetime.now()
+            }
+            transactions.append(large_deposit)
+        
         # Generate transaction count based on customer risk
         if customer['RISK_RATING'] == 'HIGH':
             transaction_count = random.randint(80, 120)

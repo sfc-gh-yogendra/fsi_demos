@@ -1,0 +1,233 @@
+---
+alwaysApply: false
+description: Generic Cortex Search rules with tokenised services and attribute bundles
+globs:
+- "python/build_ai.py"
+- "python/generate_unstructured.py"
+- ".cursor/generic_rules/cortex-search.mdc"
+---
+
+# Generic Cortex Search Creation Rules (Tokenised)
+
+## Purpose
+This rule provides patterns for creating Cortex Search services for document search across financial services demos. It defines attribute profiles, creation patterns, and validation procedures that ensure reliable document search functionality.
+
+## Prerequisites
+- Document corpus tables exist in {CURATED_SCHEMA}
+- Corpus tables follow one of the defined contracts (security-level, issuer-level, global)
+- Cortex Search feature enabled in Snowflake account
+- Appropriate warehouse permissions
+
+## Token Catalogue
+### Database/Schema Tokens
+- {DB}: target database name
+- {AI_SCHEMA}: schema for AI components (search services)
+- {CURATED_SCHEMA}: schema containing document corpus tables
+- {RAW_SCHEMA}: schema containing raw documents
+
+### Service Configuration Tokens
+- {SERVICE_NAME}: full search service name (usually {SERVICE_PREFIX}_{DOC_TYPE})
+- {SERVICE_PREFIX}: service name prefix (company/demo code)
+- {DOC_TYPE}: document type identifier (e.g., BROKER_RESEARCH, NGO_REPORTS)
+- {DOC_TYPE_UPPER}: uppercase version of document type
+- {CORPUS_TABLE}: name of the corpus table (usually {DOC_TYPE}_CORPUS)
+
+### Performance Tokens
+- {WAREHOUSE_CORTEX}: dedicated warehouse for Cortex Search
+- {TARGET_LAG}: refresh lag for search index (e.g., '5 minutes' for demos, '1 day' for production)
+
+## Attribute Bundles
+- {ATTR_PROFILE_SECURITY}: DOCUMENT_TITLE, SecurityID, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+- {ATTR_PROFILE_ISSUER}: DOCUMENT_TITLE, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+- {ATTR_PROFILE_GLOBAL}: DOCUMENT_TITLE, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+
+## Service Creation Pattern
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {DB}.{AI_SCHEMA}.{SERVICE_NAME}
+  ON DOCUMENT_TEXT
+  ATTRIBUTES {ATTRIBUTES}
+  WAREHOUSE = {WAREHOUSE_CORTEX}
+  TARGET_LAG = '{TARGET_LAG}'
+  AS 
+  SELECT 
+    DOCUMENT_ID,
+    DOCUMENT_TITLE,
+    DOCUMENT_TEXT,
+    {ATTRIBUTE_COLUMNS}
+  FROM {DB}.{CURATED_SCHEMA}.{CORPUS_TABLE};
+```
+
+## Validation
+```sql
+SHOW CORTEX SEARCH SERVICES IN {DB}.{AI_SCHEMA};
+DESCRIBE CORTEX SEARCH SERVICE {DB}.{AI_SCHEMA}.{SERVICE_NAME};
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+  '{DB}.{AI_SCHEMA}.{SERVICE_NAME}',
+  '{"query": "test", "limit": 1}'
+);
+```
+
+## Document Type Contracts
+
+### Security-Level Documents
+- **Contract**: Links to specific securities and their issuers
+- **Required Columns**: DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TEXT, SecurityID (NOT NULL), IssuerID (NOT NULL), DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+- **Use Cases**: Broker research, earnings transcripts, press releases
+- **Attribute Bundle**: {ATTR_PROFILE_SECURITY}
+
+### Issuer-Level Documents  
+- **Contract**: Links to issuers/companies only
+- **Required Columns**: DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TEXT, IssuerID (NOT NULL), DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+- **Use Cases**: NGO reports, engagement notes, ESG assessments
+- **Attribute Bundle**: {ATTR_PROFILE_ISSUER}
+
+### Global Documents
+- **Contract**: No specific entity linkage
+- **Required Columns**: DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TEXT, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+- **Use Cases**: Policy documents, templates, philosophy statements
+- **Attribute Bundle**: {ATTR_PROFILE_GLOBAL}
+
+## Implementation Patterns
+
+### Python Function Pattern
+```python
+def create_search_service(session: Session, doc_type: str, config: dict):
+    """Create Cortex Search service for a document type."""
+    
+    # Determine attribute bundle based on linkage level
+    linkage_level = config['DOCUMENT_TYPES'][doc_type]['linkage_level']
+    if linkage_level == 'security':
+        attributes = config['ATTR_PROFILE_SECURITY']
+    elif linkage_level == 'issuer':
+        attributes = config['ATTR_PROFILE_ISSUER']
+    else:
+        attributes = config['ATTR_PROFILE_GLOBAL']
+    
+    service_sql = f"""
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config['DB']}.{config['AI_SCHEMA']}.{config['SERVICE_PREFIX']}_{doc_type.upper()}
+            ON DOCUMENT_TEXT
+            ATTRIBUTES {attributes}
+            WAREHOUSE = {config['WAREHOUSE_CORTEX']}
+            TARGET_LAG = '{config['TARGET_LAG']}'
+            AS 
+            SELECT 
+                DOCUMENT_ID,
+                DOCUMENT_TITLE,
+                DOCUMENT_TEXT,
+                {get_attribute_columns(linkage_level)}
+            FROM {config['DB']}.{config['CURATED_SCHEMA']}.{doc_type.upper()}_CORPUS
+    """
+    
+    session.sql(service_sql).collect()
+```
+
+### Validation Pattern
+```python
+def validate_search_service(session: Session, service_name: str, config: dict):
+    """Validate search service is functioning correctly."""
+    
+    # Check service exists
+    services = session.sql(f"SHOW CORTEX SEARCH SERVICES IN {config['DB']}.{config['AI_SCHEMA']}").collect()
+    service_exists = any(s['name'] == service_name for s in services)
+    assert service_exists, f"Search service {service_name} not found"
+    
+    # Test search functionality
+    test_result = session.sql(f"""
+        SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+            '{config['DB']}.{config['AI_SCHEMA']}.{service_name}',
+            '{{"query": "test", "limit": 1}}'
+        )
+    """).collect()
+    
+    assert test_result[0][0] is not None, f"Search service {service_name} returned no results"
+```
+
+## Common Issues and Solutions
+
+### Issue: "Missing option WAREHOUSE"
+- **Cause**: WAREHOUSE parameter not specified
+- **Solution**: Ensure {WAREHOUSE_CORTEX} token is defined and included in CREATE statement
+
+### Issue: "invalid identifier" 
+- **Cause**: Attributes don't match SELECT columns
+- **Solution**: Verify attribute bundle matches the columns in SELECT statement
+
+### Issue: No search results returned
+- **Cause**: Empty corpus table or poor quality content
+- **Solution**: Verify corpus table has content with `SELECT COUNT(*) FROM {CORPUS_TABLE}`
+
+## Extensibility for New Document Types
+1. Define document type in configuration with `linkage_level` (security/issuer/global)
+2. Create corpus table following appropriate contract
+3. Choose attribute bundle based on linkage level
+4. Use standard naming: `{SERVICE_PREFIX}_{DOC_TYPE}`
+5. Add to agent tool configuration as needed
+
+## Complete Examples
+
+### Security-Level Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {DB}.{AI_SCHEMA}.{SERVICE_PREFIX}_BROKER_RESEARCH
+  ON DOCUMENT_TEXT
+  ATTRIBUTES DOCUMENT_TITLE, SecurityID, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+  WAREHOUSE = {WAREHOUSE_CORTEX}
+  TARGET_LAG = '5 minutes'
+  AS
+  SELECT 
+    DOCUMENT_ID, 
+    DOCUMENT_TITLE, 
+    DOCUMENT_TEXT,
+    SecurityID, 
+    IssuerID, 
+    DOCUMENT_TYPE, 
+    PUBLISH_DATE, 
+    LANGUAGE
+  FROM {DB}.{CURATED_SCHEMA}.BROKER_RESEARCH_CORPUS;
+```
+
+### Issuer-Level Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {DB}.{AI_SCHEMA}.{SERVICE_PREFIX}_NGO_REPORTS
+  ON DOCUMENT_TEXT
+  ATTRIBUTES DOCUMENT_TITLE, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+  WAREHOUSE = {WAREHOUSE_CORTEX}
+  TARGET_LAG = '5 minutes'
+  AS
+  SELECT 
+    DOCUMENT_ID, 
+    DOCUMENT_TITLE, 
+    DOCUMENT_TEXT,
+    IssuerID, 
+    DOCUMENT_TYPE, 
+    PUBLISH_DATE, 
+    LANGUAGE
+  FROM {DB}.{CURATED_SCHEMA}.NGO_REPORTS_CORPUS;
+```
+
+### Global Service
+```sql
+CREATE OR REPLACE CORTEX SEARCH SERVICE {DB}.{AI_SCHEMA}.{SERVICE_PREFIX}_POLICY_DOCS
+  ON DOCUMENT_TEXT
+  ATTRIBUTES DOCUMENT_TITLE, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+  WAREHOUSE = {WAREHOUSE_CORTEX}
+  TARGET_LAG = '1 day'
+  AS
+  SELECT 
+    DOCUMENT_ID, 
+    DOCUMENT_TITLE, 
+    DOCUMENT_TEXT,
+    DOCUMENT_TYPE, 
+    PUBLISH_DATE, 
+    LANGUAGE
+  FROM {DB}.{CURATED_SCHEMA}.POLICY_DOCS_CORPUS;
+```
+
+## Definition of Done (Search Service)
+- [ ] Corpus table exists with appropriate contract columns
+- [ ] Search service created without errors
+- [ ] Service appears in SHOW CORTEX SEARCH SERVICES
+- [ ] SEARCH_PREVIEW returns at least one result
+- [ ] Relevant content returned for business queries
+- [ ] Performance acceptable (< 2 seconds for demos)
+- [ ] Agent configuration updated if applicable
+
