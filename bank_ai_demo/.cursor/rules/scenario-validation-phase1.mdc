@@ -1,0 +1,580 @@
+---
+description: Scenario validation and multi-step reasoning examples for Glacier First Bank Phase 1
+alwaysApply: false
+---
+# Glacier First Bank — Phase 1 Scenario Validation
+
+## Overview
+This rule defines detailed scenario validation with multi-step reasoning examples, contradictory evidence synthesis patterns, and cross-domain intelligence demonstrations for Phase 1 scenarios.
+
+## Scenario A: AML/KYC Enhanced Due Diligence
+
+### Agent: `aml_officer_agent`
+### Entity: Global Trade Ventures S.A.
+
+### Turn 1: Initial EDD Investigation
+**User Input**: 
+```
+"Compile an EDD on Global Trade Ventures S.A.: structure, UBOs, adverse media."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Entity Identification**: Query `compliance_docs_search_svc` for onboarding documents
+2. **UBO Extraction**: Parse articles of incorporation to identify beneficial owners
+3. **Adverse Media Screening**: Search entity name and each UBO across adverse media corpus
+4. **Risk Assessment**: Correlate findings with regulatory status and risk signals
+5. **Synthesis**: Combine structured and unstructured evidence into coherent EDD report
+
+**Expected Response Format**:
+```
+**Enhanced Due Diligence Report: Global Trade Ventures S.A.**
+
+**Corporate Structure**: 
+- Incorporated: Luxembourg, 15 March 2019
+- Business: International trade and logistics coordination
+- Regulatory Status: Under review by Luxembourg financial authorities
+
+**Ultimate Beneficial Owners**:
+- Marcus Weber (60% ownership): German national, no PEP/sanctions matches
+- Elena Rossi (40% ownership): Italian national, identified as PEP due to father's former position as Italian Transport Minister (2015-2018)
+
+**Adverse Media Findings**:
+- **Entity**: No direct adverse media identified
+- **Marcus Weber**: Clean screening across all sources
+- **Elena Rossi**: 
+  - Reuters article (12 June 2024): Allegations of preferential contract awards to family-connected businesses during father's ministerial tenure
+  - Risk Signal: Medium (allegations unproven, no sanctions imposed)
+
+**Source Citations**: 
+- Onboarding documents: GTV_Articles_Inc_20190315.pdf
+- Adverse media: Reuters_IT_Political_Scandal_20240612.txt
+- PEP screening: Dow Jones Risk & Compliance via Snowflake Marketplace (updated 1 Sept 2024)
+```
+
+**Validation Criteria**:
+- [ ] Agent correctly identifies both UBOs from onboarding documents
+- [ ] Adverse media search covers entity + each UBO individually
+- [ ] PEP status correctly identified with specific details
+- [ ] All sources cited with document IDs and dates
+- [ ] Risk assessment is objective and evidence-based
+
+### Turn 2: Deep Dive on Allegations
+**User Input**: 
+```
+"Summarise the specific allegations in Reuters_IT_Political_Scandal_20240612.txt and assess relevance to our relationship."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Document Retrieval**: Locate specific news article in `compliance_docs_search_svc`
+2. **Content Analysis**: Extract key allegations, dates, parties involved
+3. **Relevance Assessment**: Evaluate connection to current customer relationship
+4. **Risk Quantification**: Assess potential reputational/regulatory impact
+5. **Evidence Synthesis**: Provide balanced summary with supporting quotes
+
+**Expected Response Format**:
+```
+**Allegation Summary - Reuters Article (12 June 2024)**:
+
+**Key Allegations**:
+- Elena Rossi's family business "Rossi Logistics Solutions" received €2.3M in government contracts during her father's tenure as Transport Minister (2015-2018)
+- Contracts awarded without competitive tender process, according to opposition parliamentary inquiry
+- Investigation launched by Italian Anti-Corruption Authority in May 2024, ongoing
+
+**Specific Quotes**:
+- "The timing and scale of contracts awarded to businesses with family connections raises serious questions about procurement integrity" - Parliamentary Inquiry Report
+- "We categorically deny any impropriety. All contracts were awarded based on technical merit and competitive pricing" - Rossi family spokesperson
+
+**Relevance Assessment**:
+- **Direct Impact**: Allegations predate GTV incorporation (2019) and relate to different business entity
+- **Indirect Risk**: Potential regulatory scrutiny of Elena Rossi's business activities could affect GTV operations
+- **Reputational Risk**: Association with ongoing corruption investigation may impact GTV's business relationships
+
+**Risk Rating**: Medium - allegations are serious but unproven, relate to separate entity, and predate customer relationship
+```
+
+**Validation Criteria**:
+- [ ] Agent retrieves and quotes specific content from identified document
+- [ ] Allegations are summarized objectively without speculation
+- [ ] Relevance assessment considers temporal and entity separation
+- [ ] Risk rating is justified with clear reasoning
+- [ ] Direct quotes included with proper attribution
+
+### Turn 3: Regulatory Communication
+**User Input**: 
+```
+"Draft an RFI requesting source-of-funds clarification for their initial €5M deposit, referencing our EDD findings."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Context Integration**: Reference previous EDD findings and risk assessment
+2. **Regulatory Compliance**: Ensure RFI meets EU/EBA standards for customer due diligence
+3. **Professional Tone**: Balance thoroughness with customer relationship management
+4. **Specific Requirements**: Request documentation addressing identified risk factors
+5. **Documentation Trail**: Create auditable record of enhanced due diligence process
+
+**Expected Response Format**:
+```
+**Request for Information - Global Trade Ventures S.A.**
+Date: [Current Date]
+Reference: EDD-GTV-2024-001
+
+Dear Global Trade Ventures S.A. Management,
+
+As part of our enhanced due diligence procedures and in accordance with EU Anti-Money Laundering Directive requirements, we respectfully request additional documentation regarding your initial deposit of €5,000,000 made on [date].
+
+**Required Documentation**:
+1. **Source of Funds Verification**: 
+   - Audited financial statements demonstrating the origin of deposited funds
+   - Bank statements showing fund transfers from legitimate business activities
+   - Documentation of any asset sales or business transactions generating these funds
+
+2. **Beneficial Owner Clarification**:
+   - Updated beneficial ownership structure including any recent changes
+   - Verification of Ms. Elena Rossi's current business activities and income sources
+   - Confirmation of separation between GTV and any family business interests
+
+3. **Business Activity Verification**:
+   - Detailed business plan and operational documentation
+   - Client contracts and revenue sources for international trade activities
+   - Compliance procedures for cross-border transactions
+
+This request is prompted by our standard enhanced due diligence procedures for high-risk jurisdictions and PEP-related entities. We appreciate your cooperation in providing this documentation within 10 business days.
+
+Please contact [relationship manager] with any questions regarding this request.
+
+Yours sincerely,
+[AML Compliance Officer]
+Glacier First Bank
+```
+
+**Validation Criteria**:
+- [ ] RFI references specific EDD findings appropriately
+- [ ] Professional tone maintained throughout
+- [ ] Specific documentation requests address identified risk factors
+- [ ] Regulatory compliance requirements clearly stated
+- [ ] Reasonable timeframe provided for response
+
+### Turn 4: Audit Trail Summary
+**User Input**: 
+```
+"Provide an audit summary of all steps performed with links to evidence sources."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Process Documentation**: List all analytical steps performed
+2. **Tool Usage Tracking**: Document which tools were used for each step
+3. **Source Attribution**: Provide complete list of documents accessed
+4. **Decision Rationale**: Explain reasoning for risk assessments and recommendations
+5. **Compliance Verification**: Confirm all regulatory requirements addressed
+
+**Expected Response Format**:
+```
+**EDD Audit Summary - Global Trade Ventures S.A.**
+Case Reference: EDD-GTV-2024-001
+Completion Date: [Current Date]
+
+**Investigation Steps Performed**:
+
+1. **Entity Structure Analysis**
+   - Tool Used: Cortex Search (compliance_docs_search_svc)
+   - Documents Accessed: GTV_Articles_Inc_20190315.pdf
+   - Outcome: Identified corporate structure and 2 UBOs
+
+2. **Beneficial Owner Screening**
+   - Tool Used: Cortex Search (compliance_docs_search_svc)
+   - Databases Searched: PEP lists, Sanctions lists, Adverse Media
+   - Entities Screened: Global Trade Ventures S.A., Marcus Weber, Elena Rossi
+   - Outcome: 1 PEP identified (Elena Rossi), no sanctions matches
+
+3. **Adverse Media Analysis**
+   - Tool Used: Cortex Search (compliance_docs_search_svc)
+   - Documents Found: Reuters_IT_Political_Scandal_20240612.txt
+   - Analysis: Detailed review of corruption allegations
+   - Risk Assessment: Medium risk due to ongoing investigation
+
+4. **Risk Assessment Synthesis**
+   - Tools Used: Multi-source evidence correlation
+   - Factors Considered: PEP status, adverse media, business separation, timing
+   - Final Risk Rating: Medium - enhanced monitoring required
+
+5. **Regulatory Communication**
+   - Action: RFI drafted requesting source of funds documentation
+   - Compliance Framework: EU AML Directive requirements
+   - Timeline: 10 business days response period
+
+**Evidence Sources**:
+- Primary Documents: 1 onboarding document, 1 news article
+- External Databases: Dow Jones Risk & Compliance (PEP/Sanctions)
+- Internal Records: Customer profile, transaction history
+- Regulatory References: EU AML Directive, EBA Guidelines
+
+**Compliance Verification**:
+✓ Customer due diligence requirements met
+✓ Enhanced due diligence procedures followed
+✓ PEP identification and assessment completed
+✓ Adverse media screening conducted
+✓ Risk-based approach applied
+✓ Documentation trail maintained
+
+**Next Actions**:
+- Await customer response to RFI within 10 business days
+- Escalate to senior management if documentation insufficient
+- Update customer risk rating based on RFI response
+- Schedule enhanced monitoring review in 6 months
+```
+
+**Validation Criteria**:
+- [ ] All investigation steps documented chronologically
+- [ ] Tool usage clearly attributed to each step
+- [ ] Complete source list with document identifiers
+- [ ] Risk assessment rationale clearly explained
+- [ ] Compliance requirements verification included
+- [ ] Next actions specified with timelines
+
+## Scenario B: Credit Analysis Commercial Loan Assessment
+
+### Agent: `credit_analyst_agent`
+### Entity: Innovate GmbH
+
+### Turn 1: Initial Credit Assessment
+**User Input**: 
+```
+"Analyse Innovate GmbH's credit application and highlight any policy breaches or risk factors."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Financial Data Retrieval**: Query `credit_risk_sv` for applicant financial metrics
+2. **Policy Threshold Lookup**: Search `credit_policy_search_svc` for relevant thresholds
+3. **Ratio Analysis**: Calculate and compare key financial ratios against policy limits
+4. **Risk Factor Assessment**: Evaluate concentration risk, industry factors, ESG considerations
+5. **Breach Identification**: Flag violations with severity levels and policy citations
+6. **Synthesis**: Provide comprehensive risk assessment with supporting evidence
+
+**Expected Response Format**:
+```
+**Credit Analysis Summary: Innovate GmbH**
+Application ID: INN-DE-2024-003
+Analysis Date: [Current Date]
+Requested Facility: €8,500,000 term loan
+
+**Financial Health Overview**:
+- Annual Revenue: €12,500,000 (25% YoY growth)
+- EBITDA: €1,875,000 (15% margin, consistent with sector norms)
+- Industry: Software Services (stable sector with moderate risk profile)
+
+**Policy Breach Analysis**:
+
+🚨 **BREACH - Debt Service Coverage Ratio**
+- Current DSCR: 1.15
+- Policy Minimum: 1.25 (Mid-Market Lending Policy v3.2, Section 4.1.2, effective 1 Jan 2024)
+- Severity: Breach threshold (<1.25)
+- Impact: Insufficient cash flow coverage for debt service obligations
+
+⚠️ **WARNING - Debt-to-Equity Ratio**
+- Current D/E: 3.2
+- Policy Warning: >3.0 (Mid-Market Lending Policy v3.2, Section 4.1.1)
+- Policy Breach: >3.5
+- Status: Above warning threshold but below breach level
+
+⚠️ **WARNING - Current Ratio**
+- Current Ratio: 1.18
+- Policy Warning: <1.20 (Mid-Market Lending Policy v3.2, Section 4.1.3)
+- Impact: Limited short-term liquidity buffer
+
+🚨 **BREACH - Client Concentration Risk**
+- Single Client Concentration: 72%
+- Policy Warning: >60%
+- Policy Breach: >70% (Commercial Credit Risk Policy v2.1, Section 5.3.1)
+- Major Client: TechGlobal Systems (€9M annual revenue dependency)
+
+**Additional Risk Factors**:
+- ESG Rating: B+ (acceptable but room for improvement)
+- Vendor Dependency: Shared logistics partner with other bank clients (Northern Supply Chain Ltd)
+- Market Context: Software sector facing margin pressure from inflation/interest rate impacts
+
+**Overall Risk Assessment**: HIGH
+- Multiple policy breaches requiring senior approval
+- Concentration risk poses significant repayment threat
+- Liquidity concerns may affect debt service capacity
+```
+
+**Validation Criteria**:
+- [ ] All financial ratios calculated correctly from source data
+- [ ] Policy thresholds retrieved from policy documents with exact citations
+- [ ] Severity icons (⚠️/🚨) applied correctly based on thresholds
+- [ ] Currency (EUR), dates, and policy versions included
+- [ ] Cross-domain intelligence (shared vendor) identified
+- [ ] Overall risk assessment justified by evidence
+
+### Turn 2: Historical Cohort Analysis
+**User Input**: 
+```
+"What's the 5-year default rate for Software Services companies with similar risk profiles - D/E >3.0 and client concentration >70%?"
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Cohort Definition**: Identify specific filtering criteria for historical analysis
+2. **Historical Data Query**: Use `credit_risk_sv` to filter historical loan performance
+3. **Statistical Analysis**: Calculate default rates with sample sizes and confidence intervals
+4. **Comparative Analysis**: Compare cohort performance to sector averages
+5. **Risk Quantification**: Translate historical performance into current risk assessment
+6. **Evidence Presentation**: Provide transparent methodology and data sources
+
+**Expected Response Format**:
+```
+**Historical Cohort Analysis - High-Risk Software Services**
+
+**Cohort Definition**:
+- Industry: Software Services
+- Debt-to-Equity Ratio: >3.0 at origination
+- Client Concentration: >70% at origination
+- Analysis Period: 2019-2024 (5-year performance window)
+
+**Cohort Performance Results**:
+- **Sample Size**: 23 loans meeting criteria
+- **5-Year Default Rate**: 17.4% (4 out of 23 loans defaulted)
+- **Average Loss Given Default**: 43% of outstanding principal
+- **Time to Default**: Average 28 months from origination
+
+**Comparative Analysis**:
+- **Software Services Sector Average**: 4.2% default rate (5-year)
+- **All Commercial Loans**: 3.8% default rate (5-year)
+- **Risk Premium**: Cohort default rate 4.1x higher than sector average
+
+**Key Risk Factors from Defaulted Cases**:
+1. **Client Loss Impact**: 3 out of 4 defaults triggered by major client loss
+2. **Cash Flow Deterioration**: DSCR fell below 1.0 within 18 months for all defaults
+3. **Market Downturns**: All defaults occurred during economic stress periods (2020, 2022)
+
+**Statistical Confidence**:
+- 95% Confidence Interval: 12.3% - 22.5% default rate
+- Sample size sufficient for statistical significance (p<0.05)
+
+**Risk Assessment for Innovate GmbH**:
+Based on historical data, companies with similar risk profile have significantly elevated default probability. Current application shows identical risk characteristics to historical defaulted cases.
+
+**Data Sources**: 
+- Historical loan database: 2,847 commercial loans (2019-2024)
+- Industry classification: NACE Rev.2 codes 62.01-62.09
+- Performance tracking: Monthly DSCR monitoring, annual reviews
+```
+
+**Validation Criteria**:
+- [ ] Cohort filtering criteria clearly defined and applied correctly
+- [ ] Statistical calculations accurate with appropriate sample sizes
+- [ ] Comparative analysis provides sector and portfolio benchmarks
+- [ ] Risk factors from defaulted cases provide actionable insights
+- [ ] Confidence intervals and statistical significance addressed
+- [ ] Clear connection made between historical data and current application
+
+### Turn 3: Document Analysis
+**User Input**: 
+```
+"Summarise the 'Market Strategy' section of Innovate GmbH's business plan and assess its impact on concentration risk."
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Document Retrieval**: Search `loan_documents_search_svc` for business plan documents
+2. **Section Extraction**: Locate specific 'Market Strategy' section within document
+3. **Content Analysis**: Extract key strategic initiatives and market positioning
+4. **Risk Correlation**: Assess how strategy addresses or exacerbates concentration risk
+5. **Evidence Synthesis**: Connect business strategy to financial risk factors
+6. **Forward-Looking Assessment**: Evaluate strategy credibility and execution risk
+
+**Expected Response Format**:
+```
+**Business Plan Analysis: Market Strategy Section**
+Document: Innovate_GmbH_Business_Plan_2024.pdf, Pages 15-22
+Section: Market Strategy and Client Diversification
+
+**Strategic Summary**:
+
+**Current Market Position**:
+- Dominant player in German ERP customization for manufacturing sector
+- 72% revenue dependency on TechGlobal Systems (€9M annually)
+- Strong technical reputation but limited client base diversification
+
+**Diversification Strategy (2024-2026)**:
+1. **Geographic Expansion**: Target Austrian and Swiss manufacturing companies
+   - Timeline: 6-12 months for market entry
+   - Investment Required: €1.2M in local partnerships and sales resources
+   - Revenue Target: €2M additional annual revenue by end 2025
+
+2. **Service Line Extension**: Expand from ERP to broader digital transformation
+   - New Services: Cloud migration, cybersecurity consulting, data analytics
+   - Timeline: 12-18 months for capability development
+   - Investment Required: €800K in staff training and certifications
+
+3. **Client Acquisition Plan**: Reduce TechGlobal dependency to <50% by 2026
+   - Target: 5 new clients with €500K+ annual contracts
+   - Strategy: Leverage TechGlobal case studies and referrals
+   - Risk Mitigation: 2-year contract extensions with existing clients
+
+**Concentration Risk Assessment**:
+
+**Positive Factors**:
+- Management demonstrates awareness of concentration risk
+- Specific timeline and investment commitments outlined
+- Leveraging existing client success for expansion
+
+**Risk Concerns**:
+- **Execution Risk**: Ambitious timeline may be unrealistic given current resource constraints
+- **Market Competition**: Swiss/Austrian markets have established local players
+- **Investment Timing**: €2M investment required while seeking €8.5M loan
+- **Client Retention**: No contractual guarantees for TechGlobal contract renewals beyond 2025
+
+**Impact on Credit Decision**:
+While diversification strategy is well-conceived, concentration risk remains HIGH in near term. Success depends on flawless execution and continued TechGlobal relationship. Strategy provides potential upside but insufficient immediate risk mitigation.
+
+**Recommendations**:
+- Request quarterly progress reports on client acquisition
+- Consider staged loan disbursement tied to diversification milestones
+- Require TechGlobal contract extension confirmation before approval
+```
+
+**Validation Criteria**:
+- [ ] Specific document and page references provided
+- [ ] Strategy summary accurately reflects document content
+- [ ] Risk assessment considers both positive and negative factors
+- [ ] Clear connection made between strategy and concentration risk
+- [ ] Forward-looking assessment realistic about execution challenges
+- [ ] Actionable recommendations provided for credit decision
+
+### Turn 4: Cross-Domain Risk Integration
+**User Input**: 
+```
+"Given the shared vendor relationship with Northern Supply Chain Ltd, how does this affect our overall portfolio risk exposure?"
+```
+
+**Agent Multi-Step Reasoning**:
+1. **Ecosystem Analysis**: Query `ecosystem_risk_sv` to identify all clients sharing Northern Supply Chain relationship
+2. **Portfolio Impact Assessment**: Calculate aggregate exposure through shared vendor
+3. **Risk Contagion Modeling**: Assess potential cascade effects if vendor fails
+4. **Comparative Risk Analysis**: Evaluate against portfolio concentration limits
+5. **Cross-Domain Intelligence**: Integrate AML/compliance risks with credit exposure
+6. **Mitigation Strategy**: Propose risk management actions across affected relationships
+
+**Expected Response Format**:
+```
+**Portfolio Risk Analysis: Northern Supply Chain Ltd Exposure**
+
+**Shared Vendor Impact Assessment**:
+
+**Affected Client Portfolio**:
+1. **Innovate GmbH** (Current Application)
+   - Relationship: Secondary vendor for logistics/fulfillment
+   - Dependency Level: Medium (estimated 15% of operational capacity)
+   - Credit Exposure: €8.5M (requested facility)
+
+2. **Global Trade Ventures S.A.** (Existing Customer)
+   - Relationship: Primary logistics partner
+   - Dependency Level: High (estimated 60% of logistics operations)
+   - Current Facilities: €3.2M trade finance, €1.8M working capital
+   - AML Status: Under enhanced due diligence (PEP-related)
+
+3. **EuroTech Industries** (Existing Customer)
+   - Relationship: Regional distribution partner
+   - Dependency Level: Medium (estimated 25% of distribution)
+   - Current Facilities: €12M term loan, €5M revolving credit
+
+**Portfolio Concentration Analysis**:
+- **Total Exposure**: €30.5M across 3 clients (18% of commercial portfolio)
+- **Vendor Concentration**: Above internal guideline of 15% for single vendor exposure
+- **Geographic Clustering**: All clients operate in Northern European supply chains
+- **Industry Correlation**: Manufacturing/trade sectors with similar supply chain dependencies
+
+**Risk Contagion Scenarios**:
+
+**Scenario 1: Northern Supply Chain Operational Disruption**
+- **Probability**: Medium (labor disputes ongoing, geopolitical supply chain risks)
+- **Impact Timeline**: 30-90 days for alternative vendor sourcing
+- **Client Impact**: 
+  - Global Trade Ventures: Severe (60% operations affected)
+  - EuroTech Industries: Moderate (alternative distribution available)
+  - Innovate GmbH: Low-Moderate (secondary dependency)
+
+**Scenario 2: Northern Supply Chain Insolvency**
+- **Probability**: Low-Medium (financial health monitoring required)
+- **Impact Timeline**: 6-12 months for full alternative vendor transition
+- **Potential Credit Losses**: 
+  - Stress Case: €8.5M (28% of exposure)
+  - Base Case: €3.2M (10% of exposure)
+
+**Cross-Domain Risk Integration**:
+- **AML Compliance Risk**: Global Trade Ventures under EDD may face regulatory restrictions affecting operations
+- **Reputational Risk**: Association with vendor serving entity under compliance review
+- **Operational Risk**: Shared vendor creates operational correlation beyond financial metrics
+
+**Portfolio Risk Management Recommendations**:
+
+1. **Immediate Actions**:
+   - Implement vendor health monitoring for Northern Supply Chain Ltd
+   - Request business continuity plans from all affected clients
+   - Consider staged approval for Innovate GmbH facility pending vendor assessment
+
+2. **Medium-term Risk Mitigation**:
+   - Establish 10% portfolio limit for single vendor exposure
+   - Require vendor diversification plans for clients with >50% single vendor dependency
+   - Enhanced monitoring of Northern European supply chain risks
+
+3. **Cross-Domain Coordination**:
+   - Share AML findings on Global Trade Ventures with credit risk team
+   - Coordinate enhanced monitoring across compliance and credit functions
+   - Consider relationship pricing adjustments for concentration risk premium
+
+**Overall Assessment**: 
+Portfolio concentration through Northern Supply Chain Ltd creates systemic risk requiring immediate attention. Combination of credit, operational, and compliance risks necessitates coordinated risk management approach across all affected relationships.
+```
+
+**Validation Criteria**:
+- [ ] All affected clients identified through ecosystem analysis
+- [ ] Portfolio concentration calculated accurately
+- [ ] Risk scenarios consider realistic probability and impact assessments
+- [ ] Cross-domain intelligence integrates AML and credit risk factors
+- [ ] Specific risk management recommendations provided
+- [ ] Quantified risk exposure estimates included
+- [ ] Timeline considerations for risk mitigation addressed
+
+## Cross-Domain Intelligence Validation
+
+### Shared Ecosystem Connections
+**Validation Requirements**:
+- [ ] Agents can identify shared vendors/partners across scenarios
+- [ ] Risk contagion analysis works across compliance and credit domains
+- [ ] Entity relationships are discoverable through natural language queries
+- [ ] Cross-references between scenarios provide meaningful insights
+
+### Multi-Step Reasoning Patterns
+**Validation Requirements**:
+- [ ] Agents can chain together 3-4 analytical steps coherently
+- [ ] Each step builds logically on previous findings
+- [ ] Evidence synthesis combines structured and unstructured data sources
+- [ ] Reasoning transparency allows for audit trail verification
+
+### Contradictory Evidence Synthesis
+**Validation Requirements**:
+- [ ] Agents can identify conflicting signals in data sources
+- [ ] Contradictions are acknowledged and explained rather than ignored
+- [ ] Risk assessments account for uncertainty and conflicting evidence
+- [ ] Recommendations reflect balanced view of competing factors
+
+## Performance and Quality Standards
+
+### Response Time Targets
+- **Simple queries** (single tool): <5 seconds
+- **Complex analysis** (multi-tool): <15 seconds
+- **Cross-domain intelligence**: <20 seconds
+- **Document analysis with synthesis**: <10 seconds
+
+### Content Quality Requirements
+- **Accuracy**: All calculations and data references must be correct
+- **Completeness**: All required elements included in expected format
+- **Consistency**: Tone and terminology consistent with agent instructions
+- **Auditability**: Complete source attribution and reasoning transparency
+- **Professionalism**: Business-appropriate language and presentation
+
+### Cross-Scenario Coherence
+- **Entity Consistency**: Same entities have consistent profiles across scenarios
+- **Timeline Alignment**: All dates and sequences must be logically consistent
+- **Risk Assessment Correlation**: Risk ratings should align across different analytical perspectives
+- **Relationship Accuracy**: Business relationships must be realistic and mathematically consistent

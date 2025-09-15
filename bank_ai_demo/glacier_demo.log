@@ -1,0 +1,877 @@
+2025-09-14 21:59:13,806 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 21:59:13,806 - __main__ - ERROR - Deployment failed: expected str, bytes or os.PathLike object, not NoneType
+2025-09-14 21:59:13,806 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 21:59:13,806 - __main__ - ERROR - Errors encountered:
+2025-09-14 21:59:13,807 - __main__ - ERROR -   - expected str, bytes or os.PathLike object, not NoneType
+2025-09-14 21:59:24,750 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 21:59:24,764 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 21:59:24,764 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 21:59:24,777 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 21:59:24,777 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 21:59:24,777 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 21:59:24,777 - main - INFO - Institution: Glacier First Bank
+2025-09-14 21:59:24,777 - main - INFO - Phase: 1
+2025-09-14 21:59:24,777 - main - INFO - Scale: demo
+2025-09-14 21:59:24,802 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 21:59:24,802 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 21:59:24,888 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1551aef20>: Failed to establish a new connection: [Errno 64] Host is down')': /metadata/instance?api-version=2021-02-01
+2025-09-14 21:59:24,889 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1551aee90>: Failed to establish a new connection: [Errno 64] Host is down')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 21:59:24,890 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 21:59:25,058 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x154c45d80>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 21:59:25,059 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x154c55360>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 21:59:26,098 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941059750,
+"os.name" : Darwin
+
+2025-09-14 21:59:26,237 - main - ERROR - Failed to create Snowflake session: (1304): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: 002043 (02000): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:26,237 - __main__ - ERROR - Deployment failed: (1304): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: 002043 (02000): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:26,238 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 21:59:26,238 - __main__ - ERROR - Errors encountered:
+2025-09-14 21:59:26,238 - __main__ - ERROR -   - (1304): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: 002043 (02000): 01bf0d4f-0207-8d0a-0000-c5f1018a967a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:26,238 - snowflake.snowpark.session - INFO - Closing session: 217638941059750
+2025-09-14 21:59:26,238 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 21:59:26,527 - snowflake.snowpark.session - INFO - Closed session: 217638941059750
+2025-09-14 21:59:52,652 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 21:59:52,666 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 21:59:52,666 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 21:59:52,721 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 21:59:52,722 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 21:59:52,723 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 21:59:52,723 - main - INFO - Institution: Glacier First Bank
+2025-09-14 21:59:52,723 - main - INFO - Phase: 1
+2025-09-14 21:59:52,723 - main - INFO - Scale: demo
+2025-09-14 21:59:52,741 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 21:59:52,741 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 21:59:52,794 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 21:59:52,802 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1422afdc0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 21:59:52,803 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1423383d0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 21:59:52,995 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1422afc70>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 21:59:52,995 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x133646b60>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 21:59:53,761 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941059754,
+"os.name" : Darwin
+
+2025-09-14 21:59:53,761 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 21:59:53,761 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 21:59:53,761 - __main__ - INFO - Running full deployment...
+2025-09-14 21:59:53,761 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 21:59:53,762 - main - INFO - Setting up database infrastructure...
+2025-09-14 21:59:53,880 - main - WARNING - Statement 3 failed (may be expected): (1304): 01bf0d4f-0207-8187-0000-c5f1018aab3a: 002003 (02000): 01bf0d4f-0207-8187-0000-c5f1018aab3a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:54,015 - main - WARNING - Statement 4 failed (may be expected): (1304): 01bf0d4f-0207-8309-0000-c5f1018af076: 002003 (02000): 01bf0d4f-0207-8309-0000-c5f1018af076: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:54,124 - main - WARNING - Statement 5 failed (may be expected): (1304): 01bf0d4f-0207-8c78-0000-c5f1018ad2de: 002003 (02000): 01bf0d4f-0207-8c78-0000-c5f1018ad2de: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:54,585 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d4f-0207-890c-0000-c5f1018ab84a: 002043 (02000): 01bf0d4f-0207-890c-0000-c5f1018ab84a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:54,794 - main - WARNING - Statement 24 failed (may be expected): (1304): 01bf0d4f-0207-8d0a-0000-c5f1018a9682: 002003 (02000): 01bf0d4f-0207-8d0a-0000-c5f1018a9682: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:54,877 - main - WARNING - Statement 25 failed (may be expected): (1304): 01bf0d4f-0207-8187-0000-c5f1018aab3e: 002003 (02000): 01bf0d4f-0207-8187-0000-c5f1018aab3e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:54,964 - main - WARNING - Statement 26 failed (may be expected): (1304): 01bf0d4f-0207-8309-0000-c5f1018af07a: 002003 (02000): 01bf0d4f-0207-8309-0000-c5f1018af07a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,050 - main - WARNING - Statement 27 failed (may be expected): (1304): 01bf0d4f-0207-8c78-0000-c5f1018ad2e2: 002003 (02000): 01bf0d4f-0207-8c78-0000-c5f1018ad2e2: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,150 - main - WARNING - Statement 28 failed (may be expected): (1304): 01bf0d4f-0207-890c-0000-c5f1018ab84e: 002003 (02000): 01bf0d4f-0207-890c-0000-c5f1018ab84e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,274 - main - WARNING - Statement 29 failed (may be expected): (1304): 01bf0d4f-0207-8cd7-0000-c5f1018ae2ce: 002003 (02000): 01bf0d4f-0207-8cd7-0000-c5f1018ae2ce: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,374 - main - WARNING - Statement 30 failed (may be expected): (1304): 01bf0d4f-0207-86f7-0000-c5f1018ac23a: 002003 (02000): 01bf0d4f-0207-86f7-0000-c5f1018ac23a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,453 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 21:59:55,541 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d4f-0207-8187-0000-c5f1018aab42: 002043 (02000): 01bf0d4f-0207-8187-0000-c5f1018aab42: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:55,632 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 21:59:55,716 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d4f-0207-8c78-0000-c5f1018ad2e6: 002043 (02000): 01bf0d4f-0207-8c78-0000-c5f1018ad2e6: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 21:59:55,807 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d4f-0207-890c-0000-c5f1018ab852: 002003 (02000): 01bf0d4f-0207-890c-0000-c5f1018ab852: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,895 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d4f-0207-8cd7-0000-c5f1018ae2d2: 002003 (02000): 01bf0d4f-0207-8cd7-0000-c5f1018ae2d2: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:55,978 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d4f-0207-86f7-0000-c5f1018ac23e: 002003 (02000): 01bf0d4f-0207-86f7-0000-c5f1018ac23e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 21:59:56,099 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d4f-0207-8d0a-0000-c5f1018a968a: 399118 (XX000): 01bf0d4f-0207-8d0a-0000-c5f1018a968a: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 21:59:56,324 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 21:59:56,324 - main - INFO - Database infrastructure setup completed
+2025-09-14 21:59:56,324 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 21:59:56,325 - main - INFO - Starting demo data generation...
+2025-09-14 21:59:56,325 - data_generator - INFO - Initialized data generator with Balanced demo scale - optimal for agent responses scale
+2025-09-14 21:59:56,325 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 21:59:56,325 - data_generator - INFO - Generating entities...
+2025-09-14 21:59:56,325 - main - ERROR - Demo data generation failed: 'esg_rating'
+2025-09-14 21:59:56,325 - __main__ - ERROR - Deployment failed: 'esg_rating'
+2025-09-14 21:59:56,325 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 21:59:56,325 - __main__ - ERROR - Errors encountered:
+2025-09-14 21:59:56,325 - __main__ - ERROR -   - 'esg_rating'
+2025-09-14 21:59:56,325 - snowflake.snowpark.session - INFO - Closing session: 217638941059754
+2025-09-14 21:59:56,326 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 21:59:56,558 - snowflake.snowpark.session - INFO - Closed session: 217638941059754
+2025-09-14 22:00:11,424 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:00:11,438 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:11,438 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:11,450 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:11,451 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:11,451 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:00:11,451 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:00:11,451 - main - INFO - Phase: 1
+2025-09-14 22:00:11,451 - main - INFO - Scale: demo
+2025-09-14 22:00:11,456 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:00:11,457 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:00:11,500 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x11ec935b0>: Failed to establish a new connection: [Errno 64] Host is down')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:00:11,501 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x11f6ef160>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:00:11,501 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x11f6ee0b0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:00:11,502 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x11f246470>: Failed to establish a new connection: [Errno 64] Host is down')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:00:11,503 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:00:12,363 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941075806,
+"os.name" : Darwin
+
+2025-09-14 22:00:12,363 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:00:12,363 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:00:12,363 - __main__ - INFO - Running full deployment...
+2025-09-14 22:00:12,363 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:00:12,363 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:00:12,779 - main - WARNING - Statement 3 failed (may be expected): (1304): 01bf0d50-0207-8d0a-0000-c5f1018a968e: 002003 (02000): 01bf0d50-0207-8d0a-0000-c5f1018a968e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:12,897 - main - WARNING - Statement 4 failed (may be expected): (1304): 01bf0d50-0207-890c-0000-c5f1018ab856: 002003 (02000): 01bf0d50-0207-890c-0000-c5f1018ab856: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,041 - main - WARNING - Statement 5 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2d6: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2d6: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,161 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac242: 002043 (02000): 01bf0d50-0207-86f7-0000-c5f1018ac242: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:13,272 - main - WARNING - Statement 24 failed (may be expected): (1304): 01bf0d50-0207-8187-0000-c5f1018aab4a: 002003 (02000): 01bf0d50-0207-8187-0000-c5f1018aab4a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,563 - main - WARNING - Statement 25 failed (may be expected): (1304): 01bf0d50-0207-8309-0000-c5f1018af086: 002003 (02000): 01bf0d50-0207-8309-0000-c5f1018af086: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,647 - main - WARNING - Statement 26 failed (may be expected): (1304): 01bf0d50-0207-8187-0000-c5f1018aab4e: 002003 (02000): 01bf0d50-0207-8187-0000-c5f1018aab4e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,734 - main - WARNING - Statement 27 failed (may be expected): (1304): 01bf0d50-0207-8c78-0000-c5f1018ad2ee: 002003 (02000): 01bf0d50-0207-8c78-0000-c5f1018ad2ee: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:13,942 - main - WARNING - Statement 28 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2da: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2da: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:14,040 - main - WARNING - Statement 29 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac246: 002003 (02000): 01bf0d50-0207-86f7-0000-c5f1018ac246: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:14,457 - main - WARNING - Statement 30 failed (may be expected): (1304): 01bf0d50-0207-8d0a-0000-c5f1018a9692: 002003 (02000): 01bf0d50-0207-8d0a-0000-c5f1018a9692: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:14,545 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:00:14,761 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d50-0207-8309-0000-c5f1018af08a: 002043 (02000): 01bf0d50-0207-8309-0000-c5f1018af08a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:14,870 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:00:14,975 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d50-0207-890c-0000-c5f1018ab85a: 002043 (02000): 01bf0d50-0207-890c-0000-c5f1018ab85a: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:15,109 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2de: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2de: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:15,198 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac24a: 002003 (02000): 01bf0d50-0207-86f7-0000-c5f1018ac24a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:15,619 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d50-0207-8d0a-0000-c5f1018a9696: 002003 (02000): 01bf0d50-0207-8d0a-0000-c5f1018a9696: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:15,773 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d50-0207-8187-0000-c5f1018aab56: 399118 (XX000): 01bf0d50-0207-8187-0000-c5f1018aab56: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:00:16,080 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:00:16,081 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:00:16,081 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:00:16,081 - main - INFO - Starting demo data generation...
+2025-09-14 22:00:16,081 - data_generator - INFO - Initialized data generator with Balanced demo scale - optimal for agent responses scale
+2025-09-14 22:00:16,081 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:00:16,081 - data_generator - INFO - Generating entities...
+2025-09-14 22:00:17,285 - main - ERROR - Demo data generation failed: (1304): 01bf0d50-0207-8d0a-0000-c5f1018a969a: 090105 (22000): 01bf0d50-0207-8d0a-0000-c5f1018a969a: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:17,285 - __main__ - ERROR - Deployment failed: (1304): 01bf0d50-0207-8d0a-0000-c5f1018a969a: 090105 (22000): 01bf0d50-0207-8d0a-0000-c5f1018a969a: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:17,286 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:00:17,286 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:00:17,286 - __main__ - ERROR -   - (1304): 01bf0d50-0207-8d0a-0000-c5f1018a969a: 090105 (22000): 01bf0d50-0207-8d0a-0000-c5f1018a969a: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:17,286 - snowflake.snowpark.session - INFO - Closing session: 217638941075806
+2025-09-14 22:00:17,286 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:00:17,590 - snowflake.snowpark.session - INFO - Closed session: 217638941075806
+2025-09-14 22:00:35,899 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:00:35,913 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:35,913 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:35,926 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:35,926 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:35,926 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:00:35,926 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:00:35,926 - main - INFO - Phase: 1
+2025-09-14 22:00:35,926 - main - INFO - Scale: demo
+2025-09-14 22:00:35,932 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:00:35,932 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:00:35,977 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:00:35,977 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x146ef85e0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:00:35,977 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x146ead9c0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:00:36,177 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1469630d0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:00:36,177 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x146593850>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:00:37,102 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941083186,
+"os.name" : Darwin
+
+2025-09-14 22:00:37,103 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:00:37,103 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:00:37,103 - __main__ - INFO - Setting up infrastructure only...
+2025-09-14 22:00:37,103 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:00:37,257 - main - WARNING - Statement 3 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2e6: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2e6: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,123 - main - WARNING - Statement 4 failed (may be expected): (1304): 01bf0d50-0207-890c-0000-c5f1018ab862: 002003 (02000): 01bf0d50-0207-890c-0000-c5f1018ab862: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,213 - main - WARNING - Statement 5 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2ea: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2ea: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,410 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d50-0207-8d0a-0000-c5f1018a969e: 002043 (02000): 01bf0d50-0207-8d0a-0000-c5f1018a969e: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:38,539 - main - WARNING - Statement 24 failed (may be expected): (1304): 01bf0d50-0207-8187-0000-c5f1018aab5e: 002003 (02000): 01bf0d50-0207-8187-0000-c5f1018aab5e: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,623 - main - WARNING - Statement 25 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2ee: 002003 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2ee: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,745 - main - WARNING - Statement 26 failed (may be expected): (1304): 01bf0d50-0207-890c-0000-c5f1018ab866: 002003 (02000): 01bf0d50-0207-890c-0000-c5f1018ab866: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:38,838 - main - WARNING - Statement 27 failed (may be expected): (1304): 01bf0d50-0207-8c78-0000-c5f1018ad2fa: 002003 (02000): 01bf0d50-0207-8c78-0000-c5f1018ad2fa: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:39,019 - main - WARNING - Statement 28 failed (may be expected): (1304): 01bf0d50-0207-8309-0000-c5f1018af092: 002003 (02000): 01bf0d50-0207-8309-0000-c5f1018af092: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:39,116 - main - WARNING - Statement 29 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac252: 002003 (02000): 01bf0d50-0207-86f7-0000-c5f1018ac252: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:39,240 - main - WARNING - Statement 30 failed (may be expected): (1304): 01bf0d50-0207-8187-0000-c5f1018aab62: 002003 (02000): 01bf0d50-0207-8187-0000-c5f1018aab62: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:39,368 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:00:39,542 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac256: 002043 (02000): 01bf0d50-0207-86f7-0000-c5f1018ac256: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:39,651 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:00:39,743 - main - WARNING - Statement 2 failed (may be expected): (1304): 01bf0d50-0207-8cd7-0000-c5f1018ae2f2: 002043 (02000): 01bf0d50-0207-8cd7-0000-c5f1018ae2f2: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:39,847 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d50-0207-890c-0000-c5f1018ab86a: 002003 (02000): 01bf0d50-0207-890c-0000-c5f1018ab86a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:39,933 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d50-0207-8c78-0000-c5f1018ad2fe: 002003 (02000): 01bf0d50-0207-8c78-0000-c5f1018ad2fe: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:40,067 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d50-0207-8309-0000-c5f1018af09a: 002003 (02000): 01bf0d50-0207-8309-0000-c5f1018af09a: SQL compilation error:
+Database 'BANK_AI_DEMO' does not exist or not authorized.
+2025-09-14 22:00:40,192 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d50-0207-86f7-0000-c5f1018ac25a: 399118 (XX000): 01bf0d50-0207-86f7-0000-c5f1018ac25a: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:00:40,460 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:00:40,460 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:00:40,460 - snowflake.snowpark.session - INFO - Closing session: 217638941083186
+2025-09-14 22:00:40,460 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:00:40,787 - snowflake.snowpark.session - INFO - Closed session: 217638941083186
+2025-09-14 22:00:40,787 - __main__ - INFO - 🎉 Glacier First Bank Demo deployment completed successfully!
+2025-09-14 22:00:40,788 - snowflake.snowpark.session - INFO - Closed session: 217638941083186
+2025-09-14 22:00:46,728 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:00:46,742 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:46,742 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:46,755 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:00:46,755 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:00:46,755 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:00:46,755 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:00:46,755 - main - INFO - Phase: 1
+2025-09-14 22:00:46,755 - main - INFO - Scale: demo
+2025-09-14 22:00:46,760 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:00:46,760 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:00:46,803 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:00:46,803 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13ff93940>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:00:46,803 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x14b0aee30>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:00:47,003 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x14ab465c0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:00:47,004 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x14ab576d0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:00:47,509 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941086578,
+"os.name" : Darwin
+
+2025-09-14 22:00:47,509 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:00:47,509 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:00:47,510 - __main__ - INFO - Generating demo data only...
+2025-09-14 22:00:47,510 - main - INFO - Starting demo data generation...
+2025-09-14 22:00:47,635 - main - WARNING - Could not set database context: (1304): 01bf0d50-0207-890c-0000-c5f1018ab86e: 002043 (02000): 01bf0d50-0207-890c-0000-c5f1018ab86e: SQL compilation error:
+Object does not exist, or operation cannot be performed.
+2025-09-14 22:00:47,635 - data_generator - INFO - Initialized data generator with Balanced demo scale - optimal for agent responses scale
+2025-09-14 22:00:47,635 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:00:47,635 - data_generator - INFO - Generating entities...
+2025-09-14 22:00:48,135 - main - ERROR - Demo data generation failed: (1304): 01bf0d50-0207-8187-0000-c5f1018aab6e: 090105 (22000): 01bf0d50-0207-8187-0000-c5f1018aab6e: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:48,135 - __main__ - ERROR - Deployment failed: (1304): 01bf0d50-0207-8187-0000-c5f1018aab6e: 090105 (22000): 01bf0d50-0207-8187-0000-c5f1018aab6e: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:48,136 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:00:48,136 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:00:48,136 - __main__ - ERROR -   - (1304): 01bf0d50-0207-8187-0000-c5f1018aab6e: 090105 (22000): 01bf0d50-0207-8187-0000-c5f1018aab6e: Cannot perform DROP. This session does not have a current database. Call 'USE DATABASE', or use a qualified name.
+2025-09-14 22:00:48,136 - snowflake.snowpark.session - INFO - Closing session: 217638941086578
+2025-09-14 22:00:48,136 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:00:48,403 - snowflake.snowpark.session - INFO - Closed session: 217638941086578
+2025-09-14 22:17:51,782 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:17:51,797 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:17:51,797 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:17:51,810 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:17:51,810 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:17:51,810 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:17:51,811 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:17:51,811 - main - INFO - Phase: 1
+2025-09-14 22:17:51,811 - main - INFO - Scale: demo
+2025-09-14 22:17:51,817 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:17:51,817 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:17:51,861 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x137d936a0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:17:51,861 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13b1af160>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:17:51,861 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:17:52,061 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13b1aee00>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:17:52,061 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13ad61000>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:17:52,975 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941059878,
+"os.name" : Darwin
+
+2025-09-14 22:17:52,975 - main - INFO - Creating warehouses...
+2025-09-14 22:17:53,327 - main - INFO - Warehouses created and set
+2025-09-14 22:17:53,328 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:17:53,328 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:17:53,328 - __main__ - INFO - Running full deployment...
+2025-09-14 22:17:53,328 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:17:53,328 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:17:54,771 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:17:54,938 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:17:55,399 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d61-0207-890c-0000-c5f1018ab97e: 002003 (02000): 01bf0d61-0207-890c-0000-c5f1018ab97e: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:17:55,798 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:17:55,798 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:17:55,798 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:17:55,798 - main - INFO - Starting demo data generation...
+2025-09-14 22:17:55,968 - data_generator - INFO - Initialized data generator with Balanced demo scale - optimal for agent responses scale
+2025-09-14 22:17:55,968 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:17:55,968 - data_generator - INFO - Generating entities...
+2025-09-14 22:17:58,282 - data_generator - INFO - Generated 500 entities (3 key entities)
+2025-09-14 22:17:58,283 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:17:58,697 - main - ERROR - Demo data generation failed: 'DemoDataGenerator' object has no attribute '_generate_additional_relationships'
+2025-09-14 22:17:58,697 - __main__ - ERROR - Deployment failed: 'DemoDataGenerator' object has no attribute '_generate_additional_relationships'
+2025-09-14 22:17:58,698 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:17:58,698 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:17:58,698 - __main__ - ERROR -   - 'DemoDataGenerator' object has no attribute '_generate_additional_relationships'
+2025-09-14 22:17:58,698 - snowflake.snowpark.session - INFO - Closing session: 217638941059878
+2025-09-14 22:17:58,698 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:17:58,975 - snowflake.snowpark.session - INFO - Closed session: 217638941059878
+2025-09-14 22:26:58,910 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:26:58,924 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:26:58,924 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:26:58,937 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:26:58,937 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:26:58,937 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:26:58,937 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:26:58,937 - main - INFO - Phase: 1
+2025-09-14 22:26:58,937 - main - INFO - Scale: full
+2025-09-14 22:26:58,943 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:26:58,944 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:26:58,990 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x137d621a0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:26:58,990 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1378936d0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:26:58,991 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:26:59,189 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1402af3a0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:26:59,190 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1402af820>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:27:00,158 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941048558,
+"os.name" : Darwin
+
+2025-09-14 22:27:00,159 - main - INFO - Creating warehouses...
+2025-09-14 22:27:00,483 - main - INFO - Warehouses created and set
+2025-09-14 22:27:00,484 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:27:00,484 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:27:00,484 - __main__ - INFO - Running full deployment...
+2025-09-14 22:27:00,484 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:27:00,484 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:27:01,029 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:27:01,199 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:27:01,399 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d6b-0207-8309-0000-c5f1018af1de: 002003 (02000): 01bf0d6b-0207-8309-0000-c5f1018af1de: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:01,544 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d6b-0207-8187-0000-c5f1018aad76: 002003 (02000): 01bf0d6b-0207-8187-0000-c5f1018aad76: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:01,659 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d6b-0207-890c-0000-c5f1018abb92: 002003 (02000): 01bf0d6b-0207-890c-0000-c5f1018abb92: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:01,789 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d6b-0207-86f7-0000-c5f1018ac482: 399118 (XX000): 01bf0d6b-0207-86f7-0000-c5f1018ac482: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:27:02,024 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:27:02,024 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:27:02,024 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:27:02,024 - main - INFO - Starting demo data generation...
+2025-09-14 22:27:02,265 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:27:02,265 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:27:02,265 - data_generator - INFO - Generating entities...
+2025-09-14 22:27:04,907 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:27:04,908 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:27:09,684 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:27:09,688 - data_generator - INFO - Generating customers...
+2025-09-14 22:27:12,124 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:27:12,125 - data_generator - INFO - Generating transactions...
+2025-09-14 22:27:12,433 - main - ERROR - Demo data generation failed: 'DemoDataGenerator' object has no attribute '_generate_customer_transactions'
+2025-09-14 22:27:12,434 - __main__ - ERROR - Deployment failed: 'DemoDataGenerator' object has no attribute '_generate_customer_transactions'
+2025-09-14 22:27:12,434 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:27:12,434 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:27:12,434 - __main__ - ERROR -   - 'DemoDataGenerator' object has no attribute '_generate_customer_transactions'
+2025-09-14 22:27:12,434 - snowflake.snowpark.session - INFO - Closing session: 217638941048558
+2025-09-14 22:27:12,435 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:27:12,653 - snowflake.snowpark.session - INFO - Closed session: 217638941048558
+2025-09-14 22:27:55,158 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:27:55,172 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:27:55,172 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:27:55,185 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:27:55,185 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:27:55,185 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:27:55,185 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:27:55,185 - main - INFO - Phase: 1
+2025-09-14 22:27:55,185 - main - INFO - Scale: full
+2025-09-14 22:27:55,191 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:27:55,191 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:27:55,237 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x167e908e0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:27:55,237 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x167e23280>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:27:55,238 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:27:55,437 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1682afac0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:27:55,437 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x167a91d20>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:27:56,229 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941076094,
+"os.name" : Darwin
+
+2025-09-14 22:27:56,229 - main - INFO - Creating warehouses...
+2025-09-14 22:27:56,660 - main - INFO - Warehouses created and set
+2025-09-14 22:27:56,660 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:27:56,660 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:27:56,660 - __main__ - INFO - Running full deployment...
+2025-09-14 22:27:56,660 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:27:56,660 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:27:57,262 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:27:57,459 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:27:57,663 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d6b-0207-8187-0000-c5f1018aad9a: 002003 (02000): 01bf0d6b-0207-8187-0000-c5f1018aad9a: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:57,766 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d6b-0207-8c78-0000-c5f1018ad582: 002003 (02000): 01bf0d6b-0207-8c78-0000-c5f1018ad582: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:57,848 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d6b-0207-8cd7-0000-c5f1018ae5be: 002003 (02000): 01bf0d6b-0207-8cd7-0000-c5f1018ae5be: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:27:57,966 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d6b-0207-86f7-0000-c5f1018ac496: 399118 (XX000): 01bf0d6b-0207-86f7-0000-c5f1018ac496: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:27:58,160 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:27:58,160 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:27:58,160 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:27:58,160 - main - INFO - Starting demo data generation...
+2025-09-14 22:27:58,328 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:27:58,328 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:27:58,328 - data_generator - INFO - Generating entities...
+2025-09-14 22:28:00,910 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:28:00,910 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:28:06,033 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:28:06,035 - data_generator - INFO - Generating customers...
+2025-09-14 22:28:09,568 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:28:09,570 - data_generator - INFO - Generating transactions...
+2025-09-14 22:28:31,357 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 22:28:31,370 - data_generator - INFO - Generating loan applications...
+2025-09-14 22:28:33,545 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 22:28:33,546 - data_generator - INFO - Generating historical loans...
+2025-09-14 22:28:33,546 - main - ERROR - Demo data generation failed: 'DemoDataGenerator' object has no attribute '_create_historical_loan'
+2025-09-14 22:28:33,546 - __main__ - ERROR - Deployment failed: 'DemoDataGenerator' object has no attribute '_create_historical_loan'
+2025-09-14 22:28:33,546 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:28:33,547 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:28:33,547 - __main__ - ERROR -   - 'DemoDataGenerator' object has no attribute '_create_historical_loan'
+2025-09-14 22:28:33,547 - snowflake.snowpark.session - INFO - Closing session: 217638941076094
+2025-09-14 22:28:33,547 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:28:33,870 - snowflake.snowpark.session - INFO - Closed session: 217638941076094
+2025-09-14 22:29:00,292 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:29:00,307 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:29:00,307 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:29:00,320 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:29:00,320 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:29:00,320 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:29:00,320 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:29:00,320 - main - INFO - Phase: 1
+2025-09-14 22:29:00,320 - main - INFO - Scale: full
+2025-09-14 22:29:00,326 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:29:00,326 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:29:00,370 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13ceaf040>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:29:00,370 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13ceafd30>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:29:00,370 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:29:00,569 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13c5936a0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:29:00,569 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13ca8cca0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:29:01,766 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941098642,
+"os.name" : Darwin
+
+2025-09-14 22:29:01,766 - main - INFO - Creating warehouses...
+2025-09-14 22:29:02,390 - main - INFO - Warehouses created and set
+2025-09-14 22:29:02,390 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:29:02,390 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:29:02,390 - __main__ - INFO - Running full deployment...
+2025-09-14 22:29:02,390 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:29:02,390 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:29:02,948 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:29:03,133 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:29:03,331 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d6d-0207-86f7-0000-c5f1018ac4d6: 002003 (02000): 01bf0d6d-0207-86f7-0000-c5f1018ac4d6: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:29:03,429 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d6d-0207-8c78-0000-c5f1018ad5da: 002003 (02000): 01bf0d6d-0207-8c78-0000-c5f1018ad5da: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:29:03,599 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d6d-0207-8309-0000-c5f1018af22a: 002003 (02000): 01bf0d6d-0207-8309-0000-c5f1018af22a: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:29:03,718 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d6d-0207-8cd7-0000-c5f1018ae5f2: 399118 (XX000): 01bf0d6d-0207-8cd7-0000-c5f1018ae5f2: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:29:03,921 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:29:03,921 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:29:03,921 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:29:03,921 - main - INFO - Starting demo data generation...
+2025-09-14 22:29:04,109 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:29:04,109 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:29:04,110 - data_generator - INFO - Generating entities...
+2025-09-14 22:29:06,303 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:29:06,304 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:29:12,085 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:29:12,088 - data_generator - INFO - Generating customers...
+2025-09-14 22:29:14,572 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:29:14,574 - data_generator - INFO - Generating transactions...
+2025-09-14 22:29:36,154 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 22:29:36,166 - data_generator - INFO - Generating loan applications...
+2025-09-14 22:29:37,919 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 22:29:37,920 - data_generator - INFO - Generating historical loans...
+2025-09-14 22:29:41,907 - data_generator - INFO - Generated 6000 historical loans
+2025-09-14 22:29:41,909 - data_generator - INFO - Generating compliance documents...
+2025-09-14 22:29:41,909 - main - ERROR - Demo data generation failed: 'DemoDataGenerator' object has no attribute '_generate_additional_compliance_documents'
+2025-09-14 22:29:41,909 - __main__ - ERROR - Deployment failed: 'DemoDataGenerator' object has no attribute '_generate_additional_compliance_documents'
+2025-09-14 22:29:41,910 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:29:41,910 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:29:41,910 - __main__ - ERROR -   - 'DemoDataGenerator' object has no attribute '_generate_additional_compliance_documents'
+2025-09-14 22:29:41,910 - snowflake.snowpark.session - INFO - Closing session: 217638941098642
+2025-09-14 22:29:41,911 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:29:42,140 - snowflake.snowpark.session - INFO - Closed session: 217638941098642
+2025-09-14 22:34:31,288 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:34:31,301 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:34:31,301 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:34:31,314 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:34:31,314 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:34:31,314 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:34:31,314 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:34:31,314 - main - INFO - Phase: 1
+2025-09-14 22:34:31,314 - main - INFO - Scale: full
+2025-09-14 22:34:31,320 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:34:31,321 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:34:31,365 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:34:31,366 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13446f100>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:34:31,366 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1344937f0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:34:31,565 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x137daf5e0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:34:31,565 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x137dafdc0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:34:32,652 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941102746,
+"os.name" : Darwin
+
+2025-09-14 22:34:32,653 - main - INFO - Creating warehouses...
+2025-09-14 22:34:33,411 - main - INFO - Warehouses created and set
+2025-09-14 22:34:33,412 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:34:33,412 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:34:33,412 - __main__ - INFO - Running full deployment...
+2025-09-14 22:34:33,412 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:34:33,412 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:34:34,054 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:34:34,239 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:34:34,463 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d72-0207-8c78-0000-c5f1018ad622: 002003 (02000): 01bf0d72-0207-8c78-0000-c5f1018ad622: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:34:34,556 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d72-0207-8309-0000-c5f1018af28a: 002003 (02000): 01bf0d72-0207-8309-0000-c5f1018af28a: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:34:34,704 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d72-0207-8cd7-0000-c5f1018ae756: 002003 (02000): 01bf0d72-0207-8cd7-0000-c5f1018ae756: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:34:34,839 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d72-0207-8187-0000-c5f1018aae26: 399118 (XX000): 01bf0d72-0207-8187-0000-c5f1018aae26: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:34:35,157 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:34:35,157 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:34:35,157 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:34:35,157 - main - INFO - Starting demo data generation...
+2025-09-14 22:34:35,370 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:34:35,371 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:34:35,371 - data_generator - INFO - Generating entities...
+2025-09-14 22:34:37,813 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:34:37,814 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:34:42,404 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:34:42,406 - data_generator - INFO - Generating customers...
+2025-09-14 22:34:45,219 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:34:45,220 - data_generator - INFO - Generating transactions...
+2025-09-14 22:35:06,897 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 22:35:06,911 - data_generator - INFO - Generating loan applications...
+2025-09-14 22:35:08,864 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 22:35:08,865 - data_generator - INFO - Generating historical loans...
+2025-09-14 22:35:12,850 - data_generator - INFO - Generated 6000 historical loans
+2025-09-14 22:35:12,852 - data_generator - INFO - Generating compliance documents...
+2025-09-14 22:35:33,578 - data_generator - INFO - Generated 2 compliance documents using Cortex Complete
+2025-09-14 22:35:33,580 - data_generator - INFO - Generating credit policy documents...
+2025-09-14 22:35:58,696 - data_generator - INFO - Generated 2 credit policy documents using Cortex Complete
+2025-09-14 22:35:58,696 - data_generator - INFO - Generating loan documents...
+2025-09-14 22:35:59,032 - data_generator - WARNING - No prompts generated for loan documents
+2025-09-14 22:35:59,032 - data_generator - INFO - Generating news and research documents...
+2025-09-14 22:36:12,641 - data_generator - INFO - Generated 1 news and research documents using Cortex Complete
+2025-09-14 22:36:12,642 - data_generator - INFO - Generating external data provider simulation...
+2025-09-14 22:36:12,642 - main - ERROR - Demo data generation failed: 'DemoDataGenerator' object has no attribute '_generate_sp_global_financials'
+2025-09-14 22:36:12,642 - __main__ - ERROR - Deployment failed: 'DemoDataGenerator' object has no attribute '_generate_sp_global_financials'
+2025-09-14 22:36:12,643 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:36:12,643 - __main__ - ERROR - Errors encountered:
+2025-09-14 22:36:12,643 - __main__ - ERROR -   - 'DemoDataGenerator' object has no attribute '_generate_sp_global_financials'
+2025-09-14 22:36:12,643 - snowflake.snowpark.session - INFO - Closing session: 217638941102746
+2025-09-14 22:36:12,643 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:36:12,881 - snowflake.snowpark.session - INFO - Closed session: 217638941102746
+2025-09-14 22:36:49,481 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:36:49,496 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:36:49,496 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:36:49,509 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:36:49,509 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:36:49,509 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:36:49,509 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:36:49,509 - main - INFO - Phase: 1
+2025-09-14 22:36:49,509 - main - INFO - Scale: full
+2025-09-14 22:36:49,515 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:36:49,515 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:36:49,560 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:36:49,568 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x146993460>: Failed to establish a new connection: [Errno 64] Host is down')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:36:49,569 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1472ae890>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:36:49,569 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1472afc40>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:36:49,569 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x146e46710>: Failed to establish a new connection: [Errno 65] No route to host')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:36:50,769 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941059898,
+"os.name" : Darwin
+
+2025-09-14 22:36:50,769 - main - INFO - Creating warehouses...
+2025-09-14 22:36:51,173 - main - INFO - Warehouses created and set
+2025-09-14 22:36:51,173 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:36:51,173 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:36:51,173 - __main__ - INFO - Running full deployment...
+2025-09-14 22:36:51,173 - __main__ - INFO - Step 1/4: Setting up database infrastructure...
+2025-09-14 22:36:51,174 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:36:51,818 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:36:52,084 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:36:52,394 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d74-0207-8c78-0000-c5f1018ad65e: 002003 (02000): 01bf0d74-0207-8c78-0000-c5f1018ad65e: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:36:52,490 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d74-0207-8309-0000-c5f1018af372: 002003 (02000): 01bf0d74-0207-8309-0000-c5f1018af372: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:36:52,593 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d74-0207-8cd7-0000-c5f1018ae7a6: 002003 (02000): 01bf0d74-0207-8cd7-0000-c5f1018ae7a6: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:36:52,754 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d74-0207-8187-0000-c5f1018aae7e: 399118 (XX000): 01bf0d74-0207-8187-0000-c5f1018aae7e: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:36:52,978 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:36:52,979 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:36:52,979 - __main__ - INFO - Step 2/4: Generating demo data...
+2025-09-14 22:36:52,979 - main - INFO - Starting demo data generation...
+2025-09-14 22:36:53,151 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:36:53,151 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:36:53,151 - data_generator - INFO - Generating entities...
+2025-09-14 22:36:55,331 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:36:55,333 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:36:59,870 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:36:59,874 - data_generator - INFO - Generating customers...
+2025-09-14 22:37:02,824 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:37:02,825 - data_generator - INFO - Generating transactions...
+2025-09-14 22:37:25,397 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 22:37:25,410 - data_generator - INFO - Generating loan applications...
+2025-09-14 22:37:27,714 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 22:37:27,715 - data_generator - INFO - Generating historical loans...
+2025-09-14 22:37:31,779 - data_generator - INFO - Generated 6000 historical loans
+2025-09-14 22:37:31,781 - data_generator - INFO - Generating compliance documents...
+2025-09-14 22:37:53,439 - data_generator - INFO - Generated 2 compliance documents using Cortex Complete
+2025-09-14 22:37:53,440 - data_generator - INFO - Generating credit policy documents...
+2025-09-14 22:38:17,814 - data_generator - INFO - Generated 2 credit policy documents using Cortex Complete
+2025-09-14 22:38:17,814 - data_generator - INFO - Generating loan documents...
+2025-09-14 22:38:18,072 - data_generator - WARNING - No prompts generated for loan documents
+2025-09-14 22:38:18,073 - data_generator - INFO - Generating news and research documents...
+2025-09-14 22:38:30,500 - data_generator - INFO - Generated 1 news and research documents using Cortex Complete
+2025-09-14 22:38:30,500 - data_generator - INFO - Generating external data provider simulation...
+2025-09-14 22:38:31,503 - data_generator - INFO - External data provider simulation completed
+2025-09-14 22:38:31,503 - data_generator - INFO - Phase 1 data generation completed successfully
+2025-09-14 22:38:31,503 - main - INFO - Demo data generation completed successfully
+2025-09-14 22:38:31,503 - __main__ - INFO - Step 3/4: Running validation tests...
+2025-09-14 22:38:33,662 - __main__ - INFO - Step 4/4: Verifying deployment...
+2025-09-14 22:38:33,662 - main - INFO - Validating demo setup...
+2025-09-14 22:38:35,079 - main - ERROR - Semantic view BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv test failed: (1304): 01bf0d76-0207-8c78-0000-c5f1018ad6ba: 000002 (0A000): 01bf0d76-0207-8c78-0000-c5f1018ad6ba: Unsupported feature 'COUNT(*)'.
+2025-09-14 22:38:35,199 - main - ERROR - Search service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc test failed: (1304): 01bf0d76-0207-8309-0000-c5f1018af3c2: 399118 (XX000): 01bf0d76-0207-8309-0000-c5f1018af3c2: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:38:35,200 - main - INFO - Validation - database_objects: ✅ PASS
+2025-09-14 22:38:35,200 - main - INFO - Validation - data_integrity: ✅ PASS
+2025-09-14 22:38:35,200 - main - INFO - Validation - semantic_views: ❌ FAIL
+2025-09-14 22:38:35,200 - main - INFO - Validation - search_services: ❌ FAIL
+2025-09-14 22:38:35,200 - main - ERROR - ❌ Some validation checks failed
+2025-09-14 22:38:35,200 - snowflake.snowpark.session - INFO - Closing session: 217638941059898
+2025-09-14 22:38:35,201 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:38:35,494 - snowflake.snowpark.session - INFO - Closed session: 217638941059898
+2025-09-14 22:38:35,494 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:38:35,495 - snowflake.snowpark.session - INFO - Closed session: 217638941059898
+2025-09-14 22:56:34,802 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 22:56:34,816 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:56:34,816 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:56:34,829 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 22:56:34,829 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 22:56:34,829 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 22:56:34,829 - main - INFO - Institution: Glacier First Bank
+2025-09-14 22:56:34,829 - main - INFO - Phase: 1
+2025-09-14 22:56:34,829 - main - INFO - Scale: full
+2025-09-14 22:56:34,835 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 22:56:34,835 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 22:56:34,881 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x130646590>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 22:56:34,881 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x13065d120>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 22:56:34,882 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 22:56:35,080 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1302939d0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 22:56:35,080 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1306219f0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 22:56:36,120 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941076462,
+"os.name" : Darwin
+
+2025-09-14 22:56:36,121 - main - INFO - Creating warehouses...
+2025-09-14 22:56:36,500 - main - INFO - Warehouses created and set
+2025-09-14 22:56:36,501 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 22:56:36,501 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 22:56:36,501 - __main__ - INFO - Running full deployment...
+2025-09-14 22:56:36,501 - __main__ - INFO - Step 1/6: Setting up database infrastructure...
+2025-09-14 22:56:36,501 - main - INFO - Setting up database infrastructure...
+2025-09-14 22:56:37,082 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 22:56:37,083 - main - INFO - Database infrastructure setup completed
+2025-09-14 22:56:37,083 - __main__ - INFO - Step 2/6: Generating structured demo data...
+2025-09-14 22:56:37,083 - main - INFO - Starting demo data generation...
+2025-09-14 22:56:37,411 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 22:56:37,411 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 22:56:37,411 - data_generator - INFO - Generating entities...
+2025-09-14 22:56:40,501 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 22:56:40,502 - data_generator - INFO - Generating entity relationships...
+2025-09-14 22:56:45,545 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 22:56:45,546 - data_generator - INFO - Generating customers...
+2025-09-14 22:56:48,855 - data_generator - INFO - Generated 800 customers
+2025-09-14 22:56:48,856 - data_generator - INFO - Generating transactions...
+2025-09-14 22:57:11,563 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 22:57:11,577 - data_generator - INFO - Generating loan applications...
+2025-09-14 22:57:13,458 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 22:57:13,459 - data_generator - INFO - Generating historical loans...
+2025-09-14 22:57:18,251 - data_generator - INFO - Generated 6000 historical loans
+2025-09-14 22:57:18,253 - data_generator - INFO - Generating compliance documents...
+2025-09-14 22:57:39,392 - data_generator - INFO - Generated 2 compliance documents using Cortex Complete
+2025-09-14 22:57:39,394 - data_generator - INFO - Generating credit policy documents...
+2025-09-14 22:58:04,539 - data_generator - INFO - Generated 2 credit policy documents using Cortex Complete
+2025-09-14 22:58:04,540 - data_generator - INFO - Generating loan documents...
+2025-09-14 22:58:04,834 - data_generator - WARNING - No prompts generated for loan documents
+2025-09-14 22:58:04,835 - data_generator - INFO - Generating news and research documents...
+2025-09-14 22:58:18,495 - data_generator - INFO - Generated 1 news and research documents using Cortex Complete
+2025-09-14 22:58:18,496 - data_generator - INFO - Generating external data provider simulation...
+2025-09-14 22:58:19,348 - data_generator - INFO - External data provider simulation completed
+2025-09-14 22:58:19,349 - data_generator - INFO - Phase 1 data generation completed successfully
+2025-09-14 22:58:19,349 - main - INFO - Demo data generation completed successfully
+2025-09-14 22:58:19,349 - __main__ - INFO - Step 3/6: Creating semantic views...
+2025-09-14 22:58:19,349 - main - INFO - Creating semantic views...
+2025-09-14 22:58:19,515 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 22:58:19,515 - main - INFO - Semantic views creation completed
+2025-09-14 22:58:19,515 - __main__ - INFO - Step 4/6: Creating Cortex Search services...
+2025-09-14 22:58:19,515 - main - INFO - Creating Cortex Search services...
+2025-09-14 22:58:19,698 - main - WARNING - Statement 9 failed (may be expected): (1304): 01bf0d8a-0207-890c-0000-c5f1018abf62: 002003 (02000): 01bf0d8a-0207-890c-0000-c5f1018abf62: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.CREDIT_POLICY_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:58:19,788 - main - WARNING - Statement 10 failed (may be expected): (1304): 01bf0d8a-0207-8c78-0000-c5f1018ad8aa: 002003 (02000): 01bf0d8a-0207-8c78-0000-c5f1018ad8aa: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.LOAN_DOCUMENTS_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:58:20,035 - main - WARNING - Statement 11 failed (may be expected): (1304): 01bf0d8a-0207-8309-0000-c5f1018af68a: 002003 (02000): 01bf0d8a-0207-8309-0000-c5f1018af68a: SQL compilation error:
+Cortex Search Service 'BANK_AI_DEMO.AGENT_FRAMEWORK.NEWS_RESEARCH_SEARCH_SVC' does not exist or not authorized.
+2025-09-14 22:58:20,153 - main - WARNING - Statement 22 failed (may be expected): (1304): 01bf0d8a-0207-890c-0000-c5f1018abf66: 399118 (XX000): 01bf0d8a-0207-890c-0000-c5f1018abf66: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:58:20,321 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 22:58:20,322 - main - INFO - Cortex Search services creation completed
+2025-09-14 22:58:20,322 - __main__ - INFO - Step 5/6: Running validation tests...
+2025-09-14 22:58:23,266 - __main__ - INFO - Step 6/6: Verifying deployment...
+2025-09-14 22:58:23,266 - main - INFO - Validating demo setup...
+2025-09-14 22:58:24,802 - main - ERROR - Semantic view BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv test failed: (1304): 01bf0d8a-0207-8cd7-0000-c5f1018aeaa2: 000002 (0A000): 01bf0d8a-0207-8cd7-0000-c5f1018aeaa2: Unsupported feature 'COUNT(*)'.
+2025-09-14 22:58:24,911 - main - ERROR - Search service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc test failed: (1304): 01bf0d8a-0207-8187-0000-c5f1018b0142: 399118 (XX000): 01bf0d8a-0207-8187-0000-c5f1018b0142: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 22:58:24,911 - main - INFO - Validation - database_objects: ✅ PASS
+2025-09-14 22:58:24,911 - main - INFO - Validation - data_integrity: ✅ PASS
+2025-09-14 22:58:24,911 - main - INFO - Validation - semantic_views: ❌ FAIL
+2025-09-14 22:58:24,911 - main - INFO - Validation - search_services: ❌ FAIL
+2025-09-14 22:58:24,911 - main - ERROR - ❌ Some validation checks failed
+2025-09-14 22:58:24,911 - snowflake.snowpark.session - INFO - Closing session: 217638941076462
+2025-09-14 22:58:24,912 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 22:58:25,591 - snowflake.snowpark.session - INFO - Closed session: 217638941076462
+2025-09-14 22:58:25,593 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 22:58:25,594 - snowflake.snowpark.session - INFO - Closed session: 217638941076462
+2025-09-14 23:00:31,435 - __main__ - INFO - Initializing Glacier First Bank Demo deployment...
+2025-09-14 23:00:31,448 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 23:00:31,448 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 23:00:31,461 - config_manager - INFO - Configuration loaded from config/glacier_demo_config.yaml
+2025-09-14 23:00:31,461 - config_manager - INFO - Configuration validation completed successfully
+2025-09-14 23:00:31,461 - main - INFO - Initialized Glacier Demo Orchestrator
+2025-09-14 23:00:31,461 - main - INFO - Institution: Glacier First Bank
+2025-09-14 23:00:31,462 - main - INFO - Phase: 1
+2025-09-14 23:00:31,462 - main - INFO - Scale: full
+2025-09-14 23:00:31,468 - snowflake.connector.connection - INFO - Snowflake Connector for Python Version: 3.17.1, Python Version: 3.10.13, Platform: macOS-15.6.1-arm64-arm-64bit
+2025-09-14 23:00:31,468 - snowflake.connector.connection - INFO - Connecting to GLOBAL Snowflake domain
+2025-09-14 23:00:31,516 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x123d211e0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /
+2025-09-14 23:00:31,516 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x123d60fa0>: Failed to establish a new connection: [Errno 8] nodename nor servname provided, or not known')': /computeMetadata/v1/instance/service-accounts/default/email
+2025-09-14 23:00:31,517 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-14 23:00:31,715 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x1238937f0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/instance?api-version=2021-02-01
+2025-09-14 23:00:31,715 - snowflake.connector.vendored.urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<snowflake.connector.vendored.urllib3.connection.HTTPConnection object at 0x123d45ff0>, 'Connection to 169.254.169.254 timed out. (connect timeout=0.2)')': /metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com
+2025-09-14 23:00:32,782 - snowflake.snowpark.session - INFO - Snowpark Session information: 
+"version" : 1.36.0,
+"python.version" : 3.10.13,
+"python.connector.version" : 3.17.1,
+"python.connector.session.id" : 217638941076466,
+"os.name" : Darwin
+
+2025-09-14 23:00:32,782 - main - INFO - Creating warehouses...
+2025-09-14 23:00:34,464 - main - INFO - Warehouses created and set
+2025-09-14 23:00:34,464 - main - INFO - Connected to Snowflake: IE_DEMO65_CODE_USER
+2025-09-14 23:00:34,464 - main - INFO - Using database: BANK_AI_DEMO
+2025-09-14 23:00:34,464 - __main__ - INFO - Running full deployment...
+2025-09-14 23:00:34,465 - __main__ - INFO - Step 1/6: Setting up database infrastructure...
+2025-09-14 23:00:34,465 - main - INFO - Setting up database infrastructure...
+2025-09-14 23:00:35,532 - main - INFO - Successfully executed SQL file: sql/01_setup_database.sql
+2025-09-14 23:00:35,533 - main - INFO - Database infrastructure setup completed
+2025-09-14 23:00:35,533 - __main__ - INFO - Step 2/6: Generating structured demo data...
+2025-09-14 23:00:35,533 - main - INFO - Starting demo data generation...
+2025-09-14 23:00:35,847 - data_generator - INFO - Initialized data generator with Large scale for stress testing scale
+2025-09-14 23:00:35,847 - data_generator - INFO - Starting Phase 1 data generation...
+2025-09-14 23:00:35,847 - data_generator - INFO - Generating entities...
+2025-09-14 23:00:38,648 - data_generator - INFO - Generated 2000 entities (3 key entities)
+2025-09-14 23:00:38,648 - data_generator - INFO - Generating entity relationships...
+2025-09-14 23:00:46,068 - data_generator - INFO - Generated 4999 entity relationships
+2025-09-14 23:00:46,070 - data_generator - INFO - Generating customers...
+2025-09-14 23:00:51,514 - data_generator - INFO - Generated 800 customers
+2025-09-14 23:00:51,515 - data_generator - INFO - Generating transactions...
+2025-09-14 23:01:19,668 - data_generator - INFO - Generated 50420 transactions
+2025-09-14 23:01:19,680 - data_generator - INFO - Generating loan applications...
+2025-09-14 23:01:22,691 - data_generator - INFO - Generated 99 loan applications
+2025-09-14 23:01:22,692 - data_generator - INFO - Generating historical loans...
+2025-09-14 23:01:27,537 - data_generator - INFO - Generated 6000 historical loans
+2025-09-14 23:01:27,539 - data_generator - INFO - Generating compliance documents...
+2025-09-14 23:01:49,806 - data_generator - INFO - Generated 2 compliance documents using Cortex Complete
+2025-09-14 23:01:49,808 - data_generator - INFO - Generating credit policy documents...
+2025-09-14 23:02:15,426 - data_generator - INFO - Generated 2 credit policy documents using Cortex Complete
+2025-09-14 23:02:15,426 - data_generator - INFO - Generating loan documents...
+2025-09-14 23:02:15,675 - data_generator - WARNING - No prompts generated for loan documents
+2025-09-14 23:02:15,675 - data_generator - INFO - Generating news and research documents...
+2025-09-14 23:02:28,463 - data_generator - INFO - Generated 1 news and research documents using Cortex Complete
+2025-09-14 23:02:28,463 - data_generator - INFO - Generating external data provider simulation...
+2025-09-14 23:02:29,191 - data_generator - INFO - External data provider simulation completed
+2025-09-14 23:02:29,191 - data_generator - INFO - Phase 1 data generation completed successfully
+2025-09-14 23:02:29,191 - main - INFO - Demo data generation completed successfully
+2025-09-14 23:02:29,191 - __main__ - INFO - Step 3/6: Creating semantic views...
+2025-09-14 23:02:29,191 - main - INFO - Creating semantic views...
+2025-09-14 23:02:29,396 - main - INFO - Successfully executed SQL file: sql/02_create_semantic_views.sql
+2025-09-14 23:02:29,396 - main - INFO - Semantic views creation completed
+2025-09-14 23:02:29,396 - __main__ - INFO - Step 4/6: Creating Cortex Search services...
+2025-09-14 23:02:29,396 - main - INFO - Creating Cortex Search services...
+2025-09-14 23:02:29,621 - main - INFO - Successfully executed SQL file: sql/03_create_search_services.sql
+2025-09-14 23:02:29,621 - main - INFO - Cortex Search services creation completed
+2025-09-14 23:02:29,621 - __main__ - INFO - Step 5/6: Running validation tests...
+2025-09-14 23:02:32,711 - __main__ - INFO - Step 6/6: Verifying deployment...
+2025-09-14 23:02:32,711 - main - INFO - Validating demo setup...
+2025-09-14 23:02:35,171 - main - ERROR - Semantic views validation failed: (1304): 01bf0d8e-0207-890c-0000-c5f1018b1006: 002003 (02000): 01bf0d8e-0207-890c-0000-c5f1018b1006: SQL compilation error:
+Semantic View 'BANK_AI_DEMO.SEMANTIC_LAYER.CREDIT_RISK_SV' does not exist or not authorized.
+2025-09-14 23:02:35,291 - main - ERROR - Search service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc test failed: (1304): 01bf0d8e-0207-8c78-0000-c5f1018ad942: 399118 (XX000): 01bf0d8e-0207-8c78-0000-c5f1018ad942: Query failed: error_code: 390404, message: Cortex Search Service BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc does not exist or access is not authorized for the current role. If you are using JWT authentication, the role will be the "DEFAULT_ROLE" of the current user.
+2025-09-14 23:02:35,291 - main - INFO - Validation - database_objects: ✅ PASS
+2025-09-14 23:02:35,291 - main - INFO - Validation - data_integrity: ✅ PASS
+2025-09-14 23:02:35,291 - main - INFO - Validation - semantic_views: ❌ FAIL
+2025-09-14 23:02:35,291 - main - INFO - Validation - search_services: ❌ FAIL
+2025-09-14 23:02:35,291 - main - ERROR - ❌ Some validation checks failed
+2025-09-14 23:02:35,291 - snowflake.snowpark.session - INFO - Closing session: 217638941076466
+2025-09-14 23:02:35,292 - snowflake.snowpark.session - INFO - Canceling all running queries
+2025-09-14 23:02:35,666 - snowflake.snowpark.session - INFO - Closed session: 217638941076466
+2025-09-14 23:02:35,667 - __main__ - ERROR - ❌ Deployment failed. Check logs for details.
+2025-09-14 23:02:35,667 - snowflake.snowpark.session - INFO - Closed session: 217638941076466

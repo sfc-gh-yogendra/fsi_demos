@@ -48,32 +48,16 @@ python python/main.py --scope data
 python python/main.py --connection-name my_demo_connection
 ```
 
-### Real Asset Data Requirements
+### Real Asset Data
 
-The demo uses 14,000+ authentic financial instruments from Snowflake Marketplace OpenFIGI dataset. This provides maximum realism and authenticity for customer demonstrations with 100% real Bloomberg identifiers.
+The demo uses 14,000+ authentic financial instruments from Snowflake Marketplace OpenFIGI dataset. This provides maximum realism and authenticity for customer demonstrations with 100% real Bloomberg identifiers. 
 
-**Benefits of Real Data**:
-- ✅ **Authentic Tickers**: Global securities (AAPL, ASML, TSM, NESTLE, etc.)
-- ✅ **Synthetic Market Data**: Realistic OHLCV prices and volumes for all securities
-- ✅ **Geographic Distribution**: Proper coverage across USA/EU/APAC markets
-- ✅ **Market Behavior**: Real volatility patterns and trading characteristics
-- ✅ **Enhanced Credibility**: Customers see genuine market movements in portfolio performance
-- ✅ **Competitive Advantage**: Most demos use purely synthetic data
+The assets used are in the data/real_assets.csv file, if you have access to the "Financials & Economics: Enterprise" dataset from the marketplace you can also update the list of the assets, you must have named your share FINANCIALS_ECONOMICS_ENTERPRISE.
 
-**Requirements for Real Assets**:
-- Snowflake Marketplace subscription to "Public Data Financials & Economics: Enterprise" dataset
-- Access to `FINANCIALS_ECONOMICS_ENTERPRISE.CYBERSYN` database
-- Sufficient warehouse compute for OpenFIGI data extraction
 
-**Step 1: Extract Real Assets** (requires Marketplace access)
+**Extract Real Assets** (requires Marketplace access)
 ```bash
 python python/main.py --extract-real-assets
-```
-
-**Step 2: Build Demo** (Real Assets + Synthetic Market Data)
-Real assets are automatically used when available. Market data is generated synthetically for all securities to ensure consistent performance.
-```bash
-python python/main.py --scenarios portfolio_copilot
 ```
 
 ## Demo Overview
@@ -214,7 +198,3 @@ python python/main.py --scenarios portfolio_copilot
 "What are my top 10 holdings by market value in the SAM Global Thematic Growth portfolio?"
 ```
 **Expected**: Clean list with enhanced issuer information and stable SecurityID linkage
-
----
-
-**Built with Snowflake Intelligence** | **Powered by Cortex** | **UK English Throughout**

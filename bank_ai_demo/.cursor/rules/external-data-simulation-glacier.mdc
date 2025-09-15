@@ -1,0 +1,601 @@
+---
+description: External data source simulation with Snowflake Marketplace attribution for Glacier First Bank demo
+alwaysApply: false
+---
+# Glacier First Bank — External Data Source Simulation
+
+## Overview
+This rule defines how to simulate external data sources with realistic Snowflake Marketplace attribution, creating authentic schemas that match actual data provider formats while maintaining the fictional nature of the demo data.
+
+## Marketplace Data Provider Ecosystem
+
+### Core Data Providers (Phase 1)
+
+#### S&P Global Market Intelligence
+**Marketplace Attribution**: "S&P Global Market Intelligence via Snowflake Marketplace"
+**Data Categories**: Company financials, credit ratings, industry benchmarks
+**Update Frequency**: Daily
+**Schema Naming**: `SP_GLOBAL_*`
+
+```sql
+-- Simulated S&P Global company financials table
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS (
+    COMPANY_ID VARCHAR(20) PRIMARY KEY,
+    COMPANY_NAME VARCHAR(200) NOT NULL,
+    TICKER_SYMBOL VARCHAR(10),
+    COUNTRY_CODE VARCHAR(3),
+    INDUSTRY_CODE VARCHAR(10), -- GICS codes
+    FISCAL_YEAR INTEGER,
+    FISCAL_PERIOD VARCHAR(10), -- 'FY', 'Q1', 'Q2', 'Q3', 'Q4'
+    REVENUE DECIMAL(18,2),
+    EBITDA DECIMAL(18,2),
+    NET_INCOME DECIMAL(18,2),
+    TOTAL_ASSETS DECIMAL(18,2),
+    TOTAL_DEBT DECIMAL(18,2),
+    SHAREHOLDERS_EQUITY DECIMAL(18,2),
+    OPERATING_CASH_FLOW DECIMAL(18,2),
+    CAPEX DECIMAL(18,2),
+    CURRENCY VARCHAR(3) DEFAULT 'EUR',
+    REPORT_DATE DATE,
+    DATA_SOURCE VARCHAR(100) DEFAULT 'S&P Global Market Intelligence via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    COMMENT 'Simulated S&P Global financial data - matches actual provider schema patterns'
+);
+
+-- Simulated S&P Global credit ratings
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.SP_GLOBAL_CREDIT_RATINGS (
+    RATING_ID VARCHAR(20) PRIMARY KEY,
+    COMPANY_ID VARCHAR(20) NOT NULL,
+    RATING_TYPE VARCHAR(20), -- 'Long-term', 'Short-term', 'Outlook'
+    RATING_VALUE VARCHAR(10), -- 'AAA', 'AA+', 'AA', etc.
+    RATING_DATE DATE,
+    OUTLOOK VARCHAR(20), -- 'Positive', 'Stable', 'Negative'
+    RATIONALE TEXT,
+    ANALYST_NAME VARCHAR(100),
+    DATA_SOURCE VARCHAR(100) DEFAULT 'S&P Global Market Intelligence via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (COMPANY_ID) REFERENCES SP_GLOBAL_COMPANY_FINANCIALS(COMPANY_ID)
+);
+```
+
+#### Reuters News Feed
+**Marketplace Attribution**: "Reuters News Feed via Snowflake Marketplace"
+**Data Categories**: Real-time news, press releases, market updates
+**Update Frequency**: Real-time
+**Schema Naming**: `REUTERS_*`
+
+```sql
+-- Simulated Reuters news feed
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.REUTERS_NEWS_FEED (
+    ARTICLE_ID VARCHAR(50) PRIMARY KEY,
+    HEADLINE VARCHAR(500) NOT NULL,
+    BODY_TEXT TEXT NOT NULL,
+    PUBLISH_DATETIME TIMESTAMP_NTZ,
+    AUTHOR VARCHAR(200),
+    CATEGORY VARCHAR(50), -- 'Business', 'Markets', 'Politics', 'Technology'
+    REGION VARCHAR(50), -- 'Europe', 'North America', 'Asia-Pacific'
+    LANGUAGE VARCHAR(10) DEFAULT 'en',
+    SENTIMENT_SCORE DECIMAL(3,2), -- -1.00 to 1.00
+    RELEVANCE_ENTITIES VARIANT, -- JSON array of entity mentions
+    TAGS VARIANT, -- JSON array of topic tags
+    SOURCE_URL VARCHAR(500),
+    DATA_SOURCE VARCHAR(100) DEFAULT 'Reuters News Feed via Snowflake Marketplace',
+    INGESTION_TIME TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    COMMENT 'Simulated Reuters news data - matches actual feed structure'
+);
+
+-- Simulated Reuters company mentions extraction
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.REUTERS_COMPANY_MENTIONS (
+    MENTION_ID VARCHAR(50) PRIMARY KEY,
+    ARTICLE_ID VARCHAR(50) NOT NULL,
+    COMPANY_NAME VARCHAR(200),
+    TICKER_SYMBOL VARCHAR(10),
+    MENTION_TYPE VARCHAR(20), -- 'Primary', 'Secondary', 'Reference'
+    SENTIMENT_SCORE DECIMAL(3,2),
+    CONFIDENCE_SCORE DECIMAL(3,2),
+    EXTRACTION_METHOD VARCHAR(50) DEFAULT 'AI_EXTRACT via Snowflake Cortex',
+    DATA_SOURCE VARCHAR(100) DEFAULT 'Reuters News Feed via Snowflake Marketplace',
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (ARTICLE_ID) REFERENCES REUTERS_NEWS_FEED(ARTICLE_ID)
+);
+```
+
+#### Thomson Reuters Regulatory Intelligence
+**Marketplace Attribution**: "Thomson Reuters Regulatory Intelligence via Snowflake Marketplace"
+**Data Categories**: Regulatory updates, policy documents, compliance guidance
+**Update Frequency**: Daily
+**Schema Naming**: `TR_REGULATORY_*`
+
+```sql
+-- Simulated Thomson Reuters regulatory updates
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.TR_REGULATORY_UPDATES (
+    UPDATE_ID VARCHAR(50) PRIMARY KEY,
+    TITLE VARCHAR(500) NOT NULL,
+    CONTENT TEXT NOT NULL,
+    REGULATION_TYPE VARCHAR(50), -- 'Banking', 'Securities', 'AML', 'Data Protection'
+    JURISDICTION VARCHAR(50), -- 'EU', 'Germany', 'France', 'UK'
+    REGULATORY_BODY VARCHAR(100), -- 'EBA', 'ECB', 'BaFin', 'ACPR'
+    EFFECTIVE_DATE DATE,
+    PUBLISH_DATE DATE,
+    IMPACT_LEVEL VARCHAR(20), -- 'High', 'Medium', 'Low'
+    AFFECTED_INSTITUTIONS VARIANT, -- JSON array of institution types
+    COMPLIANCE_DEADLINE DATE,
+    DOCUMENT_TYPE VARCHAR(50), -- 'Directive', 'Regulation', 'Guidance', 'Consultation'
+    STATUS VARCHAR(20), -- 'Draft', 'Final', 'Effective', 'Superseded'
+    DATA_SOURCE VARCHAR(100) DEFAULT 'Thomson Reuters Regulatory Intelligence via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+#### MSCI ESG Ratings
+**Marketplace Attribution**: "MSCI ESG Ratings via Snowflake Marketplace"
+**Data Categories**: ESG scores, sustainability metrics, carbon data
+**Update Frequency**: Monthly
+**Schema Naming**: `MSCI_ESG_*`
+
+```sql
+-- Simulated MSCI ESG ratings
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.MSCI_ESG_RATINGS (
+    RATING_ID VARCHAR(50) PRIMARY KEY,
+    COMPANY_ID VARCHAR(20),
+    COMPANY_NAME VARCHAR(200),
+    TICKER_SYMBOL VARCHAR(10),
+    ESG_RATING VARCHAR(3), -- 'AAA', 'AA', 'A', 'BBB', 'BB', 'B', 'CCC'
+    ESG_SCORE DECIMAL(5,2), -- 0.00 to 10.00
+    ENVIRONMENT_SCORE DECIMAL(5,2),
+    SOCIAL_SCORE DECIMAL(5,2),
+    GOVERNANCE_SCORE DECIMAL(5,2),
+    CARBON_INTENSITY DECIMAL(10,2), -- tCO2e/EUR million revenue
+    WATER_INTENSITY DECIMAL(10,2),
+    WASTE_INTENSITY DECIMAL(10,2),
+    RATING_DATE DATE,
+    METHODOLOGY_VERSION VARCHAR(20),
+    INDUSTRY_CLASSIFICATION VARCHAR(100),
+    DATA_SOURCE VARCHAR(100) DEFAULT 'MSCI ESG Ratings via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+#### Dow Jones Risk & Compliance
+**Marketplace Attribution**: "Dow Jones Risk & Compliance via Snowflake Marketplace"
+**Data Categories**: Sanctions lists, PEP lists, adverse media screening
+**Update Frequency**: Real-time
+**Schema Naming**: `DJ_RISK_*`
+
+```sql
+-- Simulated Dow Jones PEP database
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.DJ_RISK_PEP_DATABASE (
+    PEP_ID VARCHAR(50) PRIMARY KEY,
+    FULL_NAME VARCHAR(200) NOT NULL,
+    ALIASES VARIANT, -- JSON array of known aliases
+    DATE_OF_BIRTH DATE,
+    PLACE_OF_BIRTH VARCHAR(100),
+    NATIONALITY VARCHAR(50),
+    POSITION_TITLE VARCHAR(200),
+    ORGANIZATION VARCHAR(200),
+    COUNTRY_OF_POSITION VARCHAR(50),
+    POSITION_START_DATE DATE,
+    POSITION_END_DATE DATE,
+    PEP_CATEGORY VARCHAR(50), -- 'Head of State', 'Minister', 'Judge', 'Military', 'SOE Executive'
+    RISK_LEVEL VARCHAR(20), -- 'High', 'Medium', 'Low'
+    FAMILY_MEMBERS VARIANT, -- JSON array of family member PEPs
+    ASSOCIATES VARIANT, -- JSON array of known associates
+    DATA_SOURCE VARCHAR(100) DEFAULT 'Dow Jones Risk & Compliance via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- Simulated Dow Jones sanctions screening
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.DJ_RISK_SANCTIONS_LIST (
+    SANCTIONS_ID VARCHAR(50) PRIMARY KEY,
+    ENTITY_NAME VARCHAR(200) NOT NULL,
+    ENTITY_TYPE VARCHAR(20), -- 'Individual', 'Entity', 'Vessel'
+    ALIASES VARIANT, -- JSON array of aliases
+    SANCTIONS_LIST VARCHAR(100), -- 'EU Consolidated List', 'OFAC SDN', 'UN Security Council'
+    LIST_DATE DATE,
+    SANCTIONS_REASON TEXT,
+    COUNTRY_OF_ORIGIN VARCHAR(50),
+    DATE_OF_BIRTH DATE,
+    PLACE_OF_BIRTH VARCHAR(100),
+    PASSPORT_NUMBERS VARIANT, -- JSON array
+    ADDRESSES VARIANT, -- JSON array of addresses
+    STATUS VARCHAR(20), -- 'Active', 'Removed', 'Updated'
+    DATA_SOURCE VARCHAR(100) DEFAULT 'Dow Jones Risk & Compliance via Snowflake Marketplace',
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+## Data Provider Integration Patterns
+
+### Schema Mapping and Attribution
+```python
+def create_provider_attribution_metadata():
+    """Create metadata tables for data provider attribution."""
+    
+    provider_metadata = {
+        'SP_GLOBAL': {
+            'provider_name': 'S&P Global Market Intelligence',
+            'marketplace_attribution': 'S&P Global Market Intelligence via Snowflake Marketplace',
+            'data_types': ['Company Financials', 'Credit Ratings', 'Industry Benchmarks'],
+            'update_frequency': 'Daily',
+            'coverage': 'Global public and private companies',
+            'data_quality': 'Institutional grade',
+            'licensing': 'Commercial use permitted within Snowflake environment'
+        },
+        'REUTERS': {
+            'provider_name': 'Reuters',
+            'marketplace_attribution': 'Reuters News Feed via Snowflake Marketplace',
+            'data_types': ['Real-time News', 'Press Releases', 'Market Updates'],
+            'update_frequency': 'Real-time',
+            'coverage': 'Global news and financial markets',
+            'languages': ['English', 'German', 'French', 'Italian', 'Spanish'],
+            'sentiment_analysis': 'Included via Snowflake Cortex'
+        },
+        'TR_REGULATORY': {
+            'provider_name': 'Thomson Reuters Regulatory Intelligence',
+            'marketplace_attribution': 'Thomson Reuters Regulatory Intelligence via Snowflake Marketplace',
+            'data_types': ['Regulatory Updates', 'Policy Documents', 'Compliance Guidance'],
+            'update_frequency': 'Daily',
+            'coverage': 'EU, UK, US financial regulations',
+            'specialization': 'Banking, securities, AML compliance'
+        }
+    }
+    
+    return provider_metadata
+```
+
+### Realistic Data Generation with Provider Schemas
+```python
+def generate_sp_global_financials(session: Session, entities: List[dict], 
+                                 config: GlacierDemoConfig) -> None:
+    """Generate realistic S&P Global financial data matching actual provider schemas."""
+    
+    financials_data = []
+    
+    for entity in entities:
+        if entity['entity_type'] == 'CORPORATE':
+            # Generate 3 years of annual data + latest quarterly
+            for year in range(2022, 2025):
+                # Annual data
+                financial_record = {
+                    'company_id': f"SP_{entity['entity_id']}",
+                    'company_name': entity['entity_name'],
+                    'ticker_symbol': generate_realistic_ticker(entity['entity_name']),
+                    'country_code': entity['country_code'],
+                    'industry_code': map_industry_to_gics(entity['industry_sector']),
+                    'fiscal_year': year,
+                    'fiscal_period': 'FY',
+                    'revenue': generate_realistic_revenue(entity, year),
+                    'ebitda': calculate_ebitda_from_revenue(revenue, entity['industry_sector']),
+                    'currency': 'EUR',
+                    'report_date': f"{year}-12-31",
+                    'data_source': 'S&P Global Market Intelligence via Snowflake Marketplace'
+                }
+                
+                # Add calculated ratios matching actual S&P data patterns
+                financial_record.update(calculate_sp_global_ratios(financial_record))
+                financials_data.append(financial_record)
+    
+    # Create DataFrame and save to Snowflake
+    financials_df = session.create_dataframe(financials_data)
+    financials_df.write.save_as_table(
+        "BANK_AI_DEMO.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS", 
+        mode="overwrite"
+    )
+```
+
+### Provider-Specific Content Generation
+```python
+def generate_reuters_articles_with_entity_mentions(session: Session, entities: List[dict],
+                                                  themes: List[dict]) -> None:
+    """Generate Reuters-style news articles with realistic entity mentions."""
+    
+    articles_data = []
+    
+    for theme in themes:
+        # Generate articles for each theme
+        for i in range(theme['article_count']):
+            # Select entities relevant to this theme
+            relevant_entities = select_entities_for_theme(entities, theme)
+            
+            article_prompt = f"""
+            Write a Reuters-style financial news article about {theme['name']} affecting European businesses.
+            
+            Requirements:
+            - Professional Reuters journalism tone
+            - 400-600 words
+            - Include specific mentions of: {', '.join([e['entity_name'] for e in relevant_entities[:3]])}
+            - Focus on {theme['keywords'][:3]}
+            - Include expert quotes and market impact analysis
+            - Use realistic European business context
+            - Avoid speculation, stick to factual reporting style
+            """
+            
+            # Generate article using Cortex Complete
+            article_content = generate_article_content(article_prompt)
+            
+            # Extract entity mentions using AI_EXTRACT
+            entity_mentions = extract_entity_mentions(article_content, relevant_entities)
+            
+            article_record = {
+                'article_id': f"REUTERS_{uuid.uuid4().hex[:12].upper()}",
+                'headline': extract_headline(article_content),
+                'body_text': article_content,
+                'publish_datetime': generate_realistic_publish_time(),
+                'author': select_reuters_byline(),
+                'category': theme['reuters_category'],
+                'region': 'Europe',
+                'sentiment_score': calculate_article_sentiment(article_content),
+                'relevance_entities': json.dumps(entity_mentions),
+                'tags': json.dumps(theme['keywords']),
+                'data_source': 'Reuters News Feed via Snowflake Marketplace'
+            }
+            
+            articles_data.append(article_record)
+    
+    # Save articles to Snowflake
+    articles_df = session.create_dataframe(articles_data)
+    articles_df.write.save_as_table("BANK_AI_DEMO.RAW_DATA.REUTERS_NEWS_FEED", mode="overwrite")
+```
+
+## Cross-Provider Data Correlation
+
+### Entity Linking Across Providers
+```sql
+-- Create entity mapping table for cross-provider correlation
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.EXTERNAL_ENTITY_MAPPING (
+    INTERNAL_ENTITY_ID VARCHAR(50),
+    SP_GLOBAL_COMPANY_ID VARCHAR(20),
+    REUTERS_MENTION_NAME VARCHAR(200),
+    MSCI_COMPANY_ID VARCHAR(50),
+    DJ_RISK_ENTITY_NAME VARCHAR(200),
+    MAPPING_CONFIDENCE DECIMAL(3,2), -- 0.00 to 1.00
+    MAPPING_METHOD VARCHAR(50), -- 'Exact Match', 'Fuzzy Match', 'Manual Review'
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (INTERNAL_ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID)
+);
+```
+
+### Provider Data Quality Simulation
+```python
+def simulate_data_provider_characteristics():
+    """Simulate realistic data provider characteristics and limitations."""
+    
+    provider_characteristics = {
+        'SP_GLOBAL': {
+            'data_completeness': 0.95,  # 95% of expected data points present
+            'update_lag_hours': 24,     # Daily updates with 24-hour lag
+            'coverage_bias': 'large_cap',  # Better coverage for larger companies
+            'data_quality_score': 0.98
+        },
+        'REUTERS': {
+            'data_completeness': 0.88,  # Some articles may be missed
+            'update_lag_minutes': 15,   # Near real-time with 15-minute lag
+            'language_coverage': ['en', 'de', 'fr', 'it'],
+            'sentiment_accuracy': 0.85
+        },
+        'MSCI_ESG': {
+            'data_completeness': 0.75,  # ESG data not available for all companies
+            'update_lag_days': 30,      # Monthly updates
+            'coverage_bias': 'public_companies',
+            'rating_methodology_version': 'v2.1'
+        },
+        'DJ_RISK': {
+            'data_completeness': 0.99,  # High completeness for sanctions/PEP
+            'update_lag_minutes': 5,    # Near real-time for sanctions
+            'false_positive_rate': 0.02,  # 2% false positive rate
+            'coverage_scope': 'global'
+        }
+    }
+    
+    return provider_characteristics
+```
+
+## Agent Integration with External Data
+
+### Provider Attribution in Agent Responses
+```python
+def format_agent_response_with_attribution(data_sources: List[str], 
+                                         response_content: str) -> str:
+    """Format agent responses with proper external data attribution."""
+    
+    attribution_map = {
+        'SP_GLOBAL_COMPANY_FINANCIALS': 'S&P Global Market Intelligence via Snowflake Marketplace',
+        'REUTERS_NEWS_FEED': 'Reuters News Feed via Snowflake Marketplace',
+        'TR_REGULATORY_UPDATES': 'Thomson Reuters Regulatory Intelligence via Snowflake Marketplace',
+        'MSCI_ESG_RATINGS': 'MSCI ESG Ratings via Snowflake Marketplace',
+        'DJ_RISK_PEP_DATABASE': 'Dow Jones Risk & Compliance via Snowflake Marketplace'
+    }
+    
+    # Add source attribution footer
+    if data_sources:
+        attributions = [attribution_map.get(source, source) for source in data_sources]
+        unique_attributions = list(set(attributions))
+        
+        attribution_text = "\n\n**Data Sources:**\n"
+        for i, attribution in enumerate(unique_attributions, 1):
+            attribution_text += f"{i}. {attribution}\n"
+        
+        response_content += attribution_text
+    
+    return response_content
+```
+
+### Cross-Provider Query Patterns
+```sql
+-- Example: Cross-provider risk assessment query
+WITH financial_metrics AS (
+    SELECT 
+        company_name,
+        revenue,
+        ebitda,
+        total_debt,
+        shareholders_equity
+    FROM BANK_AI_DEMO.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS
+    WHERE fiscal_period = 'FY' AND fiscal_year = 2024
+),
+esg_assessment AS (
+    SELECT 
+        company_name,
+        esg_rating,
+        esg_score,
+        carbon_intensity
+    FROM BANK_AI_DEMO.RAW_DATA.MSCI_ESG_RATINGS
+    WHERE rating_date >= '2024-01-01'
+),
+news_sentiment AS (
+    SELECT 
+        cm.company_name,
+        AVG(rn.sentiment_score) as avg_sentiment,
+        COUNT(*) as article_count
+    FROM BANK_AI_DEMO.RAW_DATA.REUTERS_COMPANY_MENTIONS cm
+    JOIN BANK_AI_DEMO.RAW_DATA.REUTERS_NEWS_FEED rn ON cm.article_id = rn.article_id
+    WHERE rn.publish_datetime >= DATEADD('month', -3, CURRENT_DATE())
+    GROUP BY cm.company_name
+),
+regulatory_exposure AS (
+    SELECT 
+        'All Companies' as scope,
+        COUNT(*) as regulatory_updates,
+        SUM(CASE WHEN impact_level = 'High' THEN 1 ELSE 0 END) as high_impact_updates
+    FROM BANK_AI_DEMO.RAW_DATA.TR_REGULATORY_UPDATES
+    WHERE effective_date >= CURRENT_DATE()
+)
+SELECT 
+    fm.company_name,
+    fm.revenue,
+    fm.ebitda / fm.revenue as ebitda_margin,
+    fm.total_debt / fm.shareholders_equity as debt_to_equity,
+    ea.esg_rating,
+    ea.esg_score,
+    ns.avg_sentiment,
+    ns.article_count,
+    re.high_impact_updates
+FROM financial_metrics fm
+LEFT JOIN esg_assessment ea ON fm.company_name = ea.company_name
+LEFT JOIN news_sentiment ns ON fm.company_name = ns.company_name
+CROSS JOIN regulatory_exposure re
+ORDER BY fm.company_name;
+```
+
+## Marketplace Integration Storytelling
+
+### Demo Narrative Integration
+```markdown
+**Marketplace Data Integration Story Points:**
+
+1. **Data Breadth Demonstration**: 
+   "Our analysis combines financial data from S&P Global Market Intelligence, real-time news from Reuters, ESG ratings from MSCI, and regulatory intelligence from Thomson Reuters - all seamlessly integrated through Snowflake Marketplace."
+
+2. **Update Frequency Showcase**:
+   "This assessment includes financial data updated daily, news sentiment from this morning's Reuters feed, and sanctions screening that's updated in real-time through Dow Jones Risk & Compliance."
+
+3. **Data Quality Emphasis**:
+   "All external data maintains institutional-grade quality standards, with automated data lineage tracking and governance policies inherited from Snowflake's security framework."
+
+4. **Cost Efficiency Message**:
+   "Rather than managing multiple vendor relationships and data integration pipelines, we access all this premium data through a single Snowflake Marketplace subscription with unified billing."
+```
+
+### Technical Integration Benefits
+```python
+def demonstrate_marketplace_advantages():
+    """Showcase technical advantages of Snowflake Marketplace integration."""
+    
+    advantages = {
+        'unified_access': {
+            'description': 'Single SQL interface for all external data sources',
+            'demo_point': 'Query Reuters news and S&P financials in same SQL statement'
+        },
+        'automatic_updates': {
+            'description': 'Provider data automatically synced without ETL pipelines',
+            'demo_point': 'Show real-time sanctions list updates affecting risk scores'
+        },
+        'inherited_governance': {
+            'description': 'External data inherits same security and access controls',
+            'demo_point': 'User permissions automatically applied to marketplace data'
+        },
+        'native_performance': {
+            'description': 'External data queries leverage Snowflake compute optimization',
+            'demo_point': 'Complex cross-provider analytics complete in seconds'
+        },
+        'cost_transparency': {
+            'description': 'Usage-based pricing with detailed consumption tracking',
+            'demo_point': 'Show cost attribution by data provider and query type'
+        }
+    }
+    
+    return advantages
+```
+
+## Quality Assurance for External Data Simulation
+
+### Data Realism Validation
+```python
+def validate_external_data_realism(session: Session) -> Dict[str, bool]:
+    """Validate that simulated external data maintains realistic characteristics."""
+    
+    validation_checks = {
+        'sp_global_financials': validate_financial_ratios_realistic(session),
+        'reuters_sentiment': validate_sentiment_distribution(session),
+        'msci_esg_coverage': validate_esg_rating_distribution(session),
+        'dj_risk_accuracy': validate_sanctions_list_structure(session),
+        'cross_provider_consistency': validate_entity_mapping_accuracy(session)
+    }
+    
+    return validation_checks
+
+def validate_financial_ratios_realistic(session: Session) -> bool:
+    """Ensure S&P Global financial ratios fall within realistic industry ranges."""
+    
+    ratio_check = session.sql("""
+        SELECT 
+            industry_code,
+            AVG(total_debt / NULLIF(shareholders_equity, 0)) as avg_debt_equity,
+            AVG(ebitda / NULLIF(revenue, 0)) as avg_ebitda_margin,
+            COUNT(*) as company_count
+        FROM BANK_AI_DEMO.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS
+        WHERE fiscal_period = 'FY' AND fiscal_year = 2024
+        GROUP BY industry_code
+    """).collect()
+    
+    # Validate ratios are within expected industry ranges
+    for row in ratio_check:
+        if not (0.1 <= row['AVG_EBITDA_MARGIN'] <= 0.4):  # 10%-40% EBITDA margins
+            return False
+        if not (0.2 <= row['AVG_DEBT_EQUITY'] <= 5.0):    # Reasonable D/E ratios
+            return False
+    
+    return True
+```
+
+## Implementation Checklist
+
+### External Data Provider Setup
+- [ ] Create all provider-specific tables with realistic schemas
+- [ ] Generate entity mapping table for cross-provider correlation
+- [ ] Implement provider-specific data generation functions
+- [ ] Add marketplace attribution metadata to all tables
+- [ ] Validate data quality and realism across all providers
+
+### Agent Integration
+- [ ] Update agent instructions to include proper data source attribution
+- [ ] Modify response templates to cite external data providers
+- [ ] Test cross-provider query patterns in semantic views
+- [ ] Validate marketplace messaging in agent responses
+
+### Demo Narrative
+- [ ] Prepare marketplace integration talking points
+- [ ] Create technical advantage demonstration scripts
+- [ ] Develop cost efficiency and governance messaging
+- [ ] Test end-to-end external data story flow
+
+This external data simulation framework provides:
+
+1. **Authentic Provider Schemas**: Tables that match real data provider structures
+2. **Realistic Attribution**: Proper Snowflake Marketplace citations throughout
+3. **Cross-Provider Intelligence**: Entity linking enabling sophisticated analysis
+4. **Quality Simulation**: Realistic data characteristics and limitations
+5. **Agent Integration**: Seamless external data usage in responses
+6. **Demo Storytelling**: Compelling marketplace value proposition
+7. **Technical Validation**: Quality assurance for data realism
+8. **Scalable Architecture**: Easy addition of new data providers

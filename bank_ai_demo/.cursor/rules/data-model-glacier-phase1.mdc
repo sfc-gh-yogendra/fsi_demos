@@ -1,0 +1,372 @@
+---
+description: Comprehensive data model for Glacier First Bank Phase 1 demo with cross-domain entity relationships
+alwaysApply: false
+---
+# Glacier First Bank — Phase 1 Data Model
+
+## Overview
+This rule defines the complete data schema for Phase 1 scenarios (AML/KYC EDD + Credit Analyst) with cross-domain intelligence through shared ecosystem relationships. All entities are fictional but realistic, supporting complex analysis with contradictory evidence synthesis.
+
+## Core Entity Relationships
+
+### Primary Demo Entities
+- **Global Trade Ventures S.A.** (Luxembourg) - Primary AML/KYC subject, also applies for credit
+- **Innovate GmbH** (Germany) - Primary credit applicant, shares ecosystem with Global Trade
+- **Northern Supply Chain Ltd** (UK) - Shared logistics partner creating cross-domain risk
+- **EuroTech Industries** (Netherlands) - Competitor/customer relationship web
+
+### Market Context Themes
+- **ESG Compliance**: Sustainable finance regulations affecting credit decisions
+- **Supply Chain Risk**: Geopolitical tensions affecting logistics partnerships  
+- **Inflation Impact**: Rising interest rates affecting debt service coverage
+
+## Database Schema Specification
+
+### Database: `BANK_AI_DEMO`
+### Schemas: `RAW_DATA`, `CURATED_DATA`, `SEMANTIC_LAYER`, `AGENT_FRAMEWORK`
+
+## Core Tables (RAW_DATA Schema)
+
+### ENTITIES
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.ENTITIES (
+    ENTITY_ID VARCHAR(50) PRIMARY KEY,
+    ENTITY_NAME VARCHAR(200) NOT NULL,
+    ENTITY_TYPE VARCHAR(50) NOT NULL, -- 'CORPORATE', 'INDIVIDUAL', 'VENDOR', 'REGULATOR'
+    COUNTRY_CODE VARCHAR(3) NOT NULL,
+    INDUSTRY_SECTOR VARCHAR(100),
+    INCORPORATION_DATE DATE,
+    REGULATORY_STATUS VARCHAR(50), -- 'ACTIVE', 'UNDER_REVIEW', 'SANCTIONED'
+    ESG_RATING VARCHAR(10), -- 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D'
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+### ENTITY_RELATIONSHIPS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.ENTITY_RELATIONSHIPS (
+    RELATIONSHIP_ID VARCHAR(50) PRIMARY KEY,
+    PRIMARY_ENTITY_ID VARCHAR(50) NOT NULL,
+    RELATED_ENTITY_ID VARCHAR(50) NOT NULL,
+    RELATIONSHIP_TYPE VARCHAR(50) NOT NULL, -- 'VENDOR', 'CUSTOMER', 'COMPETITOR', 'SUBSIDIARY', 'UBO'
+    RELATIONSHIP_STRENGTH VARCHAR(20), -- 'PRIMARY', 'SECONDARY', 'INDIRECT'
+    EFFECTIVE_DATE DATE,
+    END_DATE DATE,
+    RISK_IMPACT_SCORE DECIMAL(3,2), -- 0.00 to 1.00
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (PRIMARY_ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID),
+    FOREIGN KEY (RELATED_ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID)
+);
+```
+
+### CUSTOMERS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.CUSTOMERS (
+    CUSTOMER_ID VARCHAR(50) PRIMARY KEY,
+    ENTITY_ID VARCHAR(50) NOT NULL,
+    CUSTOMER_TYPE VARCHAR(50) NOT NULL, -- 'CORPORATE', 'INDIVIDUAL'
+    ONBOARDING_DATE DATE NOT NULL,
+    RISK_RATING VARCHAR(10) NOT NULL, -- 'LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH'
+    KYC_STATUS VARCHAR(20) NOT NULL, -- 'COMPLETE', 'PENDING', 'REQUIRES_EDD'
+    LAST_REVIEW_DATE DATE,
+    NEXT_REVIEW_DATE DATE,
+    RELATIONSHIP_MANAGER VARCHAR(100),
+    AML_FLAGS INTEGER DEFAULT 0,
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID)
+);
+```
+
+### TRANSACTIONS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.TRANSACTIONS (
+    TRANSACTION_ID VARCHAR(50) PRIMARY KEY,
+    CUSTOMER_ID VARCHAR(50) NOT NULL,
+    TRANSACTION_DATE TIMESTAMP_NTZ NOT NULL,
+    AMOUNT DECIMAL(18,2) NOT NULL,
+    CURRENCY VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    TRANSACTION_TYPE VARCHAR(50) NOT NULL, -- 'CREDIT', 'DEBIT', 'TRANSFER', 'PAYMENT'
+    COUNTERPARTY_NAME VARCHAR(200),
+    COUNTERPARTY_COUNTRY VARCHAR(3),
+    DESCRIPTION TEXT,
+    RISK_SCORE DECIMAL(3,2), -- 0.00 to 1.00
+    SUSPICIOUS_ACTIVITY_FLAG BOOLEAN DEFAULT FALSE,
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (CUSTOMER_ID) REFERENCES CUSTOMERS(CUSTOMER_ID)
+);
+```
+
+### LOAN_APPLICATIONS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS (
+    APPLICATION_ID VARCHAR(50) PRIMARY KEY,
+    CUSTOMER_ID VARCHAR(50) NOT NULL,
+    APPLICATION_DATE DATE NOT NULL,
+    REQUESTED_AMOUNT DECIMAL(18,2) NOT NULL,
+    CURRENCY VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    LOAN_PURPOSE VARCHAR(100) NOT NULL,
+    TERM_MONTHS INTEGER NOT NULL,
+    STATUS VARCHAR(20) NOT NULL, -- 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'
+    INDUSTRY_SECTOR VARCHAR(100),
+    ANNUAL_REVENUE DECIMAL(18,2),
+    TOTAL_ASSETS DECIMAL(18,2),
+    TOTAL_LIABILITIES DECIMAL(18,2),
+    EBITDA DECIMAL(18,2),
+    DEBT_SERVICE_COVERAGE_RATIO DECIMAL(5,2),
+    DEBT_TO_EQUITY_RATIO DECIMAL(5,2),
+    CURRENT_RATIO DECIMAL(5,2),
+    SINGLE_CLIENT_CONCENTRATION_PCT DECIMAL(5,2),
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (CUSTOMER_ID) REFERENCES CUSTOMERS(CUSTOMER_ID)
+);
+```
+
+### HISTORICAL_LOANS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.HISTORICAL_LOANS (
+    LOAN_ID VARCHAR(50) PRIMARY KEY,
+    CUSTOMER_ID VARCHAR(50),
+    ORIGINATION_DATE DATE NOT NULL,
+    MATURITY_DATE DATE NOT NULL,
+    ORIGINAL_AMOUNT DECIMAL(18,2) NOT NULL,
+    CURRENCY VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    INDUSTRY_SECTOR VARCHAR(100),
+    DEBT_TO_EQUITY_AT_ORIGINATION DECIMAL(5,2),
+    DSCR_AT_ORIGINATION DECIMAL(5,2),
+    CURRENT_RATIO_AT_ORIGINATION DECIMAL(5,2),
+    CLIENT_CONCENTRATION_AT_ORIGINATION DECIMAL(5,2),
+    LOAN_STATUS VARCHAR(20), -- 'PERFORMING', 'RESTRUCTURED', 'DEFAULTED', 'PAID_OFF'
+    DEFAULT_DATE DATE,
+    LOSS_AMOUNT DECIMAL(18,2),
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    FOREIGN KEY (CUSTOMER_ID) REFERENCES CUSTOMERS(CUSTOMER_ID)
+);
+```
+
+## Unstructured Data Tables
+
+### COMPLIANCE_DOCUMENTS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.COMPLIANCE_DOCUMENTS (
+    ID VARCHAR(50) PRIMARY KEY,
+    TITLE VARCHAR(500) NOT NULL,
+    CONTENT TEXT NOT NULL,
+    ENTITY_NAME VARCHAR(200),
+    DOC_TYPE VARCHAR(50) NOT NULL, -- 'Onboarding', 'Adverse Media', 'PEP/Sanctions', 'Internal Memo'
+    PUBLISH_DATE DATE NOT NULL,
+    RISK_SIGNAL VARCHAR(20) NOT NULL, -- 'Low', 'Medium', 'High'
+    SOURCE VARCHAR(100), -- e.g., 'Reuters via Snowflake Marketplace', 'Internal KYC Team'
+    LANGUAGE VARCHAR(10) DEFAULT 'en-GB',
+    CONFIDENCE_SCORE DECIMAL(3,2), -- AI processing confidence
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+### CREDIT_POLICY_DOCUMENTS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.CREDIT_POLICY_DOCUMENTS (
+    ID VARCHAR(50) PRIMARY KEY,
+    TITLE VARCHAR(500) NOT NULL,
+    CONTENT TEXT NOT NULL,
+    POLICY_SECTION VARCHAR(100), -- 'Ratio Thresholds', 'Industry Guidelines', 'ESG Requirements'
+    EFFECTIVE_DATE DATE NOT NULL,
+    VERSION VARCHAR(20),
+    REGULATORY_FRAMEWORK VARCHAR(50), -- 'EU/EBA', 'Basel III', 'Internal'
+    LANGUAGE VARCHAR(10) DEFAULT 'en-GB',
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+### LOAN_DOCUMENTS
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.LOAN_DOCUMENTS (
+    ID VARCHAR(50) PRIMARY KEY,
+    TITLE VARCHAR(500) NOT NULL,
+    CONTENT TEXT NOT NULL,
+    APPLICANT_NAME VARCHAR(200) NOT NULL,
+    DOC_TYPE VARCHAR(50) NOT NULL, -- 'Business Plan', 'Financial Statements', 'Legal Documents'
+    UPLOAD_DATE DATE NOT NULL,
+    DOCUMENT_SECTION VARCHAR(100), -- 'Executive Summary', 'Key Personnel', 'Financial Projections'
+    PROCESSING_STATUS VARCHAR(20) DEFAULT 'PROCESSED', -- Assume AI_PARSE_DOCUMENT already applied
+    LANGUAGE VARCHAR(10) DEFAULT 'en-GB',
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+### NEWS_AND_RESEARCH
+```sql
+CREATE OR REPLACE TABLE BANK_AI_DEMO.RAW_DATA.NEWS_AND_RESEARCH (
+    ID VARCHAR(50) PRIMARY KEY,
+    TITLE VARCHAR(500) NOT NULL,
+    CONTENT TEXT NOT NULL,
+    ENTITY_NAME VARCHAR(200),
+    ARTICLE_TYPE VARCHAR(50), -- 'News', 'Research Report', 'Regulatory Update', 'Market Analysis'
+    PUBLISH_DATE DATE NOT NULL,
+    SOURCE VARCHAR(100), -- e.g., 'Bloomberg via Snowflake Marketplace', 'Reuters'
+    SENTIMENT_SCORE DECIMAL(3,2), -- -1.00 to 1.00
+    ESG_RELEVANCE BOOLEAN DEFAULT FALSE,
+    SUPPLY_CHAIN_RELEVANCE BOOLEAN DEFAULT FALSE,
+    INFLATION_RELEVANCE BOOLEAN DEFAULT FALSE,
+    LANGUAGE VARCHAR(10) DEFAULT 'en-GB',
+    CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+## Key Entity Specifications for Demo Scenarios
+
+### Global Trade Ventures S.A. (Primary AML/KYC Subject)
+```yaml
+entity_id: "GTV_SA_001"
+entity_name: "Global Trade Ventures S.A."
+country_code: "LUX"
+industry_sector: "International Trade"
+regulatory_status: "UNDER_REVIEW"
+esg_rating: "C+"
+
+# UBO Structure (for AML scenario)
+ubos:
+  - name: "Marcus Weber"
+    ownership_pct: 60
+    pep_status: false
+    sanctions_match: false
+  - name: "Elena Rossi"
+    ownership_pct: 40
+    pep_status: true  # Father was Italian government minister
+    sanctions_match: false
+
+# Relationship Web
+relationships:
+  - related_entity: "Northern Supply Chain Ltd"
+    relationship_type: "VENDOR"
+    relationship_strength: "PRIMARY"
+    risk_impact_score: 0.75
+```
+
+### Innovate GmbH (Primary Credit Applicant)
+```yaml
+entity_id: "INN_DE_001"
+entity_name: "Innovate GmbH"
+country_code: "DEU"
+industry_sector: "Software Services"
+esg_rating: "B+"
+
+# Financial Profile (for Credit scenario)
+financials:
+  annual_revenue: 12500000  # €12.5M
+  total_assets: 8750000
+  total_liabilities: 6200000
+  ebitda: 1875000
+  debt_service_coverage_ratio: 1.15  # Below warning threshold
+  debt_to_equity_ratio: 3.2  # Above warning threshold
+  current_ratio: 1.18  # Below warning threshold
+  single_client_concentration_pct: 72  # Above breach threshold
+
+# Relationship Web
+relationships:
+  - related_entity: "Northern Supply Chain Ltd"
+    relationship_type: "VENDOR"
+    relationship_strength: "SECONDARY"
+  - related_entity: "Global Trade Ventures S.A."
+    relationship_type: "CUSTOMER"
+    relationship_strength: "INDIRECT"
+```
+
+### Northern Supply Chain Ltd (Shared Risk Factor)
+```yaml
+entity_id: "NSC_UK_001"
+entity_name: "Northern Supply Chain Ltd"
+country_code: "GBR"
+industry_sector: "Logistics & Transportation"
+regulatory_status: "ACTIVE"
+
+# Risk Profile
+risk_factors:
+  - labor_dispute_risk: "HIGH"
+  - geopolitical_exposure: "MEDIUM"
+  - esg_compliance: "UNDER_REVIEW"
+
+# Client Dependencies
+major_clients:
+  - "Global Trade Ventures S.A."
+  - "Innovate GmbH"
+  - "EuroTech Industries"
+```
+
+## Data Generation Configuration
+
+### Volume Targets (Configurable)
+```yaml
+default_scale:
+  entities: 500
+  entity_relationships: 1200
+  customers: 200
+  transactions: 50000
+  loan_applications: 25
+  historical_loans: 1500
+  compliance_documents: 800
+  credit_policy_documents: 50
+  loan_documents: 150
+  news_and_research: 1200
+
+demo_scale:
+  entities: 100
+  entity_relationships: 250
+  customers: 50
+  transactions: 10000
+  loan_applications: 10
+  historical_loans: 300
+  compliance_documents: 200
+  credit_policy_documents: 20
+  loan_documents: 50
+  news_and_research: 300
+```
+
+### Market Theme Integration
+- **ESG Compliance**: 30% of documents reference ESG themes, sustainability regulations
+- **Supply Chain Risk**: 25% of news articles reference supply chain disruptions, geopolitical tensions
+- **Inflation Impact**: 20% of credit-related documents reference interest rate impacts, debt service challenges
+
+### External Data Source Attribution
+```yaml
+data_providers:
+  financial_data: "S&P Global Market Intelligence via Snowflake Marketplace"
+  news_feeds: "Reuters News Feed via Snowflake Marketplace"
+  regulatory_updates: "Thomson Reuters Regulatory Intelligence via Snowflake Marketplace"
+  esg_ratings: "MSCI ESG Ratings via Snowflake Marketplace"
+  sanctions_lists: "Dow Jones Risk & Compliance via Snowflake Marketplace"
+```
+
+## Cross-Domain Intelligence Patterns
+
+### Shared Ecosystem Connections
+1. **Vendor Risk Contagion**: Northern Supply Chain Ltd issues affect multiple clients
+2. **Industry Sector Clustering**: Software Services companies share similar risk profiles
+3. **Regulatory Cascade**: New ESG regulations affect both compliance procedures and credit policies
+4. **Geographic Risk Correlation**: EU entities share regulatory environment and market conditions
+
+### Contradictory Evidence Scenarios
+1. **Financial vs News Sentiment**: Strong financial metrics but negative news coverage
+2. **Historical vs Current Performance**: Past loan performance conflicts with current application strength
+3. **ESG Rating Discrepancies**: High ESG rating but recent environmental incident coverage
+4. **Regulatory Status Conflicts**: Clean sanctions screening but pending regulatory investigation
+
+## Quality Assurance Standards
+
+### Data Integrity Checks
+- All foreign key relationships must be valid
+- Financial ratios must be mathematically consistent
+- Date ranges must be logical (incorporation < onboarding < transactions)
+- Risk scores must align with supporting evidence
+
+### Realism Validation
+- Entity names must sound authentic for their jurisdictions
+- Financial metrics must reflect industry norms with realistic variance
+- Document content must reference specific entities, dates, and regulatory frameworks
+- News articles must reflect current market themes and realistic business scenarios
+
+### Cross-Domain Coherence
+- Shared entities must have consistent profiles across scenarios
+- Risk assessments must align across AML and credit perspectives
+- Timeline consistency across all entity interactions
+- Relationship strengths must reflect realistic business dependencies
