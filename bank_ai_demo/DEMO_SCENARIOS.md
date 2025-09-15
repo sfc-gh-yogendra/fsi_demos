@@ -152,27 +152,28 @@ This document provides complete demo scenarios for presenting the Glacier First 
 - **Regulatory References**: EBA Guidelines (EBA/GL/2022/01), EU AML Directive
 - **Timeline**: 30-day response requirement with escalation procedures
 
-#### Step 6: Professional PDF Report Generation
+#### Step 6: PDF Generation of RFI Draft
 **User Input**: 
 ```
-"Generate a comprehensive PDF report of this EDD analysis for the risk committee."
+"Generate a PDF of the RFI draft for Global Trade Ventures S.A. for formal sending."
 ```
 
 **Expected Response**:
-- **PDF Generation**: Agent uses custom PDF tool to create professional report
+- **PDF Generation**: Agent uses custom PDF tool to create **real, downloadable RFI letter**
 - **Report Details**: 
-  - Filename: glacier_aml_Global_Trade_Ventures_20241215_143022.pdf
-  - Professional Glacier First Bank branding and formatting
-  - Comprehensive analysis with risk findings, adverse media, and recommendations
-- **Storage**: Saved to @GLACIER_REPORTS_STAGE with 7-day retention
-- **Download Link**: Secure presigned URL provided for committee access
+  - Filename: glacier_aml_Global_Trade_Venture_20241215_143022.pdf
+  - Professional Glacier First Bank letterhead with branding
+  - Formatted RFI letter with proper business formatting
+  - Includes regulatory references, documentation requirements, and timelines
+- **Storage**: Uploaded to @GLACIER_REPORTS_STAGE ready for official correspondence
+- **Download Link**: Presigned URL for immediate download and distribution
 
 **Talking Points**:
-- **Custom Tool Integration**: Demonstrates Snowflake Intelligence's extensibility with custom PDF generation
-- **Professional Output**: Enterprise-grade reports with branded formatting and secure storage
-- **Workflow Automation**: Seamless transition from analysis to shareable documentation
-- **Secure Distribution**: Stage-based storage with presigned URLs for controlled access
-- **Audit Trail**: Timestamped reports with complete lineage from data to final output
+- **Document Automation**: From template search to professional PDF in minutes
+- **Regulatory Compliance**: Properly formatted RFI ready for official correspondence
+- **Workflow Integration**: Seamless transition from draft to distribution-ready document
+- **Professional Standards**: Bank letterhead and formatting for external communications
+- **Secure Distribution**: Controlled access with presigned URLs for stakeholder sharing
 
 **Key Features Highlighted**: 
 - Regulatory template generation with current guideline integration

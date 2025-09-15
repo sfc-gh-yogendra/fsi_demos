@@ -36,11 +36,11 @@ logger = logging.getLogger(__name__)
 class GlacierDemoOrchestrator:
     """Main orchestrator for Glacier First Bank demo setup."""
     
-    def __init__(self, connection_name: str = None, config_path: str = None):
+    def __init__(self, session: Session = None, connection_name: str = None, config_path: str = None):
         """Initialize the demo orchestrator."""
         self.connection_name = connection_name or os.getenv('CONNECTION_NAME')
         self.config = GlacierDemoConfig(config_path, self.connection_name)
-        self.session: Optional[Session] = None
+        self.session: Optional[Session] = session
         
         logger.info(f"Initialized Glacier Demo Orchestrator")
         logger.info(f"Institution: {self.config.config['global']['institution_name']}")
@@ -187,57 +187,117 @@ class GlacierDemoOrchestrator:
                 return_type=StringType(),
                 session=self.session
             )
-            def generate_pdf(session, report_content: str, report_type: str, entity_name: str):
+            def generate_pdf(session: Session, report_content: str, report_type: str, entity_name: str):
                 from datetime import datetime
                 import re
                 import markdown
                 import tempfile
+                import os
                 
                 # Generate timestamp for unique filename
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 safe_entity_name = re.sub(r'[^a-zA-Z0-9_]', '_', entity_name)[:20]
                 pdf_filename = f'glacier_{report_type.lower()}_{safe_entity_name}_{timestamp}.pdf'
                 
-                # Count content metrics
-                lines = report_content.count('\n') + 1
-                words = len(report_content.split())
-                
                 with tempfile.TemporaryDirectory() as tmpdir:
                     # Convert markdown to HTML
                     html_body = markdown.markdown(report_content, extensions=['tables', 'fenced_code'])
                     
-                    # Generate report header based on type
+                    # Professional CSS styling for banking reports
+                    css = """
+                    @page { size: A4; margin: 2cm; }
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #2C3E50; }
+                    h1 { color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 10px; }
+                    h2 { color: #2E75B6; border-left: 4px solid #2E75B6; padding-left: 15px; }
+                    h3 { color: #3F7CAC; }
+                    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                    th { background-color: #1F4E79; color: white; padding: 12px; font-weight: bold; }
+                    td { padding: 10px; border-bottom: 1px solid #ddd; }
+                    tr:nth-child(even) { background-color: #F8F9FA; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .footer { margin-top: 30px; font-size: 12px; color: #666; }
+                    .warning { background-color: #FFF3CD; border: 1px solid #FFEAA7; padding: 15px; margin: 20px 0; }
+                    .breach { background-color: #F8D7DA; border: 1px solid #F5C6CB; padding: 15px; margin: 20px 0; }
+                    .disclaimer { background-color: #E9ECEF; border-left: 4px solid #6C757D; padding: 15px; margin: 20px 0; font-style: italic; }
+                    """
+                    
+                    # Glacier First Bank logo (text-based for demo)
+                    glacier_logo = """
+                    <div style="text-align: center; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: white; padding: 20px; margin-bottom: 30px; border-radius: 10px;">
+                        <h1 style="margin: 0; font-size: 28px; color: white; border: none;">🏔️ GLACIER FIRST BANK</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Pan-European Universal Bank</p>
+                    </div>
+                    """
+                    
+                    # Report type specific headers
                     if report_type.upper() == 'AML':
-                        header = 'AML/KYC Enhanced Due Diligence Report'
+                        report_header = f"""
+                        <h2 style="color: #C9302C;">🔍 AML/KYC Enhanced Due Diligence Report</h2>
+                        <p><strong>Subject Entity:</strong> {entity_name}</p>
+                        <p><strong>Report Type:</strong> Anti-Money Laundering & Know Your Customer Analysis</p>
+                        """
                     elif report_type.upper() == 'CREDIT':
-                        header = 'Credit Risk Assessment Report'
+                        report_header = f"""
+                        <h2 style="color: #2E75B6;">💰 Credit Risk Assessment Report</h2>
+                        <p><strong>Subject Entity:</strong> {entity_name}</p>
+                        <p><strong>Report Type:</strong> Commercial Credit Analysis</p>
+                        """
                     else:
-                        header = 'Financial Analysis Report'
+                        report_header = f"""
+                        <h2>📊 Financial Analysis Report</h2>
+                        <p><strong>Subject Entity:</strong> {entity_name}</p>
+                        <p><strong>Report Type:</strong> {report_type}</p>
+                        """
                     
-                    # Comprehensive success message
-                    success_msg = f'''PDF Report Generated Successfully!
-
-GLACIER FIRST BANK - {header}
-Subject Entity: {entity_name}
-
-Report Details:
-- Filename: {pdf_filename}
-- Type: {report_type} Analysis Report
-- Content: {lines} lines, {words} words
-- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
-
-Storage Information:
-- Location: @BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE/{pdf_filename}
-- Format: Professional PDF with Glacier First Bank branding
-- HTML Content: {len(html_body)} characters processed
-- Retention: 7 days
-- Classification: Internal Use Only
-
-The report is ready for download and sharing with stakeholders.
-
-Demo Notice: This analysis uses synthetic data for demonstration purposes only.'''
+                    # Complete HTML document
+                    html_content = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Glacier First Bank - {report_type} Report</title>
+                        <style>{css}</style>
+                    </head>
+                    <body>
+                        {glacier_logo}
+                        <div class="header">
+                            {report_header}
+                            <p><strong>Generated:</strong> {datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')}</p>
+                            <hr>
+                        </div>
+                        {html_body}
+                        <div class="footer">
+                            <hr>
+                            <div class="disclaimer">
+                                <p><strong>⚠️ Demo Notice:</strong> This analysis uses synthetic data for demonstration purposes only. All entities, transactions, and documents are fictitious and created for training/demo scenarios.</p>
+                            </div>
+                            <p><strong>Report ID:</strong> GFB-{report_type.upper()}-{timestamp} | <strong>Generated By:</strong> Snowflake Intelligence</p>
+                            <p><strong>Entity:</strong> {entity_name} | <strong>Classification:</strong> Internal Use Only</p>
+                            <p><em>This report demonstrates AI-powered banking analytics with Snowflake Cortex</em></p>
+                        </div>
+                    </body>
+                    </html>
+                    """
                     
-                    return success_msg
+                    # Create HTML file
+                    html_path = os.path.join(tmpdir, 'report.html')
+                    with open(html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                    
+                    # Convert HTML to PDF
+                    import weasyprint
+                    pdf_path = os.path.join(tmpdir, pdf_filename)
+                    weasyprint.HTML(filename=html_path).write_pdf(pdf_path)
+                    
+                    # Upload to secure stage
+                    session.file.put(pdf_path, f"@BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE", overwrite=True, auto_compress=False)
+                    
+                    # Generate presigned URL for download
+                    presigned_url = session.sql(
+                        f"SELECT GET_PRESIGNED_URL('@BANK_AI_DEMO.CURATED_DATA.GLACIER_REPORTS_STAGE', '{pdf_filename}') AS url"
+                    ).collect()[0]['URL']
+                    
+                    return f"PDF report generated successfully: {pdf_filename}. Download URL: {presigned_url}"
             
             logger.info("PDF generation stored procedure created successfully")
             

@@ -172,11 +172,15 @@ Examples:
             sys.exit(1)
         
         config = GlacierDemoConfig(args.config, connection_name)
-        orchestrator = GlacierDemoOrchestrator(connection_name, args.config)
+        
+        # Create orchestrator first (without session)
+        orchestrator = GlacierDemoOrchestrator(connection_name=connection_name, config_path=args.config)
         
         # Create Snowflake session
         if not args.validate_only or args.validate_only:
             session = orchestrator.create_snowflake_session()
+            # Now update orchestrator with session
+            orchestrator.session = session
         
         # Validate-only mode
         if args.validate_only:
