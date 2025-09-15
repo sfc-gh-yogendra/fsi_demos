@@ -472,12 +472,13 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             )
         ),
         transaction_dates AS (
-            -- Step 4: Generate weekly transaction dates over the past 12 months
-            -- Creates realistic trading frequency (weekly purchases building positions)
-            SELECT 
-                DATEADD(day, seq4() * 7, DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE())) as trade_date
-            FROM TABLE(GENERATOR(rowcount => {config.SYNTHETIC_TRANSACTION_MONTHS * 4}))  -- ~48 weeks of transactions
-            WHERE DAYOFWEEK(trade_date) BETWEEN 2 AND 6  -- Business days only (Monday=2 to Friday=6)
+            -- Step 4: Generate business days over the past 12 months for transactions
+            -- Uses random offset from start date to get varied business days
+            SELECT DISTINCT
+                DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE())) as trade_date
+            FROM TABLE(GENERATOR(rowcount => {365 * config.SYNTHETIC_TRANSACTION_MONTHS / 12}))  -- Daily dates over period
+            WHERE DAYOFWEEK(DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE()))) BETWEEN 1 AND 5  -- Business days only
+            AND seq4() % 5 = 0  -- Take every 5th business day for sparser transactions
         )
         -- Step 5: Generate final transaction records with realistic attributes
         -- Creates BUY transactions that build up portfolio positions over time
@@ -609,7 +610,7 @@ def build_marketdata_synthetic(session: Session):
             -- Excludes weekends to match real market trading calendar
             SELECT DATEADD(day, seq4(), DATEADD(year, -{config.YEARS_OF_HISTORY}, CURRENT_DATE())) as price_date
             FROM TABLE(GENERATOR(rowcount => {365 * config.YEARS_OF_HISTORY}))  -- ~1,825 days total
-            WHERE DAYOFWEEK(price_date) BETWEEN 2 AND 6  -- Monday=2 to Friday=6 only
+            WHERE DAYOFWEEK(price_date) BETWEEN 1 AND 5  -- Monday=1 to Friday=5 only
         ),
         portfolio_securities AS (
             -- Step 2: Get only securities that are held in portfolios
