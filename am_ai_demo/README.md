@@ -11,7 +11,7 @@ A comprehensive demonstration of Snowflake Intelligence capabilities for asset m
 - Navigate to the project directory: `cd am_ai_demo`
 
 #### **Snowflake Account**
-- Cortex features enabled and cross-region access
+- Make sure you have cross-region inference enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference, at minimum you need to have AWS_EU enabled byt ANY_REGIONS is prefered.
 - Snowflake Intelligence enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence
 - **Optional**: Access to "Data Financials & Economics: Enterprise" dataset from Snowflake Marketplace (only required if you want to update the `real_assets.csv` file with fresh data)
 

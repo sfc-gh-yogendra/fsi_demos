@@ -471,29 +471,59 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
                 (PortfolioName != 'SAM Technology & Infrastructure')
             )
         ),
-        transaction_dates AS (
-            -- Step 4: Generate business days over the past 12 months for transactions
-            -- Uses random offset from start date to get varied business days
-            SELECT DISTINCT
-                DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE())) as trade_date
-            FROM TABLE(GENERATOR(rowcount => {365 * config.SYNTHETIC_TRANSACTION_MONTHS / 12}))  -- Daily dates over period
-            WHERE DAYOFWEEK(DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE()))) BETWEEN 1 AND 5  -- Business days only
-            AND seq4() % 5 = 0  -- Take every 5th business day for sparser transactions
+        business_days AS (
+            -- Step 4a: Generate all business days over the past 12 months
+            -- Creates complete set of Monday-Friday trading days
+            SELECT generated_date as trade_date
+            FROM (
+                SELECT DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE())) as generated_date
+                FROM TABLE(GENERATOR(rowcount => {365 * config.SYNTHETIC_TRANSACTION_MONTHS // 12}))
+            )
+            WHERE DAYOFWEEK(generated_date) BETWEEN 1 AND 5
+        ),
+        trading_intensity AS (
+            -- Step 4b: Assign realistic trading intensity to each business day
+            -- Creates varied activity: some busy days (multiple portfolios), some quiet days (few/none)
+            SELECT 
+                trade_date,
+                CASE 
+                    -- Use hash-based approach for deterministic but varied trading patterns
+                    -- 15% of days are busy (market events, rebalancing dates)
+                    WHEN (HASH(trade_date) % 100) < 15 THEN 0.6
+                    -- 25% of days are moderate (regular portfolio activity)  
+                    WHEN (HASH(trade_date) % 100) < 40 THEN 0.3
+                    -- 35% of days are quiet (minimal trading)
+                    WHEN (HASH(trade_date) % 100) < 75 THEN 0.1
+                    -- 25% of days are very quiet (no trading)
+                    ELSE 0.0
+                END as portfolio_trade_probability
+            FROM business_days
+        ),
+        portfolio_trading_days AS (
+            -- Step 4c: Determine which portfolios trade on which days
+            -- Applies portfolio-specific probability with different trading patterns per portfolio
+            SELECT 
+                p.PortfolioID,
+                ti.trade_date
+            FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p
+            CROSS JOIN trading_intensity ti
+            WHERE ti.portfolio_trade_probability > 0
+            AND (HASH(p.PortfolioID, ti.trade_date) % 100) < (ti.portfolio_trade_probability * 100)
         )
         -- Step 5: Generate final transaction records with realistic attributes
         -- Creates BUY transactions that build up portfolio positions over time
         SELECT 
             -- Unique transaction identifier (sequential numbering)
-            ROW_NUMBER() OVER (ORDER BY sh.PortfolioID, sh.SecurityID, td.trade_date) as TransactionID,
+            ROW_NUMBER() OVER (ORDER BY sh.PortfolioID, sh.SecurityID, ptd.trade_date) as TransactionID,
             -- Transaction and trade dates (same for simplicity)
-            td.trade_date as TransactionDate,
-            td.trade_date as TradeDate,
+            ptd.trade_date as TransactionDate,
+            ptd.trade_date as TradeDate,
             -- Portfolio and security references
             sh.PortfolioID,
             sh.SecurityID,
             -- Transaction attributes
             'BUY' as TransactionType,  -- Simplified: mostly buys to build positions over time
-            DATEADD(day, 2, td.trade_date) as SettleDate,  -- Standard T+2 settlement cycle
+            DATEADD(day, 2, ptd.trade_date) as SettleDate,  -- Standard T+2 settlement cycle
             -- Strategic position sizing: larger positions for demo scenario companies
             CASE 
                 WHEN EXISTS (
@@ -515,10 +545,10 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             'USD' as Currency,
             'ABOR' as SourceSystem,  -- Accounting Book of Record
             -- Source system transaction reference
-            CONCAT('TXN_', ROW_NUMBER() OVER (ORDER BY sh.PortfolioID, sh.SecurityID, td.trade_date)) as SourceTransactionID
+            CONCAT('TXN_', ROW_NUMBER() OVER (ORDER BY sh.PortfolioID, sh.SecurityID, ptd.trade_date)) as SourceTransactionID
         FROM selected_holdings sh
-        CROSS JOIN transaction_dates td
-        WHERE UNIFORM(0, 1, RANDOM()) < 0.1  -- Only 10% of combinations create transactions
+        JOIN portfolio_trading_days ptd ON sh.PortfolioID = ptd.PortfolioID
+        WHERE (HASH(sh.SecurityID, ptd.trade_date) % 100) < 20  -- 20% of portfolio-security-day combinations create transactions
     """).collect()
     
     print("✅ Created transaction history")
