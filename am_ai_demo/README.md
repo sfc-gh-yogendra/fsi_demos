@@ -78,15 +78,18 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 
 | Scenario | Agent | Implementation Status | Key Capabilities |
 |----------|-------|----------------------|------------------|
-| **Portfolio Insights** | `portfolio_copilot` | **✅ IMPLEMENTED** | Holdings analysis, issuer-level exposure, benchmark comparison |
-| **Research Intelligence** | `research_copilot` | **🎯 READY TO BUILD** | Document research and analysis across broker reports and earnings |
-| **Thematic Analysis** | `thematic_macro_advisor` | **🎯 READY TO BUILD** | Theme discovery, exposure analysis, macro scenario modeling |
+| **Portfolio Insights** | `portfolio_copilot` | **✅ FULLY IMPLEMENTED** | Holdings analysis, issuer-level exposure, benchmark comparison |
+| **Research Intelligence** | `research_copilot` | **✅ FULLY IMPLEMENTED** | Document research and analysis across broker reports and earnings |
+| **Thematic Analysis** | `thematic_macro_advisor` | **✅ FULLY IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
 | **ESG Monitoring** | `esg_guardian` | **🔄 REQUIRES NEW DATA** | Controversy scanning, policy compliance, engagement tracking |
 | **Compliance** | `compliance_advisor` | **🔄 REQUIRES NEW DATA** | Mandate monitoring, breach detection, policy citation |
 | **Client Reporting** | `sales_advisor` | **🔄 REQUIRES NEW DATA** | Performance reports, template formatting, philosophy integration |
 | **Factor Analysis** | `quant_analyst` | **🔄 REQUIRES ENHANCEMENTS** | Factor screening, backtesting, performance attribution |
 
-**Legend**: ✅ Ready to demo | 🎯 Can be implemented immediately | 🔄 Needs additional development
+**Phase Status**: 
+- **Phase 1 & 2 Complete**: 3 scenarios fully operational for demonstration
+- **Phase 3**: ESG & Compliance scenarios (requires new document types)
+- **Phase 4**: Client & Quantitative scenarios (requires additional development)
 
 ## Configuration Defaults
 
