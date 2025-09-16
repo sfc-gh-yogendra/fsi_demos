@@ -35,17 +35,16 @@ def generate_unstructured_data(session: Session, test_mode: bool = False):
     
     print("  ✅ Unstructured data generation complete")
 
-def generate_unstructured_data_with_phase2(session: Session, test_mode: bool = False, include_phase2: bool = True):
-    """Generate all unstructured data including Phase 2 ESG enhancements"""
+def generate_unstructured_data_with_esg(session: Session, test_mode: bool = False):
+    """Generate all unstructured data including ESG enhancements"""
     
     # Generate base unstructured data
     generate_unstructured_data(session, test_mode)
     
-    # Generate Phase 2 ESG content if requested
-    if include_phase2:
-        print("  → Generating Phase 2 ESG content...")
-        enhance_esg_content(session)
-        print("  ✅ Phase 2 ESG content created")
+    # Generate ESG content
+    print("  → Generating ESG content...")
+    enhance_esg_content(session)
+    print("  ✅ ESG content created")
 
 def generate_communications_corpus(session: Session, test_mode: bool = False):
     """Generate communications using the 5-step Cortex Complete pipeline"""
@@ -79,7 +78,10 @@ def generate_communications_corpus(session: Session, test_mode: bool = False):
         col('CHANNEL'),
         col('SUBJECT'),
         col('GENERATED_CONTENT').alias('CONTENT'),
-        col('SENTIMENT_SCORE')
+        col('SENTIMENT_SCORE'),
+        lit(None).cast('string').alias('RISKCATEGORY'),
+        lit(None).cast('string').alias('RISKSEVERITY'),
+        lit(0).alias('RISKFLAGS')
     )
     
     final_communications.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS", )
@@ -506,11 +508,11 @@ def create_client_interactions_view(session: Session):
     """).collect()
 
 # ======================================================
-# PHASE 2: ESG CONTENT ENHANCEMENT
+# ESG RESEARCH CONTENT CREATION
 # ======================================================
 
-def enhance_esg_content(session: Session):
-    """Enhance research corpus with richer ESG content"""
+def create_esg_research_content(session: Session):
+    """Create ESG research content for the research corpus"""
     
     # Ensure database context
     session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
@@ -929,12 +931,6 @@ def add_risk_flags_to_communications(session: Session):
         ]
     }
     
-    # First, update all records to have default values
-    session.sql(f"""
-        UPDATE {config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS
-        SET RiskCategory = NULL, RiskSeverity = NULL, RiskFlags = 0
-    """).collect()
-    
     # Get all communications
     comms = session.sql(f"""
         SELECT COMMUNICATION_ID, CONTENT
@@ -966,9 +962,9 @@ def add_risk_flags_to_communications(session: Session):
             
             session.sql(f"""
                 UPDATE {config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS
-                SET RiskCategory = '{primary_risk}',
-                    RiskSeverity = '{severity}',
-                    RiskFlags = {len(detected_risks)}
+                SET RISKCATEGORY = '{primary_risk}',
+                    RISKSEVERITY = '{severity}',
+                    RISKFLAGS = {len(detected_risks)}
                 WHERE COMMUNICATION_ID = '{comm_id}'
             """).collect()
     

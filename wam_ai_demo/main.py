@@ -10,7 +10,7 @@ from snowflake.snowpark import Session
 import config
 from src.setup import setup_database_and_schemas
 from src.generate_structured import generate_structured_data, generate_advisors, generate_clients, generate_issuers_and_securities, generate_portfolios_and_accounts, generate_simplified_positions, generate_market_data, create_watchlists
-from src.generate_unstructured import generate_unstructured_data, enhance_esg_content
+from src.generate_unstructured import generate_unstructured_data, create_esg_research_content
 from src.create_semantic_views import create_semantic_views
 from src.create_search_services import create_search_services
 from src.validate_components import validate_all_components
@@ -72,14 +72,14 @@ def main():
             validate_all_components(session)
             return
         
-        # Phase 1: Setup (always run for scope 'all' or 'data')
+        # Setup (always run for scope 'all' or 'data')
         if args.scope in ['all', 'data']:
-            print("\n🔧 Phase 1: Database and Schema Setup")
+            print("\n🔧 Database and Schema Setup")
             setup_database_and_schemas(session)
         
-        # Phase 2: Data Generation
+        # Data Generation
         if args.scope in ['all', 'data']:
-            print("\n📊 Phase 2: Data Generation")
+            print("\n📊 Data Generation")
             
             # Generate structured data (dimensions only)
             from src.setup import create_foundation_tables
@@ -97,34 +97,32 @@ def main():
             generate_simplified_positions(session)
             generate_market_data(session)
             
+            # Generate watchlists (part of structured data)
+            print("  → Creating watchlists...")
+            create_watchlists(session)
+            
             # Generate unstructured data (communications, research, regulatory)
             print("  → Generating unstructured data...")
             generate_unstructured_data(session)
+            
+            # Generate ESG content (part of unstructured data)
+            print("  → Creating ESG research content...")
+            create_esg_research_content(session)
         
-        # Phase 3: AI Services
+        # AI Services
         if args.scope in ['all', 'semantic', 'search']:
-            print("\n🤖 Phase 3: AI Services Setup")
+            print("\n🤖 AI Services Setup")
             
             if args.scope in ['all', 'semantic']:
                 print("  → Creating semantic views...")
-                create_semantic_views(session, include_phase2=True)
+                create_semantic_views(session)
             
             if args.scope in ['all', 'search']:
                 print("  → Creating search services...")
                 create_search_services(session)
-            
-            # Phase 2 Enhancements (always enabled when doing data or all)
-            if args.scope in ['all', 'data']:
-                print("\n🚀 Phase 2: Enhanced Capabilities")
-                
-                print("  → Creating watchlists...")
-                create_watchlists(session)
-                
-                print("  → Enhancing ESG content...")
-                enhance_esg_content(session)
         
-        # Phase 4: Validation
-        print("\n✅ Phase 4: Component Validation")
+        # Validation
+        print("\n✅ Component Validation")
         validate_all_components(session)
         
         print(f"\n🎉 WAM AI Demo build completed successfully!")

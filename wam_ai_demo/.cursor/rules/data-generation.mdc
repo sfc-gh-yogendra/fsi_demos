@@ -7,7 +7,7 @@ alwaysApply: true
 ## File Organization
 - **SINGLE STRUCTURED FILE**: All structured data generation must be in `src/generate_structured.py`
 - **SINGLE UNSTRUCTURED FILE**: All unstructured data generation must be in `src/generate_unstructured.py`
-- **NO SEPARATE FILES**: Do not create separate files for Phase 2, ESG, watchlists, or themed data
+- **NO SEPARATE FILES**: Do not create separate files for ESG, watchlists, or themed data
 
 ## Core Data Model
 - Enhanced model with immutable `SecurityID` and issuer hierarchy
@@ -51,6 +51,41 @@ else:
 - **DIM_PORTFOLIO**: PortfolioID IDENTITY(1,1) PRIMARY KEY
 - **FACT_POSITION_DAILY_ABOR**: Foreign keys to above dimensions
 
+## Main.py Integration Rules
+
+### **CRITICAL**: All Data Generation Must Be Triggered in Correct main.py Sections
+
+**Structured Data Functions** must be called in the **Data Generation** section:
+```python
+# Data Generation Section (--scope 'all' or 'data')
+if args.scope in ['all', 'data']:
+    # Core structured data
+    generate_advisors(session)
+    generate_clients(session)
+    generate_issuers_and_securities(session)
+    generate_portfolios_and_accounts(session)
+    generate_simplified_positions(session)
+    generate_market_data(session)
+    
+    # ✅ ALWAYS CALL: Watchlists are part of structured data
+    create_watchlists(session)
+```
+
+**Unstructured Data Functions** must be called in the **Data Generation** section:
+```python
+    # Core unstructured data
+    generate_unstructured_data(session)
+    
+    # ✅ ALWAYS CALL: ESG content is part of unstructured data  
+    create_esg_research_content(session)
+```
+
+### **NEVER Create Separate "Enhanced" or "Phase" Sections**
+- ❌ Do NOT create conditional enhancement sections
+- ❌ Do NOT use include_phase2 or similar parameters
+- ✅ Integrate ALL data generation into the main flow
+- ✅ New data functions MUST be added to the appropriate section
+
 ## Build Integrity
 - Ensure owned holdings align with communications/research references
 - Portfolio weights sum to 100% (±0.1% tolerance)
@@ -58,3 +93,4 @@ else:
 
 @src/generate_structured.py
 @src/generate_unstructured.py
+@main.py

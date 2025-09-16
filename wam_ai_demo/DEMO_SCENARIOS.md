@@ -2,9 +2,9 @@
 
 This document provides complete demo storylines and flows for presenting the WAM AI Demo to wealth management customers. Each scenario is designed as a 3-4 step conversation that showcases the unique value of Snowflake AI for different personas.
 
-## Phase 2 Features Now Included
+## Enhanced Features Included
 
-The demo scenarios have been enhanced with Phase 2 capabilities:
+The demo scenarios include enhanced capabilities:
 - **🌱 ESG & Sustainability Analysis**: Carbon neutrality research, ESG scoring, sustainability reports
 - **📊 Thematic Watchlists**: Carbon Negative Leaders, AI Innovation, ESG Leaders portfolios
 - **🔍 Enhanced Compliance**: Greenwashing detection, ESG disclosure verification
@@ -25,7 +25,7 @@ The demo scenarios have been enhanced with Phase 2 capabilities:
 - **Client Focus**: Sarah Johnson (realistic client name for natural conversation)
 - **Portfolio Value**: $169,920 in US Financials Core portfolio
 - **Top Holdings**: Visa ($85,620), JPMorgan ($84,300) - Conservative allocation appropriate for her risk profile
-- **Phase 2 Features**: 
+- **Enhanced Features**: 
   - **Thematic Watchlists**: Carbon Negative Leaders (MSFT, AAPL, NVDA), AI Innovation, ESG Leaders
   - **ESG Content**: 18 ESG/sustainability documents including carbon neutrality reports
   - **Portfolio ESG Analysis**: 69.1% exposure to Carbon Negative Leaders
@@ -434,7 +434,7 @@ Compliance Status: All portfolios operating within documented investment policie
 - *"IPS monitoring ensures fiduciary responsibility and regulatory compliance"*
 - *"Planning integration prevents policy violations before they occur"*
 
-#### Step 3c: Carbon Negative Leaders Analysis (Phase 2 Feature)
+#### Step 3c: Carbon Negative Leaders Analysis
 **Demo Operator Says**: *"Let's analyze our exposure to the Carbon Negative Leaders theme."*
 
 **User Query**:
@@ -595,7 +595,7 @@ Current Compliance Status: Firm procedures align with FINRA 2210 requirements
 - *"No more searching through regulatory manuals or legal databases"*
 - *"The CoPilot can cross-reference current practices with regulatory requirements"*
 
-#### Step 3: ESG Compliance Monitoring (Phase 2 Feature)
+#### Step 3: ESG Compliance Monitoring
 **Demo Operator Says**: *"Let's check for ESG-related compliance risks."*
 
 **User Query**:

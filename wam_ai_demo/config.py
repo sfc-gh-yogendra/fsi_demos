@@ -20,14 +20,22 @@ CLIENTS_PER_ADVISOR = 25
 ACCOUNTS_PER_CLIENT = 2
 
 # Date ranges (extended for advisor benchmarking)
+HISTORY_YEARS = 5  # Number of years of history to generate
+
 # Note: Use functions to ensure dates are calculated when called, not when module is imported
 def get_history_end_date():
     """Get the end date for historical data generation (today)"""
     return datetime.now().date()
 
 def get_history_start_date():
-    """Get the start date for historical data generation (5 years ago)"""
-    return get_history_end_date() - timedelta(days=365 * 5)
+    """Get the start date for historical data generation"""
+    return get_history_end_date() - timedelta(days=365 * HISTORY_YEARS)
+
+def get_market_data_rowcount():
+    """Calculate rowcount needed for market data generation based on history years"""
+    # Need enough days to cover all years plus some buffer
+    # Estimate ~365 days per year + 10% buffer to ensure we have enough
+    return int(HISTORY_YEARS * 365 * 1.1)
 
 # For compatibility with existing code, but these should be replaced with function calls
 HISTORY_END_DATE = None  # Use get_history_end_date() instead
@@ -158,7 +166,7 @@ PLANNING_MULTIPLE_VERSIONS_RATE = 0.40  # 40% of clients have multiple versions
 PLANNING_VERSIONS_RANGE = {"min": 1, "max": 3}
 
 # Client Tenure Configuration (for varied history)
-CLIENT_TENURE_MONTHS = {"min": 6, "max": 60}  # 6 months to 5 years
+CLIENT_TENURE_MONTHS = {"min": 6, "max": HISTORY_YEARS * 12}  # 6 months to configured history years
 
 def get_build_mode():
     """Get build mode from environment or default to replace_all"""

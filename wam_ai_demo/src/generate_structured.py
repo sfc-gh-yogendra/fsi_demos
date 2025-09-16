@@ -46,24 +46,23 @@ def generate_structured_data(session: Session, test_mode: bool = False):
     
     print("  ✅ Structured data generation complete")
 
-def generate_structured_data_with_phase2(session: Session, test_mode: bool = False, include_phase2: bool = True):
-    """Generate all structured data including Phase 2 watchlists"""
+def generate_structured_data_with_watchlists(session: Session, test_mode: bool = False):
+    """Generate all structured data including watchlists"""
     
     # Generate base structured data
     generate_structured_data(session, test_mode)
     
-    # Generate Phase 2 watchlists if requested
-    if include_phase2:
-        print("  → Generating Phase 2 watchlists...")
-        create_watchlists(session)
-        print("  ✅ Phase 2 watchlists created")
+    # Generate watchlists
+    print("  → Generating watchlists...")
+    create_watchlists(session)
+    print("  ✅ Watchlists created")
 
 # ======================================================
-# PHASE 2: WATCHLIST CREATION
+# WATCHLIST CREATION
 # ======================================================
 
 def create_watchlists(session: Session):
-    """Create thematic watchlists for Phase 2 enhancements"""
+    """Create thematic watchlists"""
     
     # Ensure database context
     session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
@@ -929,8 +928,9 @@ def generate_synthetic_market_data(session: Session):
         CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_MARKETDATA_TIMESERIES AS
         WITH business_dates AS (
             SELECT DATEADD(day, seq4(), '{config.get_history_start_date()}') as price_date
-            FROM TABLE(GENERATOR(rowcount => 500))
+            FROM TABLE(GENERATOR(rowcount => {config.get_market_data_rowcount()}))
             WHERE DAYOFWEEK(price_date) BETWEEN 2 AND 6
+              AND price_date <= '{config.get_history_end_date()}'
         ),
         securities AS (
             SELECT ROW_NUMBER() OVER (ORDER BY PrimaryTicker) as SecurityID, PrimaryTicker

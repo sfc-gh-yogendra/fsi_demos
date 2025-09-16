@@ -25,26 +25,25 @@ def validate_all_components(session: Session):
     
     print("  ✅ Component validation complete")
 
-def validate_all_components_with_phase2(session: Session, include_phase2: bool = True):
-    """Run comprehensive validation including Phase 2 features"""
+def validate_all_components_with_enhancements(session: Session):
+    """Run comprehensive validation including enhanced features"""
     
-    print("  → Running component validation with Phase 2...")
+    print("  → Running component validation with enhancements...")
     
     # Run base validation
     validate_all_components(session)
     
-    # Run Phase 2 validation if requested
-    if include_phase2:
-        validate_phase2_features(session)
+    # Run enhancement validation
+    validate_enhanced_features(session)
 
 # ======================================================
-# PHASE 2: VALIDATION FUNCTIONS
+# ENHANCED FEATURES VALIDATION
 # ======================================================
 
-def validate_phase2_features(session: Session):
-    """Validate all Phase 2 enhancements"""
+def validate_enhanced_features(session: Session):
+    """Validate all enhanced features"""
     
-    print("  → Validating Phase 2 features...")
+    print("  → Validating enhanced features...")
     
     # Ensure database context
     session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
@@ -58,7 +57,7 @@ def validate_phase2_features(session: Session):
     # Validate Carbon Negative Leaders analytics
     validate_carbon_negative_analytics(session)
     
-    print("  ✅ Phase 2 validation complete")
+    print("  ✅ Enhanced features validation complete")
 
 def validate_watchlists(session: Session):
     """Validate watchlist creation and data"""

@@ -139,7 +139,7 @@ This demo showcases three wealth management personas powered by Snowflake AI:
 - **Tools**: Communication monitoring, regulatory guidance, compliance verification
 - **Demo Query**: *"Search for any communications containing performance guarantees."*
 
-### Enhanced Features (Phase 2)
+### Enhanced Features
 - **Thematic Watchlists**: Carbon Negative Leaders, AI Innovation Leaders, ESG Leaders
 - **ESG Analytics**: Sustainability reporting, carbon neutrality analysis
 - **Advanced Insights**: Watchlist exposure analysis, ESG scoring
@@ -216,7 +216,7 @@ WAM_AI_DEMO/
 #### Semantic Views
 - **CLIENT_FINANCIALS_SV**: Portfolio analytics with multi-table joins
 - **CLIENT_INTERACTIONS_SV**: Communication patterns and metrics
-- **WATCHLIST_ANALYTICS_SV**: Thematic investment analysis (Phase 2)
+- **WATCHLIST_ANALYTICS_SV**: Thematic investment analysis
 
 #### Search Services
 - **COMMUNICATIONS_SEARCH**: Client emails, calls, meeting notes
