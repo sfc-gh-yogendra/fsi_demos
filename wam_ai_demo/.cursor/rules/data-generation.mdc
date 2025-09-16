@@ -2,245 +2,59 @@
 alwaysApply: true
 ---
 
-# WAM AI Demo - Structured Data Generation Rules
+# WAM AI Demo - Data Generation Rules
 
 ## File Organization
 - **SINGLE STRUCTURED FILE**: All structured data generation must be in `src/generate_structured.py`
 - **SINGLE UNSTRUCTURED FILE**: All unstructured data generation must be in `src/generate_unstructured.py`
-- **NO SEPARATE FILES**: Do not create separate files for Phase 2, ESG, watchlists, or themed data generation
+- **NO SEPARATE FILES**: Do not create separate files for Phase 2, ESG, watchlists, or themed data
 
-## Model depth
-- Use enhanced model with immutable `SecurityID` and issuer hierarchy (Depth C).
-- Maintain issuer, sector, region attributes for pivots and exposures.
+## Core Data Model
+- Enhanced model with immutable `SecurityID` and issuer hierarchy
+- Volumes: 5 advisors × 25 clients (≈125 clients), 2 accounts/client, 12–18 holdings/account
+- Region mix: 80% US, 20% EU securities
+- Golden tickers: `AAPL, MSFT, NVDA, JPM, V, SAP`
 
-## Volumes and mix
-- Advisors/clients: 5 advisors × ~25 clients (≈125 clients).
-- Accounts per client: 2.
-- Holdings per account: 12–18.
-- Region mix of securities: 80% US, 20% EU.
-
-## Market data
-- Hybrid approach:
-  - Anchor two portfolios with real OHLCV: "US MegaTech Focus" and "US Financials Core".
-  - Fill the remainder synthetically (deterministic where possible).
-- Golden tickers (parameterized): `AAPL, MSFT, NVDA, JPM, V, SAP`.
-
-## Integrity rules
-- Ensure owned holdings align with communications and research references in time.
-- Keep minor controlled noise (2–5%) for realism and mark it to allow explanations.
-
-## Build guidance
-- Prefer Snowpark SQL/DataFrames for generation; fall back to pandas only for small seed datasets.
-- **CRITICAL**: Do NOT use `quote_identifiers=False` with `save_as_table()` - parameter not supported.
-- **IDENTITY Columns**: Use SQL INSERT statements for tables with IDENTITY columns; Snowpark DataFrames don't handle IDENTITY properly.
-- **Foreign Key Consistency**: Ensure PORTFOLIOID, SECURITYID, ISSUERID columns exist in both fact and dimension tables.
-- Use replaceable builds: `replace_all`, `data_only`, `semantics_and_search_only`.
-
-## Implementation Patterns (Proven)
+## Critical Implementation Rules
 
 ### IDENTITY Column Handling
 ```python
-# ✅ CORRECT: Use pandas + write_pandas for efficient bulk insert with IDENTITY columns
+# ✅ CORRECT: Use pandas + write_pandas for IDENTITY columns
 import pandas as pd
 df = pd.DataFrame(data_list)
-session.write_pandas(
-    df,
-    table_name,
-    overwrite=True,
-    quote_identifiers=False  # Required for IDENTITY column compatibility
-)
-
-# ✅ ALTERNATIVE: Use Snowpark generator for large synthetic datasets
-from snowflake.snowpark.functions import seq4, uniform
-df = session.generator(seq4(0), uniform(1, 100, 2), rowcount=1000)
-
-# ❌ WRONG: Individual INSERT statements (anti-pattern)
-for item in data_list:
-    session.sql(f"INSERT INTO {table_name} VALUES (...)").collect()  # Very slow
+session.write_pandas(df, table_name, overwrite=True, quote_identifiers=False)
 
 # ❌ WRONG: Snowpark DataFrame save_as_table with IDENTITY
 snowpark_df.write.mode("overwrite").save_as_table(table_name)  # Recreates table without IDENTITY
 ```
 
-### Critical Table Structure Issue (IDENTIFIED)
-**Problem**: Snowpark DataFrames `.save_as_table()` recreates tables without IDENTITY columns
-**Impact**: Foreign key relationships break between fact and dimension tables
-**Solution**: Use SQL INSERT statements for all dimension tables with IDENTITY primary keys
-
-**Current Status (Efficient Implementation Complete)**: 
-- ✅ **DIM_ISSUER**: Has IssuerID IDENTITY column (pandas + write_pandas implementation)
-- ✅ **DIM_SECURITY**: Has SecurityID IDENTITY column (pandas + write_pandas implementation)
-- ✅ **DIM_PORTFOLIO**: Has PortfolioID IDENTITY column (pandas + write_pandas implementation)
-- ✅ **All fact tables**: Have correct foreign key columns (PORTFOLIOID, SECURITYID)
-- ✅ **Foreign Key Relationships**: WORKING with proper IDENTITY column implementation
-
-**Solution Implemented**: Converted dimension table data generation to use efficient pandas DataFrames + `write_pandas()` with `quote_identifiers=False`, eliminating individual INSERT anti-pattern while preserving IDENTITY columns.
-
-**Validation Results**: 
-- ✅ Portfolio-Security relationships: 6 positions with proper joins
-- ✅ Security-Issuer relationships: 50 securities linked to 46 issuers
-- ✅ Real data integration: AAPL $239,230, JPM $126,450, SAP $54,075
-- ✅ Golden ticker coverage: All 6 tickers with authentic data
-- ✅ Performance: Efficient bulk operations, no individual INSERT loops
-
 ### SQL String Escaping
 ```python
-# ✅ CORRECT: Escape single quotes in SQL strings
+# ✅ CORRECT: Escape single quotes
 escaped_content = content.replace("'", "''")
 session.sql(f"INSERT INTO table VALUES ('{escaped_content}')").collect()
-
-# ❌ WRONG: Unescaped quotes cause SQL syntax errors
-session.sql(f"INSERT INTO table VALUES ('{content}')").collect()  # Fails if content has quotes
 ```
 
-### Real Data Integration Patterns
+### Real Data Integration
 ```python
-# ✅ CORRECT: Graceful fallback with error handling
+# ✅ CORRECT: Graceful fallback
 real_assets_df = load_real_assets_from_csv()
 if not real_assets_df.empty:
     generate_from_real_assets(session, real_assets_df)
 else:
     generate_synthetic_assets(session)
-
-# ✅ CORRECT: Data type safety with pandas
-for _, asset in real_assets_df.iterrows():
-    if pd.notna(asset['ISSUER_NAME']):
-        data.append({
-            'LegalName': str(asset['ISSUER_NAME']),  # Ensure string type
-            'CountryOfIncorporation': str(asset['COUNTRY_OF_DOMICILE']) if pd.notna(asset['COUNTRY_OF_DOMICILE']) else 'US'
-        })
 ```
 
-## Enhanced Data Model Architecture
+## Key Table Structure
+- **DIM_SECURITY**: SecurityID IDENTITY(1,1) PRIMARY KEY, IssuerID FK
+- **DIM_ISSUER**: IssuerID IDENTITY(1,1) PRIMARY KEY  
+- **DIM_PORTFOLIO**: PortfolioID IDENTITY(1,1) PRIMARY KEY
+- **FACT_POSITION_DAILY_ABOR**: Foreign keys to above dimensions
 
-### Core Dimension Tables (Industry Standard)
-```sql
--- Master security dimension with immutable SecurityID
-DIM_SECURITY (
-    SecurityID BIGINT IDENTITY(1,1) PRIMARY KEY,  -- Immutable surrogate key
-    IssuerID BIGINT NOT NULL,                     -- FK to DIM_ISSUER
-    PrimaryTicker VARCHAR(50),                    -- Current primary ticker
-    Description VARCHAR(255),
-    AssetClass VARCHAR(50),                       -- 'Equity', 'Corporate Bond', 'ETF'
-    SecurityType VARCHAR(100),
-    CountryOfRisk CHAR(2),
-    IssueDate DATE,
-    MaturityDate DATE,                            -- For bonds
-    CouponRate DECIMAL(18, 8),                    -- For bonds
-    RecordStartDate TIMESTAMP_NTZ,
-    RecordEndDate TIMESTAMP_NTZ,
-    IsActive BOOLEAN
-)
+## Build Integrity
+- Ensure owned holdings align with communications/research references
+- Portfolio weights sum to 100% (±0.1% tolerance)
+- All foreign key relationships valid
 
--- Security identifier cross-reference ("symbology spine")
-DIM_SECURITY_IDENTIFIER_XREF (
-    SecurityIdentifierID BIGINT IDENTITY(1,1) PRIMARY KEY,
-    SecurityID BIGINT NOT NULL,
-    IdentifierType VARCHAR(50) NOT NULL,          -- 'CUSIP', 'ISIN', 'SEDOL', 'FIGI', 'TICKER'
-    IdentifierValue VARCHAR(100) NOT NULL,
-    EffectiveStartDate DATE NOT NULL,
-    EffectiveEndDate DATE NOT NULL,
-    IsPrimaryForType BOOLEAN
-)
-
--- Issuer dimension with corporate hierarchies
-DIM_ISSUER (
-    IssuerID BIGINT IDENTITY(1,1) PRIMARY KEY,
-    UltimateParentIssuerID BIGINT,                -- Self-referencing for hierarchy
-    LegalName VARCHAR(255) NOT NULL,
-    LEI VARCHAR(20),                              -- Legal Entity Identifier
-    CountryOfIncorporation CHAR(2),
-    GICS_Sector VARCHAR(100)
-)
-```
-
-### Core Fact Tables (Transaction-Based Model)
-```sql
--- Canonical transaction log (source of truth)
-FACT_TRANSACTION (
-    TransactionID BIGINT IDENTITY(1,1) PRIMARY KEY,
-    TransactionDate DATE NOT NULL,
-    PortfolioID BIGINT NOT NULL,
-    SecurityID BIGINT NOT NULL,
-    TransactionType VARCHAR(50) NOT NULL,         -- 'BUY', 'SELL', 'DIVIDEND', 'INTEREST'
-    TradeDate DATE NOT NULL,
-    SettleDate DATE,
-    Quantity DECIMAL(38, 10),
-    Price DECIMAL(38, 10),
-    GrossAmount_Local DECIMAL(38, 10),
-    Commission_Local DECIMAL(38, 10),
-    Currency CHAR(3),
-    SourceSystem VARCHAR(50)                      -- 'ABOR' or 'IBOR'
-)
-
--- ABOR positions (built from transactions)
-FACT_POSITION_DAILY_ABOR (
-    HoldingDate DATE NOT NULL,
-    PortfolioID BIGINT NOT NULL,
-    SecurityID BIGINT NOT NULL,
-    Quantity DECIMAL(38, 10),
-    MarketValue_Local DECIMAL(38, 10),
-    MarketValue_Base DECIMAL(38, 10),
-    CostBasis_Local DECIMAL(38, 10),
-    CostBasis_Base DECIMAL(38, 10),
-    AccruedInterest_Local DECIMAL(38, 10),
-    PortfolioWeight DECIMAL(18, 12)
-)
-```
-
-## Foundation Table Creation Order
-```python
-def build_foundation_tables(session: Session, test_mode: bool = False):
-    """Build all foundation tables in dependency order."""
-    
-    # Step 1: Build issuer dimension first (no dependencies)
-    build_dim_issuer(session, test_mode)
-    
-    # Step 2: Build security dimension with cross-reference (depends on issuers)
-    build_dim_security_with_xref(session, test_mode)
-    
-    # Step 3: Build portfolio and benchmark dimensions
-    build_dim_portfolio(session)
-    build_dim_benchmark(session)
-    
-    # Step 4: Build transaction log (depends on portfolios and securities)
-    build_fact_transaction(session, test_mode)
-    
-    # Step 5: Build ABOR positions from transactions
-    build_fact_position_daily_abor(session)
-    
-    # Step 6: Build market data with real data integration
-    build_fact_marketdata_timeseries(session, test_mode)
-```
-
-## Data Quality Validation
-```python
-def validate_enhanced_data_quality(session: Session):
-    """Validate data quality of the enhanced model."""
-    
-    # 1. Validate portfolio weights sum to 100%
-    weight_check = session.sql(f"""
-        SELECT 
-            PortfolioID,
-            SUM(PortfolioWeight) as TotalWeight,
-            ABS(SUM(PortfolioWeight) - 1.0) as WeightDeviation
-        FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR 
-        WHERE HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR)
-        GROUP BY PortfolioID
-        HAVING ABS(SUM(PortfolioWeight) - 1.0) > 0.001
-    """).collect()
-    
-    # 2. Validate transaction log balances to positions
-    # 3. Validate security identifier cross-reference integrity
-    # ... additional validations
-```
-
-## Required Validations
-- ✅ Portfolio weights sum to 100% (±0.1% tolerance)
-- ✅ Transaction log balances to position snapshots
-- ✅ Security identifier cross-reference integrity
-- ✅ Issuer hierarchy relationships valid
-- ✅ No negative prices or market values
-- ✅ Date ranges logical and consistent
-- ✅ All foreign key relationships valid
-
+@src/generate_structured.py
+@src/generate_unstructured.py

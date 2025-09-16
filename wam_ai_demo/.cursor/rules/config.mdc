@@ -52,8 +52,10 @@ Centralized, parameterized configuration to enable deterministic rebuilds and ea
 - Search Services
   - `search_target_lag = '5 minutes'` for all services
 
-- Build modes
-  - `mode = 'replace_all' | 'data_only' | 'semantics_and_search_only'`
+- Build scopes
+  - `scope = 'all' | 'data' | 'semantic' | 'search'`
+- Build scenarios
+  - `scenarios = ['advisor', 'analyst', 'guardian', 'all']`
 
 ## Identifier Rules
 - **CRITICAL**: Do NOT use `quote_identifiers=False` with Snowpark `save_as_table()` - parameter not supported
@@ -75,10 +77,12 @@ def create_session(connection_name: str = None) -> Session:
     return session
 ```
 
-## Build Mode Implementation (Tested)
-- ✅ **replace_all**: Full database setup + data + AI services (working)
+## Build Scope Implementation (Tested)
+- ✅ **all**: Full database setup + data + AI services (working)
+- ✅ **data**: Data generation only (working)
+- ✅ **semantic**: Semantic views only (working)
+- ✅ **search**: Search services only (working)
 - ✅ **test-mode**: Reduced volumes for faster testing (working)
-- ✅ **Early return**: Extraction commands exit immediately after completion (working)
 
 ## References
 - Connections via TOML: https://docs.snowflake.com/en/developer-guide/snowpark/python/creating-session#connect-by-using-the-connections-toml-file

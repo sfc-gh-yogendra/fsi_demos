@@ -8,10 +8,11 @@ alwaysApply: true
 - Agents may generate charts on request via a `data_to_chart` capability (e.g., "Show asset-class distribution for portfolio X").
 - Encourage concise tables when charts are not requested.
 
-## Build Modes
-- `replace_all`: recreate data, semantic views, search services.
-- `data_only`: regenerate structured/unstructured data.
-- `semantics_and_search_only`: recreate semantic views and search services without touching data.
+## Build Scopes
+- `all`: recreate data, semantic views, search services.
+- `data`: regenerate structured/unstructured data.
+- `semantic`: recreate semantic views only.
+- `search`: recreate search services only.
 
 ## Build Results (Validated)
 - ✅ **Test Mode**: Successfully creates simplified demo with real asset integration

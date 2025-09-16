@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+
+# WAM AI Demo - Naming Standards
+
+## Database Organization
+- **Database**: `WAM_AI_DEMO`
+- **Schemas**: `RAW` (staging), `CURATED` (business-ready), `AI` (semantic views/search)
+- **Warehouses**: `WAM_AI_` prefix (e.g., `WAM_AI_BUILD_WH`, `WAM_AI_CORTEX_WH`)
+
+## Table Naming Standards
+- **Dimension Tables**: `DIM_` prefix (e.g., `DIM_SECURITY`, `DIM_PORTFOLIO`, `DIM_ISSUER`)
+- **Fact Tables**: `FACT_` prefix (e.g., `FACT_POSITION_DAILY_ABOR`, `FACT_TRANSACTION`)
+- **Document Tables**: `*_CORPUS` suffix (e.g., `COMMUNICATIONS_CORPUS`, `RESEARCH_CORPUS`)
+
+## Column Naming Standards
+- **Primary Keys**: Use IDENTITY columns with `ID` suffix (e.g., `SecurityID`, `PortfolioID`)
+- **Foreign Keys**: Match primary key names exactly
+- **Dates**: Use descriptive names with `Date` suffix (e.g., `TradeDate`, `HoldingDate`)
+- **Amounts**: Include currency indicator (e.g., `MarketValue_USD`, `MarketValue_Base`)
+
+## Critical Design Decisions
+- **Primary Key Strategy**: Use IDENTITY columns for all dimension tables
+- **Foreign Key Consistency**: Ensure PORTFOLIOID, SECURITYID, ISSUERID columns exist in both fact and dimension tables
+- **No Abbreviations**: Use full descriptive names (e.g., `FACT_` not `FA_`)
+
+@README.md
