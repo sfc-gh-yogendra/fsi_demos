@@ -46,16 +46,6 @@ def generate_structured_data(session: Session, test_mode: bool = False):
     
     print("  ✅ Structured data generation complete")
 
-def generate_structured_data_with_watchlists(session: Session, test_mode: bool = False):
-    """Generate all structured data including watchlists"""
-    
-    # Generate base structured data
-    generate_structured_data(session, test_mode)
-    
-    # Generate watchlists
-    print("  → Generating watchlists...")
-    create_watchlists(session)
-    print("  ✅ Watchlists created")
 
 # ======================================================
 # WATCHLIST CREATION

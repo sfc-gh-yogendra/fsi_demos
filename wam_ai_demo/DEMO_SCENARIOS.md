@@ -128,45 +128,61 @@ KEY PLANNING INSIGHTS:
 - *"This shows how structured plans integrate with real-time portfolio data"*
 - *"Financial planning documents provide the strategic context for all investment decisions"*
 
-#### Step 3: Deep Dive - Education Funding Analysis  
-**Demo Operator Says**: *"Now let's analyze the specific education funding situation using both planning documents and current portfolio data."*
+#### Step 3: Action-Oriented Execution Planning
+**Demo Operator Says**: *"Emily is starting university next month. Let's see what specific actions we need to take right now to execute her education funding plan."*
 
 **User Query**:
 ```
-"Tell me more about her education funding situation and what options we have to address the gap."
+"Emily is starting university next month. What specific actions do we need to take now to execute her education funding plan?"
 ```
 
 **Expected Agent Response**:
 ```
-Education Funding Deep Dive:
+IMMEDIATE ACTION PLAN - EMILY'S UNIVERSITY FUNDING:
 
-CURRENT STATUS:
-• 529 Plan Balance: $180,000 (excellent preparation)
-• Target Funding Need: $200,000 for Emily's university
-• Immediate Gap: $20,000 (daughter starting this fall)
+URGENT TIMELINE (Next 4 Weeks):
+• Semester billing due: September 15, 2025 (3 weeks)
+• 529 distribution processing time: 5-7 business days
+• Securities liquidation settlement: T+2
+• Action deadline: Execute by September 8th for timely payment
 
-STRATEGIC OPTIONS:
-1. Tax-Efficient 529 Distribution: Use existing balance strategically
-2. Conservative Holdings Liquidation: Partial position reduction in JPM or V
-3. Systematic Distribution Plan: Spread gap funding over 4 years
-4. Education Tax Credits: Maximize AOTC benefits
+REQUIRED ACTIONS:
 
-PLANNING DOCUMENT INSIGHTS:
-• Original education goal established in 2020 comprehensive financial plan
-• Funding strategy assumed 6% annual growth (achieved per plan projections)
-• Client prioritized education over aggressive wealth accumulation (documented in IPS)
-• Contingency plan included partial taxable account usage (per comprehensive plan)
-• Investment Policy Statement confirms conservative risk tolerance aligns with strategy
+1. IMMEDIATE (This Week):
+   ☐ Initiate $45,000 529 plan distribution to cover first semester
+   ☐ Review university billing statement for exact amounts
+   ☐ Confirm beneficiary details for 529 distribution
 
-RECOMMENDATION:
-Execute combination strategy: 529 distribution + minimal conservative holding liquidation
-Timeline: Implement before fall semester billing (immediate action required)
+2. WEEK 2 (September 9-13):
+   ☐ Execute partial JPM liquidation ($15,000) for spring semester buffer
+   ☐ Set up quarterly 529 distributions for remaining semesters
+   ☐ Document education tax credit eligibility (AOTC)
+
+3. ADMINISTRATIVE SETUP:
+   ☐ Establish direct payment to university bursar's office
+   ☐ Create calendar reminders for semester payment cycles
+   ☐ Update client records with Emily's university details
+
+FUNDING ALLOCATION STRATEGY:
+• Fall 2025: $45,000 from 529 plan (tuition + room/board)
+• Spring 2026: $15,000 from conservative holdings liquidation
+• Years 2-4: Remaining $140,000 via systematic 529 distributions
+
+TAX OPTIMIZATION:
+• Maximize American Opportunity Tax Credit ($2,500/year)
+• Coordinate 529 distributions with qualified education expenses
+• Consider Lifetime Learning Credit for subsequent years
+
+CONTINGENCY PLANNING:
+• Buffer established through spring semester funding
+• Remaining portfolio maintains IPS compliance
+• Emergency access via additional conservative holdings if needed
 ```
 
 **Demo Talking Points**:
-- *"The CoPilot connected current life events to long-term planning documents"*
-- *"This level of planning intelligence transforms reactive advice into proactive strategy"*
-- *"Notice how the CoPilot surfaced the client's original planning assumptions and priorities"*
+- *"The CoPilot transformed planning documents into an immediate action plan with specific deadlines"*
+- *"Notice the tactical execution details - processing times, settlement dates, deadlines"*
+- *"This turns strategic planning into operational excellence - every step is clearly defined"*
 
 #### Step 4: ESG Investment Exploration
 **Demo Operator Says**: *"The client expressed interest in ESG. Let's explore suitable opportunities."*

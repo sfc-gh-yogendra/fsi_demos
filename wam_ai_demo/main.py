@@ -9,8 +9,8 @@ import argparse
 from snowflake.snowpark import Session
 import config
 from src.setup import setup_database_and_schemas
-from src.generate_structured import generate_structured_data, generate_advisors, generate_clients, generate_issuers_and_securities, generate_portfolios_and_accounts, generate_simplified_positions, generate_market_data, create_watchlists
-from src.generate_unstructured import generate_unstructured_data, create_esg_research_content
+from src.generate_structured import generate_advisors, generate_clients, generate_issuers_and_securities, generate_portfolios_and_accounts, generate_simplified_positions, generate_market_data, create_watchlists
+from src.generate_unstructured import generate_unstructured_data, enhance_esg_content
 from src.create_semantic_views import create_semantic_views
 from src.create_search_services import create_search_services
 from src.validate_components import validate_all_components
@@ -54,12 +54,6 @@ def main():
             extract_real_assets_to_csv(session)
             return
         
-        # Real market data extraction is deprecated - system now uses synthetic market data only
-        # if args.extract_real_market_data:
-        #     print("\n📈 Extracting real market data from Marketplace...")
-        #     from src.extract_real_data import extract_real_market_data_to_csv
-        #     extract_real_market_data_to_csv(session)
-        #     return
         
         print(f"\n🚀 Starting WAM AI Demo build")
         print(f"   Database: {config.DATABASE_NAME}")
@@ -107,7 +101,7 @@ def main():
             
             # Generate ESG content (part of unstructured data)
             print("  → Creating ESG research content...")
-            create_esg_research_content(session)
+            enhance_esg_content(session)
         
         # AI Services
         if args.scope in ['all', 'semantic', 'search']:

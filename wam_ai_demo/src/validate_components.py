@@ -25,16 +25,6 @@ def validate_all_components(session: Session):
     
     print("  ✅ Component validation complete")
 
-def validate_all_components_with_enhancements(session: Session):
-    """Run comprehensive validation including enhanced features"""
-    
-    print("  → Running component validation with enhancements...")
-    
-    # Run base validation
-    validate_all_components(session)
-    
-    # Run enhancement validation
-    validate_enhanced_features(session)
 
 # ======================================================
 # ENHANCED FEATURES VALIDATION

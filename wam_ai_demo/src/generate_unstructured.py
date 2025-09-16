@@ -35,16 +35,6 @@ def generate_unstructured_data(session: Session, test_mode: bool = False):
     
     print("  ✅ Unstructured data generation complete")
 
-def generate_unstructured_data_with_esg(session: Session, test_mode: bool = False):
-    """Generate all unstructured data including ESG enhancements"""
-    
-    # Generate base unstructured data
-    generate_unstructured_data(session, test_mode)
-    
-    # Generate ESG content
-    print("  → Generating ESG content...")
-    enhance_esg_content(session)
-    print("  ✅ ESG content created")
 
 def generate_communications_corpus(session: Session, test_mode: bool = False):
     """Generate communications using the 5-step Cortex Complete pipeline"""
@@ -128,16 +118,38 @@ def create_communications_prompts(session: Session, test_mode: bool = False) -> 
         client_id = client['CLIENTID']
         advisor_id = client['ADVISORID']
         
+        # Track used dates to prevent duplicate meetings on same day
+        used_communication_dates = set()
+        
         for i in range(volume_per_client):
             # Determine communication type based on mix
             comm_type = get_communication_type()
             
-            # Create timestamp within client lifespan
-            base_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
-            timestamp = datetime.combine(base_date, datetime.min.time()) + timedelta(
-                hours=random.randint(9, 17),
-                minutes=random.randint(0, 59)
-            )
+            # Create timestamp within client lifespan, ensuring no duplicate meetings on same day
+            attempts = 0
+            while attempts < 20:  # Prevent infinite loops
+                base_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
+                
+                # For meetings, ensure no duplicates on same day for this client
+                if comm_type == 'Meeting':
+                    date_key = (client_id, base_date)  # base_date is already a date object
+                    if date_key in used_communication_dates:
+                        attempts += 1
+                        continue
+                    used_communication_dates.add(date_key)
+                
+                timestamp = datetime.combine(base_date, datetime.min.time()) + timedelta(
+                    hours=random.randint(9, 17),
+                    minutes=random.randint(0, 59)
+                )
+                break
+            else:
+                # Fallback if we can't find a unique date - still create the communication
+                base_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
+                timestamp = datetime.combine(base_date, datetime.min.time()) + timedelta(
+                    hours=random.randint(9, 17),
+                    minutes=random.randint(0, 59)
+                )
             
             # Select a ticker to reference (with some noise)
             referenced_ticker = random.choice(tickers) if random.random() > config.CONTROLLED_NOISE_RATE else "UNKNOWN"
@@ -511,7 +523,7 @@ def create_client_interactions_view(session: Session):
 # ESG RESEARCH CONTENT CREATION
 # ======================================================
 
-def create_esg_research_content(session: Session):
+def enhance_esg_content(session: Session):
     """Create ESG research content for the research corpus"""
     
     # Ensure database context
@@ -756,31 +768,58 @@ def generate_planning_corpus(session: Session, test_mode: bool = False):
         # Select document types based on volume
         selected_types = planning_doc_types[:docs_per_client]
         
+        # Track document dates to avoid duplicates and create version history
+        used_dates = set()
+        
         for doc_type in selected_types:
-            # Create document date within client relationship
-            doc_date = client['ONBOARDINGDATE'] + timedelta(days=random.randint(30, 365))
+            # For Education Funding Plans, create multiple versions with different dates
+            versions_to_create = 3 if doc_type == 'Education Funding Plan' else 1
             
-            # Determine goal category
-            goal_category = get_goal_category(doc_type)
-            
-            # Create planning document prompt
-            prompt = create_planning_document_prompt(client, doc_type, goal_category)
-            
-            # Create document title
-            title = f"{doc_type} - {client['FIRSTNAME']} {client['LASTNAME']}"
-            
-            prompts_data.append({
-                'DOCUMENT_ID': f'PLAN_{doc_id:06d}',
-                'PLAN_TITLE': title,
-                'PLAN_TYPE': doc_type,
-                'CLIENT_ID': client_id,
-                'ADVISOR_ID': advisor_id,
-                'CREATED_DATE': doc_date,
-                'GOAL_CATEGORY': goal_category,
-                'PROMPT_TEXT': prompt
-            })
-            
-            doc_id += 1
+            for version in range(versions_to_create):
+                # Create document date within client relationship, ensuring no duplicates
+                attempts = 0
+                while attempts < 10:  # Prevent infinite loops
+                    days_offset = random.randint(30, 365) + (version * 90)  # Spread versions across time
+                    doc_date = client['ONBOARDINGDATE'] + timedelta(days=days_offset)
+                    # Ensure we have a date object for the key
+                    if hasattr(doc_date, 'date'):
+                        date_part = doc_date.date()
+                    else:
+                        date_part = doc_date
+                    date_key = (client_id, date_part)
+                    if date_key not in used_dates:
+                        used_dates.add(date_key)
+                        break
+                    attempts += 1
+                else:
+                    # Fallback if we can't find a unique date
+                    doc_date = client['ONBOARDINGDATE'] + timedelta(days=random.randint(30, 365))
+                
+                # Determine goal category
+                goal_category = get_goal_category(doc_type)
+                
+                # Create planning document prompt
+                prompt = create_planning_document_prompt(client, doc_type, goal_category)
+                
+                # Create document title with version/date if multiple
+                if versions_to_create > 1:
+                    version_suffix = f" - {doc_date.strftime('%B %Y')} Update" if version > 0 else " - Initial Plan"
+                    title = f"{doc_type} - {client['FIRSTNAME']} {client['LASTNAME']}{version_suffix}"
+                else:
+                    title = f"{doc_type} - {client['FIRSTNAME']} {client['LASTNAME']}"
+                
+                prompts_data.append({
+                    'DOCUMENT_ID': f'PLAN_{doc_id:06d}',
+                    'PLAN_TITLE': title,
+                    'PLAN_TYPE': doc_type,
+                    'CLIENT_ID': client_id,
+                    'ADVISOR_ID': advisor_id,
+                    'CREATED_DATE': doc_date,
+                    'GOAL_CATEGORY': goal_category,
+                    'PROMPT_TEXT': prompt
+                })
+                
+                doc_id += 1
     
     # Use the same 5-step pipeline for planning documents
     prompts_df = session.create_dataframe(prompts_data)
@@ -886,8 +925,11 @@ Instructions:
 - Recommend 529 plan or other education savings strategies
 - Calculate required monthly savings to meet education goals
 - Discuss tax-advantaged education savings options
-- Include timeline for education expenses
+- Include timeline for education expenses and semester payment schedules
 - Address potential financial aid implications
+- Include specific action items for implementation (e.g., 529 distributions, account transfers)
+- Consider university billing deadlines and payment processing times
+- Address contingency funding options if education costs exceed projections
 """
     elif doc_type == 'Estate Planning Strategy':
         base_prompt += """
