@@ -181,12 +181,10 @@ COMMS_PER_CLIENT = 50
 # Golden Tickers (easy to change)
 GOLDEN_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "V", "SAP"]
 
-# Real Data Integration
-USE_REAL_ASSETS_CSV = True
-USE_REAL_MARKET_DATA = True
+# Real Asset Integration (CSV Required)
+REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
 
-# Market Data
-MARKET_REAL_PORTFOLIOS = ["US MegaTech Focus", "US Financials Core"]
+# Market Data (Synthetic Generation - No Configuration Needed)
 
 # Build Modes
 BUILD_MODES = ['replace_all', 'data_only', 'semantics_and_search_only']

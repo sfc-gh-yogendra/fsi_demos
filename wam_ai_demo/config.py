@@ -14,12 +14,10 @@ CORTEX_WAREHOUSE = f"{WAREHOUSE_PREFIX}CORTEX_WH"
 # Stages
 CLIENT_DOCS_STAGE = f"{DATABASE_NAME}.RAW.CLIENT_DOCS"
 
-# Volumes and Windows
+# Data Generation Volumes
 NUM_ADVISORS = 5
 CLIENTS_PER_ADVISOR = 25
 ACCOUNTS_PER_CLIENT = 2
-MIN_HOLDINGS_PER_ACCOUNT = 12
-MAX_HOLDINGS_PER_ACCOUNT = 18
 
 # Date ranges
 HISTORY_END_DATE = datetime.now().date()
@@ -28,14 +26,12 @@ UNSTRUCTURED_DOCS_PER_TICKER = 15
 COMMS_PER_CLIENT = 50
 
 # Market Integration
-USE_HYBRID_MARKET_DATA = True
-MARKET_REAL_PORTFOLIOS = ["US MegaTech Focus", "US Financials Core"]
 REGION_MIX = {"us": 0.8, "eu": 0.2}
 
 # Golden Tickers (parameterized for easy changes)
 GOLDEN_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "V", "SAP"]
 
-# Cortex Complete Configuration (per-corpus overrides)
+# Cortex Complete Configuration (used by unstructured data generation)
 MODEL_BY_CORPUS = {
     "communications": "llama3.1-70b",
     "research": "llama3.1-70b", 
@@ -54,65 +50,49 @@ SEARCH_TARGET_LAG = '5 minutes'
 # Build Modes
 BUILD_MODES = ['replace_all', 'data_only', 'semantics_and_search_only']
 
-# Communications Mix (Phase 1 distribution targets)
+# Communications Mix (used by unstructured data generation)
 COMMUNICATIONS_MIX = {
     "emails": 0.45,  # 25% of these are threads
     "phone_transcripts": 0.30,  # 15-45 min duration
     "online_meetings": 0.25     # 15-45 min duration
 }
 
-# Sentiment Distribution
+# Sentiment Distribution (used by unstructured data generation)
 SENTIMENT_DISTRIBUTION = {
     "neutral": 0.60,
     "positive": 0.25,
     "negative": 0.15
 }
 
-# Data Quality Settings
+# Data Quality Settings (used by unstructured data generation)
 CONTROLLED_NOISE_RATE = 0.025  # 2.5% noise for realism
-PORTFOLIO_WEIGHT_TOLERANCE = 0.001  # ±0.1% tolerance
 
-# Enhanced Data Model Settings
-USE_TRANSACTION_BASED_MODEL = True
-GENERATE_CORPORATE_HIERARCHIES = True
-ISSUER_HIERARCHY_DEPTH = 2
+# Validation Settings
+PORTFOLIO_WEIGHT_TOLERANCE = 0.001  # 0.1% tolerance for portfolio weight validation
+
+# Other removed unused configuration variables:
+# - USE_TRANSACTION_BASED_MODEL  
+# - GENERATE_CORPORATE_HIERARCHIES, ISSUER_HIERARCHY_DEPTH
 
 # Real Asset Data Integration (REQUIRED)
-# System now requires real assets CSV for enhanced demo authenticity
+# System requires real assets CSV for enhanced demo authenticity
 # Set EXTRACT_REAL_ASSETS = True to extract from Marketplace if CSV is missing
-USE_REAL_ASSETS_CSV = True  # Always True - real assets are mandatory
 REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
 EXTRACT_REAL_ASSETS = False  # Set to True to extract from Marketplace
 
 # Market Data Generation (SYNTHETIC ONLY)
-# System now uses only synthetic market data for consistent, predictable demo experience
+# System uses only synthetic market data for consistent, predictable demo experience
 # This ensures deterministic results and eliminates external data dependencies
-USE_REAL_MARKET_DATA = False  # Always False - synthetic market data only
-# REAL_MARKET_DATA_CSV_PATH = './data/real_market_data.csv'  # DEPRECATED
-# EXTRACT_REAL_MARKET_DATA = False  # DEPRECATED
 
 # Marketplace Data Source (requires subscription)
 MARKETPLACE_DATABASE = 'FINANCIALS_ECONOMICS_ENTERPRISE'
 OPENFIGI_SCHEMA = 'CYBERSYN'
 
-# Transaction Generation Settings
-SYNTHETIC_TRANSACTION_MONTHS = 12
-TRANSACTION_TYPES = ['BUY', 'SELL', 'DIVIDEND', 'CORPORATE_ACTION']
-AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY = 2.5
-
-# PDF Generation
-PDFS_PER_CLIENT = 2  # questionnaire, advisory agreement
-
-# Validation Settings
-REQUIRED_VALIDATIONS = [
-    "portfolio_weights_sum_to_100",
-    "transaction_log_balances_to_positions", 
-    "security_identifier_xref_integrity",
-    "issuer_hierarchy_relationships_valid",
-    "no_negative_prices_or_market_values",
-    "date_ranges_logical_and_consistent",
-    "all_foreign_key_relationships_valid"
-]
+# Transaction Generation, PDF Generation, and Validation Settings
+# Removed unused configuration variables:
+# - SYNTHETIC_TRANSACTION_MONTHS, TRANSACTION_TYPES, AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY
+# - PDFS_PER_CLIENT, REQUIRED_VALIDATIONS
+# These features are either not implemented or use hardcoded values
 
 def get_connection_name():
     """Get connection name from environment or use default"""

@@ -104,6 +104,10 @@ def main():
             # Generate positions and market data
             generate_simplified_positions(session)
             generate_market_data(session)
+            
+            # Generate unstructured data (communications, research, regulatory)
+            print("  → Generating unstructured data...")
+            generate_unstructured_data(session)
         
         # Phase 3: AI Services
         if args.mode in ['replace_all', 'semantics_and_search_only']:
