@@ -14,6 +14,11 @@ alwaysApply: true
 
 ## Tool Configuration Formats
 
+**CRITICAL**: Tools must be configured in this exact order:
+1. **Cortex Analyst Tools** (FIRST)
+2. **Cortex Search Tools** (SECOND)  
+3. **Custom Tools** (LAST)
+
 ### Cortex Analyst Tools
 ```markdown
 **Tool X: [Tool Name]**
@@ -58,8 +63,11 @@ alwaysApply: true
 
 ### Tools
 #### Cortex Analyst Tools
-#### Cortex Search Tools
+[Tool configurations - ALWAYS FIRST]
+#### Cortex Search Tools  
+[Tool configurations - ALWAYS SECOND]
 #### Custom Tools
+[Tool configurations - ALWAYS LAST]
 
 ### Orchestration
 - **Orchestration Model**: Claude 4 Sonnet
@@ -109,7 +117,7 @@ alwaysApply: true
 ## Available Data Sources
 - **Semantic Views**: `CLIENT_FINANCIALS_SV`, `CLIENT_INTERACTIONS_SV`, `WATCHLIST_ANALYTICS_SV`
 - **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`
-- **Custom Tools**: `data_to_chart` for visualizations
+- **Custom Tools**: Available for specific use cases requiring custom functions
 
 ## Standard Test Queries by Agent Type
 

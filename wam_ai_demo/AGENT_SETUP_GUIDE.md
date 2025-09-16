@@ -81,14 +81,6 @@ You are a professional wealth management advisor AI assistant. Your responses sh
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `TITLE`
 
-#### Custom Tools
-
-**Tool 5: Data to Chart**
-- **Resource Type**: Function
-- **Function Name**: `WAM_AI_DEMO.AI.DATA_TO_CHART`
-- **Name**: `data_to_chart`
-- **Query Timeout**: 60 seconds
-- **Description**: `Generate charts and visualizations when requested by the user (e.g., 'Show asset allocation chart for portfolio X').`
 
 ### Orchestration
 - **Orchestration Model**: Claude 4 Sonnet
@@ -110,7 +102,7 @@ You are a professional wealth management advisor AI assistant. Your responses sh
    - Combine with cortex_analyst_client_financials to analyze portfolio exposure to themes
 6. For mixed questions: Use appropriate analyst tool first, then search tools with results as context
 7. Always synthesize multiple tool outputs into coherent response
-8. If user requests charts/visualizations, use data_to_chart tool
+8. Generate charts and visualizations when requested or when they enhance understanding
 ```
 
 ---
@@ -160,14 +152,6 @@ You are a professional portfolio management AI assistant. Your responses must be
 - **ID Column**: `COMMUNICATION_ID`
 - **Title Column**: `TITLE`
 
-#### Custom Tools
-
-**Tool 4: Data to Chart**
-- **Resource Type**: Function
-- **Function Name**: `WAM_AI_DEMO.AI.DATA_TO_CHART`
-- **Name**: `data_to_chart`
-- **Query Timeout**: 60 seconds
-- **Description**: `Generate charts and visualizations when requested (e.g., 'Show sector exposure chart' or 'Chart performance attribution').`
 
 ### Orchestration
 - **Orchestration Model**: Claude 4 Sonnet
@@ -219,37 +203,29 @@ You are a professional compliance monitoring AI assistant. Your tone must be:
 
 ### Tools
 
+#### Cortex Analyst Tools
+
+**Tool 1: Client Financials (Context)**
+- **Semantic View**: `WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV`
+- **Name**: `cortex_analyst_client_financials`
+- **Description**: `Use for context in compliance investigations. Retrieve transaction histories or account details related to flagged communications.`
+
 #### Cortex Search Tools
 
-**Tool 1: Communications Search**
+**Tool 2: Communications Search**
 - **Name**: `search_communications`
 - **Description**: `Search and analyze all electronic communications for potential compliance violations, such as promising returns, sharing PII, or client complaints.`
 - **Search Service**: `WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH`
 - **ID Column**: `COMMUNICATION_ID`
 - **Title Column**: `TITLE`
 
-**Tool 2: Regulatory Search**
+**Tool 3: Regulatory Search**
 - **Name**: `search_regulatory`
 - **Description**: `Search regulatory documents and compliance rules. Use for finding specific regulations, compliance requirements, or policy guidance.`
 - **Search Service**: `WAM_AI_DEMO.AI.REGULATORY_SEARCH`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `TITLE`
 
-#### Cortex Analyst Tools
-
-**Tool 3: Client Financials (Context)**
-- **Semantic View**: `WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV`
-- **Name**: `cortex_analyst_client_financials`
-- **Description**: `Use for context in compliance investigations. Retrieve transaction histories or account details related to flagged communications.`
-
-#### Custom Tools
-
-**Tool 4: Data to Chart**
-- **Resource Type**: Function
-- **Function Name**: `WAM_AI_DEMO.AI.DATA_TO_CHART`
-- **Name**: `data_to_chart`
-- **Query Timeout**: 60 seconds
-- **Description**: `Generate compliance reporting charts when requested (e.g., 'Show communication volume trends' or 'Chart violation types').`
 
 ### Orchestration
 - **Orchestration Model**: Claude 4 Sonnet
@@ -361,9 +337,9 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - [ ] Required permissions verified
 
 ### ✅ Agent Configuration
-- [ ] **advisor_copilot** created with 5 tools (2 Cortex Analyst + 2 Cortex Search + 1 Custom)
-- [ ] **analyst_copilot** created with 4 tools (1 Cortex Analyst + 2 Cortex Search + 1 Custom)
-- [ ] **compliance_copilot** created with 4 tools (1 Cortex Analyst + 2 Cortex Search + 1 Custom)
+- [ ] **advisor_copilot** created with 4 tools (2 Cortex Analyst + 2 Cortex Search)
+- [ ] **analyst_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
+- [ ] **compliance_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
 
 ### ✅ Agent Testing
 - [ ] All test queries work for advisor_copilot
