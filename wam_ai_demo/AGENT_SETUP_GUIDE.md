@@ -27,7 +27,7 @@ Before creating agents, verify these objects exist:
 - **Database**: `WAM_AI_DEMO`
 - **Schemas**: `WAM_AI_DEMO.AI`, `WAM_AI_DEMO.CURATED`
 - **Semantic Views**: `CLIENT_FINANCIALS_SV`, `CLIENT_INTERACTIONS_SV`, `WATCHLIST_ANALYTICS_SV`
-- **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`
+- **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`, `PLANNING_SEARCH`
 
 ---
 
@@ -81,6 +81,12 @@ You are a professional wealth management advisor AI assistant. Your responses sh
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `TITLE`
 
+**Tool 5: Financial Planning Search**
+- **Name**: `search_financial_planning`
+- **Description**: `Search financial planning documents including comprehensive plans, investment policy statements, retirement analysis, and education funding plans. Use for understanding client goals, risk tolerance, and planning status.`
+- **Search Service**: `WAM_AI_DEMO.AI.PLANNING_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
 
 ### Orchestration
 - **Orchestration Model**: Claude 4 Sonnet
@@ -97,6 +103,7 @@ You are a professional wealth management advisor AI assistant. Your responses sh
 4. For qualitative questions: Choose appropriate search tool based on information type:
    - search_communications: Client emails, call notes, meeting transcripts, preferences
    - search_research: Investment research, analyst reports, market commentary, ESG analysis, carbon neutrality reports
+   - search_financial_planning: Financial plans, investment policy statements, goal documentation, retirement planning
 5. For thematic questions: 
    - Use search_research for ESG content, sustainability reports, carbon neutrality analysis
    - Combine with cortex_analyst_client_financials to analyze portfolio exposure to themes
@@ -262,6 +269,8 @@ You are a professional compliance monitoring AI assistant. Your tone must be:
 "What are the key holdings in portfolio 1?"
 "Which of Sarah Johnson's holdings are in the Carbon Negative Leaders watchlist?"
 "Find ESG research on Apple and Microsoft for my client meeting"
+"What are Sarah Johnson's financial planning goals and current funding status?"
+"Show me her Investment Policy Statement and risk tolerance documentation"
 ```
 
 ### Test Queries for analyst_copilot
@@ -337,7 +346,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - [ ] Required permissions verified
 
 ### ✅ Agent Configuration
-- [ ] **advisor_copilot** created with 4 tools (2 Cortex Analyst + 2 Cortex Search)
+- [ ] **advisor_copilot** created with 5 tools (2 Cortex Analyst + 3 Cortex Search)
 - [ ] **analyst_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
 - [ ] **compliance_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
 

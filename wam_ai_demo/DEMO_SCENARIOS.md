@@ -88,8 +88,48 @@ IMMEDIATE PRIORITIES:
 - *"This holistic view was impossible before - all data sources unified in one response"*
 - *"The CoPilot identified immediate priorities based on life events and documented goals"*
 
-#### Step 2: Deep Dive - Education Funding Analysis
-**Demo Operator Says**: *"Sarah mentioned her daughter's university acceptance. Let's explore the planning implications."*
+#### Step 2: Financial Planning Document Review
+**Demo Operator Says**: *"Let's access her actual financial planning documents to understand her documented goals and strategies."*
+
+**User Query**:
+```
+"Find Sarah Johnson's financial planning documents and show me her education funding strategy and investment policy guidelines."
+```
+
+**Expected Agent Response**:
+```
+Financial Planning Document Analysis:
+
+COMPREHENSIVE FINANCIAL PLAN (Updated 2024):
+• Education Funding Goal: $200,000 for daughter Emily's university education
+• Timeline: 2024-2028 (4-year degree program)
+• Funding Sources: 529 plan primary, taxable accounts secondary
+• Success Metric: 90%+ funding through dedicated savings
+
+INVESTMENT POLICY STATEMENT:
+• Risk Tolerance: Conservative (volatility tolerance 8-12%)
+• Asset Allocation Target: 70-90% Financials, 10-30% Diversification allowable
+• Rebalancing Triggers: ±5% from target allocation
+• Investment Objective: Capital preservation with modest growth
+
+RETIREMENT PLANNING ANALYSIS:
+• Retirement Goal: Age 65 (2040) with $2.5M target
+• Current Status: On track (contributing $24,000 annually to 401k)
+• Strategy: Conservative growth through systematic investing
+
+KEY PLANNING INSIGHTS:
+• Education funding prioritized over aggressive wealth accumulation (documented preference)
+• Conservative bias appropriate for single-income household
+• Estate planning review scheduled Q4 2024 (beneficiary updates needed)
+```
+
+**Demo Talking Points**:
+- *"The CoPilot accessed her actual planning documents instantly"*
+- *"This shows how structured plans integrate with real-time portfolio data"*
+- *"Financial planning documents provide the strategic context for all investment decisions"*
+
+#### Step 3: Deep Dive - Education Funding Analysis  
+**Demo Operator Says**: *"Now let's analyze the specific education funding situation using both planning documents and current portfolio data."*
 
 **User Query**:
 ```
@@ -112,10 +152,11 @@ STRATEGIC OPTIONS:
 4. Education Tax Credits: Maximize AOTC benefits
 
 PLANNING DOCUMENT INSIGHTS:
-• Original education goal established in 2020 comprehensive plan
-• Funding strategy assumed 6% annual growth (achieved)
-• Client prioritized education over aggressive wealth accumulation
-• Contingency plan included partial taxable account usage
+• Original education goal established in 2020 comprehensive financial plan
+• Funding strategy assumed 6% annual growth (achieved per plan projections)
+• Client prioritized education over aggressive wealth accumulation (documented in IPS)
+• Contingency plan included partial taxable account usage (per comprehensive plan)
+• Investment Policy Statement confirms conservative risk tolerance aligns with strategy
 
 RECOMMENDATION:
 Execute combination strategy: 529 distribution + minimal conservative holding liquidation
@@ -127,7 +168,7 @@ Timeline: Implement before fall semester billing (immediate action required)
 - *"This level of planning intelligence transforms reactive advice into proactive strategy"*
 - *"Notice how the CoPilot surfaced the client's original planning assumptions and priorities"*
 
-#### Step 3: ESG Investment Exploration
+#### Step 4: ESG Investment Exploration
 **Demo Operator Says**: *"The client expressed interest in ESG. Let's explore suitable opportunities."*
 
 **User Query**:
@@ -169,7 +210,7 @@ Present specific ESG allocation proposal with tax-efficient implementation timel
 - *"Notice how it aligned ESG options with existing planning goals and risk tolerance"*
 - *"The CoPilot identified the opportunity to combine education funding with portfolio enhancement"*
 
-#### Step 4: Generate Meeting Brief Document
+#### Step 5: Generate Meeting Brief Document
 **Demo Operator Says**: *"Perfect! Now let's have the CoPilot create a structured meeting brief document that I can use during the client meeting."*
 
 **User Query**:
