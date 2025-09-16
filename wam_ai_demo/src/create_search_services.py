@@ -26,6 +26,9 @@ def create_search_services(session: Session):
     # Create PLANNING_SEARCH
     create_planning_search(session)
     
+    # Create DEPARTURE_SEARCH for advisor benchmarking
+    create_departure_search(session)
+    
     # Validate search services
     validate_search_services(session)
     
@@ -167,6 +170,43 @@ CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.PLANNING_SEARC
         diagnose_search_service_error(session, e, "PLANNING_SEARCH")
         raise
 
+def create_departure_search(session: Session):
+    """Create DEPARTURE_SEARCH service for client departure documents"""
+    
+    print("    → Creating DEPARTURE_SEARCH...")
+    
+    # Verify corpus table exists and has content
+    verify_corpus_table(session, f"{config.DATABASE_NAME}.CURATED.DEPARTURE_CORPUS")
+    
+    search_service_sql = f"""
+CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.DEPARTURE_SEARCH
+    ON DOCUMENTTEXT
+    ATTRIBUTES CLIENTID, CLIENTNAME, ADVISORID, ADVISORNAME, DOCUMENTTYPE, DEPARTUREREASON, DOCUMENTDATE
+    WAREHOUSE = {config.CORTEX_WAREHOUSE}
+    TARGET_LAG = '{config.SEARCH_TARGET_LAG}'
+    AS 
+    SELECT 
+        DOCUMENTID,
+        TITLE,
+        DOCUMENTTEXT,
+        CLIENTID,
+        CLIENTNAME,
+        ADVISORID,
+        ADVISORNAME,
+        DOCUMENTTYPE,
+        DEPARTUREREASON,
+        DOCUMENTDATE
+    FROM {config.DATABASE_NAME}.CURATED.DEPARTURE_CORPUS
+"""
+    
+    try:
+        session.sql(search_service_sql).collect()
+        print("    ✅ DEPARTURE_SEARCH created successfully")
+    except Exception as e:
+        print(f"    ❌ Failed to create DEPARTURE_SEARCH: {e}")
+        diagnose_search_service_error(session, e, "DEPARTURE_SEARCH")
+        raise
+
 def verify_corpus_table(session: Session, table_name: str):
     """Verify corpus table exists and has searchable content"""
     
@@ -181,6 +221,8 @@ def verify_corpus_table(session: Session, table_name: str):
             content_column = 'DOCUMENT_TEXT'
         elif 'PLANNING_CORPUS' in table_name:
             content_column = 'DOCUMENT_TEXT'
+        elif 'DEPARTURE_CORPUS' in table_name:
+            content_column = 'DOCUMENTTEXT'
         else:
             content_column = 'CONTENT'
             

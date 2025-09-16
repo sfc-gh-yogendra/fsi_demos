@@ -337,6 +337,80 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ---
 
+## Agent 4: advisor_manager_copilot (Advisor Benchmarking)
+
+### Basic Information
+- **Name**: `advisor_manager_copilot`
+- **Display Name**: `Advisor Benchmarking CoPilot`
+- **Description**: `Executive benchmarking agent for leadership to assess advisor performance, client outcomes, planning completeness, engagement quality, revenue, and risk signals over rolling 12 months, with quartile benchmarks and actionable coaching insights.`
+
+### Response Instructions
+```
+- Present concise benchmarking results with tables and bullet insights.
+- Default to rolling 12 months ending today; state any assumptions.
+- Use peer quartiles and peer groups for fairness.
+- When citing qualitative factors, reference "according to our records" + source.
+- Avoid promissory statements. Frame coaching as recommended next actions.
+- When planning recency is used, cite the firm policy (≤6 months) as the standard.
+```
+
+### Tools
+
+#### Cortex Analyst Tools
+
+**Tool 1: Advisor Performance (TTM)**
+- **Semantic View**: `WAM_AI_DEMO.AI.ADVISOR_PERFORMANCE_SV`
+- **Name**: `cortex_analyst_advisor_perf`
+- **Description**: `Advisor-level KPIs: AUM growth, net flows, client retention, AUM retention, engagement cadence, sentiment trend, planning coverage, revenue, risk signal rate.`
+
+**Tool 2: Client Interactions Analytics**
+- **Semantic View**: `WAM_AI_DEMO.AI.CLIENT_INTERACTIONS_SV`
+- **Name**: `cortex_analyst_client_interactions`
+- **Description**: `Support deep dives into engagement cadence and sentiment.`
+
+#### Cortex Search Tools
+
+**Tool 3: Communications Search**
+- **Name**: `search_communications`
+- **Description**: `Qualitative context on engagement and concerns; risk signal detection.`
+- **Search Service**: `WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH`
+- **ID Column**: `COMMUNICATION_ID`
+- **Title Column**: `TITLE`
+
+**Tool 4: Financial Planning Search**
+- **Name**: `search_financial_planning`
+- **Description**: `Plan/IPS coverage, recency, goal documentation for planning completeness.`
+- **Search Service**: `WAM_AI_DEMO.AI.PLANNING_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
+
+**Tool 5: Departure Search**
+- **Name**: `search_departures`
+- **Description**: `Exit questionnaires and departure feedback for retention analysis.`
+- **Search Service**: `WAM_AI_DEMO.AI.DEPARTURE_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
+
+**Tool 6: Regulatory Search**
+- **Name**: `search_regulatory`
+- **Description**: `Quick lookup of compliance rules referenced in analysis.`
+- **Search Service**: `WAM_AI_DEMO.AI.REGULATORY_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
+
+### Orchestration
+- **Orchestration Model**: Claude 4 Sonnet
+- **Planning Instructions**: 
+```
+1) Classify request: overview benchmark vs outlier deep dive vs opportunity surfacing vs executive brief.
+2) Use cortex_analyst_advisor_perf for quantitative KPIs and quartiles.
+3) Use search tools for context and risk signals; use search_financial_planning for plan/IPS coverage and recency.
+4) For coaching, prefer actionable steps tied to specific clients, plans, and engagement targets.
+5) Always state time window (TTM) and definition of "current plan" (≤6 months).
+```
+
+---
+
 ## Setup Completion Checklist
 
 ### ✅ Prerequisites
@@ -349,11 +423,13 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - [ ] **advisor_copilot** created with 5 tools (2 Cortex Analyst + 3 Cortex Search)
 - [ ] **analyst_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
 - [ ] **compliance_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
+- [ ] **advisor_manager_copilot** created with 6 tools (2 Cortex Analyst + 4 Cortex Search)
 
 ### ✅ Agent Testing
 - [ ] All test queries work for advisor_copilot
 - [ ] All test queries work for analyst_copilot
 - [ ] All test queries work for compliance_copilot
+- [ ] All test queries work for advisor_manager_copilot
 - [ ] Demo scenarios tested end-to-end
 
 **Your WAM AI Demo agents are now ready for customer demonstrations!** 🎉

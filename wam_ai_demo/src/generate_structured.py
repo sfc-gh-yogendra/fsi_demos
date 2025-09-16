@@ -29,6 +29,7 @@ def generate_structured_data(session: Session, test_mode: bool = False):
     create_foundation_tables(session)
     
     # Generate data in dependency order
+    generate_managers(session)
     generate_advisors(session)
     generate_clients(session)
     generate_issuers_and_securities(session)
@@ -37,6 +38,11 @@ def generate_structured_data(session: Session, test_mode: bool = False):
     # Use simplified positions generation for reliability
     generate_simplified_positions(session)
     generate_market_data(session)
+    
+    # Generate advisor benchmarking data
+    generate_advisor_client_relationships(session)
+    generate_advisor_roster(session)
+    generate_advisor_summary_ttm(session)
     
     print("  ✅ Structured data generation complete")
 
@@ -251,6 +257,26 @@ def create_esg_leaders_watchlist(session: Session):
                 
                 print(f"      ✅ Added {ticker} to ESG Leaders")
 
+def generate_managers(session: Session):
+    """Generate manager data"""
+    print("    → Generating managers...")
+    
+    # Ensure database context is set
+    session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
+    
+    # Generate single manager for now
+    import pandas as pd
+    managers_data = [{
+        'MANAGERNAME': 'Regional Manager',
+        'MANAGERTITLE': 'Regional Sales Manager',
+        'STARTDATE': config.get_history_start_date(),
+        'ACTIVEFLAG': True
+    }]
+    
+    managers_df = pd.DataFrame(managers_data)
+    session.write_pandas(managers_df, "CURATED.DIM_MANAGER", overwrite=True, quote_identifiers=False)
+    print(f"      ✅ Generated {len(managers_data)} manager(s)")
+
 def generate_advisors(session: Session):
     """Generate advisor data using pandas and write_pandas for efficiency"""
     print("    → Generating advisors...")
@@ -258,11 +284,16 @@ def generate_advisors(session: Session):
     # Ensure database context is set
     session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
     
+    # Get manager ID
+    manager_result = session.sql("SELECT ManagerID FROM CURATED.DIM_MANAGER LIMIT 1").collect()
+    manager_id = manager_result[0]['MANAGERID'] if manager_result else 1
+    
     # Generate advisor data using pandas for efficiency
     import pandas as pd
     advisors_data = []
     for i in range(config.NUM_ADVISORS):
         advisors_data.append({
+            'MANAGERID': manager_id,
             'FIRSTNAME': f'Advisor{i+1}',
             'LASTNAME': f'Smith{i+1}',
             'EMAIL': f'advisor{i+1}@wealthfirm.com',
@@ -283,7 +314,7 @@ def generate_advisors(session: Session):
     print(f"    ✅ Generated {config.NUM_ADVISORS} advisors")
 
 def generate_clients(session: Session):
-    """Generate client data using pandas and write_pandas for efficiency"""
+    """Generate client data with varied tenure and departures for benchmarking"""
     print("    → Generating clients...")
     
     # Get advisor IDs using Snowpark
@@ -308,6 +339,30 @@ def generate_clients(session: Session):
             first_name = first_names[(client_id - 1) % len(first_names)]
             last_name = last_names[(client_id - 1) % len(last_names)]
             
+            # Generate varied client tenure (6 months to 5 years)
+            tenure_months = py_random.randint(config.CLIENT_TENURE_MONTHS["min"], config.CLIENT_TENURE_MONTHS["max"])
+            onboarding_date = config.get_history_end_date() - timedelta(days=tenure_months * 30)
+            
+            # Determine if client has departed based on departure rate
+            has_departed = py_random.random() < config.CLIENT_DEPARTURE_RATE_ANNUAL * (tenure_months / 12.0)
+            
+            # Set departure details if applicable
+            end_date = None
+            departure_reason = None
+            departure_notes = None
+            is_active = True
+            
+            if has_departed and tenure_months > 12:  # Only clients with >1 year tenure can depart
+                # Set departure date within last 2 years
+                months_since_departure = py_random.randint(1, min(24, tenure_months - 6))
+                end_date = config.get_history_end_date() - timedelta(days=months_since_departure * 30)
+                departure_reason = py_random.choices(
+                    list(config.DEPARTURE_REASONS.keys()),
+                    weights=list(config.DEPARTURE_REASONS.values())
+                )[0]
+                departure_notes = f"Client departed due to {departure_reason.lower()}"
+                is_active = False
+            
             clients_data.append({
                 'ADVISORID': advisor_id,
                 'FIRSTNAME': first_name,
@@ -317,8 +372,11 @@ def generate_clients(session: Session):
                 'DATEOFBIRTH': datetime(1960 + (client_id % 40), 1 + (client_id % 12), 1 + (client_id % 28)).date(),
                 'RISKTOLERANCE': py_random.choice(['Conservative', 'Moderate', 'Aggressive']),
                 'INVESTMENTHORIZON': py_random.choice(['Short-term', 'Medium-term', 'Long-term']),
-                'ONBOARDINGDATE': config.HISTORY_START_DATE + timedelta(days=py_random.randint(0, 365)),
-                'ISACTIVE': True
+                'ONBOARDINGDATE': onboarding_date,
+                'ENDDATE': end_date,
+                'DEPARTUREREASON': departure_reason,
+                'DEPARTURENOTES': departure_notes,
+                'ISACTIVE': is_active
             })
             client_id += 1
     
@@ -546,7 +604,7 @@ def generate_security_identifiers(session: Session, securities_data):
             'SecurityID': i,
             'IdentifierType': 'TICKER',
             'IdentifierValue': ticker,
-            'EffectiveStartDate': config.HISTORY_START_DATE,
+            'EffectiveStartDate': config.get_history_start_date(),
             'EffectiveEndDate': datetime(2099, 12, 31).date(),
             'IsPrimaryForType': True
         })
@@ -556,7 +614,7 @@ def generate_security_identifiers(session: Session, securities_data):
             'SecurityID': i,
             'IdentifierType': 'CUSIP',
             'IdentifierValue': f"{abs(hash(ticker)) % 100000000:08d}",
-            'EffectiveStartDate': config.HISTORY_START_DATE,
+            'EffectiveStartDate': config.get_history_start_date(),
             'EffectiveEndDate': datetime(2099, 12, 31).date(),
             'IsPrimaryForType': True
         })
@@ -619,7 +677,7 @@ def generate_portfolios_and_accounts(session: Session):
             'PortfolioName': f'{model_name} - {account_id}',
             'Strategy': model_name.split()[-1] if len(model_name.split()) > 1 else model_name,
             'BaseCurrency': 'USD',
-            'InceptionDate': config.HISTORY_START_DATE,
+            'InceptionDate': config.get_history_start_date(),
             'IsActive': True
         })
     
@@ -667,7 +725,7 @@ def generate_simplified_positions(session: Session):
         ),
         position_data AS (
             SELECT 
-                '{config.HISTORY_END_DATE}' as HoldingDate,
+                '{config.get_history_end_date()}' as HoldingDate,
                 p.PortfolioID,
                 s.SecurityID,
                 UNIFORM(100, 5000, RANDOM()) as Quantity,
@@ -705,6 +763,164 @@ def generate_market_data(session: Session):
 #     # Keeping commented for reference but not actively maintained
 #     pass
 
+def generate_advisor_client_relationships(session: Session):
+    """Generate advisor-client relationship history"""
+    print("    → Generating advisor-client relationships...")
+    
+    # Get all clients with their advisors and dates
+    clients = session.sql("""
+        SELECT ClientID, AdvisorID, OnboardingDate, EndDate, IsActive
+        FROM CURATED.DIM_CLIENT
+    """).collect()
+    
+    relationships_data = []
+    for client in clients:
+        # Create primary relationship
+        relationships_data.append({
+            'ADVISORID': client['ADVISORID'],
+            'CLIENTID': client['CLIENTID'],
+            'STARTDATE': client['ONBOARDINGDATE'],
+            'ENDDATE': client['ENDDATE'],
+            'RELATIONSHIPSTATUS': 'Terminated' if client['ENDDATE'] else 'Active'
+        })
+        
+        # For some clients, generate advisor transfer history (10% chance)
+        if py_random.random() < 0.10 and client['ONBOARDINGDATE']:
+            # Get different advisor
+            advisors = session.sql("SELECT AdvisorID FROM CURATED.DIM_ADVISOR").collect()
+            previous_advisor = py_random.choice([a['ADVISORID'] for a in advisors if a['ADVISORID'] != client['ADVISORID']])
+            
+            # Create previous relationship
+            transfer_date = client['ONBOARDINGDATE'] + timedelta(days=py_random.randint(90, 365))
+            relationships_data.append({
+                'ADVISORID': previous_advisor,
+                'CLIENTID': client['CLIENTID'],
+                'STARTDATE': client['ONBOARDINGDATE'],
+                'ENDDATE': transfer_date,
+                'RELATIONSHIPSTATUS': 'Transferred'
+            })
+            
+            # Update current relationship start date
+            relationships_data[-2]['STARTDATE'] = transfer_date
+    
+    import pandas as pd
+    relationships_df = pd.DataFrame(relationships_data)
+    session.write_pandas(relationships_df, "CURATED.FACT_ADVISOR_CLIENT_RELATIONSHIP", overwrite=True, quote_identifiers=False)
+    print(f"      ✅ Generated {len(relationships_data)} relationship records")
+
+def generate_advisor_roster(session: Session):
+    """Generate advisor roster summary"""
+    print("    → Generating advisor roster...")
+    
+    # Get advisor and manager data
+    advisor_data = session.sql("""
+        SELECT a.AdvisorID, a.FirstName || ' ' || a.LastName as AdvisorName,
+               a.ManagerID, m.ManagerName, a.Team as TeamName, a.IsActive as ActiveFlag
+        FROM CURATED.DIM_ADVISOR a
+        LEFT JOIN CURATED.DIM_MANAGER m ON a.ManagerID = m.ManagerID
+    """).collect()
+    
+    # Calculate current AUM per advisor for peer grouping
+    aum_data = session.sql("""
+        SELECT a.AdvisorID, COALESCE(SUM(p.MarketValue_Base), 0) as CurrentAUM
+        FROM CURATED.DIM_ADVISOR a
+        LEFT JOIN CURATED.DIM_CLIENT c ON a.AdvisorID = c.AdvisorID AND c.IsActive = TRUE
+        LEFT JOIN CURATED.DIM_ACCOUNT acc ON c.ClientID = acc.ClientID AND acc.IsActive = TRUE
+        LEFT JOIN CURATED.FACT_POSITION_DAILY_ABOR p ON acc.PortfolioID = p.PortfolioID 
+            AND p.HoldingDate = CURRENT_DATE()
+        GROUP BY a.AdvisorID
+    """).collect()
+    
+    # Create AUM lookup
+    aum_lookup = {row['ADVISORID']: row['CURRENTAUM'] for row in aum_data}
+    
+    roster_data = []
+    for advisor in advisor_data:
+        current_aum = aum_lookup.get(advisor['ADVISORID'], 0)
+        
+        # Determine peer group based on AUM
+        if current_aum < config.PEER_GROUP_THRESHOLDS['small_max']:
+            peer_group = 'Small'
+        elif current_aum < config.PEER_GROUP_THRESHOLDS['medium_max']:
+            peer_group = 'Medium'
+        else:
+            peer_group = 'Large'
+        
+        roster_data.append({
+            'ADVISORID': advisor['ADVISORID'],
+            'ADVISORNAME': advisor['ADVISORNAME'],
+            'MANAGERID': advisor['MANAGERID'],
+            'MANAGERNAME': advisor['MANAGERNAME'],
+            'TEAMNAME': advisor['TEAMNAME'],
+            'PEERGROUP': peer_group,
+            'STARTDATE': config.get_history_start_date(),
+            'ACTIVEFLAG': advisor['ACTIVEFLAG']
+        })
+    
+    import pandas as pd
+    roster_df = pd.DataFrame(roster_data)
+    session.write_pandas(roster_df, "CURATED.ADVISOR_ROSTER", overwrite=True, quote_identifiers=False)
+    print(f"      ✅ Generated advisor roster for {len(roster_data)} advisors")
+
+def generate_advisor_summary_ttm(session: Session):
+    """Generate TTM advisor performance summary"""
+    print("    → Generating advisor TTM summary...")
+    
+    # For now, create placeholder data - in a real implementation this would calculate actual metrics
+    advisors = session.sql("SELECT AdvisorID, PeerGroup FROM CURATED.ADVISOR_ROSTER").collect()
+    
+    summary_data = []
+    for advisor in advisors:
+        # Generate realistic but simplified TTM metrics
+        advisor_id = advisor['ADVISORID']
+        peer_group = advisor['PEERGROUP']
+        
+        # Base AUM varies by peer group
+        if peer_group == 'Small':
+            base_aum = py_random.uniform(10_000_000, 40_000_000)
+        elif peer_group == 'Medium':
+            base_aum = py_random.uniform(60_000_000, 120_000_000)
+        else:
+            base_aum = py_random.uniform(160_000_000, 300_000_000)
+        
+        # Generate metrics with some variance
+        starting_aum = base_aum * py_random.uniform(0.9, 1.1)
+        ending_aum = starting_aum * py_random.uniform(0.95, 1.15)
+        net_flows = py_random.uniform(-0.05, 0.10) * starting_aum
+        
+        summary_data.append({
+            'ADVISORID': advisor_id,
+            'PERIODENDDATE': config.get_history_end_date(),
+            'STARTINGAUM': round(starting_aum, 2),
+            'ENDINGAUM': round(ending_aum, 2),
+            'INFLOWS': round(max(0, net_flows), 2),
+            'OUTFLOWS': round(abs(min(0, net_flows)), 2),
+            'NETFLOWS': round(net_flows, 2),
+            'CLIENTSSTART': py_random.randint(20, 30),
+            'CLIENTSLOST': py_random.randint(0, 3),
+            'CLIENTSEND': py_random.randint(20, 30),
+            'AUMLOSTFROMDEPARTURES': round(py_random.uniform(0, starting_aum * 0.05), 2),
+            'INTERACTIONSCOUNT': py_random.randint(300, 800),
+            'UNIQUECLIENTSCONTACTED': py_random.randint(20, 25),
+            'AVGDAYSBETWEENCONTACTS': round(py_random.uniform(25, 45), 1),
+            'POSITIVEPCT': round(py_random.uniform(20, 35), 1),
+            'NEUTRALPCT': round(py_random.uniform(50, 70), 1),
+            'NEGATIVEPCT': round(py_random.uniform(5, 20), 1),
+            'PLANNINGHOUSEHOLDS': py_random.randint(15, 22),
+            'TOTALHOUSEHOLDS': py_random.randint(20, 25),
+            'PLANNINGCOVERAGEPCT': round(py_random.uniform(60, 90), 1),
+            'AVGAUM_TTM': round((starting_aum + ending_aum) / 2, 2),
+            'REVENUE_TTM': round(((starting_aum + ending_aum) / 2) * 0.0075, 2),  # ~0.75% avg fee
+            'RISKFLAGS': py_random.randint(0, 8),
+            'RISKFLAGSPER100': round(py_random.uniform(0.5, 3.0), 2),
+            'PEERGROUP': peer_group
+        })
+    
+    import pandas as pd
+    summary_df = pd.DataFrame(summary_data)
+    session.write_pandas(summary_df, "CURATED.ADVISOR_SUMMARY_TTM", overwrite=True, quote_identifiers=False)
+    print(f"      ✅ Generated TTM summary for {len(summary_data)} advisors")
+
 def generate_synthetic_market_data(session: Session):
     """Generate synthetic market data time series for consistent demo experience"""
     print("    → Generating synthetic market data with realistic patterns...")
@@ -712,7 +928,7 @@ def generate_synthetic_market_data(session: Session):
     session.sql(f"""
         CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_MARKETDATA_TIMESERIES AS
         WITH business_dates AS (
-            SELECT DATEADD(day, seq4(), '{config.HISTORY_START_DATE}') as price_date
+            SELECT DATEADD(day, seq4(), '{config.get_history_start_date()}') as price_date
             FROM TABLE(GENERATOR(rowcount => 500))
             WHERE DAYOFWEEK(price_date) BETWEEN 2 AND 6
         ),

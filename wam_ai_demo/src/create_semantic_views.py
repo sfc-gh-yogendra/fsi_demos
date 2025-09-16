@@ -20,6 +20,9 @@ def create_semantic_views(session: Session, include_phase2: bool = False):
     # Create CLIENT_INTERACTIONS_SV
     create_client_interactions_sv(session)
     
+    # Create ADVISOR_PERFORMANCE_SV for benchmarking
+    create_advisor_performance_sv(session)
+    
     # Create Phase 2 watchlist semantic view if requested
     if include_phase2:
         create_watchlist_analytics_sv(session)
@@ -257,6 +260,61 @@ def validate_semantic_views(session: Session, include_phase2: bool = False):
     print(f"    📋 Created semantic views: {len(views)}")
     for view in views:
         print(f"       - {view['name']}")
+
+def create_advisor_performance_sv(session: Session):
+    """Create ADVISOR_PERFORMANCE_SV for advisor benchmarking"""
+    
+    print("    → Creating ADVISOR_PERFORMANCE_SV...")
+    
+    # Drop any existing views first
+    try:
+        session.sql(f"DROP SEMANTIC VIEW IF EXISTS {config.DATABASE_NAME}.AI.ADVISOR_PERFORMANCE_SV").collect()
+    except:
+        pass  # Ignore if doesn't exist
+    
+    semantic_view_sql = f"""
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.ADVISOR_PERFORMANCE_SV
+TABLES (
+	ADVISORS AS {config.DATABASE_NAME}.CURATED.ADVISOR_ROSTER
+		PRIMARY KEY (ADVISORID)
+		WITH SYNONYMS=('advisor_roster')
+		COMMENT='Advisor roster with manager/team and peer group'
+	,
+	SUMMARY AS {config.DATABASE_NAME}.CURATED.ADVISOR_SUMMARY_TTM
+		PRIMARY KEY (ADVISORID, PERIODENDDATE)
+		WITH SYNONYMS=('advisor_summary_ttm')
+		COMMENT='TTM advisor performance summary'
+)
+RELATIONSHIPS (
+	ADVISOR_TO_SUMMARY AS SUMMARY(ADVISORID) REFERENCES ADVISORS(ADVISORID)
+)
+DIMENSIONS (
+	ADVISORS.ADVISORID AS ADVISORID WITH SYNONYMS=('advisor_id') COMMENT='Advisor identifier',
+	ADVISORS.ADVISORNAME AS ADVISORNAME WITH SYNONYMS=('advisor_name') COMMENT='Advisor name',
+	ADVISORS.MANAGERID AS MANAGERID WITH SYNONYMS=('manager_id') COMMENT='Manager identifier',
+	ADVISORS.MANAGERNAME AS MANAGERNAME WITH SYNONYMS=('manager_name') COMMENT='Manager name',
+	ADVISORS.TEAMNAME AS TEAMNAME WITH SYNONYMS=('team') COMMENT='Team name',
+	ADVISORS.PEERGROUP AS PEERGROUP WITH SYNONYMS=('peer_group') COMMENT='Peer group by book size',
+	SUMMARY.PERIODENDDATE AS PERIODENDDATE WITH SYNONYMS=('period_end') COMMENT='TTM period end date'
+)
+METRICS (
+	SUMMARY.AUM_GROWTH AS AVG((ENDINGAUM - STARTINGAUM - NETFLOWS) / NULLIF(STARTINGAUM,0)) WITH SYNONYMS=('aum_growth') COMMENT='TTM AUM growth %',
+	SUMMARY.NET_NEW_ASSETS AS SUM(NETFLOWS) WITH SYNONYMS=('nna') COMMENT='TTM net new assets',
+	SUMMARY.CLIENT_RETENTION AS AVG(1 - (CLIENTSLOST / NULLIF(CLIENTSSTART,0))) WITH SYNONYMS=('client_retention') COMMENT='TTM client retention',
+	SUMMARY.AUM_RETENTION AS AVG(1 - (AUMLOSTFROMDEPARTURES / NULLIF(STARTINGAUM,0))) WITH SYNONYMS=('aum_retention') COMMENT='TTM AUM retention',
+	SUMMARY.ENGAGEMENT_PER_CLIENT_QTR AS AVG(INTERACTIONSCOUNT / NULLIF(TOTALHOUSEHOLDS,0) / 4) WITH SYNONYMS=('engagement_qtr') COMMENT='Interactions per client per quarter',
+	SUMMARY.AVG_DAYS_BETWEEN_CONTACTS AS AVG(AVGDAYSBETWEENCONTACTS) WITH SYNONYMS=('days_between_contacts') COMMENT='Average days between contacts',
+	SUMMARY.POSITIVE_PCT AS AVG(POSITIVEPCT) WITH SYNONYMS=('sent_pos') COMMENT='Share positive sentiment',
+	SUMMARY.NEUTRAL_PCT AS AVG(NEUTRALPCT) WITH SYNONYMS=('sent_neu') COMMENT='Share neutral sentiment',
+	SUMMARY.NEGATIVE_PCT AS AVG(NEGATIVEPCT) WITH SYNONYMS=('sent_neg') COMMENT='Share negative sentiment',
+	SUMMARY.PLANNING_COVERAGE AS AVG(PLANNINGCOVERAGEPCT) WITH SYNONYMS=('plan_coverage') COMMENT='Households with current plan+IPS',
+	SUMMARY.REVENUE_TTM AS SUM(REVENUE_TTM) WITH SYNONYMS=('revenue_ttm') COMMENT='TTM revenue (assumed schedule)',
+	SUMMARY.RISK_FLAGS_PER_100 AS AVG(RISKFLAGSPER100) WITH SYNONYMS=('risk_rate') COMMENT='Risk flags per 100 comms'
+)
+"""
+    
+    session.sql(semantic_view_sql).collect()
+    print(f"    ✅ ADVISOR_PERFORMANCE_SV created successfully")
 
 def create_watchlist_analytics_sv(session: Session):
     """Create WATCHLIST_ANALYTICS_SV for thematic analysis (Phase 2)"""

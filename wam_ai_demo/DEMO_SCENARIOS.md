@@ -820,16 +820,99 @@ Status: Communications approved for client engagement
 
 ---
 
+## Scenario 4: Advisor Benchmarking & Coaching Opportunities
+### Persona: Regional Sales Manager
+### Business Challenge: Need to identify underperforming advisors and prioritize coaching interventions across the team while surfacing actionable insights for performance improvement.
+
+### Demo Storyline: *"As a regional sales manager, I need to assess my advisors' performance across multiple dimensions - not just AUM growth, but client retention, engagement quality, planning completeness, and risk management. I want to identify who needs coaching and what specific actions will have the biggest impact on their success."*
+
+### Step-by-Step Demo Flow:
+
+#### Step 1: Comprehensive Advisor Benchmark Overview
+**Demo Operator Says**: *"Let's start with a comprehensive view of advisor performance across all key metrics, broken down by peer groups for fair comparison."*
+
+**User Query**: `"Benchmark all advisors for the last 12 months: AUM growth, client/AUM retention, engagement cadence, planning coverage, revenue, and risk signal rate by peer quartiles. Highlight top and bottom quartiles."`
+
+**Expected Agent Response**: 
+- Comprehensive table showing all advisors with key metrics
+- Peer quartile rankings (Small/Medium/Large book sizes)
+- Clear identification of top performers and coaching opportunities
+- TTM timeframe clearly stated with firm policy references
+
+**Demo Talking Points**: 
+- *"Notice how the AI automatically segments advisors by peer groups for fair comparison - Small (<$50M), Medium ($50M-$150M), and Large (>$150M) books"*
+- *"The system tracks both leading indicators like engagement and lagging indicators like retention for a complete picture"*
+- *"Risk signal rates help identify potential compliance issues before they become problems"*
+
+#### Step 2: Deep Dive on Performance Outliers
+**Demo Operator Says**: *"Now let's drill into the advisors who need immediate attention - those with retention challenges."*
+
+**User Query**: `"Drill into the bottom two advisors by client retention and AUM retention. Show root causes from interactions and planning coverage, with client lists at risk."`
+
+**Expected Agent Response**:
+- Detailed analysis of specific advisors' challenges
+- Root cause analysis citing communication gaps and planning deficiencies
+- Specific client examples with engagement history
+- References to actual communications and planning documents
+
+**Demo Talking Points**:
+- *"The AI connects quantitative metrics to qualitative insights from actual client interactions"*
+- *"See how it identifies specific clients at risk with their last contact dates and planning status"*
+- *"This level of insight would typically require hours of manual analysis across multiple systems"*
+
+#### Step 3: Actionable Coaching Opportunities
+**Demo Operator Says**: *"Instead of just identifying problems, let's get specific coaching recommendations with expected impact."*
+
+**User Query**: `"Identify 10 quick wins for advisors below the median engagement to improve next quarter KPIs: who to contact, plan updates needed, and expected impact."`
+
+**Expected Agent Response**:
+- Prioritized list of specific client actions
+- Contact recommendations with context (last interaction date, sentiment)
+- Planning document update needs with recency policy citations
+- Estimated impact on engagement and retention metrics
+
+**Demo Talking Points**:
+- *"Notice how it prioritizes actions based on likely impact - focusing on clients with outdated plans and positive sentiment"*
+- *"The system references firm policy standards (6-month planning recency) for accountability"*
+- *"These are actionable coaching points managers can immediately discuss with advisors"*
+
+#### Step 4: Executive Summary for Leadership
+**Demo Operator Says**: *"Finally, let's create an executive brief that summarizes everything for senior leadership."*
+
+**User Query**: `"Create a one-page leadership brief summarizing advisor performance by quartiles with the top actions, owners, and timelines."`
+
+**Expected Agent Response**:
+- Executive summary with key findings
+- Performance distribution by quartiles
+- Top 3-5 priority actions with specific owners
+- Timeline for implementation and follow-up
+- Metrics to track progress
+
+**Demo Talking Points**:
+- *"Perfect for board presentations or executive team updates"*
+- *"Shows how AI transforms raw data into strategic insights for leadership decision-making"*
+- *"The system maintains accountability by identifying specific owners and timelines"*
+
+### Business Impact Summary:
+- **Coaching Efficiency**: 80% reduction in time to identify coaching opportunities
+- **Performance Insights**: Quantitative metrics combined with qualitative context for complete picture
+- **Risk Prevention**: Early identification of retention and compliance risks
+- **Accountability**: Clear action items with owners and timelines
+- **Scalability**: Consistent evaluation across teams regardless of manager experience
+
+---
+
 ## Demo Presentation Guidelines
 
 ### Opening Setup (2 minutes)
 1. **Context Setting**: "Today I'll show you how Snowflake AI transforms wealth management operations"
 2. **Data Overview**: "We've created a realistic environment with 2,539 real securities and authentic market data"
-3. **Persona Introduction**: "We'll see three different roles - advisor, analyst, and compliance - working with the same unified platform"
+3. **Persona Introduction**: "We'll see four different roles - advisor, analyst, compliance, and management - working with the same unified platform"
 
 ### Scenario Transitions (30 seconds each)
 - **Advisor → Analyst**: "Now let's shift to the investment research perspective..."
 - **Analyst → Compliance**: "While these investment decisions are being made, compliance is monitoring..."
+- **Compliance → Management**: "Now let's see how leadership uses this same data for advisor performance evaluation..."
 - **Individual → Integration**: "The real power comes when these roles work together..."
 
 ### Closing Impact (2 minutes)

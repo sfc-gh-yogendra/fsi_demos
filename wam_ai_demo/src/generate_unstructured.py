@@ -27,6 +27,9 @@ def generate_unstructured_data(session: Session, test_mode: bool = False):
     # Generate planning corpus
     generate_planning_corpus(session, test_mode)
     
+    # Generate departure corpus for benchmarking
+    generate_departure_corpus(session, test_mode)
+    
     # Create client interactions view
     create_client_interactions_view(session)
     
@@ -67,7 +70,7 @@ def generate_communications_corpus(session: Session, test_mode: bool = False):
         )
     )
     
-    # Step 5: Save to final table with post-processing
+    # Step 5: Save to final table with post-processing and risk detection
     final_communications = generated_df.select(
         col('COMMUNICATION_ID'),
         col('CLIENT_ID'),
@@ -81,10 +84,13 @@ def generate_communications_corpus(session: Session, test_mode: bool = False):
     
     final_communications.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS", )
     
+    # Add risk flags using post-processing
+    add_risk_flags_to_communications(session)
+    
     # Clean up temp table
     session.sql(f"DROP TABLE IF EXISTS {config.DATABASE_NAME}.RAW.TEMP_COMMUNICATIONS_PROMPTS").collect()
     
-    print(f"    ✅ Generated communications corpus")
+    print(f"    ✅ Generated communications corpus with risk flags")
 
 def create_communications_prompts(session: Session, test_mode: bool = False) -> list:
     """Create dynamic prompts for communications generation"""
@@ -125,7 +131,7 @@ def create_communications_prompts(session: Session, test_mode: bool = False) -> 
             comm_type = get_communication_type()
             
             # Create timestamp within client lifespan
-            base_date = config.HISTORY_START_DATE + timedelta(days=random.randint(0, 365))
+            base_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
             timestamp = datetime.combine(base_date, datetime.min.time()) + timedelta(
                 hours=random.randint(9, 17),
                 minutes=random.randint(0, 59)
@@ -297,7 +303,7 @@ def generate_research_corpus(session: Session, test_mode: bool = False):
             doc_type = random.choice(doc_types)
             
             # Create publication date within history range
-            pub_date = config.HISTORY_START_DATE + timedelta(days=random.randint(0, 365))
+            pub_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
             
             # Create research prompt
             prompt = create_research_prompt(ticker, description, doc_type)
@@ -410,7 +416,7 @@ def generate_regulatory_corpus(session: Session, test_mode: bool = False):
     
     for topic in regulatory_topics:
         # Create publication date
-        pub_date = config.HISTORY_START_DATE + timedelta(days=random.randint(0, 200))
+        pub_date = config.get_history_start_date() + timedelta(days=random.randint(0, 200))
         
         # Create regulatory prompt
         prompt = create_regulatory_prompt(topic)
@@ -580,7 +586,7 @@ Generate the ESG research report:
             'DOCUMENT_TITLE': f'ESG Leadership Analysis: {topic["company"]} - {topic["theme"]}',
             'DOCUMENT_TYPE': 'ESG Research',
             'TICKER': topic['ticker'],
-            'PUBLISH_DATE': config.HISTORY_END_DATE,
+            'PUBLISH_DATE': config.get_history_end_date(),
             'SOURCE': 'Internal ESG Research Team',
             'LANGUAGE': 'en',
             'PROMPT_TEXT': prompt
@@ -659,7 +665,7 @@ def create_carbon_neutrality_research(session: Session):
             (DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TYPE, TICKER, PUBLISH_DATE, SOURCE, LANGUAGE, DOCUMENT_TEXT)
             VALUES
             ('{content['id']}', '{escaped_title}', 'Carbon Neutrality Research', '{content['ticker']}',
-             '{config.HISTORY_END_DATE}', 'ESG Research Team', 'en', '{escaped_content}')
+             '{config.get_history_end_date()}', 'ESG Research Team', 'en', '{escaped_content}')
         """).collect()
     
     print(f"    ✅ Generated {len(carbon_content)} carbon neutrality research documents")
@@ -694,7 +700,7 @@ def create_sustainability_reports(session: Session):
             (DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TYPE, TICKER, PUBLISH_DATE, SOURCE, LANGUAGE, DOCUMENT_TEXT)
             VALUES
             ('{report['id']}', '{escaped_title}', 'Sustainability Report', '{report['ticker']}',
-             '{config.HISTORY_END_DATE}', 'Corporate Sustainability Team', 'en', '{escaped_content}')
+             '{config.get_history_end_date()}', 'Corporate Sustainability Team', 'en', '{escaped_content}')
         """).collect()
     
     print(f"    ✅ Generated {len(sustainability_reports)} sustainability reports")
@@ -894,3 +900,239 @@ Instructions:
     base_prompt += f"\n\nGenerate the {doc_type.lower()} content for {client_name}:"
     
     return base_prompt
+
+def add_risk_flags_to_communications(session: Session):
+    """Add risk flags to communications corpus using keyword detection and random assignment"""
+    print("      → Adding risk flags to communications...")
+    
+    # Risk detection patterns for each category
+    risk_patterns = {
+        'PERFORMANCE_GUARANTEE': [
+            'guarantee', 'promised return', 'assured profit', 'certain return',
+            'guaranteed performance', 'will definitely', 'promise you will'
+        ],
+        'SUITABILITY_MISMATCH': [
+            'aggressive for conservative', 'high risk for low tolerance', 
+            'unsuitable investment', 'doesn\'t match profile', 'mismatch'
+        ],
+        'UNDOCUMENTED_REC': [
+            'verbal recommendation', 'phone call only', 'undocumented advice',
+            'off the record', 'informal suggestion'
+        ],
+        'PII_BREACH': [
+            'social security', 'SSN', 'full credit card', 'bank account number',
+            'password', 'personal information shared'
+        ],
+        'ESG_GREENWASHING': [
+            'green but not really', 'ESG washing', 'fake sustainability',
+            'misleading environmental', 'false ESG claims'
+        ]
+    }
+    
+    # First, update all records to have default values
+    session.sql(f"""
+        UPDATE {config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS
+        SET RiskCategory = NULL, RiskSeverity = NULL, RiskFlags = 0
+    """).collect()
+    
+    # Get all communications
+    comms = session.sql(f"""
+        SELECT COMMUNICATION_ID, CONTENT
+        FROM {config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS
+    """).collect()
+    
+    # Process each communication for risk detection
+    import random
+    risk_updates = []
+    
+    for comm in comms:
+        content = comm['CONTENT'].lower() if comm['CONTENT'] else ''
+        comm_id = comm['COMMUNICATION_ID']
+        detected_risks = []
+        
+        # Check for pattern matches
+        for category, patterns in risk_patterns.items():
+            if any(pattern in content for pattern in patterns):
+                detected_risks.append(category)
+        
+        # Add random risk flags based on configuration rate
+        if not detected_risks and random.random() < config.RISK_FLAG_RATE:
+            detected_risks.append(random.choice(config.RISK_CATEGORIES))
+        
+        # Update record if risks detected
+        if detected_risks:
+            primary_risk = detected_risks[0]
+            severity = random.choices(['LOW', 'MEDIUM', 'HIGH'], weights=[0.6, 0.3, 0.1])[0]
+            
+            session.sql(f"""
+                UPDATE {config.DATABASE_NAME}.CURATED.COMMUNICATIONS_CORPUS
+                SET RiskCategory = '{primary_risk}',
+                    RiskSeverity = '{severity}',
+                    RiskFlags = {len(detected_risks)}
+                WHERE COMMUNICATION_ID = '{comm_id}'
+            """).collect()
+    
+    print(f"      ✅ Risk flags added to communications")
+
+def generate_departure_corpus(session: Session, test_mode: bool = False):
+    """Generate departure documents for clients who have left"""
+    print("    → Generating departure corpus...")
+    
+    # Get departed clients
+    departed_clients = session.sql(f"""
+        SELECT ClientID, FirstName || ' ' || LastName as ClientName,
+               AdvisorID, DepartureReason, EndDate
+        FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT
+        WHERE EndDate IS NOT NULL
+    """).collect()
+    
+    if not departed_clients:
+        print("      → No departed clients found, skipping departure corpus")
+        return
+    
+    # Get advisor names for context
+    advisors = session.sql(f"""
+        SELECT AdvisorID, FirstName || ' ' || LastName as AdvisorName
+        FROM {config.DATABASE_NAME}.CURATED.DIM_ADVISOR
+    """).collect()
+    advisor_lookup = {a['ADVISORID']: a['ADVISORNAME'] for a in advisors}
+    
+    # Generate departure documents
+    departure_data = []
+    
+    for client in departed_clients:
+        client_id = client['CLIENTID']
+        client_name = client['CLIENTNAME']
+        advisor_id = client['ADVISORID']
+        advisor_name = advisor_lookup.get(advisor_id, 'Unknown Advisor')
+        departure_reason = client['DEPARTUREREASON']
+        end_date = client['ENDDATE']
+        
+        # Generate exit questionnaire
+        questionnaire_prompt = f"""
+        Generate a realistic client exit questionnaire response for {client_name} who left due to {departure_reason}.
+        Include:
+        - Overall satisfaction rating (1-10)
+        - Specific feedback about advisor service
+        - Reasons for leaving
+        - Communication frequency satisfaction
+        - Investment performance concerns if applicable
+        - Fee structure feedback
+        - Likelihood to recommend (1-10)
+        - Additional comments
+        
+        Make it authentic and vary the tone based on departure reason.
+        """
+        
+        # For demo purposes, create simplified content rather than using Cortex Complete
+        questionnaire_content = generate_departure_content(client_name, departure_reason, 'questionnaire')
+        
+        departure_data.append({
+            'DOCUMENTID': f'EXIT_QUEST_{client_id}_{end_date.strftime("%Y%m%d")}',
+            'CLIENTID': client_id,
+            'CLIENTNAME': client_name,
+            'ADVISORID': advisor_id,
+            'ADVISORNAME': advisor_name,
+            'DOCUMENTTYPE': 'EXIT_QUESTIONNAIRE',
+            'DOCUMENTDATE': end_date,
+            'TITLE': f'Exit Questionnaire - {client_name}',
+            'DOCUMENTTEXT': questionnaire_content,
+            'DEPARTUREREASON': departure_reason
+        })
+        
+        # Generate exit interview notes (50% chance)
+        if random.random() < 0.5:
+            interview_content = generate_departure_content(client_name, departure_reason, 'interview')
+            
+            departure_data.append({
+                'DOCUMENTID': f'EXIT_INTERVIEW_{client_id}_{end_date.strftime("%Y%m%d")}',
+                'CLIENTID': client_id,
+                'CLIENTNAME': client_name,
+                'ADVISORID': advisor_id,
+                'ADVISORNAME': advisor_name,
+                'DOCUMENTTYPE': 'EXIT_INTERVIEW',
+                'DOCUMENTDATE': end_date,
+                'TITLE': f'Exit Interview Notes - {client_name}',
+                'DOCUMENTTEXT': interview_content,
+                'DEPARTUREREASON': departure_reason
+            })
+    
+    # Save to departure corpus table
+    if departure_data:
+        import pandas as pd
+        departure_df = pd.DataFrame(departure_data)
+        session.write_pandas(departure_df, "CURATED.DEPARTURE_CORPUS", overwrite=True, quote_identifiers=False)
+        print(f"      ✅ Generated {len(departure_data)} departure documents")
+    else:
+        print("      → No departure documents to generate")
+
+def generate_departure_content(client_name: str, departure_reason: str, doc_type: str) -> str:
+    """Generate realistic departure document content"""
+    
+    if doc_type == 'questionnaire':
+        if departure_reason == 'Performance Dissatisfaction':
+            return f"""
+EXIT QUESTIONNAIRE - {client_name}
+
+1. Overall satisfaction with advisory services (1-10): 4
+2. Communication frequency: Adequate but concerning when performance was poor
+3. Investment performance satisfaction: Very unsatisfied - portfolio underperformed market by significant margin
+4. Fee structure feedback: Fees seemed high given poor performance
+5. Advisor responsiveness: Good initially, but less responsive when issues arose
+6. Likelihood to recommend (1-10): 2
+7. Primary reason for leaving: Investment performance consistently below expectations
+8. Additional comments: Expected better risk management and performance monitoring. Disappointed with lack of proactive communication during market downturns.
+
+Date: {datetime.now().strftime('%Y-%m-%d')}
+"""
+        elif departure_reason == 'Fee Concerns':
+            return f"""
+EXIT QUESTIONNAIRE - {client_name}
+
+1. Overall satisfaction with advisory services (1-10): 6
+2. Communication frequency: Good
+3. Investment performance satisfaction: Acceptable
+4. Fee structure feedback: Too expensive compared to alternatives available
+5. Advisor responsiveness: Very good
+6. Likelihood to recommend (1-10): 5
+7. Primary reason for leaving: Found lower-cost alternatives with similar services
+8. Additional comments: Service quality was good but fees became prohibitive. Found robo-advisor with lower fees for similar portfolio management.
+
+Date: {datetime.now().strftime('%Y-%m-%d')}
+"""
+        else:  # Other reasons
+            return f"""
+EXIT QUESTIONNAIRE - {client_name}
+
+1. Overall satisfaction with advisory services (1-10): 7
+2. Communication frequency: Good
+3. Investment performance satisfaction: Satisfactory
+4. Fee structure feedback: Fair
+5. Advisor responsiveness: Good
+6. Likelihood to recommend (1-10): 7
+7. Primary reason for leaving: {departure_reason}
+8. Additional comments: No major issues with service. Departure due to personal circumstances.
+
+Date: {datetime.now().strftime('%Y-%m-%d')}
+"""
+    
+    else:  # interview
+        return f"""
+EXIT INTERVIEW NOTES - {client_name}
+
+Date: {datetime.now().strftime('%Y-%m-%d')}
+Departure Reason: {departure_reason}
+
+Client expressed overall satisfaction with relationship but {departure_reason.lower()} became primary concern.
+Key themes from discussion:
+- Service quality generally met expectations
+- Communication style was appropriate for client needs
+- Departure primarily driven by {departure_reason.lower()}
+
+Action items for team:
+- Review similar client situations
+- Consider process improvements where applicable
+- Follow up in 6 months if appropriate
+
+Interview conducted by: Regional Manager
+"""

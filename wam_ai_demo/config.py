@@ -19,9 +19,19 @@ NUM_ADVISORS = 5
 CLIENTS_PER_ADVISOR = 25
 ACCOUNTS_PER_CLIENT = 2
 
-# Date ranges
-HISTORY_END_DATE = datetime.now().date()
-HISTORY_START_DATE = HISTORY_END_DATE - timedelta(days=365 * 2)  # 2 years
+# Date ranges (extended for advisor benchmarking)
+# Note: Use functions to ensure dates are calculated when called, not when module is imported
+def get_history_end_date():
+    """Get the end date for historical data generation (today)"""
+    return datetime.now().date()
+
+def get_history_start_date():
+    """Get the start date for historical data generation (5 years ago)"""
+    return get_history_end_date() - timedelta(days=365 * 5)
+
+# For compatibility with existing code, but these should be replaced with function calls
+HISTORY_END_DATE = None  # Use get_history_end_date() instead
+HISTORY_START_DATE = None  # Use get_history_start_date() instead
 UNSTRUCTURED_DOCS_PER_TICKER = 15
 COMMS_PER_CLIENT = 50
 
@@ -51,7 +61,7 @@ SEARCH_TARGET_LAG = '5 minutes'
 BUILD_SCOPES = ['all', 'data', 'semantic', 'search']
 
 # Available Scenarios
-AVAILABLE_SCENARIOS = ['advisor', 'analyst', 'guardian', 'all']
+AVAILABLE_SCENARIOS = ['advisor', 'analyst', 'guardian', 'manager', 'all']
 
 # Communications Mix (used by unstructured data generation)
 COMMUNICATIONS_MIX = {
@@ -100,6 +110,55 @@ OPENFIGI_SCHEMA = 'CYBERSYN'
 def get_connection_name():
     """Get connection name from environment or use default"""
     return os.getenv('SNOWFLAKE_CONNECTION_NAME', DEFAULT_CONNECTION_NAME)
+
+# Advisor Benchmarking Configuration
+PEER_GROUP_THRESHOLDS = {
+    "small_max": 50_000_000,      # < $50M
+    "medium_max": 150_000_000     # $50M-$150M (>$150M = Large)
+}
+
+FEE_SCHEDULE_BPS = {
+    "tier_1": {"min": 0, "max": 1_000_000, "bps": 0.0085},           # 0-$1M: 0.85%
+    "tier_2": {"min": 1_000_000, "max": 5_000_000, "bps": 0.0070},   # $1-$5M: 0.70%
+    "tier_3": {"min": 5_000_000, "max": 10_000_000, "bps": 0.0055},  # $5-$10M: 0.55%
+    "tier_4": {"min": 10_000_000, "max": float('inf'), "bps": 0.0040} # >$10M: 0.40%
+}
+
+PLANNING_FEE_PER_HOUSEHOLD = 1000  # $1,000/household/year when current
+PLANNING_RECENCY_MONTHS = 6        # ≤6 months = "current"
+ENGAGEMENT_TARGET_PER_MONTH = 1    # 1 interaction per client per month
+
+# Client Departure Configuration
+CLIENT_DEPARTURE_RATE_ANNUAL = 0.075  # 7.5% annual departure rate
+DEPARTURE_REASONS = {
+    "Performance Dissatisfaction": 0.30,
+    "Fee Concerns": 0.25,
+    "Advisor Change": 0.20,
+    "Life Event": 0.15,
+    "Competitor": 0.10
+}
+
+# Transaction Configuration
+TRANSACTIONS_PER_ACCOUNT_MONTH = {"min": 2, "max": 5}
+ACTIVE_TRADER_PERCENTAGE = 0.20  # 20% of accounts are more active
+ACTIVE_TRADER_TRANSACTIONS_MONTH = {"min": 5, "max": 10}
+
+# Risk Signal Configuration
+RISK_FLAG_RATE = 0.025  # 2.5% of communications have risk flags
+RISK_CATEGORIES = [
+    "PERFORMANCE_GUARANTEE",
+    "SUITABILITY_MISMATCH", 
+    "UNDOCUMENTED_REC",
+    "PII_BREACH",
+    "ESG_GREENWASHING"
+]
+
+# Planning Document Configuration
+PLANNING_MULTIPLE_VERSIONS_RATE = 0.40  # 40% of clients have multiple versions
+PLANNING_VERSIONS_RANGE = {"min": 1, "max": 3}
+
+# Client Tenure Configuration (for varied history)
+CLIENT_TENURE_MONTHS = {"min": 6, "max": 60}  # 6 months to 5 years
 
 def get_build_mode():
     """Get build mode from environment or default to replace_all"""

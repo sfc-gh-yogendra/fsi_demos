@@ -51,6 +51,7 @@ def create_foundation_tables(session: Session):
     print("  → Creating foundation tables...")
     
     # Step 1: Create dimension tables (no dependencies)
+    create_dim_manager(session)
     create_dim_advisor(session)
     create_dim_client(session)
     create_dim_issuer(session)
@@ -66,17 +67,36 @@ def create_foundation_tables(session: Session):
     create_fact_transaction(session)
     create_fact_position_daily_abor(session)
     create_fact_marketdata_timeseries(session)
+    create_fact_advisor_client_relationship(session)
     
     # Step 4: Create corpus tables
     create_corpus_tables(session)
     
+    # Step 5: Create advisor benchmarking summary tables
+    create_advisor_roster(session)
+    create_advisor_summary_ttm(session)
+    create_departure_corpus(session)
+    
     print("  ✅ Foundation tables created")
+
+def create_dim_manager(session: Session):
+    """Create manager dimension table"""
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_MANAGER (
+            ManagerID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            ManagerName VARCHAR(100),
+            ManagerTitle VARCHAR(100),
+            StartDate DATE,
+            ActiveFlag BOOLEAN DEFAULT TRUE
+        )
+    """).collect()
 
 def create_dim_advisor(session: Session):
     """Create advisor dimension table"""
     session.sql(f"""
         CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_ADVISOR (
             AdvisorID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            ManagerID BIGINT,
             FirstName VARCHAR(100),
             LastName VARCHAR(100),
             Email VARCHAR(255),
@@ -99,6 +119,9 @@ def create_dim_client(session: Session):
             RiskTolerance VARCHAR(50),
             InvestmentHorizon VARCHAR(50),
             OnboardingDate DATE,
+            EndDate DATE,
+            DepartureReason VARCHAR(50),
+            DepartureNotes TEXT,
             IsActive BOOLEAN DEFAULT TRUE
         )
     """).collect()
@@ -255,7 +278,10 @@ def create_corpus_tables(session: Session):
             CHANNEL VARCHAR(50),
             SUBJECT VARCHAR(500),
             CONTENT TEXT,
-            SENTIMENT_SCORE DECIMAL(3,2)
+            SENTIMENT_SCORE DECIMAL(3,2),
+            RiskCategory VARCHAR(50),
+            RiskSeverity VARCHAR(20),
+            RiskFlags INTEGER DEFAULT 0
         )
     """).collect()
     
@@ -282,6 +308,93 @@ def create_corpus_tables(session: Session):
             TITLE VARCHAR(500),
             PUBLISH_DATE DATE,
             CONTENT TEXT
+        )
+    """).collect()
+
+def create_fact_advisor_client_relationship(session: Session):
+    """Create advisor-client relationship fact table"""
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_ADVISOR_CLIENT_RELATIONSHIP (
+            RelationshipID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            AdvisorID BIGINT NOT NULL,
+            ClientID BIGINT NOT NULL,
+            StartDate DATE NOT NULL,
+            EndDate DATE,
+            RelationshipStatus VARCHAR(20) DEFAULT 'Active'
+        )
+    """).collect()
+
+def create_advisor_roster(session: Session):
+    """Create advisor roster summary table"""
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.ADVISOR_ROSTER (
+            AdvisorID BIGINT PRIMARY KEY,
+            AdvisorName VARCHAR(100),
+            ManagerID BIGINT,
+            ManagerName VARCHAR(100),
+            TeamName VARCHAR(50),
+            PeerGroup VARCHAR(20),
+            StartDate DATE,
+            ActiveFlag BOOLEAN DEFAULT TRUE
+        )
+    """).collect()
+
+def create_advisor_summary_ttm(session: Session):
+    """Create advisor summary TTM table"""
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.ADVISOR_SUMMARY_TTM (
+            AdvisorID BIGINT,
+            PeriodEndDate DATE,
+            -- AUM & Flows
+            StartingAUM DECIMAL(18,2),
+            EndingAUM DECIMAL(18,2),
+            Inflows DECIMAL(18,2),
+            Outflows DECIMAL(18,2),
+            NetFlows DECIMAL(18,2),
+            -- Clients
+            ClientsStart INTEGER,
+            ClientsLost INTEGER,
+            ClientsEnd INTEGER,
+            AUMLostFromDepartures DECIMAL(18,2),
+            -- Engagement
+            InteractionsCount INTEGER,
+            UniqueClientsContacted INTEGER,
+            AvgDaysBetweenContacts DECIMAL(10,2),
+            -- Sentiment
+            PositivePct DECIMAL(5,2),
+            NeutralPct DECIMAL(5,2),
+            NegativePct DECIMAL(5,2),
+            -- Planning
+            PlanningHouseholds INTEGER,
+            TotalHouseholds INTEGER,
+            PlanningCoveragePct DECIMAL(5,2),
+            -- Revenue
+            AvgAUM_TTM DECIMAL(18,2),
+            Revenue_TTM DECIMAL(18,2),
+            -- Risk
+            RiskFlags INTEGER,
+            RiskFlagsPer100 DECIMAL(5,2),
+            -- Peer Group
+            PeerGroup VARCHAR(20),
+            PRIMARY KEY (AdvisorID, PeriodEndDate)
+        )
+    """).collect()
+
+def create_departure_corpus(session: Session):
+    """Create departure corpus table for exit documents"""
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DEPARTURE_CORPUS (
+            DocumentID VARCHAR(50) PRIMARY KEY,
+            ClientID BIGINT,
+            ClientName VARCHAR(100),
+            AdvisorID BIGINT,
+            AdvisorName VARCHAR(100),
+            DocumentType VARCHAR(50),
+            DocumentDate DATE,
+            Title VARCHAR(200),
+            DocumentText TEXT,
+            DepartureReason VARCHAR(50),
+            CreatedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
         )
     """).collect()
 
