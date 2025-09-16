@@ -4,570 +4,129 @@ alwaysApply: true
 
 # WAM AI Demo - Agent Configuration Rules
 
-## Documentation Standards
-When creating or updating agent configurations and demo scenarios:
+## Agent Naming Standards
+- **Agent Names**: Use `*_copilot` format (e.g., `advisor_copilot`)
+- **Display Names**: Use "* CoPilot" format (e.g., "Wealth Advisory CoPilot")
+- **Current Agents**:
+  - `advisor_copilot` - Display Name: "Wealth Advisory CoPilot"
+  - `analyst_copilot` - Display Name: "Portfolio Analysis CoPilot"  
+  - `compliance_copilot` - Display Name: "Compliance CoPilot"
 
-### AGENT_SETUP_GUIDE.md Structure:
-1. **Agent Configuration Section**:
-   - Agent Name, Display Name, Description
-   - Tool configurations (Type, Name, Service/View, Columns, Description)
-   - Planning Instructions (full text to copy/paste)
-   - Response Instructions (full text to copy/paste)
-   - Test queries with expected behavior
+## Tool Configuration Formats
 
-2. **Example Entry**:
-   ```markdown
-   ### Agent X: [agent_name] ([Persona])
-   #### Step 1: Create Agent
-   - **Agent Name**: `agent_name`
-   - **Display Name**: `Display Name`
-   - **Description**: `Full description`
-   
-   #### Step 2: Add Tools
-   **Tool 1: [tool_name]**
-   - **Type**: Cortex Analyst/Search
-   - **Name**: `tool_name`
-   - **Service/View**: `DATABASE.SCHEMA.OBJECT`
-   - **Description**: `When to use this tool`
-   
-   #### Step 3: Planning Instructions
-   [Full text of planning instructions]
-   
-   #### Step 4: Response Instructions
-   [Full text of response instructions]
-   
-   #### Step 5: Test Queries
-   [List of test queries]
-   ```
-
-### DEMO_SCENARIOS.md Structure:
-1. **Scenario Section**:
-   - Persona and business challenge
-   - Demo storyline narrative
-   - Step-by-step demo flow (3-4 steps)
-   - Business impact summary
-
-2. **Example Entry**:
-   ```markdown
-   ## Scenario X: [Scenario Name]
-   ### Persona: [Role]
-   ### Business Challenge:
-   [Problem statement]
-   
-   ### Demo Storyline:
-   *"[Opening narrative]"*
-   
-   ### Step-by-Step Demo Flow:
-   
-   #### Step 1: [Action]
-   **Demo Operator Says**: *"[What to say]"*
-   **User Query**: `"[Exact query]"`
-   **Expected Agent Response**: [Response details]
-   **Demo Talking Points**: 
-   - *"[Business value point 1]"*
-   - *"[Business value point 2]"*
-   
-   ### Business Impact Summary:
-   - **[Metric]**: [Impact description]
-   ```
-
-## Agents
-- `advisor_ai` (Wealth Manager)
-  - Tools: `cortex_analyst_client_financials` (CLIENT_FINANCIALS_SV), `cortex_analyst_client_interactions` (CLIENT_INTERACTIONS_SV), `search_communications`, `search_research`, `data_to_chart`.
-- `analyst_ai` (Portfolio Manager)
-  - Tools: `cortex_analyst_client_financials`, `search_research`, `search_communications` (context), `data_to_chart`.
-  - Phase 2: Enhanced ESG analysis, watchlist analytics, sustainability reporting.
-- `guardian_ai` (Compliance)
-  - Tools: `search_communications`, `search_regulatory`, `cortex_analyst_client_financials` (context), `data_to_chart`.
-
-## Tool naming and descriptions
-- Use names without spaces. Provide clear descriptions for when to use each tool.
-- For Search tools, specify ID and Title columns.
-
-## Instructions
-- Split into Response Instructions and Planning Instructions.
-- Response guardrails: no promissory statements; cite sources; use "according to our records".
-- Planning examples must illustrate sequencing across Analyst → Search or vice versa.
-
-## Complete Agent Configuration Templates
-
-### advisor_ai (Wealth Manager)
-```yaml
-Agent Name: advisor_ai
-Display Name: Wealth Advisory AI
-Description: Expert AI assistant for wealth managers providing comprehensive client insights by combining portfolio analytics with communication history and research intelligence.
-
-Tools:
-  1. cortex_analyst_client_financials (Cortex Analyst)
-     - Semantic View: WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
-     - Description: "Use for portfolio analytics, holdings analysis, sector breakdowns, performance metrics, and quantitative calculations about client portfolios and positions."
-     
-  2. cortex_analyst_client_interactions (Cortex Analyst)
-     - Semantic View: WAM_AI_DEMO.AI.CLIENT_INTERACTIONS_SV
-     - Description: "Use for analyzing client communication patterns, contact frequency, channel preferences, and interaction history metrics."
-     
-  3. search_communications (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH
-     - ID Column: COMMUNICATION_ID
-     - Title Column: TITLE
-     - Description: "Search client communications including emails, call transcripts, and meeting notes. Use for finding client preferences, concerns, or past discussions."
-     
-  4. search_research (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.RESEARCH_SEARCH
-     - ID Column: DOCUMENT_ID
-     - Title Column: TITLE
-     - Description: "Search research reports and analyst coverage. Use for finding investment opinions, ratings, and market commentary on specific securities."
-     
-  5. data_to_chart (Custom Tool)
-     - Description: "Generate charts and visualizations when requested by the user (e.g., 'Show asset allocation chart for portfolio X')."
-
-Planning Instructions:
-1. Analyze the user's query to identify distinct sub-questions and analytical domains
-2. Classify each sub-question by type:
-   - QUANTITATIVE: Numbers, calculations, lists, rankings, exposures, weights, performance metrics, charts
-   - QUALITATIVE: Summaries, opinions, context, explanations, "why" questions
-   - THEMATIC: Watchlists, ESG analysis, carbon neutrality, sustainability themes
-3. For quantitative questions: Choose appropriate analyst tool based on domain:
-   - cortex_analyst_client_financials: Portfolio data, holdings, performance, market values, asset allocation
-   - cortex_analyst_client_interactions: Communication patterns, contact frequency, interaction metrics
-4. For qualitative questions: Choose appropriate search tool based on information type:
-   - search_communications: Client emails, call notes, meeting transcripts, preferences
-   - search_research: Investment research, analyst reports, market commentary, ESG analysis, carbon neutrality reports
-5. For thematic questions: 
-   - Use search_research for ESG content, sustainability reports, carbon neutrality analysis
-   - Combine with cortex_analyst_client_financials to analyze portfolio exposure to themes
-6. For mixed questions: Use appropriate analyst tool first, then search tools with results as context
-7. Always synthesize multiple tool outputs into coherent response
-8. If user requests charts/visualizations, use data_to_chart tool
-
-Response Instructions:
-You are a professional wealth management advisor AI assistant. Your responses should be:
-- Concise and data-driven, presented in clear, easy-to-read format using markdown
-- Never provide financial advice or make promissory statements
-- Always refer to data as being 'according to our records'
-- Cite document sources with type and date when referencing qualitative content
-- Focus on actionable insights and client relationship implications
-- Use professional, advisory tone appropriate for wealth management
-- When discussing ESG or sustainability topics, reference specific metrics and commitments
-- Highlight thematic investment opportunities (Carbon Negative Leaders, AI Innovation, ESG Leaders)
+### Cortex Analyst Tools
+```markdown
+**Tool X: [Tool Name]**
+- **Semantic View**: `DATABASE.SCHEMA.VIEW_NAME`
+- **Name**: `tool_name`
+- **Description**: `When to use this tool`
 ```
 
-### analyst_ai (Portfolio Manager)
-```yaml
-Agent Name: analyst_ai
-Display Name: Portfolio Analysis AI
-Description: Expert AI assistant for portfolio managers providing quantitative analysis, research synthesis, and investment insights across structured and unstructured data sources.
-
-Tools:
-  1. cortex_analyst_client_financials (Cortex Analyst)
-     - Semantic View: WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
-     - Description: "Use for quantitative analysis of portfolio data, fund holdings, market metrics, performance calculations, and financial ratios. Can calculate exposures and generate charts."
-     
-  2. search_research (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.RESEARCH_SEARCH
-     - ID Column: DOCUMENT_ID
-     - Title Column: TITLE
-     - Description: "Search research reports, analyst coverage, and market commentary. Use for investment thesis development and qualitative analysis."
-     
-  3. search_communications (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH
-     - ID Column: COMMUNICATION_ID
-     - Title Column: TITLE
-     - Description: "Search client communications for context. Use when portfolio decisions need client preference context."
-     
-  4. data_to_chart (Custom Tool)
-     - Description: "Generate charts and visualizations when requested (e.g., 'Show sector exposure chart' or 'Chart performance attribution')."
-
-Planning Instructions:
-1. Analyze the user's query to identify data requirements and analytical domains
-2. For quantitative analysis: Use cortex_analyst_client_financials for:
-   - Portfolio holdings, exposures, performance metrics
-   - Risk analysis, concentration measures
-   - Asset allocation and sector breakdowns
-   - Thematic exposure analysis (Carbon Negative Leaders, ESG holdings)
-3. For qualitative research: Use search_research for:
-   - Investment thesis development
-   - Market commentary and analyst opinions
-   - Company-specific research and ratings
-   - ESG research, carbon neutrality commitments, sustainability reports
-4. For ESG/sustainability analysis:
-   - Search for ESG research documents and sustainability reports
-   - Analyze portfolio exposure to high ESG-scored securities
-   - Identify carbon negative investment opportunities
-5. For context: Use search_communications when portfolio decisions need client input
-6. For complex queries spanning multiple domains, use tools systematically
-7. Generate charts and visualizations when requested or when they enhance understanding
-8. Always synthesize findings from multiple sources into investment-focused insights
-
-Response Instructions:
-You are a professional portfolio management AI assistant. Your responses must be:
-- Analytical, precise, and objective
-- Present data using tables where appropriate
-- Summarize research findings without adding personal opinions
-- Cite sources (e.g., 'According to the Q2 earnings transcript...')
-- Focus on investment implications and portfolio impact
-- Use quantitative language and metrics appropriate for portfolio management
-- When discussing ESG factors, provide specific scores, commitments, and timelines
-- Highlight thematic investment opportunities and their portfolio fit
+### Cortex Search Tools
+```markdown
+**Tool X: [Tool Name]**
+- **Name**: `tool_name`
+- **Description**: `When to use this tool`
+- **Search Service**: `DATABASE.SCHEMA.SEARCH_SERVICE_NAME`
+- **ID Column**: `COLUMN_NAME`
+- **Title Column**: `COLUMN_NAME`
 ```
 
-### guardian_ai (Compliance)
-```yaml
-Agent Name: guardian_ai
-Display Name: Compliance Guardian AI
-Description: Expert AI assistant for compliance officers providing comprehensive surveillance, regulatory analysis, and risk monitoring across communications and client interactions.
-
-Tools:
-  1. search_communications (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH
-     - ID Column: COMMUNICATION_ID
-     - Title Column: TITLE
-     - Description: "Search and analyze all electronic communications for potential compliance violations, such as promising returns, sharing PII, or client complaints."
-     
-  2. search_regulatory (Cortex Search)
-     - Service: WAM_AI_DEMO.AI.REGULATORY_SEARCH
-     - ID Column: DOCUMENT_ID
-     - Title Column: TITLE
-     - Description: "Search regulatory documents and compliance rules. Use for finding specific regulations, compliance requirements, or policy guidance."
-     
-  3. cortex_analyst_client_financials (Cortex Analyst)
-     - Semantic View: WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
-     - Description: "Use for context in compliance investigations. Retrieve transaction histories or account details related to flagged communications."
-     
-  4. data_to_chart (Custom Tool)
-     - Description: "Generate compliance reporting charts when requested (e.g., 'Show communication volume trends' or 'Chart violation types')."
-
-Planning Instructions:
-1. Your goal is to surface potential compliance risks and ensure regulatory adherence
-2. Use search_communications to scan communications for keywords and themes in your risk lexicon:
-   - Performance guarantees, promissory language
-   - PII sharing, confidentiality breaches
-   - Client complaints or dissatisfaction
-   - ESG misrepresentation or greenwashing claims
-3. Use search_regulatory to find specific rules and regulations relevant to investigations:
-   - Traditional compliance requirements
-   - ESG disclosure regulations
-   - Sustainability reporting standards
-4. For ESG compliance:
-   - Verify ESG claims against documented research
-   - Check for greenwashing in communications
-   - Ensure sustainability commitments are properly disclosed
-5. Use cortex_analyst_client_financials to investigate transaction patterns or account histories related to flagged communications
-6. For systematic surveillance, analyze patterns across multiple communications
-7. Always recommend human review for potential violations
-8. Focus on factual findings and regulatory compliance
-
-Response Instructions:
-You are a professional compliance monitoring AI assistant. Your tone must be:
-- Formal and factual without ambiguity
-- Present findings clearly stating facts and potential policy violations
-- Reference specific regulations or rules when identifying issues
-- Always recommend review by a human compliance officer
-- Focus on risk mitigation and regulatory adherence
-- Use compliance terminology and cite relevant regulations
-- Never make final compliance determinations - flag for human review
-- When reviewing ESG-related content, verify claims against source documents
-- Flag any potential greenwashing or unsubstantiated sustainability claims
+### Custom Tools
+```markdown
+**Tool X: [Tool Name]**
+- **Resource Type**: Function|Procedure
+- **Function Name**: `DATABASE.SCHEMA.FUNCTION_NAME` (fully qualified)
+- **Name**: `tool_name`
+- **Query Timeout**: X seconds (reasonable time for completion)
+- **Description**: `Tool purpose so agent understands when to use it`
 ```
 
-## Snowflake Intelligence Setup Instructions
+## Agent Template Structure
 
-### Step-by-Step Agent Configuration in Snowsight
+### AGENT_SETUP_GUIDE.md Structure
+```markdown
+## Agent X: [agent_name] ([Persona])
 
-#### Prerequisites
-1. **Verify AI Components**: Ensure all semantic views and search services exist
-   ```sql
-   -- Check semantic views
-   SHOW SEMANTIC VIEWS IN WAM_AI_DEMO.AI;
-   
-   -- Check search services  
-   SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
-   ```
+### Basic Information
+- **Name**: `agent_name`
+- **Display Name**: `Display Name`
+- **Description**: `Full description`
 
-2. **Access Snowflake Intelligence**: Navigate to Snowsight → Projects → Snowflake Intelligence
+### Response Instructions
+[Full response instructions text]
 
-#### Agent Setup Process
+### Tools
+#### Cortex Analyst Tools
+#### Cortex Search Tools
+#### Custom Tools
 
-**Step 1: Create advisor_ai (Wealth Manager)**
-1. Click "Create Agent" in Snowflake Intelligence
-2. **Agent Configuration**:
-   - **Agent Name**: `advisor_ai`
-   - **Display Name**: `Wealth Advisory AI`
-   - **Description**: `Expert AI assistant for wealth managers providing comprehensive client insights by combining portfolio analytics with communication history and research intelligence.`
-   - **Orchestration Model**: `Claude 4`
-
-3. **Add Tools** (in this order):
-   
-   **Tool 1: cortex_analyst_client_financials**
-   - **Type**: Cortex Analyst
-   - **Name**: `cortex_analyst_client_financials`
-   - **Semantic View**: `WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV`
-   - **Description**: `Use for portfolio analytics, holdings analysis, sector breakdowns, performance metrics, and quantitative calculations about client portfolios and positions.`
-   
-   **Tool 2: cortex_analyst_client_interactions**
-   - **Type**: Cortex Analyst  
-   - **Name**: `cortex_analyst_client_interactions`
-   - **Semantic View**: `WAM_AI_DEMO.AI.CLIENT_INTERACTIONS_SV`
-   - **Description**: `Use for analyzing client communication patterns, contact frequency, channel preferences, and interaction history metrics.`
-   
-   **Tool 3: search_communications**
-   - **Type**: Cortex Search
-   - **Name**: `search_communications`
-   - **Service**: `WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH`
-   - **ID Column**: `COMMUNICATION_ID`
-   - **Title Column**: `TITLE`
-   - **Description**: `Search client communications including emails, call transcripts, and meeting notes. Use for finding client preferences, concerns, or past discussions.`
-   
-   **Tool 4: search_research**
-   - **Type**: Cortex Search
-   - **Name**: `search_research`  
-   - **Service**: `WAM_AI_DEMO.AI.RESEARCH_SEARCH`
-   - **ID Column**: `DOCUMENT_ID`
-   - **Title Column**: `TITLE`
-   - **Description**: `Search research reports and analyst coverage. Use for finding investment opinions, ratings, and market commentary on specific securities.`
-
-4. **Copy Planning Instructions** (from template above)
-
-5. **Copy Response Instructions** (from template above)
-
-**Step 2: Create analyst_ai (Portfolio Manager)**
-1. Follow same process with analyst_ai template configuration
-
-**Step 3: Create guardian_ai (Compliance)**  
-1. Follow same process with guardian_ai template configuration
-
-#### Testing Your Agents
-
-**Test advisor_ai with**:
-```
-"Show me the total market value by portfolio"
-"Search for communications about AAPL"
-"What are the key holdings in portfolio 1?"
-"Which of Sarah Johnson's holdings are in the Carbon Negative Leaders watchlist?"
-"Find ESG research on Apple and Microsoft for my client meeting"
+### Orchestration
+- **Orchestration Model**: Claude 4 Sonnet
+- **Planning Instructions**: [Full planning instructions text]
 ```
 
-**Test analyst_ai with**:
-```
-"What is the total market value across all portfolios?"
-"Find research on AAPL and MSFT"
-"Show me portfolio weight distribution"
-"Analyze our portfolio exposure to Carbon Negative Leaders securities"
-"What ESG research do we have on technology companies?"
-```
+### DEMO_SCENARIOS.md Structure
+```markdown
+## Scenario X: [Scenario Name]
+### Persona: [Role]
+### Business Challenge: [Problem statement]
 
-**Test guardian_ai with**:
-```
-"Search for any communications containing performance guarantees"
-"Find FINRA regulations about communications"
-"Search for compliance-related communications"
-"Search for any communications that might contain greenwashing claims"
-"Are there any ESG-related compliance concerns in recent communications?"
-```
+### Demo Storyline: *"[Opening narrative]"*
 
-#### Demo Scenarios (3-4 Step Workflows)
+### Step-by-Step Demo Flow:
+#### Step 1: [Action]
+**Demo Operator Says**: *"[What to say]"*
+**User Query**: `"[Exact query]"`
+**Expected Agent Response**: [Response details]
+**Demo Talking Points**: 
+- *"[Business value point 1]"*
 
-**Advisor AI Demo Scenario: Client Meeting Preparation**
-1. **User**: "Show me the total market value by portfolio"
-   - **Expected**: Agent uses cortex_analyst_client_financials to show portfolio breakdown
-2. **User**: "Search for recent communications about AAPL"
-   - **Expected**: Agent uses search_communications to find Apple-related discussions
-3. **User**: "What research do we have on AAPL performance?"
-   - **Expected**: Agent uses search_research to find Apple research documents
-4. **User**: "Based on this, what should I discuss in the client meeting?"
-   - **Expected**: Agent synthesizes portfolio data, communications, and research for meeting prep
-
-**Advisor AI Demo Scenario: ESG-Focused Client Engagement (Phase 2)**
-1. **User**: "I have a meeting with Sarah Johnson - please prepare a briefing"
-   - **Expected**: Agent provides comprehensive client overview including ESG interests
-2. **User**: "Which of Sarah's holdings are in the Carbon Negative Leaders watchlist?"
-   - **Expected**: Agent analyzes portfolio against watchlist, identifies opportunities
-3. **User**: "Find ESG research on Microsoft and Apple for the meeting"
-   - **Expected**: Agent retrieves carbon neutrality commitments and ESG scores
-4. **User**: "Create talking points for discussing ESG investment opportunities"
-   - **Expected**: Agent synthesizes ESG themes with client preferences
-
-**Analyst AI Demo Scenario: Investment Research**
-1. **User**: "What is our total exposure across all portfolios?"
-   - **Expected**: Agent uses cortex_analyst_client_financials for portfolio analytics
-2. **User**: "Find research on technology companies like AAPL and MSFT"
-   - **Expected**: Agent uses search_research to locate relevant research documents
-3. **User**: "What does the research say about ESG and sustainability?"
-   - **Expected**: Agent searches for ESG-related content and summarizes findings
-4. **User**: "How should this influence our portfolio strategy?"
-   - **Expected**: Agent synthesizes research findings with portfolio data for investment insights
-
-**Analyst AI Demo Scenario: Thematic Portfolio Analysis (Phase 2)**
-1. **User**: "Analyze our portfolio exposure to Carbon Negative Leaders securities"
-   - **Expected**: Agent calculates exposure to MSFT, AAPL, NVDA across portfolios
-2. **User**: "What ESG research do we have on these holdings?"
-   - **Expected**: Agent retrieves ESG scores, carbon commitments, sustainability reports
-3. **User**: "Show me sustainability reports for our top holdings"
-   - **Expected**: Agent finds and summarizes 2025 sustainability reports
-4. **User**: "Recommend portfolio adjustments based on ESG themes"
-   - **Expected**: Agent suggests increasing allocation to high ESG-scored securities
-
-**Guardian AI Demo Scenario: Compliance Monitoring**
-1. **User**: "Search for any communications that mention performance guarantees"
-   - **Expected**: Agent uses search_communications to scan for compliance risks
-2. **User**: "What do FINRA regulations say about communication standards?"
-   - **Expected**: Agent uses search_regulatory to find relevant FINRA rules
-3. **User**: "Are there any other compliance concerns in recent communications?"
-   - **Expected**: Agent performs broader compliance surveillance search
-4. **User**: "What action should be taken based on these findings?"
-   - **Expected**: Agent provides compliance recommendations with regulatory citations
-
-**Guardian AI Demo Scenario: ESG Compliance Verification (Phase 2)**
-1. **User**: "Search for any communications containing greenwashing claims"
-   - **Expected**: Agent scans for unsubstantiated ESG promises or misrepresentations
-2. **User**: "Verify ESG claims in our communications against research documents"
-   - **Expected**: Agent cross-references ESG statements with source documentation
-3. **User**: "Find regulations related to ESG disclosure requirements"
-   - **Expected**: Agent retrieves ESG regulatory guidance and standards
-4. **User**: "Create ESG compliance monitoring guidelines"
-   - **Expected**: Agent synthesizes findings into actionable compliance procedures
-
-## Agent Testing and Validation
-
-### Component Testing Pattern
-```python
-def test_agent_components(session: Session, agent_name: str, tools: List[str]):
-    """Test each agent tool independently based on tool type"""
-    
-    # Test Cortex Analyst tools (if any)
-    analyst_tools = [tool for tool in tools if 'cortex_analyst' in tool]
-    for analyst_tool in analyst_tools:
-        try:
-            # Test with basic semantic view query
-            result = session.sql("""
-                SELECT * FROM SEMANTIC_VIEW(
-                    WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
-                    METRICS TOTAL_MARKET_VALUE
-                    DIMENSIONS PORTFOLIONAME
-                ) LIMIT 5
-            """).collect()
-            print(f"✅ Cortex Analyst tool test passed: {analyst_tool} ({len(result)} results)")
-        except Exception as e:
-            print(f"❌ Cortex Analyst tool test failed for {analyst_tool}: {e}")
-    
-    # Test Cortex Search tools (if any)
-    search_tools = [tool for tool in tools if 'search_' in tool]
-    for search_tool in search_tools:
-        service_name = search_tool.replace('search_', '').upper() + '_SEARCH'
-        try:
-            result = session.sql(f"""
-                SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-                    'WAM_AI_DEMO.AI.{service_name}',
-                    '{{"query": "test", "limit": 1}}'
-                )
-            """).collect()
-            print(f"✅ Cortex Search tool test passed: {search_tool}")
-        except Exception as e:
-            print(f"❌ Cortex Search tool test failed for {search_tool}: {e}")
+### Business Impact Summary:
+- **[Metric]**: [Impact description]
 ```
 
-### Business Scenario Testing
-Test with queries appropriate for each agent's role:
+## Response Instructions Guidelines
+**Purpose**: Set rules for how the agent should sound and respond to users
 
-**advisor_ai Testing Queries:**
-```
-"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a briefing."
-"What are Sarah's top holdings by market value?"
-"Search for any communications from Sarah Johnson about Visa or portfolio concerns"
-```
+- No promissory statements; cite sources; use "according to our records"
+- Professional tone appropriate for each persona (wealth management, portfolio management, compliance)
+- When discussing ESG/sustainability topics, reference specific metrics and commitments
+- Highlight thematic investment opportunities where relevant
+- Define communication style, formatting preferences, and behavioral boundaries
+- Specify what the agent should/shouldn't do when responding
 
-**analyst_ai Testing Queries:**
-```
-"What is our firm's total exposure to technology sector?"
-"Show me the top 10 holdings across all portfolios by market value."
-"Find recent research on ESG and sustainability themes."
-```
+## Planning Instructions Guidelines  
+**Purpose**: Define how the agent should think through complex queries by specifying planning strategies like breaking down tasks, exploring ambiguities, or routing across tools
 
-**guardian_ai Testing Queries:**
-```
-"Show me all high-risk communications flagged in the last 24 hours."
-"Search for any communications containing performance guarantees."
-"Find the regulation regarding client complaint handling procedures."
-```
+- Classify queries by type: QUANTITATIVE (numbers, calculations), QUALITATIVE (summaries, context), THEMATIC (ESG, watchlists)
+- For mixed questions: Use analyst tools first, then search tools with results as context
+- Always synthesize multiple tool outputs into coherent response
+- Include tool sequencing examples (Analyst → Search or vice versa)
+- Define decision-making logic for tool selection and execution order
+- Specify how to handle ambiguous or multi-part queries
 
-## Validation Checklist
-- [ ] All required AI components exist (semantic views and/or search services)
-- [ ] Each configured tool works independently
-- [ ] Tool combinations work correctly (for multi-tool agents)
-- [ ] Business scenario queries return expected results
-- [ ] Error handling works appropriately
-- [ ] Performance is acceptable for demo use
-- [ ] Agent responds appropriately when tools have no data
+## Available Data Sources
+- **Semantic Views**: `CLIENT_FINANCIALS_SV`, `CLIENT_INTERACTIONS_SV`, `WATCHLIST_ANALYTICS_SV`
+- **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`
+- **Custom Tools**: `data_to_chart` for visualizations
 
-## Agent Testing and Validation
+## Standard Test Queries by Agent Type
 
-### Component Testing Pattern
-```python
-def test_agent_components(session: Session, agent_name: str, tools: List[str]):
-    """Test each agent tool independently based on tool type"""
-    
-    # Test Cortex Analyst tools (if any)
-    analyst_tools = [tool for tool in tools if 'cortex_analyst' in tool]
-    for analyst_tool in analyst_tools:
-        try:
-            # Test with basic semantic view query
-            result = session.sql("""
-                SELECT * FROM SEMANTIC_VIEW(
-                    WAM_AI_DEMO.AI.CLIENT_FINANCIALS_SV
-                    METRICS TOTAL_MARKET_VALUE
-                    DIMENSIONS PORTFOLIOID
-                ) LIMIT 5
-            """).collect()
-            print(f"✅ Cortex Analyst tool test passed: {analyst_tool} ({len(result)} results)")
-        except Exception as e:
-            print(f"❌ Cortex Analyst tool test failed for {analyst_tool}: {e}")
-    
-    # Test Cortex Search tools (if any)
-    search_tools = [tool for tool in tools if 'search_' in tool]
-    for search_tool in search_tools:
-        service_name = search_tool.replace('search_', '').upper() + '_SEARCH'
-        try:
-            result = session.sql(f"""
-                SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-                    'WAM_AI_DEMO.AI.{service_name}',
-                    '{{"query": "test", "limit": 1}}'
-                )
-            """).collect()
-            print(f"✅ Cortex Search tool test passed: {search_tool}")
-        except Exception as e:
-            print(f"❌ Cortex Search tool test failed for {search_tool}: {e}")
-```
+### Wealth Manager (advisor_copilot)
+- Portfolio analytics + communication history
+- Meeting preparation scenarios
+- ESG and thematic investment queries
 
-### Business Scenario Testing
-Test with queries appropriate for each agent's role:
+### Portfolio Manager (analyst_copilot)  
+- Investment research + quantitative analysis
+- Market commentary synthesis
+- Thematic exposure analysis
 
-**advisor_ai Testing Queries:**
-```
-"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a briefing."
-"What are Sarah's top holdings by market value?"
-"Search for any communications from Sarah Johnson about Visa or portfolio concerns"
-```
+### Compliance Officer (compliance_copilot)
+- Communication surveillance
+- Regulatory rule lookup
+- Risk pattern identification
 
-**analyst_ai Testing Queries:**
-```
-"What is our firm's total exposure to technology sector?"
-"Show me the top 10 holdings across all portfolios by market value."
-"Find recent research on ESG and sustainability themes."
-```
-
-**guardian_ai Testing Queries:**
-```
-"Show me all high-risk communications flagged in the last 24 hours."
-"Search for any communications containing performance guarantees."
-"Find the regulation regarding client complaint handling procedures."
-```
-
-## Validation Checklist
-- [ ] All required AI components exist (semantic views and/or search services)
-- [ ] Each configured tool works independently
-- [ ] Tool combinations work correctly (for multi-tool agents)
-- [ ] Business scenario queries return expected results
-- [ ] Error handling works appropriately
-- [ ] Performance is acceptable for demo use
-- [ ] Agent responds appropriately when tools have no data
-
+@AGENT_SETUP_GUIDE.md
+@DEMO_SCENARIOS.md

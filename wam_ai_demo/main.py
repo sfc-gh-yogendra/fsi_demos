@@ -15,41 +15,31 @@ from src.create_semantic_views import create_semantic_views
 from src.create_search_services import create_search_services
 from src.validate_components import validate_all_components
 
-def create_session(connection_name: str = None) -> Session:
+def create_session(connection_name: str) -> Session:
     """Create Snowpark session using connections.toml"""
-    if connection_name is None:
-        connection_name = config.get_connection_name()
-    
     try:
-        if connection_name:
-            session = Session.builder.config("connection_name", connection_name).create()
-            print(f"✅ Connected to Snowflake using connection: {connection_name}")
-        else:
-            # Use default connection from ~/.snowflake/connections.toml
-            session = Session.builder.create()
-            print(f"✅ Connected to Snowflake using default connection")
+        session = Session.builder.config("connection_name", connection_name).create()
+        print(f"✅ Connected to Snowflake using connection: {connection_name}")
         return session
     except Exception as e:
         print(f"❌ Failed to connect to Snowflake: {e}")
         print(f"💡 Check your ~/.snowflake/connections.toml file")
-        print(f"   Or specify a connection with --connection <name>")
+        print(f"   Make sure the connection '{connection_name}' exists and is properly configured")
         sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description='WAM AI Demo Implementation')
-    parser.add_argument('--connection', help='Snowflake connection name from connections.toml')
-    parser.add_argument('--mode', choices=config.BUILD_MODES, default='replace_all',
-                       help='Build mode: replace_all, data_only, or semantics_and_search_only')
-    parser.add_argument('--test-mode', action='store_true', 
-                       help='Run in test mode with reduced data volumes')
+    parser.add_argument('--connection', required=True, help='Snowflake connection name from connections.toml')
+    parser.add_argument('--scenarios', nargs='*', default=['all'],
+                       help='Scenarios to build: advisor, analyst, guardian, or all (default: all)')
+    parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search'], default='all',
+                       help='Scope of build: all, data, semantic, or search (default: all)')
+    parser.add_argument('--extract-real-assets', action='store_true',
+                       help='Extract real asset data from Snowflake Marketplace and save to CSV')
     parser.add_argument('--validate-only', action='store_true',
                        help='Only run validation without building')
-    parser.add_argument('--extract-real-assets', action='store_true',
-                       help='Extract real assets from Snowflake Marketplace to CSV')
-    # parser.add_argument('--extract-real-market-data', action='store_true',
-    #                    help='Extract real market data from Snowflake Marketplace to CSV - DEPRECATED')
-    parser.add_argument('--phase2', action='store_true',
-                       help='Include Phase 2 enhancements: watchlists, enhanced ESG, expanded capabilities')
+    parser.add_argument('--test-mode', action='store_true', 
+                       help='Run in test mode with reduced data volumes')
     
     args = parser.parse_args()
     
@@ -71,8 +61,10 @@ def main():
         #     extract_real_market_data_to_csv(session)
         #     return
         
-        print(f"\n🚀 Starting WAM AI Demo build in {args.mode} mode")
+        print(f"\n🚀 Starting WAM AI Demo build")
         print(f"   Database: {config.DATABASE_NAME}")
+        print(f"   Scenarios: {', '.join(args.scenarios)}")
+        print(f"   Scope: {args.scope}")
         print(f"   Test mode: {args.test_mode}")
         
         if args.validate_only:
@@ -80,13 +72,13 @@ def main():
             validate_all_components(session)
             return
         
-        # Phase 1: Setup (always run)
-        if args.mode in ['replace_all']:
+        # Phase 1: Setup (always run for scope 'all' or 'data')
+        if args.scope in ['all', 'data']:
             print("\n🔧 Phase 1: Database and Schema Setup")
             setup_database_and_schemas(session)
         
         # Phase 2: Data Generation
-        if args.mode in ['replace_all', 'data_only']:
+        if args.scope in ['all', 'data']:
             print("\n📊 Phase 2: Data Generation")
             
             # Generate structured data (dimensions only)
@@ -110,17 +102,19 @@ def main():
             generate_unstructured_data(session)
         
         # Phase 3: AI Services
-        if args.mode in ['replace_all', 'semantics_and_search_only']:
+        if args.scope in ['all', 'semantic', 'search']:
             print("\n🤖 Phase 3: AI Services Setup")
             
-            print("  → Creating semantic views...")
-            create_semantic_views(session, include_phase2=args.phase2)
+            if args.scope in ['all', 'semantic']:
+                print("  → Creating semantic views...")
+                create_semantic_views(session, include_phase2=True)
             
-            print("  → Creating search services...")
-            create_search_services(session)
+            if args.scope in ['all', 'search']:
+                print("  → Creating search services...")
+                create_search_services(session)
             
-            # Phase 2 Enhancements
-            if args.phase2:
+            # Phase 2 Enhancements (always enabled when doing data or all)
+            if args.scope in ['all', 'data']:
                 print("\n🚀 Phase 2: Enhanced Capabilities")
                 
                 print("  → Creating watchlists...")
@@ -134,6 +128,7 @@ def main():
         validate_all_components(session)
         
         print(f"\n🎉 WAM AI Demo build completed successfully!")
+        print(f"   ✅ Full demo with enhanced capabilities (watchlists, ESG analytics)")
         print(f"   Ready for agent configuration in Snowflake Intelligence")
         
     except Exception as e:

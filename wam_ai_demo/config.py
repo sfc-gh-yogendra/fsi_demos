@@ -47,8 +47,11 @@ TEMPERATURE_BY_CORPUS = {
 # Search Services
 SEARCH_TARGET_LAG = '5 minutes'
 
-# Build Modes
-BUILD_MODES = ['replace_all', 'data_only', 'semantics_and_search_only']
+# Build Scopes
+BUILD_SCOPES = ['all', 'data', 'semantic', 'search']
+
+# Available Scenarios
+AVAILABLE_SCENARIOS = ['advisor', 'analyst', 'guardian', 'all']
 
 # Communications Mix (used by unstructured data generation)
 COMMUNICATIONS_MIX = {

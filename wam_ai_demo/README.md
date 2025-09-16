@@ -1,342 +1,288 @@
 # WAM AI Demo - Wealth Management AI Demonstration
 
-A comprehensive demonstration of Snowflake AI capabilities for wealth management, featuring three AI-powered personas using Cortex Analyst and Cortex Search.
-
-## Overview
-
-This demo showcases:
-- **advisor_ai** (Wealth Manager): Client relationship management with portfolio analytics
-- **analyst_ai** (Portfolio Manager): Investment research and risk analysis
-- **guardian_ai** (Compliance Officer): Communications surveillance and regulatory analysis
-
-## Key Features
-
-- **Enhanced Data Model**: Industry-standard dimensional model with immutable SecurityID and issuer hierarchy
-- **Real Data Integration**: Authentic assets and market data from Snowflake Marketplace with CSV fallback
-- **Hybrid Market Data**: Real OHLCV data for anchor portfolios, synthetic data for scale
-- **Realistic Unstructured Data**: AI-generated communications, research, and regulatory content
-- **Two Semantic Views**: CLIENT_FINANCIALS_SV and CLIENT_INTERACTIONS_SV
-- **Three Search Services**: Communications, Research, and Regulatory search
-- **Comprehensive Validation**: Systematic testing of all components
-- **Universal Compatibility**: Works with or without Marketplace access
+A comprehensive demonstration of Snowflake AI capabilities for wealth management, featuring three AI-powered personas using Cortex Analyst and Cortex Search to showcase modern financial services workflows.
 
 ## Prerequisites
 
-1. **Snowflake Account** with:
-   - Cross-Region Inference enabled for Cortex Complete
-   - Access to Cortex Analyst and Cortex Search
-   - Sufficient compute credits for data generation
-   - **Optional**: Access to 'Public Data Financials & Economics: Enterprise' from Snowflake Marketplace for real data
-
-2. **Python Environment**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Snowflake Connection**:
-   - Uses connection `sfseeurope-mstellwall-aws-us-west3` by default
-   - Automatically reads from `~/.snowflake/connections.toml`
-   - Alternative: Specify different connection with `--connection <name>`
-
-## Quick Start
-
-### 1. Setup Connection
+### Repository Setup
+Clone or download this repository to your local machine:
 ```bash
-# Uses default connection automatically
-# No setup required if you have ~/.snowflake/connections.toml configured
-
-# Alternative: Use different connection
-python main.py --connection <your_connection_name>
+git clone <repository-url>
+cd wam_ai_demo
 ```
 
-### 2. Extract Real Data (Optional but Recommended)
+### Snowflake Requirements
 
-**For Enhanced Demo Authenticity** - Extract real financial data from Snowflake Marketplace:
+#### Snowflake Account
+You need a Snowflake account with the following capabilities enabled:
 
+#### Cross-Region Inference (Required)
+Enable cross-region inference for Cortex Complete functionality:
+- **Documentation**: [Cross-Region Inference Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference)
+- **Minimum Requirement**: AWS_EU enabled
+- **Recommended**: ANY_REGIONS for optimal performance
+
+#### Snowflake Intelligence (Required)
+Enable Snowflake Intelligence for agent configuration:
+- **Documentation**: [Snowflake Intelligence Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
+- **Required for**: Agent configuration and deployment
+
+#### (Optional): Access to "Data Financials & Economics: Enterprise" marketplace dataset
+Only required if you want to update the real_assets.csv file with fresh data
+
+### Local Python Environment
+
+#### Python Version
+- **Required**: Python 3.10 or higher
+
+#### Dependencies Installation
 ```bash
-# Extract real assets from Snowflake Marketplace (requires access)
-python main.py --extract-real-assets
-
-# Extract real market data from Snowflake Marketplace (requires access)
-python main.py --extract-real-market-data
+pip install -r requirements.txt
 ```
 
-**Successful Extraction Example**:
-```
-📊 Extracting real assets from Marketplace...
-  → Extracting real assets from Snowflake Marketplace...
-    ✅ Marketplace data accessible
-    → Running asset extraction query...
-    📊 Extracted assets by region:
-       Other: 63,597
-       USA: 6,019
-       APAC/EM: 757
-       EU: 225
-    ✅ Extracted 2,539 real assets to ./data/real_assets.csv
-    📋 Final dataset breakdown:
-       USA: 2,004
-       APAC/EM: 300
-       EU: 225
-    📊 Asset class distribution:
-       Equity: 2,148
-       ETF: 391
+### Configure Snowflake Connection
+
+Set up your Snowflake connection in `~/.snowflake/connections.toml`:
+```toml
+[your_connection_name]
+account = "your-account-identifier"
+user = "your-username"
+password = "your-password"
+warehouse = "your-warehouse"
+database = "your-database"
+schema = "your-schema"
+role = "your-role"
 ```
 
-**Market Data Extraction Example**:
-```
-📈 Extracting real market data from Marketplace...
-  → Extracting real market data from Snowflake Marketplace...
-    ✅ Market data accessible
-    📊 Using 50 additional tickers from real assets CSV
-    → Extracting market data for 56 tickers...
-    → Date range: 2023-09-10 to 2025-09-09
-    📊 Market data extracted:
-       Total records: 22,974
-       Unique tickers: 51
-       Date range: 2023-09-11 to 2025-09-05
-    ✅ Extracted 22,974 market data records to ./data/real_market_data.csv
-```
+## How to Build Demo
 
-**Golden Ticker Coverage**:
-- ✅ **AAPL**: 498 trading days ($179.60 → $239.23)
-- ✅ **MSFT**: 498 trading days with authentic volatility patterns  
-- ✅ **NVDA**: 498 trading days with real volume data
-- ✅ **JPM, V, SAP**: Complete OHLCV coverage
-
-**What this provides**:
-- ✅ **Authentic ticker symbols** (AAPL, MSFT, NVDA, etc.) instead of synthetic ones
-- ✅ **Real company names** and industry classifications
-- ✅ **Actual market volatility** patterns and trading volumes
-- ✅ **Geographic accuracy** with proper US/EU distribution
-- ✅ **Enhanced credibility** for customer demonstrations
-
-**Fallback**: If you don't have Marketplace access, the system automatically uses high-quality synthetic data that still provides an excellent demo experience.
-
-### 3. Run Full Build
+### Standard Build (Complete Demo)
 ```bash
-# Full build (replace all components)
-python main.py --mode replace_all
-
-# Test mode (reduced data volumes)
-python main.py --mode replace_all --test-mode
-
-# Data only (regenerate data, keep AI services)
-python main.py --mode data_only
-
-# AI services only (recreate semantic views and search services)
-python main.py --mode semantics_and_search_only
+# Build complete demo with all scenarios and features
+python main.py --connection your_connection_name
 ```
 
-### 4. Validate Components
+### Scenario-Specific Builds
 ```bash
-# Run validation only (includes all component validation)
-python main.py --validate-only
-
-# Full build includes validation automatically
-python main.py --mode replace_all
+# Build specific scenarios
+python main.py --connection your_connection_name --scenarios advisor
+python main.py --connection your_connection_name --scenarios advisor analyst
+python main.py --connection your_connection_name --scenarios guardian --test-mode
 ```
 
-### 5. Configure Agents
-After successful build and validation:
-1. **Follow the complete setup guide**: [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md)
-2. **Create three agents** in Snowflake Intelligence: advisor_ai, analyst_ai, guardian_ai
-3. **Test with provided queries** to verify functionality
-4. **Run demo scenarios** for customer presentations
-
-## Real Data Integration Quick Reference
-
-### Extract Real Data (One-Time Setup)
+### Scope-Specific Builds
 ```bash
-# For accounts WITH Marketplace access:
-python main.py --extract-real-assets          # Creates ./data/real_assets.csv
-python main.py --extract-real-market-data     # Creates ./data/real_market_data.csv
+# Build only data layer
+python main.py --connection your_connection_name --scope data
 
-# Then build with enhanced authenticity:
-python main.py --mode replace_all
+# Build only semantic views
+python main.py --connection your_connection_name --scope semantic
+
+# Build only search services
+python main.py --connection your_connection_name --scope search
 ```
 
-### Build Without Marketplace Access
+### Optional: Extract Real Market Data
+For enhanced demo authenticity (requires Snowflake Marketplace access):
 ```bash
-# For accounts WITHOUT Marketplace access:
-python main.py --mode replace_all              # Uses synthetic data (still excellent quality)
+# Extract real financial data from Snowflake Marketplace
+python main.py --connection your_connection_name --extract-real-assets
+
+# Then build the demo
+python main.py --connection your_connection_name
 ```
 
-### Benefits of Real Data
-- **Authentic Tickers**: AAPL, MSFT, NVDA instead of synthetic symbols
-- **Real Company Names**: Apple Inc., Microsoft Corporation, etc.
-- **Actual Market Patterns**: True volatility, correlations, and trading volumes
-- **Industry Accuracy**: Proper GICS sectors and geographic distributions
-- **Enhanced Credibility**: Customers recognize real securities in demos
+### Validation
+```bash
+# Validate components without building
+python main.py --connection your_connection_name --validate-only
 
-## Configuration
+# Test mode with reduced data volumes
+python main.py --connection your_connection_name --test-mode
+```
 
-Key settings in `config.py`:
+## Next Steps
 
-```python
-# Volumes
-NUM_ADVISORS = 5
-CLIENTS_PER_ADVISOR = 25
-COMMS_PER_CLIENT = 50
+### Agent Configuration
+Configure the three AI agents in Snowflake Intelligence:
+- **Setup Guide**: See [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md) for complete step-by-step instructions
+- **GUI Configuration**: Detailed Snowflake Intelligence setup process
+- **Tool Configuration**: Exact settings for Cortex Analyst and Cortex Search tools
 
-# Golden Tickers (easy to change)
-GOLDEN_TICKERS = ["AAPL", "MSFT", "NVDA", "JPM", "V", "SAP"]
+### Run the Demo
+Execute customer demonstration scenarios:
+- **Demo Guide**: See [DEMO_SCENARIOS.md](DEMO_SCENARIOS.md) for complete presentation flows
+- **Business Scenarios**: Client meeting preparation, investment analysis, compliance monitoring
+- **Talking Points**: Business impact and value proposition guidance
 
-# Real Asset Integration (CSV Required)
-REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
+## Demo Overview
 
-# Market Data (Synthetic Generation - No Configuration Needed)
+This demo showcases three wealth management personas powered by Snowflake AI:
 
-# Build Modes
-BUILD_MODES = ['replace_all', 'data_only', 'semantics_and_search_only']
+### Available Demo Scenarios
+
+#### advisor_ai (Wealth Manager)
+- **Persona**: Client-facing wealth advisor
+- **Capabilities**: Portfolio analytics, client relationship insights, meeting preparation
+- **Tools**: Client financials analysis, communication history, research synthesis
+- **Demo Query**: *"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a briefing."*
+
+#### analyst_ai (Portfolio Manager)
+- **Persona**: Investment portfolio manager
+- **Capabilities**: Investment research, risk analysis, performance attribution
+- **Tools**: Portfolio analytics, research analysis, market commentary
+- **Demo Query**: *"Analyze our portfolio exposure to technology sector and find recent research."*
+
+#### guardian_ai (Compliance Officer)
+- **Persona**: Regulatory compliance officer
+- **Capabilities**: Communications surveillance, regulatory analysis, risk monitoring
+- **Tools**: Communication monitoring, regulatory guidance, compliance verification
+- **Demo Query**: *"Search for any communications containing performance guarantees."*
+
+### Enhanced Features (Phase 2)
+- **Thematic Watchlists**: Carbon Negative Leaders, AI Innovation Leaders, ESG Leaders
+- **ESG Analytics**: Sustainability reporting, carbon neutrality analysis
+- **Advanced Insights**: Watchlist exposure analysis, ESG scoring
+
+## Configuration Defaults
+
+Configuration settings are stored in `config.py`. Key defaults include:
+
+| Setting | Default Value | Description |
+|---------|---------------|-------------|
+| `NUM_ADVISORS` | `5` | Number of wealth advisors to generate |
+| `CLIENTS_PER_ADVISOR` | `25` | Number of clients per advisor (125 total clients) |
+| `ACCOUNTS_PER_CLIENT` | `2` | Number of accounts per client |
+| `COMMS_PER_CLIENT` | `50` | Number of communications per client over lifespan |
+| `GOLDEN_TICKERS` | `["AAPL", "MSFT", "NVDA", "JPM", "V", "SAP"]` | Key securities used in demonstrations |
+| `REGION_MIX` | `{"us": 0.8, "eu": 0.2}` | Geographic distribution of securities (80% US, 20% EU) |
+| `BUILD_SCOPES` | `['all', 'data', 'semantic', 'search']` | Available build scope options |
+| `AVAILABLE_SCENARIOS` | `['advisor', 'analyst', 'guardian', 'all']` | Available demo scenarios |
+| `MODEL_BY_CORPUS` | `"llama3.1-70b"` | AI model used for document generation across all corpora |
+| `SEARCH_TARGET_LAG` | `'5 minutes'` | Refresh frequency for Cortex Search services |
+| `DATABASE_NAME` | `"WAM_AI_DEMO"` | Target database name |
+| `WAREHOUSE_PREFIX` | `"WAM_AI_"` | Prefix for created warehouses |
+| `REAL_ASSETS_CSV_PATH` | `'./data/real_assets.csv'` | Path for real asset data extraction |
+
+## Project Structure
+
+```
+wam_ai_demo/
+├── main.py                    # Main build orchestration
+├── config.py                  # Configuration settings
+├── requirements.txt           # Python dependencies
+├── README.md                  # This file
+├── AGENT_SETUP_GUIDE.md       # Agent configuration guide
+├── DEMO_SCENARIOS.md          # Demo presentation guide
+├── data/                      # Real data storage (when extracted)
+│   ├── real_assets.csv        # Real securities data
+│   └── real_market_data.csv   # Real market prices
+└── src/                       # Implementation modules
+    ├── setup.py               # Database and schema setup
+    ├── generate_structured.py # Structured data generation
+    ├── generate_unstructured.py # Document generation
+    ├── create_semantic_views.py # Semantic view creation
+    ├── create_search_services.py # Search service setup
+    ├── extract_real_data.py   # Marketplace data extraction
+    └── validate_components.py # Component validation
 ```
 
 ## Data Architecture
 
-### Enhanced Data Model with Real Data Integration
-- **Dimension Tables**: DIM_ADVISOR, DIM_CLIENT, DIM_SECURITY, DIM_ISSUER, DIM_PORTFOLIO
-- **Fact Tables**: FACT_TRANSACTION, FACT_POSITION_DAILY_ABOR, FACT_MARKETDATA_TIMESERIES
-- **Corpus Tables**: COMMUNICATIONS_CORPUS, RESEARCH_CORPUS, REGULATORY_CORPUS
-- **Real Data Sources**: Snowflake Marketplace integration with CSV extraction capability
-
-### Real Data Integration Architecture
-```
-Snowflake Marketplace (Optional)
-├── OpenFIGI Security Index     → real_assets.csv
-├── Stock Price Timeseries      → real_market_data.csv
-└── Company Characteristics
-
-CSV Files (Fallback)           Hybrid Data Generation
-├── real_assets.csv       →    ├── Real company names & tickers
-└── real_market_data.csv  →    ├── Authentic OHLCV patterns
-                               ├── Proper industry sectors
-                               └── Synthetic completion for full coverage
-```
-
-### Schema Organization
+### Database Schema Organization
 ```
 WAM_AI_DEMO/
-├── RAW/                 # Temporary and staging data
+├── RAW/                 # Staging and temporary data
+│   ├── CLIENT_DOCS/     # PDF documents stage
+│   └── TEMP_* tables    # Processing tables
 ├── CURATED/            # Business-ready dimensional model
-└── AI/                 # Semantic views and search services
+│   ├── DIM_* tables    # Dimension tables (Client, Security, Portfolio, etc.)
+│   ├── FACT_* tables   # Fact tables (Positions, Transactions, Market Data)
+│   └── *_CORPUS tables # Document corpora for search
+└── AI/                 # AI and ML components
+    ├── Semantic Views  # CLIENT_FINANCIALS_SV, CLIENT_INTERACTIONS_SV
+    └── Search Services # COMMUNICATIONS_SEARCH, RESEARCH_SEARCH, REGULATORY_SEARCH
 ```
 
-## AI Components
+### Data Model Highlights
+- **Enhanced Dimensional Model**: Industry-standard fact/dimension architecture
+- **Immutable SecurityID**: Handles corporate actions and ticker changes
+- **Issuer Hierarchy**: Supports corporate relationship analysis
+- **Transaction-Based Holdings**: Full audit trail for compliance
+- **Real Data Integration**: Authentic market data with synthetic fallback
 
-### Semantic Views
-1. **CLIENT_FINANCIALS_SV**: Portfolio analytics with issuer hierarchy
-2. **CLIENT_INTERACTIONS_SV**: Communication patterns and metrics
+### AI Components
 
-### Search Services
-1. **COMMUNICATIONS_SEARCH**: Client emails, calls, meetings
-2. **RESEARCH_SEARCH**: Investment research and analyst reports
-3. **REGULATORY_SEARCH**: Compliance rules and guidance
+#### Semantic Views
+- **CLIENT_FINANCIALS_SV**: Portfolio analytics with multi-table joins
+- **CLIENT_INTERACTIONS_SV**: Communication patterns and metrics
+- **WATCHLIST_ANALYTICS_SV**: Thematic investment analysis (Phase 2)
 
-## Agent Configuration
-
-After running the build, configure agents in Snowflake Intelligence:
-
-### Quick Setup Guide
-1. **Access**: Navigate to Snowsight → Projects → Snowflake Intelligence
-2. **Verify Components**: Run validation queries to ensure AI services exist
-3. **Create Agents**: Follow step-by-step setup in `.cursor/rules/agents.mdc`
-
-### Agent Overview
-
-#### advisor_ai (Wealth Manager)
-- **Tools**: cortex_analyst_client_financials, cortex_analyst_client_interactions, search_communications, search_research
-- **Test Query**: `"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a briefing."`
-- **Demo Scenario**: Client-specific meeting preparation with portfolio analysis and communication history
-
-#### analyst_ai (Portfolio Manager)
-- **Tools**: cortex_analyst_client_financials, search_research
-- **Test Query**: `"Find research on Apple and Microsoft"`
-- **Demo Scenario**: Investment research and portfolio exposure analysis
-
-#### guardian_ai (Compliance)
-- **Tools**: search_communications, search_regulatory
-- **Test Query**: `"Find FINRA regulations about communications"`
-- **Demo Scenario**: Communications surveillance and regulatory analysis
-
-### Complete Setup Instructions
-See **[AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md)** for detailed step-by-step GUI instructions including:
-- Complete agent creation process with exact tool configurations
-- Copy-paste ready Planning and Response Instructions
-- Troubleshooting guidance for common setup issues
-
-### Demo Presentation Guide
-See **[DEMO_SCENARIOS.md](DEMO_SCENARIOS.md)** for complete customer presentation scenarios including:
-- Client-specific advisor meeting preparation workflows
-- Investment research and risk analysis demonstrations
-- Compliance monitoring and surveillance scenarios
-- Cross-persona integration demonstrations
-- Talking points, business impact, and presentation guidelines
-
-## Build Process
-
-### Phase 1: Database Setup
-- Create database WAM_AI_DEMO with schemas RAW, CURATED, AI
-- Create warehouses with WAM_AI_ prefix
-- Set up stage for PDF documents
-
-### Phase 2: Data Generation
-- Generate structured data following enhanced model
-- Create unstructured data using Cortex Complete
-- Validate data quality and relationships
-
-### Phase 3: AI Services
-- Create semantic views with proper syntax and synonyms
-- Build search services with correct attributes
-- Validate all AI components
-
-### Phase 4: Validation
-- Test semantic views with business queries
-- Validate search services with domain-specific searches
-- Run business scenario tests for each persona
+#### Search Services
+- **COMMUNICATIONS_SEARCH**: Client emails, calls, meeting notes
+- **RESEARCH_SEARCH**: Investment research, analyst reports, ESG content
+- **REGULATORY_SEARCH**: Compliance rules, regulatory guidance
 
 ## Troubleshooting
 
-### Common Issues
-
-**Connection Errors**:
-- Verify connections.toml configuration
+### Connection Issues
+**Error**: `Failed to connect to Snowflake`
+**Solution**: 
+- Verify `~/.snowflake/connections.toml` configuration
 - Check account identifier and credentials
-- Ensure Cross-Region Inference is enabled
+- Ensure connection name matches `--connection` parameter
 
-**Real Data Extraction Errors**:
-- Verify access to 'Public Data Financials & Economics: Enterprise' from Snowflake Marketplace
-- Check warehouse size for complex extraction queries
-- Ensure sufficient compute credits for data extraction
-- **Note**: System gracefully falls back to synthetic data if extraction fails
+### Cortex Requirements
+**Error**: `Cross-region inference not enabled`
+**Solution**: 
+- Enable cross-region inference: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference)
+- Minimum requirement: AWS_EU enabled
+- Recommended: ANY_REGIONS for best performance
 
-**Marketplace Access Issues**:
+**Error**: `Snowflake Intelligence not available`
+**Solution**: 
+- Enable Snowflake Intelligence: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
+- Required for agent configuration
+
+### Build Failures
+**Error**: `Table not found` or `Object does not exist`
+**Solution**: 
+- Run full build: `python main.py --connection your_connection --scope all`
+- Check warehouse permissions and size
+- Verify database creation succeeded
+
+**Error**: `Semantic view creation failed`
+**Solution**: 
+- Ensure data tables exist first: `--scope data` then `--scope semantic`
+- Check column names with `DESCRIBE TABLE`
+- Verify foreign key relationships
+
+**Error**: `Search service creation failed`
+**Solution**: 
+- Verify corpus tables have content
+- Check ATTRIBUTES match SELECT column names exactly
+- Ensure warehouse parameter is specified
+
+### Real Data Extraction
+**Error**: `Marketplace data not accessible`
+**Solution**: 
+- Request access to 'Public Data Financials & Economics: Enterprise'
+- Contact Snowflake account team for Marketplace access
+- System will fallback to synthetic data automatically
+
+**Note**: Demo works excellently with synthetic data if Marketplace access unavailable
+
+### Component Validation
+Run validation to identify specific issues:
+```bash
+python main.py --connection your_connection --validate-only
 ```
-❌ Error: Marketplace data not accessible!
-💡 You need access to 'Public Data Financials & Economics: Enterprise' dataset
-   from Snowflake Marketplace
-   Falling back to synthetic generation...
-```
-**Solution**: Contact your Snowflake account team to enable Marketplace access, or proceed with synthetic data
 
-**Semantic View Errors**:
-- Check table column names with `DESCRIBE TABLE`
-- Ensure synonyms are unique across all dimensions/metrics
-- Verify foreign key relationships exist
-
-**Search Service Errors**:
-- Verify ATTRIBUTES match SELECT column names exactly
-- Check corpus tables have content
-- Ensure WAREHOUSE parameter is specified
-
-**Data Generation Issues**:
-- Check warehouse size for data volume
-- Verify Cortex Complete model availability
-- Monitor for quota limits on AI functions
-
-### Validation Queries
-
+### Common Validation Queries
 ```sql
--- Check semantic views
+-- Check AI components exist
 SHOW SEMANTIC VIEWS IN WAM_AI_DEMO.AI;
+SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
 
 -- Test semantic view
 SELECT * FROM SEMANTIC_VIEW(
@@ -345,76 +291,22 @@ SELECT * FROM SEMANTIC_VIEW(
     DIMENSIONS PORTFOLIONAME
 ) LIMIT 5;
 
--- Check search services
-SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
-
--- Test search service
+-- Test search service  
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
     'WAM_AI_DEMO.AI.COMMUNICATIONS_SEARCH',
-    '{"query": "portfolio performance", "limit": 1}'
+    '{"query": "portfolio", "limit": 1}'
 );
-
--- Verify real data integration
-SELECT 
-    'Real Assets' as data_type,
-    COUNT(*) as record_count,
-    COUNT(DISTINCT GICS_SECTOR) as unique_sectors,
-    COUNT(DISTINCT COUNTRYOFINCORPORATION) as unique_countries
-FROM WAM_AI_DEMO.CURATED.DIM_ISSUER;
-
--- Check market data coverage
-SELECT 
-    'Market Data' as data_type,
-    COUNT(*) as total_records,
-    COUNT(DISTINCT SecurityID) as unique_securities,
-    MIN(PriceDate) as earliest_date,
-    MAX(PriceDate) as latest_date
-FROM WAM_AI_DEMO.CURATED.FACT_MARKETDATA_TIMESERIES;
 ```
 
-## Support
+### Performance Issues
+**Slow builds**: 
+- Use `--test-mode` for faster iteration
+- Increase warehouse size for large data volumes
+- Consider `--scope data` first, then `--scope semantic` and `--scope search`
 
-For issues or questions:
-1. Check the validation output for specific error messages
-2. Review the troubleshooting section above
-3. Examine the detailed implementation in `.cursor/rules/`
+**Memory errors**: 
+- Reduce data volumes in `config.py`
+- Use larger warehouse for data generation
+- Build in phases using different scopes
 
-## Architecture Decisions
-
-This implementation follows industry best practices:
-- **Transaction-based holdings**: Audit trail for compliance
-- **Immutable SecurityID**: Corporate action resilience  
-- **Issuer hierarchy**: Enhanced risk analysis
-- **Real data integration**: Authentic market data with graceful fallback
-- **Hybrid architecture**: Best of real and synthetic data
-- **Deterministic generation**: Repeatable builds
-- **Comprehensive validation**: Production-ready quality
-
-## Real Data Integration Details
-
-### Extraction Process
-1. **Real Assets**: Uses comprehensive OpenFIGI query to extract ~3,000 securities
-   - Proper asset class categorization (Equity, Corporate Bond, ETF, etc.)
-   - Geographic classification (USA, EU, APAC/EM)  
-   - Industry sector mapping from SIC descriptions
-   - Ensures golden tickers (AAPL, MSFT, NVDA, JPM, V, SAP) are included
-
-2. **Real Market Data**: Extracts 2 years of OHLCV data
-   - Covers golden tickers + additional liquid securities
-   - Quality filters (requires close price, NASDAQ/NYSE focus)
-   - Realistic trading volumes and price patterns
-
-### Integration Benefits
-- **Demo Credibility**: Real company names and ticker symbols
-- **Market Authenticity**: Actual volatility patterns and correlations
-- **Customer Confidence**: Recognizable securities in portfolio analysis
-- **Scalability**: Works at any volume with hybrid approach
-- **Flexibility**: Easy to extract once and reuse for multiple demos
-
-### Data Quality Guarantees
-- ✅ Golden tickers always included in extraction
-- ✅ 80% US / 20% EU region mix maintained
-- ✅ Asset class distribution preserved
-- ✅ Foreign key relationships validated
-- ✅ Portfolio weights sum to 100% (±0.1% tolerance)
-- ✅ No negative prices or invalid market values
+For additional support, refer to the detailed implementation rules in the project documentation and validation output messages.
