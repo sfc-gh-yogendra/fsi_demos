@@ -32,174 +32,204 @@ The demo scenarios have been enhanced with Phase 2 capabilities:
 
 ---
 
-## Scenario 1: Advisor AI - Client Meeting Preparation
+## Scenario 1: Wealth Advisory CoPilot - Client Meeting Preparation
 
 ### Persona: Wealth Manager / Relationship Manager
 ### Business Challenge: 
 Wealth managers spend hours manually gathering client information from multiple systems before important meetings. Critical insights are often missed because data is scattered across portfolio systems, email archives, and research databases.
 
 ### Demo Storyline:
-*"Imagine you're a wealth manager with a high-net-worth client meeting in 30 minutes. Traditionally, you'd spend those 30 minutes frantically searching through emails, portfolio reports, and research notes. With Snowflake AI, watch how we can prepare a comprehensive briefing in minutes."*
+*"Imagine you're a wealth manager with a high-net-worth client meeting in 30 minutes. Traditionally, you'd spend those 30 minutes frantically searching through emails, portfolio reports, and research notes. With your Wealth Advisory CoPilot, watch how we can prepare a comprehensive briefing in minutes."*
 
 ### Step-by-Step Demo Flow:
 
-#### Step 1: Comprehensive Client Briefing Request
-**Demo Operator Says**: *"Let me show you how our advisor AI can instantly prepare for a client meeting."*
+#### Step 1: Comprehensive Client Meeting Preparation
+**Demo Operator Says**: *"Let me show you how our Wealth Advisory CoPilot can instantly prepare for a client meeting by gathering everything we need to know."*
 
 **User Query**: 
 ```
-"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a full briefing."
+"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a comprehensive briefing including her portfolio, recent communications, financial planning status, and any relevant market developments."
 ```
 
 **Expected Agent Response**:
 ```
-Meeting Briefing: Sarah Johnson
+Comprehensive Meeting Briefing: Sarah Johnson
 
-Portfolio Summary:
-• Total AUM: $169,920
-• Portfolio: US Financials Core (Conservative strategy)
+PORTFOLIO OVERVIEW:
+• Total AUM: $169,920 (US Financials Core - Conservative strategy)
 • Top Holdings: Visa ($85,620), JPMorgan ($84,300)
-• Asset Allocation: 100% Financials (appropriate for Conservative risk tolerance)
-• Risk Profile: Conservative investor with focus on stable financial sector companies
+• Asset Allocation: 100% Financials (aligned with documented risk tolerance)
+• YTD Performance: On track with conservative return expectations
 
-Recent Activity & Communication Patterns:
-• Overall Sentiment: Positive based on recent communications
-• Key Topics: Portfolio performance discussions, technology sector interest
-• Last Contact: Recent email about portfolio review
+FINANCIAL PLANNING STATUS:
+• Education Funding Plan: 90% funded ($180K of $200K goal) - daughter Emily starting university this fall
+• Retirement Planning: On track per 2024 comprehensive financial plan
+• Risk Profile: Conservative, appropriate for current life stage and goals
+• Next Planning Milestone: Estate planning review scheduled for Q4 2024
+
+RECENT COMMUNICATIONS & SENTIMENT:
+• Overall Sentiment: Positive engagement with portfolio performance
+• Key Topics: ESG investment interest, daughter's university acceptance
+• Action Items: Follow up on sustainable investing options discussed in recent call
+
+MARKET CONTEXT & OPPORTUNITIES:
+• Financial sector positioning strong for current rate environment
+• ESG investment opportunities align with expressed client interests
+• Technology sector exposure could complement conservative base (per client interest)
+
+IMMEDIATE PRIORITIES:
+• Address education funding gap ($20K) - daughter starting university imminently
+• Present ESG investment proposal (client expressed specific interest)
+• Review portfolio allocation in context of life milestone
 ```
 
 **Demo Talking Points**:
-- *"Notice how the agent instantly combines portfolio analytics with communication history"*
-- *"This unified view was impossible before - data was trapped in silos"*
-- *"The agent automatically calculated sector allocation and identified communication patterns"*
+- *"Notice how the CoPilot instantly synthesized portfolio, planning, communications, and market intelligence"*
+- *"This holistic view was impossible before - all data sources unified in one response"*
+- *"The CoPilot identified immediate priorities based on life events and documented goals"*
 
-#### Step 2: Holdings Analysis with Market Context
-**Demo Operator Says**: *"Now let's dive deeper into her specific holdings and any market developments."*
+#### Step 2: Deep Dive - Education Funding Analysis
+**Demo Operator Says**: *"Sarah mentioned her daughter's university acceptance. Let's explore the planning implications."*
 
 **User Query**:
 ```
-"What are Sarah's top holdings and any recent news or research about them?"
+"Tell me more about her education funding situation and what options we have to address the gap."
 ```
 
 **Expected Agent Response**:
 ```
-Sarah Johnson's Holdings & Market Intelligence:
+Education Funding Deep Dive:
 
-1. Visa ($85,620): Visa Inc. - Business services sector showing resilient performance
-2. JPMorgan ($84,300): JPMorgan Chase - CEO commentary on macroeconomic outlook
+CURRENT STATUS:
+• 529 Plan Balance: $180,000 (excellent preparation)
+• Target Funding Need: $200,000 for Emily's university
+• Immediate Gap: $20,000 (daughter starting this fall)
 
-Research Highlights:
-• Visa: Strong payment processing trends, digital transformation beneficiary
-• JPMorgan: Solid banking fundamentals, well-positioned for interest rate environment
-• Financial Sector: Conservative allocation appropriate for client's risk profile
+STRATEGIC OPTIONS:
+1. Tax-Efficient 529 Distribution: Use existing balance strategically
+2. Conservative Holdings Liquidation: Partial position reduction in JPM or V
+3. Systematic Distribution Plan: Spread gap funding over 4 years
+4. Education Tax Credits: Maximize AOTC benefits
 
-Portfolio Strategy: Conservative financial sector focus aligns with client risk tolerance
+PLANNING DOCUMENT INSIGHTS:
+• Original education goal established in 2020 comprehensive plan
+• Funding strategy assumed 6% annual growth (achieved)
+• Client prioritized education over aggressive wealth accumulation
+• Contingency plan included partial taxable account usage
+
+RECOMMENDATION:
+Execute combination strategy: 529 distribution + minimal conservative holding liquidation
+Timeline: Implement before fall semester billing (immediate action required)
 ```
 
 **Demo Talking Points**:
-- *"The agent automatically found research content relevant to her holdings"*
-- *"This research synthesis would normally take hours of manual searching"*
-- *"Notice the seamless integration of portfolio data with research intelligence"*
+- *"The CoPilot connected current life events to long-term planning documents"*
+- *"This level of planning intelligence transforms reactive advice into proactive strategy"*
+- *"Notice how the CoPilot surfaced the client's original planning assumptions and priorities"*
 
-#### Step 3: Communication Intelligence
-**Demo Operator Says**: *"Let's see what insights we can gather from her communication history."*
+#### Step 3: ESG Investment Exploration
+**Demo Operator Says**: *"The client expressed interest in ESG. Let's explore suitable opportunities."*
 
 **User Query**:
 ```
-"Search for any communications from Sarah Johnson about Visa or investment concerns"
+"What ESG investment options would be appropriate for her, and how would they fit with her current portfolio and planning goals?"
 ```
 
 **Expected Agent Response**:
 ```
-Communication Intelligence for Sarah Johnson:
+ESG Investment Strategy for Sarah Johnson:
 
-Found 2 relevant communications:
-• Email (Recent): "Portfolio Performance Review - AAPL Position"
-  - Client expressed satisfaction with Apple performance
-  - Mentioned interest in technology sector exposure
-  
-• Phone Call: "ESG Investment Discussion" 
-  - Client interested in sustainable investing options
-  - Specifically mentioned Microsoft's carbon neutrality goals
+CURRENT ESG ALIGNMENT:
+• Existing Holdings ESG Profile: Limited sustainability focus in current financials allocation
+• Client Interest: Expressed specific interest in Microsoft's carbon neutrality goals
+• Planning Context: ESG preferences documented in recent IPS update
 
-Key Insights:
-• Positive sentiment toward technology holdings
-• Growing interest in ESG/sustainability themes
-• Proactive engagement on portfolio performance
+SUITABLE ESG OPPORTUNITIES:
+• Carbon Negative Leaders: MSFT, AAPL, NVDA (align with tech sector interest)
+• ESG Financials: JPM has strong governance scores, maintains sector allocation
+• Diversification Benefit: Technology allocation adds ESG exposure while maintaining risk profile
+
+PORTFOLIO INTEGRATION STRATEGY:
+• Phase 1: 10-15% allocation to ESG technology leaders
+• Implementation: Gradual transition maintaining conservative risk profile
+• Tax Efficiency: Use education funding liquidation as rebalancing opportunity
+• Timeline: Implement alongside education funding strategy
+
+COMPLIANCE WITH PLANNING GOALS:
+• Risk Tolerance: Technology ESG leaders maintain conservative volatility profile
+• Diversification: Adds sector diversification while meeting ESG interests
+• Long-term Growth: Aligns with documented wealth accumulation objectives
+
+NEXT STEPS:
+Present specific ESG allocation proposal with tax-efficient implementation timeline
 ```
 
 **Demo Talking Points**:
-- *"The agent found specific client communications about Apple"*
-- *"This personalized intelligence helps advisors build stronger relationships"*
-- *"ESG interest creates an opportunity for portfolio enhancement"*
+- *"The CoPilot connected ESG interest to practical portfolio implementation"*
+- *"Notice how it aligned ESG options with existing planning goals and risk tolerance"*
+- *"The CoPilot identified the opportunity to combine education funding with portfolio enhancement"*
 
-#### Step 3b: ESG Thematic Analysis (Phase 2 Feature)
-**Demo Operator Says**: *"Since Sarah expressed interest in ESG, let's explore thematic opportunities."*
+#### Step 4: Generate Meeting Brief Document
+**Demo Operator Says**: *"Perfect! Now let's have the CoPilot create a structured meeting brief document that I can use during the client meeting."*
 
 **User Query**:
 ```
-"Which of Sarah Johnson's holdings are in our Carbon Negative Leaders watchlist?"
+"Create a professional meeting brief document that I can reference during the meeting with all key points organized clearly."
 ```
 
 **Expected Agent Response**:
 ```
-Carbon Negative Leaders Analysis for Sarah Johnson:
+CLIENT MEETING BRIEF - SARAH JOHNSON
+Meeting Date: [Today's Date] | Advisor: [Advisor Name] | Duration: 60 minutes
 
-Current Holdings in Carbon Negative Leaders:
-• None currently in portfolio
+EXECUTIVE SUMMARY:
+Sarah Johnson, conservative investor with $169,920 AUM, requires immediate attention for education funding gap ($20K) as daughter Emily begins university this fall. Strong ESG investment interest creates portfolio enhancement opportunity. Overall client relationship positive with proactive engagement.
 
-Carbon Negative Leaders Watchlist:
-• Microsoft (MSFT): ESG Score 8.5 - Carbon negative by 2030, $1B climate fund
-• Apple (AAPL): ESG Score 8.2 - Carbon neutral by 2030, renewable energy leader
-• NVIDIA (NVDA): ESG Score 7.8 - AI solutions for climate modeling
+AGENDA ITEMS:
 
-Opportunity: Sarah's ESG interest aligns with these high-performing securities
-Recommendation: Consider diversifying from pure financials into ESG leaders
+1. EDUCATION FUNDING RESOLUTION (PRIORITY)
+   • Current Status: 90% funded ($180K of $200K goal)
+   • Immediate Need: $20K for fall semester
+   • Recommended Action: Combination 529 distribution + conservative holding liquidation
+   • Timeline: Execute before semester billing (within 2 weeks)
+   • Tax Considerations: Maximize education credits, minimize tax impact
+
+2. ESG INVESTMENT STRATEGY PRESENTATION
+   • Client Interest: Expressed in recent communications (Microsoft carbon goals)
+   • Proposal: 10-15% allocation to Carbon Negative Leaders (MSFT, AAPL, NVDA)
+   • Implementation: Gradual transition maintaining conservative risk profile
+   • Benefit: Portfolio diversification + values alignment
+
+3. PORTFOLIO REVIEW & PERFORMANCE
+   • Current Holdings: Strong performance in Visa ($85,620), JPMorgan ($84,300)
+   • Allocation Status: 100% Financials, appropriate for risk tolerance
+   • IPS Compliance: All parameters within guidelines
+   • YTD Performance: Meeting conservative return expectations
+
+DISCUSSION POINTS:
+• Congratulate on excellent education funding preparation
+• Address immediate university funding timeline
+• Present ESG investment opportunity as portfolio enhancement
+• Confirm upcoming estate planning review (Q4 2024)
+
+FOLLOW-UP ACTIONS:
+☐ Execute education funding strategy (within 2 weeks)
+☐ Prepare detailed ESG allocation proposal
+☐ Schedule beneficiary update following daughter's milestone
+☐ Confirm Q4 estate planning review appointment
+
+CLIENT RELATIONSHIP NOTES:
+• Communication Preference: Email and scheduled calls
+• Engagement Level: Proactive, well-informed
+• Satisfaction: High (positive sentiment in recent interactions)
+• Planning Sophistication: Excellent long-term preparation
 ```
 
 **Demo Talking Points**:
-- *"The agent identified a portfolio enhancement opportunity based on client interests"*
-- *"Thematic watchlists enable personalized investment recommendations"*
-- *"ESG integration creates value-added advisory services"*
-
-#### Step 4: Meeting Preparation Synthesis
-**Demo Operator Says**: *"Finally, let's see how the agent synthesizes everything into actionable talking points."*
-
-**User Query**:
-```
-"Based on this analysis, what should be my key talking points for the meeting?"
-```
-
-**Expected Agent Response**:
-```
-Meeting Talking Points for Sarah Johnson:
-
-1. Acknowledge Conservative Strategy Success:
-   • Financial sector holdings performing well (Visa, JPMorgan)
-   • Conservative allocation appropriate for risk tolerance
-   • Stable dividend income from quality financial companies
-
-2. Discuss Sector Opportunities:
-   • Financial sector positioned for interest rate environment
-   • Payment processing trends benefiting Visa
-   • Banking sector fundamentals remain strong
-
-3. Portfolio Review Highlights:
-   • Balanced diversification across technology and financials
-   • Strong company fundamentals in top holdings
-
-4. Action Items:
-   • Follow up on ESG investment options
-   • Review technology sector allocation strategy
-   • Discuss any rebalancing preferences
-
-Recommended Next Steps: Schedule ESG portfolio review within 2 weeks
-```
-
-**Demo Talking Points**:
-- *"The agent created a complete meeting agenda in seconds"*
-- *"This synthesis would normally require hours of manual preparation"*
-- *"Notice how it identified the ESG opportunity from communication history"*
+- *"The CoPilot created a complete, professional meeting brief in seconds"*
+- *"This document format is ready to use during the actual client meeting"*
+- *"Notice how it prioritized actions, organized talking points, and included follow-up tasks"*
+- *"This synthesis transforms hours of preparation into an instant, comprehensive brief"*
 
 ### Business Impact Summary:
 - **Time Savings**: 2+ hours of preparation reduced to 2 minutes
@@ -209,14 +239,14 @@ Recommended Next Steps: Schedule ESG portfolio review within 2 weeks
 
 ---
 
-## Scenario 2: Analyst AI - Investment Research & Risk Analysis
+## Scenario 2: Portfolio Analysis CoPilot - Investment Research & Risk Analysis
 
 ### Persona: Portfolio Manager / Investment Analyst
 ### Business Challenge:
 Portfolio managers are overwhelmed by the volume of research, market data, and analysis required to make informed investment decisions. Critical insights are buried in thousands of documents and reports.
 
 ### Demo Storyline:
-*"Portfolio managers today are drowning in information. A single investment decision might require analyzing hundreds of research reports, earnings transcripts, and market commentaries. Let's see how Snowflake AI transforms this research process."*
+*"Portfolio managers today are drowning in information. A single investment decision might require analyzing hundreds of research reports, earnings transcripts, and market commentaries. Let's see how the Portfolio Analysis CoPilot transforms this research process."*
 
 ### Step-by-Step Demo Flow:
 
@@ -253,7 +283,7 @@ Top Issuer Exposures:
 **Demo Talking Points**:
 - *"Instant firm-wide risk analysis across all portfolios"*
 - *"Notice the sector concentration in technology - this could inform risk management"*
-- *"The agent automatically aggregated exposures by issuer for concentration analysis"*
+- *"The CoPilot automatically aggregated exposures by issuer for concentration analysis"*
 
 #### Step 2: Research Intelligence Discovery
 **Demo Operator Says**: *"Now let's leverage our research database for investment insights."*
@@ -285,7 +315,7 @@ Key Themes Identified:
 ```
 
 **Demo Talking Points**:
-- *"The agent searched through our entire research corpus in seconds"*
+- *"The CoPilot searched through our entire research corpus in seconds"*
 - *"This synthesis of multiple reports would take analysts hours manually"*
 - *"Notice how it identified ESG themes across different documents"*
 
@@ -318,11 +348,52 @@ Recommended Actions:
 ```
 
 **Demo Talking Points**:
-- *"The agent identified ESG themes across multiple research documents"*
+- *"The CoPilot identified ESG themes across multiple research documents"*
 - *"This thematic analysis connects research insights to portfolio decisions"*
 - *"Notice how it linked research findings to client interest patterns"*
 
-#### Step 3b: Carbon Negative Leaders Analysis (Phase 2 Feature)
+#### Step 3b: Investment Policy Compliance Analysis (New Feature)
+**Demo Operator Says**: *"Let's verify our portfolios are compliant with client investment guidelines."*
+
+**User Query**:
+```
+"Are our current portfolio allocations within the guidelines specified in client Investment Policy Statements?"
+```
+
+**Expected Agent Response**:
+```
+Investment Policy Statement Compliance Analysis:
+
+Portfolio Compliance Review:
+• US MegaTech Focus: COMPLIANT
+  - Target: 80-90% Technology, 10-20% Other
+  - Actual: 85% Technology, 15% Other
+  - Status: Within policy guidelines
+
+• US Financials Core: COMPLIANT  
+  - Target: 70-90% Financials, 10-30% Diversification
+  - Actual: 100% Financials
+  - Note: Conservative bias acceptable for this client profile
+
+Risk Tolerance Alignment:
+• Conservative clients: 0 portfolios exceed risk parameters
+• Moderate clients: All portfolios within volatility targets
+• Growth clients: Technology concentration appropriate per IPS
+
+Rebalancing Triggers:
+• No portfolios currently require rebalancing
+• All asset allocations within stated ranges
+• Next review scheduled per IPS guidelines
+
+Compliance Status: All portfolios operating within documented investment policies
+```
+
+**Demo Talking Points**:
+- *"The CoPilot verified compliance across all client planning documents instantly"*
+- *"IPS monitoring ensures fiduciary responsibility and regulatory compliance"*
+- *"Planning integration prevents policy violations before they occur"*
+
+#### Step 3c: Carbon Negative Leaders Analysis (Phase 2 Feature)
 **Demo Operator Says**: *"Let's analyze our exposure to the Carbon Negative Leaders theme."*
 
 **User Query**:
@@ -355,7 +426,7 @@ Recommendation: Consider increasing allocation to Carbon Negative Leaders theme
 ```
 
 **Demo Talking Points**:
-- *"The agent instantly calculated thematic exposure across all portfolios"*
+- *"The CoPilot instantly calculated thematic exposure across all portfolios"*
 - *"Watchlist analytics enable new investment strategies"*
 - *"ESG integration provides competitive differentiation"*
 
@@ -392,26 +463,28 @@ Next Steps: Develop ESG allocation proposal for interested clients
 ```
 
 **Demo Talking Points**:
-- *"The agent synthesized research findings into actionable investment strategy"*
+- *"The CoPilot synthesized research findings into actionable investment strategy"*
 - *"This connects market intelligence to specific client needs and preferences"*
-- *"The AI identified opportunities that human analysts might miss"*
+- *"The CoPilot identified opportunities that human analysts might miss"*
 
 ### Business Impact Summary:
 - **Research Efficiency**: Hours of analysis compressed into minutes
 - **Insight Quality**: Comprehensive synthesis across thousands of documents
 - **Investment Edge**: Faster identification of themes and opportunities
 - **Client Alignment**: Research insights matched to client preferences
+- **Fiduciary Compliance**: Automated IPS monitoring ensures policy adherence
+- **Planning Integration**: Investment decisions aligned with documented client objectives
 
 ---
 
-## Scenario 3: Guardian AI - Compliance Monitoring & Surveillance
+## Scenario 3: Compliance CoPilot - Compliance Monitoring & Surveillance
 
 ### Persona: Compliance Officer / Risk Manager
 ### Business Challenge:
 Compliance officers must monitor thousands of communications for regulatory violations while staying current with constantly changing regulations. Manual sampling misses risks and creates regulatory exposure.
 
 ### Demo Storyline:
-*"Compliance teams today are overwhelmed by the volume of communications they must monitor. Traditional random sampling approaches miss critical violations and expose firms to regulatory risk. Let's see how Snowflake AI enables comprehensive, intelligent surveillance."*
+*"Compliance teams today are overwhelmed by the volume of communications they must monitor. Traditional random sampling approaches miss critical violations and expose firms to regulatory risk. Let's see how the Compliance CoPilot enables comprehensive, intelligent surveillance."*
 
 ### Step-by-Step Demo Flow:
 
@@ -444,12 +517,12 @@ Recommendation: Continue monitoring, current communications appear compliant
 ```
 
 **Demo Talking Points**:
-- *"The agent scanned 100% of communications, not just a sample"*
+- *"The CoPilot scanned 100% of communications, not just a sample"*
 - *"This comprehensive surveillance was impossible with manual processes"*
-- *"AI can detect subtle compliance risks that humans might miss"*
+- *"The CoPilot can detect subtle compliance risks that humans might miss"*
 
 #### Step 2: Regulatory Knowledge Base Search
-**Demo Operator Says**: *"Now let's see how the agent accesses our regulatory knowledge base."*
+**Demo Operator Says**: *"Now let's see how the CoPilot accesses our regulatory knowledge base."*
 
 **User Query**:
 ```
@@ -479,7 +552,7 @@ Current Compliance Status: Firm procedures align with FINRA 2210 requirements
 **Demo Talking Points**:
 - *"Instant access to specific regulatory guidance"*
 - *"No more searching through regulatory manuals or legal databases"*
-- *"The agent can cross-reference current practices with regulatory requirements"*
+- *"The CoPilot can cross-reference current practices with regulatory requirements"*
 
 #### Step 3: ESG Compliance Monitoring (Phase 2 Feature)
 **Demo Operator Says**: *"Let's check for ESG-related compliance risks."*
@@ -645,7 +718,7 @@ Risk Assessment: High concentration but strong fundamental support
 
 **User Query (as Wealth Manager)**:
 ```
-"How does this technology analysis apply to Client2 Jones2's portfolio, and should I reach out to her?"
+"How does this technology analysis apply to her portfolio, and should I reach out to her?"
 ```
 
 **Expected Response**:
@@ -753,4 +826,4 @@ Use these recognizable securities for maximum customer credibility:
 
 ---
 
-**Your WAM AI Demo is now ready for compelling customer presentations with realistic, client-focused scenarios that demonstrate the transformative power of Snowflake AI for wealth management!** 🎉
+**Your WAM CoPilot Demo is now ready for compelling customer presentations with realistic, client-focused scenarios that demonstrate the transformative power of Snowflake CoPilots for wealth management!** 🎉

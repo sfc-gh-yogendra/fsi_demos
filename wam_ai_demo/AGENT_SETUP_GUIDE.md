@@ -52,14 +52,14 @@ Before creating agents, verify these objects exist in your Snowflake account:
 
 ## Agent Configuration
 
-### Agent 1: advisor_ai (Wealth Manager)
+### Agent 1: advisor_copilot (Wealth Manager)
 
 #### Step 1: Create Agent
 1. Click **"Create Agent"** in Snowflake Intelligence
 2. **Agent Configuration**:
-   - **Agent Name**: `advisor_ai`
-   - **Display Name**: `Wealth Advisory AI`
-   - **Description**: `Expert AI assistant for wealth managers providing comprehensive client insights by combining portfolio analytics with communication history and research intelligence.`
+   - **Agent Name**: `advisor_copilot`
+   - **Display Name**: `Wealth Advisory CoPilot`
+   - **Description**: `Expert CoPilot for wealth managers providing comprehensive client insights by combining portfolio analytics with communication history and research intelligence. Your intelligent partner for superior client relationship management.`
    - **Orchestration Model**: `Claude 4`
 
 #### Step 2: Add Tools (in this exact order)
@@ -104,6 +104,17 @@ Before creating agents, verify these objects exist in your Snowflake account:
   Search research reports and analyst coverage. Use for finding investment opinions, ratings, and market commentary on specific securities.
   ```
 
+**Tool 5: search_planning**
+- **Type**: Cortex Search
+- **Name**: `search_planning`
+- **Service**: `WAM_AI_DEMO.AI.PLANNING_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
+- **Description**: 
+  ```
+  Search financial planning documents, investment policy statements, and client goal documentation. Use for understanding client objectives, life events, and strategic planning context.
+  ```
+
 #### Step 3: Planning Instructions
 Copy and paste this text into the Planning Instructions field:
 ```
@@ -118,29 +129,39 @@ Copy and paste this text into the Planning Instructions field:
 4. For qualitative questions: Choose appropriate search tool based on information type:
    - search_communications: Client emails, call notes, meeting transcripts, preferences
    - search_research: Investment research, analyst reports, market commentary, ESG analysis, carbon neutrality reports
-5. For thematic questions: 
+   - search_planning: Financial plans, investment policy statements, client goals, life event planning
+5. For planning and goal questions: Use search_planning for:
+   - Client financial plans, investment policy statements, goal documentation
+   - Life event planning, retirement timelines, education funding strategies
+   - Risk tolerance documentation, investment constraints, strategic objectives
+6. For thematic questions: 
    - Use search_research for ESG content, sustainability reports, carbon neutrality analysis
    - Combine with cortex_analyst_client_financials to analyze portfolio exposure to themes
-6. For mixed questions: Use appropriate analyst tool first, then search tools with results as context
-7. Always synthesize multiple tool outputs into coherent response
-8. If user requests charts/visualizations, use data_to_chart tool
+7. For comprehensive advisory: Combine portfolio data with planning documents to assess:
+   - Goal progress and timeline alignment
+   - IPS compliance and allocation drift
+   - Life event impacts on strategic planning
+8. For mixed questions: Use appropriate analyst tool first, then search tools with results as context
+9. Always synthesize multiple tool outputs into coherent response
+10. If user requests charts/visualizations, use data_to_chart tool
 ```
 
 #### Step 4: Response Instructions
 Copy and paste this text into the Response Instructions field:
 ```
-You are a professional wealth management advisor AI assistant. Your responses should be:
+You are a professional Wealth Advisory CoPilot. As an intelligent partner to wealth managers, your responses should be:
 - Concise and data-driven, presented in clear, easy-to-read format using markdown
 - Never provide financial advice or make promissory statements
 - Always refer to data as being 'according to our records'
 - Cite document sources with type and date when referencing qualitative content
 - Focus on actionable insights and client relationship implications
-- Use professional, advisory tone appropriate for wealth management
+- Use professional, collaborative tone as a trusted advisor partner
 - When discussing ESG or sustainability topics, reference specific metrics and commitments
 - Highlight thematic investment opportunities (Carbon Negative Leaders, AI Innovation, ESG Leaders)
+- Support wealth managers in delivering superior client experiences through intelligent insights
 ```
 
-#### Step 5: Test advisor_ai
+#### Step 5: Test advisor_copilot
 After creating the agent, test with these client-focused queries:
 
 **Test Query 1**: `"Show me the total market value by portfolio"`
@@ -159,16 +180,20 @@ After creating the agent, test with these client-focused queries:
 - **Expected**: Agent should combine portfolio data with communication history for comprehensive client briefing
 - **Validates**: Multi-tool integration and client relationship management
 
+**Test Query 5**: `"What are her financial goals according to her planning documents?"`
+- **Expected**: Agent should use search_planning to find client's documented financial objectives and timelines
+- **Validates**: Planning document search and goal analysis capabilities
+
 ---
 
-### Agent 2: analyst_ai (Portfolio Manager)
+### Agent 2: analyst_copilot (Portfolio Manager)
 
 #### Step 1: Create Agent
 1. Click **"Create Agent"** in Snowflake Intelligence
 2. **Agent Configuration**:
-   - **Agent Name**: `analyst_ai`
-   - **Display Name**: `Portfolio Analysis AI`
-   - **Description**: `Expert AI assistant for portfolio managers providing quantitative analysis, research synthesis, and investment insights across structured and unstructured data sources.`
+   - **Agent Name**: `analyst_copilot`
+   - **Display Name**: `Portfolio Analysis CoPilot`
+   - **Description**: `Expert CoPilot for portfolio managers providing quantitative analysis, research synthesis, and investment insights across structured and unstructured data sources. Your intelligent partner for superior investment decision-making.`
    - **Orchestration Model**: `Claude 4`
 
 #### Step 2: Add Tools
@@ -193,6 +218,17 @@ After creating the agent, test with these client-focused queries:
   Search research reports, analyst coverage, and market commentary. Use for investment thesis development and qualitative analysis.
   ```
 
+**Tool 3: search_planning**
+- **Type**: Cortex Search
+- **Name**: `search_planning`
+- **Service**: `WAM_AI_DEMO.AI.PLANNING_SEARCH`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `TITLE`
+- **Description**: 
+  ```
+  Search financial planning documents and investment policy statements. Use for understanding client strategic objectives and investment constraints when making portfolio decisions.
+  ```
+
 #### Step 3: Planning Instructions
 ```
 1. Analyze the user's query to identify data requirements and analytical domains
@@ -206,18 +242,27 @@ After creating the agent, test with these client-focused queries:
    - Market commentary and analyst opinions
    - Company-specific research and ratings
    - ESG research, carbon neutrality commitments, sustainability reports
-4. For ESG/sustainability analysis:
+4. For planning context: Use search_planning for:
+   - Investment policy statement guidelines and constraints
+   - Client strategic objectives and investment goals
+   - Asset allocation targets and rebalancing guidelines
+   - Risk tolerance and investment horizon considerations
+5. For ESG/sustainability analysis:
    - Search for ESG research documents and sustainability reports
    - Analyze portfolio exposure to high ESG-scored securities
    - Identify carbon negative investment opportunities
-5. For complex queries spanning multiple domains, use tools systematically
-6. Generate charts and visualizations when requested or when they enhance understanding
-7. Always synthesize findings from multiple sources into investment-focused insights
+6. For investment decisions: Combine portfolio analytics with planning documents to ensure:
+   - Compliance with IPS guidelines and allocation targets
+   - Alignment with documented client objectives
+   - Adherence to stated risk tolerance and constraints
+7. For complex queries spanning multiple domains, use tools systematically
+8. Generate charts and visualizations when requested or when they enhance understanding
+9. Always synthesize findings from multiple sources into investment-focused insights
 ```
 
 #### Step 4: Response Instructions
 ```
-You are a professional portfolio management AI assistant. Your responses must be:
+You are a professional Portfolio Analysis CoPilot. As an intelligent partner to portfolio managers, your responses must be:
 - Analytical, precise, and objective
 - Present data using tables where appropriate
 - Summarize research findings without adding personal opinions
@@ -226,9 +271,10 @@ You are a professional portfolio management AI assistant. Your responses must be
 - Use quantitative language and metrics appropriate for portfolio management
 - When discussing ESG factors, provide specific scores, commitments, and timelines
 - Highlight thematic investment opportunities and their portfolio fit
+- Support portfolio managers in making superior investment decisions through intelligent analysis
 ```
 
-#### Step 5: Test analyst_ai
+#### Step 5: Test analyst_copilot
 Test with these investment-focused queries:
 
 **Test Query 1**: `"What is the total market value across all portfolios?"`
@@ -243,16 +289,20 @@ Test with these investment-focused queries:
 - **Expected**: Agent should search for ESG-related content and summarize findings by sector
 - **Validates**: Thematic research analysis and ESG capabilities
 
+**Test Query 4**: `"Is our current portfolio allocation within the guidelines specified in the client's IPS?"`
+- **Expected**: Agent should use search_planning to find IPS allocation targets and compare with current portfolio positions
+- **Validates**: Planning document integration and compliance analysis
+
 ---
 
-### Agent 3: guardian_ai (Compliance)
+### Agent 3: compliance_copilot (Compliance)
 
 #### Step 1: Create Agent
 1. Click **"Create Agent"** in Snowflake Intelligence
 2. **Agent Configuration**:
-   - **Agent Name**: `guardian_ai`
-   - **Display Name**: `Compliance Guardian AI`
-   - **Description**: `Expert AI assistant for compliance officers providing comprehensive surveillance, regulatory analysis, and risk monitoring across communications and client interactions.`
+   - **Agent Name**: `compliance_copilot`
+   - **Display Name**: `Compliance CoPilot`
+   - **Description**: `Expert CoPilot for compliance officers providing comprehensive surveillance, regulatory analysis, and risk monitoring across communications and client interactions. Your intelligent partner for superior risk management and regulatory adherence.`
    - **Orchestration Model**: `Claude 4`
 
 #### Step 2: Add Tools
@@ -302,7 +352,7 @@ Test with these investment-focused queries:
 
 #### Step 4: Response Instructions
 ```
-You are a professional compliance monitoring AI assistant. Your tone must be:
+You are a professional Compliance CoPilot. As an intelligent partner to compliance officers, your tone must be:
 - Formal and factual without ambiguity
 - Present findings clearly stating facts and potential policy violations
 - Reference specific regulations or rules when identifying issues
@@ -312,9 +362,10 @@ You are a professional compliance monitoring AI assistant. Your tone must be:
 - Never make final compliance determinations - flag for human review
 - When reviewing ESG-related content, verify claims against source documents
 - Flag any potential greenwashing or unsubstantiated sustainability claims
+- Support compliance officers in maintaining superior risk management and regulatory adherence
 ```
 
-#### Step 5: Test guardian_ai
+#### Step 5: Test compliance_copilot
 Test with these compliance-focused queries:
 
 **Test Query 1**: `"Search for any communications containing performance guarantees"`
@@ -524,11 +575,11 @@ Use these tickers in demo queries as they have guaranteed research content and r
 
 ### Agent Capabilities Summary
 
-| Agent | Primary Use Case | Key Strengths | Demo Value |
-|-------|------------------|---------------|------------|
-| **advisor_ai** | Client relationship management | Portfolio + Communication synthesis | Meeting preparation, client insights |
-| **analyst_ai** | Investment research | Research discovery + Portfolio analytics | Investment thesis, market analysis |
-| **guardian_ai** | Compliance monitoring | Communication surveillance + Regulatory search | Risk monitoring, compliance guidance |
+| CoPilot | Primary Use Case | Key Strengths | Demo Value |
+|---------|------------------|---------------|------------|
+| **advisor_copilot** | Client relationship management | Portfolio + Communication + Planning synthesis | Meeting preparation, client insights |
+| **analyst_copilot** | Investment research | Research discovery + Portfolio analytics + IPS compliance | Investment thesis, market analysis |
+| **compliance_copilot** | Compliance monitoring | Communication surveillance + Regulatory search | Risk monitoring, compliance guidance |
 
 ## Support
 
@@ -550,14 +601,14 @@ Before conducting demos, verify you have completed all steps:
 - [ ] Required permissions verified (`CREATE AGENT`, database access)
 
 ### ✅ Agent Configuration
-- [ ] **advisor_ai** created with 4 tools (2 Cortex Analyst + 2 Cortex Search)
-- [ ] **analyst_ai** created with 2 tools (1 Cortex Analyst + 1 Cortex Search)
-- [ ] **guardian_ai** created with 2 tools (2 Cortex Search)
+- [ ] **advisor_copilot** created with 5 tools (2 Cortex Analyst + 3 Cortex Search)
+- [ ] **analyst_copilot** created with 3 tools (1 Cortex Analyst + 2 Cortex Search)
+- [ ] **compliance_copilot** created with 2 tools (2 Cortex Search)
 
 ### ✅ Agent Testing
-- [ ] All test queries work for advisor_ai
-- [ ] All test queries work for analyst_ai
-- [ ] All test queries work for guardian_ai
+- [ ] All test queries work for advisor_copilot
+- [ ] All test queries work for analyst_copilot
+- [ ] All test queries work for compliance_copilot
 - [ ] Demo scenarios tested end-to-end
 
 ### ✅ Demo Readiness
@@ -567,4 +618,4 @@ Before conducting demos, verify you have completed all steps:
 
 ---
 
-**Your WAM AI Demo agents are now ready for customer demonstrations!** 🎉
+**Your WAM CoPilot Demo agents are now ready for customer demonstrations!** 🎉

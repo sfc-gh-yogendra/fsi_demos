@@ -24,6 +24,9 @@ def generate_unstructured_data(session: Session, test_mode: bool = False):
     # Generate regulatory corpus
     generate_regulatory_corpus(session, test_mode)
     
+    # Generate planning corpus
+    generate_planning_corpus(session, test_mode)
+    
     # Create client interactions view
     create_client_interactions_view(session)
     
@@ -695,3 +698,199 @@ def create_sustainability_reports(session: Session):
         """).collect()
     
     print(f"    ✅ Generated {len(sustainability_reports)} sustainability reports")
+
+# ======================================================
+# FINANCIAL PLANNING DOCUMENTS GENERATION
+# ======================================================
+
+def generate_planning_corpus(session: Session, test_mode: bool = False):
+    """Generate financial planning documents using Cortex Complete"""
+    print("    → Generating planning corpus...")
+    
+    # Get clients for planning document generation
+    clients_query = f"""
+        SELECT 
+            c.ClientID,
+            c.AdvisorID,
+            c.FirstName,
+            c.LastName,
+            c.RiskTolerance,
+            c.InvestmentHorizon,
+            c.OnboardingDate,
+            a.FirstName as AdvisorFirstName,
+            a.LastName as AdvisorLastName
+        FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT c
+        JOIN {config.DATABASE_NAME}.CURATED.DIM_ADVISOR a ON c.AdvisorID = a.AdvisorID
+        WHERE c.IsActive = TRUE
+    """
+    
+    clients = session.sql(clients_query).collect()
+    
+    prompts_data = []
+    doc_id = 1
+    
+    # Determine volume based on test mode - 3-5 planning documents per client
+    docs_per_client = 3 if test_mode else 5
+    
+    for client in clients:
+        client_id = client['CLIENTID']
+        advisor_id = client['ADVISORID']
+        
+        # Generate different types of planning documents
+        planning_doc_types = [
+            'Comprehensive Financial Plan',
+            'Investment Policy Statement',
+            'Retirement Planning Analysis', 
+            'Education Funding Plan',
+            'Estate Planning Strategy'
+        ]
+        
+        # Select document types based on volume
+        selected_types = planning_doc_types[:docs_per_client]
+        
+        for doc_type in selected_types:
+            # Create document date within client relationship
+            doc_date = client['ONBOARDINGDATE'] + timedelta(days=random.randint(30, 365))
+            
+            # Determine goal category
+            goal_category = get_goal_category(doc_type)
+            
+            # Create planning document prompt
+            prompt = create_planning_document_prompt(client, doc_type, goal_category)
+            
+            # Create document title
+            title = f"{doc_type} - {client['FIRSTNAME']} {client['LASTNAME']}"
+            
+            prompts_data.append({
+                'DOCUMENT_ID': f'PLAN_{doc_id:06d}',
+                'PLAN_TITLE': title,
+                'PLAN_TYPE': doc_type,
+                'CLIENT_ID': client_id,
+                'ADVISOR_ID': advisor_id,
+                'CREATED_DATE': doc_date,
+                'GOAL_CATEGORY': goal_category,
+                'PROMPT_TEXT': prompt
+            })
+            
+            doc_id += 1
+    
+    # Use the same 5-step pipeline for planning documents
+    prompts_df = session.create_dataframe(prompts_data)
+    prompts_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.RAW.TEMP_PLANNING_PROMPTS")
+    
+    prompts_table_df = session.table(f"{config.DATABASE_NAME}.RAW.TEMP_PLANNING_PROMPTS")
+    
+    generated_df = prompts_table_df.with_column(
+        'GENERATED_CONTENT',
+        Complete(
+            lit(config.MODEL_BY_CORPUS['research']),  # Use research model for planning docs
+            col('PROMPT_TEXT')
+        )
+    )
+    
+    final_planning = generated_df.select(
+        col('DOCUMENT_ID'),
+        col('PLAN_TITLE'),
+        col('PLAN_TYPE'),
+        col('CLIENT_ID'),
+        col('ADVISOR_ID'),
+        col('CREATED_DATE'),
+        col('GOAL_CATEGORY'),
+        col('GENERATED_CONTENT').alias('DOCUMENT_TEXT')
+    )
+    
+    final_planning.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.PLANNING_CORPUS")
+    
+    # Clean up temp table
+    session.sql(f"DROP TABLE IF EXISTS {config.DATABASE_NAME}.RAW.TEMP_PLANNING_PROMPTS").collect()
+    
+    print(f"    ✅ Generated planning corpus")
+
+def get_goal_category(doc_type: str) -> str:
+    """Map document type to goal category"""
+    goal_mapping = {
+        'Comprehensive Financial Plan': 'Comprehensive',
+        'Investment Policy Statement': 'Investment Strategy',
+        'Retirement Planning Analysis': 'Retirement',
+        'Education Funding Plan': 'Education',
+        'Estate Planning Strategy': 'Estate Planning'
+    }
+    return goal_mapping.get(doc_type, 'General Planning')
+
+def create_planning_document_prompt(client, doc_type: str, goal_category: str) -> str:
+    """Create dynamic prompt for planning document generation"""
+    
+    client_name = f"{client['FIRSTNAME']} {client['LASTNAME']}"
+    advisor_name = f"{client['ADVISORFIRSTNAME']} {client['ADVISORLASTNAME']}"
+    risk_tolerance = client['RISKTOLERANCE']
+    investment_horizon = client['INVESTMENTHORIZON']
+    
+    base_prompt = f"""
+You are generating a realistic {doc_type.lower()} for a wealth management planning database.
+
+Context:
+- Client: {client_name}
+- Advisor: {advisor_name}
+- Risk Tolerance: {risk_tolerance}
+- Investment Horizon: {investment_horizon}
+- Document Type: {doc_type}
+- Goal Category: {goal_category}
+
+Instructions:
+- Write professional financial planning content appropriate for wealth management
+- Include specific, measurable goals and timelines
+- Maintain objective, advisory tone suitable for client presentation
+- Include quantitative targets and strategic recommendations
+- Reference appropriate asset allocation and risk management strategies
+- Length: 400-700 words
+"""
+    
+    if doc_type == 'Comprehensive Financial Plan':
+        base_prompt += """
+- Include executive summary of client's overall financial situation
+- Define primary financial goals with specific timelines and amounts
+- Outline recommended investment strategy and asset allocation
+- Address risk management and insurance needs
+- Discuss tax planning strategies
+- Include action items and review schedule
+"""
+    elif doc_type == 'Investment Policy Statement':
+        base_prompt += """
+- Define investment objectives and return expectations
+- Specify asset allocation targets and ranges
+- Outline investment constraints and restrictions
+- Define rebalancing guidelines and review procedures
+- Include benchmark specifications
+- Address ESG preferences if applicable
+"""
+    elif doc_type == 'Retirement Planning Analysis':
+        base_prompt += """
+- Analyze current retirement savings and projected needs
+- Calculate required savings rate to meet retirement goals
+- Recommend retirement account strategies (401k, IRA, etc.)
+- Include Social Security planning considerations
+- Discuss retirement income distribution strategies
+- Address healthcare and long-term care planning
+"""
+    elif doc_type == 'Education Funding Plan':
+        base_prompt += """
+- Estimate education costs for children with inflation adjustments
+- Recommend 529 plan or other education savings strategies
+- Calculate required monthly savings to meet education goals
+- Discuss tax-advantaged education savings options
+- Include timeline for education expenses
+- Address potential financial aid implications
+"""
+    elif doc_type == 'Estate Planning Strategy':
+        base_prompt += """
+- Review current estate planning documents and needs
+- Recommend estate tax minimization strategies
+- Discuss trust structures and beneficiary planning
+- Include life insurance needs analysis
+- Address charitable giving strategies if applicable
+- Outline action items for estate planning implementation
+"""
+    
+    base_prompt += f"\n\nGenerate the {doc_type.lower()} content for {client_name}:"
+    
+    return base_prompt

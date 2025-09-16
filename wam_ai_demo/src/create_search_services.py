@@ -23,6 +23,9 @@ def create_search_services(session: Session):
     # Create REGULATORY_SEARCH
     create_regulatory_search(session)
     
+    # Create PLANNING_SEARCH
+    create_planning_search(session)
+    
     # Validate search services
     validate_search_services(session)
     
@@ -129,6 +132,41 @@ CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.REGULATORY_SEA
         diagnose_search_service_error(session, e, "REGULATORY_SEARCH")
         raise
 
+def create_planning_search(session: Session):
+    """Create PLANNING_SEARCH service for financial planning documents"""
+    
+    print("    → Creating PLANNING_SEARCH...")
+    
+    # Verify corpus table exists and has content
+    verify_corpus_table(session, f"{config.DATABASE_NAME}.CURATED.PLANNING_CORPUS")
+    
+    search_service_sql = f"""
+CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.PLANNING_SEARCH
+    ON DOCUMENT_TEXT
+    ATTRIBUTES CLIENT_ID, PLAN_TYPE, CREATED_DATE, ADVISOR_ID, GOAL_CATEGORY
+    WAREHOUSE = {config.CORTEX_WAREHOUSE}
+    TARGET_LAG = '{config.SEARCH_TARGET_LAG}'
+    AS 
+    SELECT 
+        DOCUMENT_ID,
+        PLAN_TITLE AS TITLE,
+        DOCUMENT_TEXT,
+        CLIENT_ID,
+        PLAN_TYPE,
+        CREATED_DATE,
+        ADVISOR_ID,
+        GOAL_CATEGORY
+    FROM {config.DATABASE_NAME}.CURATED.PLANNING_CORPUS
+"""
+    
+    try:
+        session.sql(search_service_sql).collect()
+        print("    ✅ PLANNING_SEARCH created successfully")
+    except Exception as e:
+        print(f"    ❌ Failed to create PLANNING_SEARCH: {e}")
+        diagnose_search_service_error(session, e, "PLANNING_SEARCH")
+        raise
+
 def verify_corpus_table(session: Session, table_name: str):
     """Verify corpus table exists and has searchable content"""
     
@@ -140,6 +178,8 @@ def verify_corpus_table(session: Session, table_name: str):
         if 'COMMUNICATIONS_CORPUS' in table_name:
             content_column = 'CONTENT'
         elif 'RESEARCH_CORPUS' in table_name:
+            content_column = 'DOCUMENT_TEXT'
+        elif 'PLANNING_CORPUS' in table_name:
             content_column = 'DOCUMENT_TEXT'
         else:
             content_column = 'CONTENT'
@@ -220,6 +260,18 @@ def validate_search_services(session: Session):
     except Exception as e:
         print(f"    ❌ REGULATORY_SEARCH validation failed: {e}")
     
+    # Validate PLANNING_SEARCH
+    try:
+        result = session.sql(f"""
+            SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+                '{config.DATABASE_NAME}.AI.PLANNING_SEARCH',
+                '{{"query": "financial goals", "limit": 1}}'
+            )
+        """).collect()
+        print("    ✅ PLANNING_SEARCH basic test passed")
+    except Exception as e:
+        print(f"    ❌ PLANNING_SEARCH validation failed: {e}")
+    
     # Show created search services
     services = session.sql(f"SHOW CORTEX SEARCH SERVICES IN {config.DATABASE_NAME}.AI").collect()
     print(f"    📋 Created search services: {len(services)}")
@@ -260,7 +312,7 @@ def describe_search_services(session: Session):
     
     print("    → Describing search services...")
     
-    services = ['COMMUNICATIONS_SEARCH', 'RESEARCH_SEARCH', 'REGULATORY_SEARCH']
+    services = ['COMMUNICATIONS_SEARCH', 'RESEARCH_SEARCH', 'REGULATORY_SEARCH', 'PLANNING_SEARCH']
     
     for service in services:
         try:
