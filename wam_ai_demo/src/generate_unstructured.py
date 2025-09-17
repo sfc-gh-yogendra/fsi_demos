@@ -118,26 +118,25 @@ def create_communications_prompts(session: Session, test_mode: bool = False) -> 
         client_id = client['CLIENTID']
         advisor_id = client['ADVISORID']
         
-        # Track used dates to prevent duplicate meetings on same day
+        # Track used dates to prevent duplicate communications on same day
         used_communication_dates = set()
         
         for i in range(volume_per_client):
             # Determine communication type based on mix
             comm_type = get_communication_type()
             
-            # Create timestamp within client lifespan, ensuring no duplicate meetings on same day
+            # Create timestamp within client lifespan, ensuring no duplicate communications on same day
             attempts = 0
             while attempts < 20:  # Prevent infinite loops
                 base_date = config.get_history_start_date() + timedelta(days=random.randint(0, 365))
                 
-                # For meetings, ensure no duplicates on same day for this client
-                if comm_type == 'Meeting':
-                    date_key = (client_id, base_date)  # base_date is already a date object
-                    if date_key in used_communication_dates:
-                        attempts += 1
-                        continue
-                    used_communication_dates.add(date_key)
+                # Ensure no duplicates on same day for this client (any communication type)
+                date_key = (client_id, base_date)  # base_date is already a date object
+                if date_key in used_communication_dates:
+                    attempts += 1
+                    continue
                 
+                used_communication_dates.add(date_key)
                 timestamp = datetime.combine(base_date, datetime.min.time()) + timedelta(
                     hours=random.randint(9, 17),
                     minutes=random.randint(0, 59)
@@ -920,8 +919,12 @@ Instructions:
 - Address healthcare and long-term care planning
 """
     elif doc_type == 'Education Funding Plan':
-        base_prompt += """
-- Estimate education costs for children with inflation adjustments
+        # Special handling for Sarah Johnson demo client
+        if client_name == 'Sarah Johnson':
+            base_prompt += """
+- Focus on daughter Emily (age 17, starting university fall 2024) and potentially other children
+- Emily's immediate university funding needs should be the primary focus
+- Estimate education costs for Emily and any other children with inflation adjustments
 - Recommend 529 plan or other education savings strategies
 - Calculate required monthly savings to meet education goals
 - Discuss tax-advantaged education savings options
@@ -930,6 +933,21 @@ Instructions:
 - Include specific action items for implementation (e.g., 529 distributions, account transfers)
 - Consider university billing deadlines and payment processing times
 - Address contingency funding options if education costs exceed projections
+- For Emily specifically, focus on immediate funding needs for upcoming university enrollment
+"""
+        else:
+            base_prompt += """
+- Focus on children of appropriate ages for education planning (include at least one child aged 16-18 nearing university enrollment)
+- Estimate education costs for each child with inflation adjustments
+- Recommend 529 plan or other education savings strategies
+- Calculate required monthly savings to meet education goals
+- Discuss tax-advantaged education savings options
+- Include timeline for education expenses and semester payment schedules
+- Address potential financial aid implications
+- Include specific action items for implementation (e.g., 529 distributions, account transfers)
+- Consider university billing deadlines and payment processing times
+- Address contingency funding options if education costs exceed projections
+- For children nearing university age, focus on immediate funding needs and execution timelines
 """
     elif doc_type == 'Estate Planning Strategy':
         base_prompt += """

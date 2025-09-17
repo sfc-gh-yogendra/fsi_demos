@@ -102,9 +102,11 @@ Financial Planning Document Analysis:
 
 COMPREHENSIVE FINANCIAL PLAN (Updated 2024):
 • Education Funding Goal: $200,000 for daughter Emily's university education
+• Emily's Status: Age 17, starting university fall 2024
 • Timeline: 2024-2028 (4-year degree program)
+• Current Funding: 90% complete ($180,000 saved), $20,000 gap for immediate needs
 • Funding Sources: 529 plan primary, taxable accounts secondary
-• Success Metric: 90%+ funding through dedicated savings
+• Immediate Action Required: Execute funding for fall semester billing
 
 INVESTMENT POLICY STATEMENT:
 • Risk Tolerance: Conservative (volatility tolerance 8-12%)
@@ -129,11 +131,11 @@ KEY PLANNING INSIGHTS:
 - *"Financial planning documents provide the strategic context for all investment decisions"*
 
 #### Step 3: Action-Oriented Execution Planning
-**Demo Operator Says**: *"Emily is starting university next month. Let's see what specific actions we need to take right now to execute her education funding plan."*
+**Demo Operator Says**: *"Sarah's daughter Emily is starting university next month. Let's see what specific actions we need to take right now to execute her education funding plan."*
 
 **User Query**:
 ```
-"Emily is starting university next month. What specific actions do we need to take now to execute her education funding plan?"
+"Her daughter Emily is starting university next month. What specific actions do we need to take now to execute her education funding plan?"
 ```
 
 **Expected Agent Response**:
@@ -227,11 +229,11 @@ Present specific ESG allocation proposal with tax-efficient implementation timel
 - *"The CoPilot identified the opportunity to combine education funding with portfolio enhancement"*
 
 #### Step 5: Generate Meeting Brief Document
-**Demo Operator Says**: *"Perfect! Now let's have the CoPilot create a structured meeting brief document that I can use during the client meeting."*
+**Demo Operator Says**: *"Perfect! Now let's have the CoPilot create a structured meeting brief document based on our conversation that I can use during the client meeting."*
 
 **User Query**:
 ```
-"Create a professional meeting brief document that I can reference during the meeting with all key points organized clearly."
+"Based on our analysis today, create a professional meeting brief document that summarizes the key insights we've discussed and organizes them into actionable agenda items for my upcoming meeting with Sarah."
 ```
 
 **Expected Agent Response**:
@@ -283,10 +285,10 @@ CLIENT RELATIONSHIP NOTES:
 ```
 
 **Demo Talking Points**:
-- *"The CoPilot created a complete, professional meeting brief in seconds"*
-- *"This document format is ready to use during the actual client meeting"*
-- *"Notice how it prioritized actions, organized talking points, and included follow-up tasks"*
-- *"This synthesis transforms hours of preparation into an instant, comprehensive brief"*
+- *"The CoPilot synthesized our entire conversation into a structured meeting brief"*
+- *"Notice how it captured all the insights we discovered and organized them into actionable agenda items"*
+- *"This demonstrates the AI's ability to act as a collaborative partner, not just a query responder"*
+- *"The brief references specific findings from our analysis - education gap, ESG interest, portfolio specifics"*
 
 ### Business Impact Summary:
 - **Time Savings**: 2+ hours of preparation reduced to 2 minutes
