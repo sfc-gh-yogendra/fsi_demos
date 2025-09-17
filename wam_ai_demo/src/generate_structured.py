@@ -9,6 +9,7 @@ from snowflake.snowpark.types import StructType, StructField, StringType, Intege
 import config
 from src.setup import create_foundation_tables
 from src.extract_real_data import load_real_assets_from_csv
+from src.golden_records_handler import apply_golden_client_overrides, is_golden_client_record, generate_golden_portfolio_positions
 from datetime import datetime, timedelta
 import random as py_random
 import pandas as pd
@@ -60,12 +61,9 @@ def create_watchlists(session: Session):
     # Create watchlist tables
     create_watchlist_tables(session)
     
-    # Create Carbon Negative Leaders watchlist
-    create_carbon_negative_leaders_watchlist(session)
-    
-    # Create additional thematic watchlists
-    create_ai_innovation_watchlist(session)
-    create_esg_leaders_watchlist(session)
+    # Create watchlists from configuration
+    for watchlist_name, watchlist_config in config.WATCHLIST_DEFINITIONS.items():
+        create_watchlist_from_config(session, watchlist_name, watchlist_config)
 
 def create_watchlist_tables(session: Session):
     """Create watchlist infrastructure tables"""
@@ -94,6 +92,49 @@ def create_watchlist_tables(session: Session):
             IsActive BOOLEAN DEFAULT TRUE
         )
     """).collect()
+
+def create_watchlist_from_config(session: Session, watchlist_name: str, watchlist_config: dict):
+    """Create a watchlist from configuration"""
+    
+    print(f"    → Creating {watchlist_name} watchlist...")
+    
+    # Create the watchlist
+    escaped_description = watchlist_config['description'].replace("'", "''")
+    session.sql(f"""
+        INSERT INTO {config.DATABASE_NAME}.CURATED.DIM_WATCHLIST (WatchlistName, WatchlistType, Description)
+        VALUES ('{watchlist_name}', '{watchlist_config['type']}', '{escaped_description}')
+    """).collect()
+    
+    # Get the watchlist ID
+    watchlist_result = session.sql(f"""
+        SELECT WatchlistID FROM {config.DATABASE_NAME}.CURATED.DIM_WATCHLIST 
+        WHERE WatchlistName = '{watchlist_name}'
+    """).collect()
+    
+    if watchlist_result:
+        watchlist_id = watchlist_result[0]['WATCHLISTID']
+        
+        # Add securities to watchlist
+        for security in watchlist_config['securities']:
+            # Get SecurityID for this ticker
+            security_result = session.sql(f"""
+                SELECT SecurityID FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY 
+                WHERE PrimaryTicker = '{security['ticker']}'
+            """).collect()
+            
+            if security_result:
+                security_id = security_result[0]['SECURITYID']
+                
+                # Escape single quotes in rationale
+                escaped_rationale = security['rationale'].replace("'", "''")
+                
+                session.sql(f"""
+                    INSERT INTO {config.DATABASE_NAME}.CURATED.FACT_WATCHLIST_SECURITIES 
+                    (WatchlistID, SecurityID, ESG_Score, Rationale)
+                    VALUES ({watchlist_id}, {security_id}, {security['esg_score']}, '{escaped_rationale}')
+                """).collect()
+                
+                print(f"      ✅ Added {security['ticker']} to {watchlist_name}")
 
 def create_carbon_negative_leaders_watchlist(session: Session):
     """Create the Carbon Negative Leaders thematic watchlist"""
@@ -256,8 +297,8 @@ def generate_managers(session: Session):
     # Generate single manager for now
     import pandas as pd
     managers_data = [{
-        'MANAGERNAME': 'Regional Manager',
-        'MANAGERTITLE': 'Regional Sales Manager',
+        'MANAGERNAME': config.MANAGER_CONFIG['name'],
+        'MANAGERTITLE': config.MANAGER_CONFIG['title'],
         'STARTDATE': config.get_history_start_date(),
         'ACTIVEFLAG': True
     }]
@@ -313,20 +354,26 @@ def generate_clients(session: Session):
     import pandas as pd
     clients_data = []
     client_id = 1
+    golden_clients_created = set()  # Track which golden clients have been created
     
     for advisor in advisors:
         advisor_id = advisor['ADVISORID']
         for i in range(config.CLIENTS_PER_ADVISOR):
             # Use realistic client names for demo
-            first_names = ['Sarah', 'Michael', 'Jennifer', 'David', 'Lisa', 'Robert', 'Emily', 'James', 'Jessica', 'William', 
-                          'Ashley', 'Christopher', 'Amanda', 'Daniel', 'Stephanie', 'Matthew', 'Michelle', 'Anthony', 'Kimberly', 'Mark',
-                          'Elizabeth', 'Steven', 'Amy', 'Kenneth', 'Angela', 'Joshua', 'Brenda', 'Kevin', 'Emma', 'Brian']
-            last_names = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez',
-                         'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee',
-                         'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker']
+            first_names = config.DEMO_FIRST_NAMES
+            last_names = config.DEMO_LAST_NAMES
             
             first_name = first_names[(client_id - 1) % len(first_names)]
             last_name = last_names[(client_id - 1) % len(last_names)]
+            
+            # Check if this would be a golden client and if we've already created it
+            potential_golden_name = f"{first_name} {last_name}"
+            if config.get_golden_client_config(potential_golden_name) and potential_golden_name in golden_clients_created:
+                # Skip this golden client since we've already created it, use next name instead
+                client_id += 1
+                first_name = first_names[(client_id - 1) % len(first_names)]
+                last_name = last_names[(client_id - 1) % len(last_names)]
+                potential_golden_name = f"{first_name} {last_name}"
             
             # Generate varied client tenure (6 months to 5 years)
             tenure_months = py_random.randint(config.CLIENT_TENURE_MONTHS["min"], config.CLIENT_TENURE_MONTHS["max"])
@@ -352,21 +399,29 @@ def generate_clients(session: Session):
                 departure_notes = f"Client departed due to {departure_reason.lower()}"
                 is_active = False
             
-            clients_data.append({
+            client_data = {
                 'ADVISORID': advisor_id,
                 'FIRSTNAME': first_name,
                 'LASTNAME': last_name,
-                'EMAIL': f'{first_name.lower()}.{last_name.lower()}@email.com',
+                'EMAIL': f'{first_name.lower()}.{last_name.lower()}@{config.DEMO_EMAIL_DOMAIN}',
                 'PHONE': f'+1-555-{1000+client_id:04d}',
                 'DATEOFBIRTH': datetime(1960 + (client_id % 40), 1 + (client_id % 12), 1 + (client_id % 28)).date(),
-                'RISKTOLERANCE': py_random.choice(['Conservative', 'Moderate', 'Aggressive']),
-                'INVESTMENTHORIZON': py_random.choice(['Short-term', 'Medium-term', 'Long-term']),
+                'RISKTOLERANCE': py_random.choice(config.RISK_TOLERANCE_OPTIONS),
+                'INVESTMENTHORIZON': py_random.choice(config.INVESTMENT_HORIZON_OPTIONS),
                 'ONBOARDINGDATE': onboarding_date,
                 'ENDDATE': end_date,
                 'DEPARTUREREASON': departure_reason,
                 'DEPARTURENOTES': departure_notes,
                 'ISACTIVE': is_active
-            })
+            }
+            
+            # Apply golden record overrides if this is a golden client
+            if is_golden_client_record(client_data):
+                client_data = apply_golden_client_overrides(client_data)
+                golden_clients_created.add(f"{client_data['FIRSTNAME']} {client_data['LASTNAME']}")
+                print(f"Applied golden record overrides for {client_data['FIRSTNAME']} {client_data['LASTNAME']}")
+            
+            clients_data.append(client_data)
             client_id += 1
     
     clients_df = pd.DataFrame(clients_data)
@@ -700,7 +755,7 @@ def generate_simplified_positions(session: Session):
     """Generate simplified positions for demo purposes"""
     print("    → Generating transactions and positions...")
     
-    # Simplified approach: create positions directly without complex transaction log
+    # Create the positions table structure first
     session.sql(f"""
         CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR AS
         WITH portfolios AS (
@@ -737,7 +792,48 @@ def generate_simplified_positions(session: Session):
         FROM position_data
     """).collect()
     
-    print("    ✅ Generated positions")
+    # Now generate golden portfolio positions for golden clients
+    print("    → Applying golden portfolio allocations...")
+    
+    # Get all clients and their portfolios to check for golden clients
+    client_portfolios = session.sql(f"""
+        SELECT 
+            c.ClientID,
+            c.FirstName,
+            c.LastName,
+            p.PortfolioID
+        FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT c
+        JOIN {config.DATABASE_NAME}.CURATED.DIM_ACCOUNT a ON c.ClientID = a.ClientID
+        JOIN {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p ON a.AccountID = p.AccountID
+        WHERE c.IsActive = TRUE
+    """).collect()
+    
+    golden_clients_processed = 0
+    
+    for client_portfolio in client_portfolios:
+        client_name = f"{client_portfolio['FIRSTNAME']} {client_portfolio['LASTNAME']}"
+        
+        # Check if this is a golden client
+        golden_config = config.get_golden_client_config(client_name)
+        if golden_config:
+            # Clear existing positions for this portfolio
+            session.sql(f"""
+                DELETE FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR 
+                WHERE PortfolioID = {client_portfolio['PORTFOLIOID']}
+            """).collect()
+            
+            # Generate golden positions
+            success = generate_golden_portfolio_positions(
+                session, 
+                client_portfolio['CLIENTID'], 
+                client_portfolio['PORTFOLIOID']
+            )
+            
+            if success:
+                golden_clients_processed += 1
+                print(f"    ✅ Applied golden allocations for {client_name}")
+    
+    print(f"    ✅ Generated positions ({golden_clients_processed} golden clients processed)")
 
 def generate_market_data(session: Session):
     """Generate synthetic market data time series for demo purposes"""
@@ -815,7 +911,8 @@ def generate_advisor_roster(session: Session):
         FROM CURATED.DIM_ADVISOR a
         LEFT JOIN CURATED.DIM_CLIENT c ON a.AdvisorID = c.AdvisorID AND c.IsActive = TRUE
         LEFT JOIN CURATED.DIM_ACCOUNT acc ON c.ClientID = acc.ClientID AND acc.IsActive = TRUE
-        LEFT JOIN CURATED.FACT_POSITION_DAILY_ABOR p ON acc.PortfolioID = p.PortfolioID 
+        LEFT JOIN CURATED.DIM_PORTFOLIO po ON acc.AccountID = po.AccountID AND po.IsActive = TRUE
+        LEFT JOIN CURATED.FACT_POSITION_DAILY_ABOR p ON po.PortfolioID = p.PortfolioID 
             AND p.HoldingDate = CURRENT_DATE()
         GROUP BY a.AdvisorID
     """).collect()

@@ -403,7 +403,7 @@ def validate_watchlist_analytics_sv(session: Session):
         result = session.sql(f"""
             SELECT * FROM SEMANTIC_VIEW(
                 {config.DATABASE_NAME}.AI.WATCHLIST_ANALYTICS_SV
-                METRICS WATCHLIST_SECURITY_COUNT, AVG_ESG_SCORE
+                METRICS SECURITY_COUNT, AVG_ESG_SCORE
                 DIMENSIONS WATCHLISTNAME
             )
             ORDER BY AVG_ESG_SCORE DESC
@@ -414,7 +414,7 @@ def validate_watchlist_analytics_sv(session: Session):
         result = session.sql(f"""
             SELECT * FROM SEMANTIC_VIEW(
                 {config.DATABASE_NAME}.AI.WATCHLIST_ANALYTICS_SV
-                METRICS WATCHLIST_SECURITY_COUNT
+                METRICS SECURITY_COUNT
                 DIMENSIONS WATCHLISTNAME, PRIMARYTICKER, LEGALNAME
             )
             WHERE WATCHLISTNAME = 'Carbon Negative Leaders'

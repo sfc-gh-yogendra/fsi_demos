@@ -11,6 +11,10 @@ alwaysApply: true
   - ATTRIBUTES: `TICKER, DOCUMENT_TYPE, PUBLISH_DATE, SOURCE`  
 - `REGULATORY_SEARCH`: Compliance rules and guidance
   - ATTRIBUTES: `REGULATOR, RULE_ID, PUBLISH_DATE, TITLE`
+- `PLANNING_SEARCH`: Financial planning documents (plans, IPS, policies)
+  - ATTRIBUTES: `CLIENT_ID, ADVISOR_ID, DOCUMENT_TYPE, LAST_UPDATE`
+- `DEPARTURE_SEARCH`: Exit questionnaires and departure feedback
+  - ATTRIBUTES: `CLIENT_ID, ADVISOR_ID, DOCUMENT_TYPE, DEPARTURE_REASON, DOCUMENT_DATE`
 
 ## Critical Syntax Pattern
 ```sql

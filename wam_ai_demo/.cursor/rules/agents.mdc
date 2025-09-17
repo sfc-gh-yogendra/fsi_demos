@@ -11,6 +11,7 @@ alwaysApply: true
   - `advisor_copilot` - Display Name: "Wealth Advisory CoPilot"
   - `analyst_copilot` - Display Name: "Portfolio Analysis CoPilot"  
   - `compliance_copilot` - Display Name: "Compliance CoPilot"
+  - `advisor_manager_copilot` - Display Name: "Advisor Benchmarking CoPilot"
 
 ## Tool Configuration Formats
 
@@ -115,8 +116,8 @@ alwaysApply: true
 - Specify how to handle ambiguous or multi-part queries
 
 ## Available Data Sources
-- **Semantic Views**: `CLIENT_FINANCIALS_SV`, `CLIENT_INTERACTIONS_SV`, `WATCHLIST_ANALYTICS_SV`
-- **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`
+- **Semantic Views**: `CLIENT_FINANCIALS_SV`, `CLIENT_INTERACTIONS_SV`, `WATCHLIST_ANALYTICS_SV`, `ADVISOR_PERFORMANCE_SV`
+- **Search Services**: `COMMUNICATIONS_SEARCH`, `RESEARCH_SEARCH`, `REGULATORY_SEARCH`, `PLANNING_SEARCH`, `DEPARTURE_SEARCH`
 - **Custom Tools**: Available for specific use cases requiring custom functions
 
 ## Standard Test Queries by Agent Type
@@ -135,6 +136,12 @@ alwaysApply: true
 - Communication surveillance
 - Regulatory rule lookup
 - Risk pattern identification
+
+### Advisor Benchmarking (advisor_manager_copilot)
+- TTM advisor performance analytics
+- Peer quartile benchmarking
+- Client retention and engagement analysis
+- Planning coverage and risk signal monitoring
 
 @AGENT_SETUP_GUIDE.md
 @DEMO_SCENARIOS.md

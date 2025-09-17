@@ -168,6 +168,171 @@ PLANNING_VERSIONS_RANGE = {"min": 1, "max": 3}
 # Client Tenure Configuration (for varied history)
 CLIENT_TENURE_MONTHS = {"min": 6, "max": HISTORY_YEARS * 12}  # 6 months to configured history years
 
+# ======================================================
+# GOLDEN RECORDS CONFIGURATION
+# ======================================================
+
+# Golden Demo Clients (clients with controlled data generation)
+GOLDEN_CLIENTS = {
+    'sarah_johnson': {
+        'first_name': 'Sarah',
+        'last_name': 'Johnson',
+        'risk_tolerance': 'Conservative',
+        'investment_horizon': 'Long-term',
+        'target_aum': 169920,
+        'portfolio_strategy': 'US Financials Core',
+        'portfolio_allocations': {
+            'V': 0.504,    # $85,620 target (50.4%)
+            'JPM': 0.496   # $84,300 target (49.6%)
+        },
+        'communications_sentiment': 'positive',
+        'esg_interest': True,
+        'daughter_name': 'Emily',
+        'daughter_age': 17,
+        'education_funding_status': {
+            'total_goal': 200000,
+            'current_savings': 180000,
+            'funding_gap': 20000,
+            'university_start': 'next_month'
+        }
+    }
+}
+
+# Pre-Generated Documents (stored in golden_records directory)
+GOLDEN_DOCUMENTS = {
+    'planning_documents': {
+        'sarah_johnson': [
+            'education_funding_plan.md',
+            'investment_policy_statement.md', 
+            'comprehensive_financial_plan.md'
+        ]
+    },
+    'research_documents': [
+        'microsoft_ai_infrastructure_analysis.md',
+        'carbon_neutrality_leaders_report.md',
+        'esg_sustainability_framework.md'
+    ],
+    'regulatory_documents': [
+        'finra_2210_communications_rule.md',
+        'sec_reg_sp_privacy_rule.md'
+    ],
+    'advisor_performance': [
+        'coaching_opportunities_template.md'
+    ]
+}
+
+# Controlled Data Generation Parameters
+GOLDEN_DATA_CONTROLS = {
+    'advisor_performance': {
+        'top_quartile_advisors': ['Michael Chen', 'Jennifer Williams'],
+        'bottom_quartile_advisors': ['Robert Martinez', 'Lisa Anderson'],
+        'coaching_opportunity_patterns': [
+            'outdated_planning_documents',
+            'low_engagement_frequency',
+            'negative_sentiment_trends'
+        ]
+    },
+    'risk_communications': {
+        'sarah_johnson_risk_flags': [
+            'Expressed concern about market volatility during Q2 call',
+            'Mentioned competitor offering higher returns in email'
+        ]
+    },
+    'watchlist_securities': {
+        'carbon_negative_leaders': ['MSFT', 'AAPL', 'NVDA'],
+        'ai_innovation': ['MSFT', 'NVDA', 'GOOGL'],
+        'esg_leaders': ['MSFT', 'AAPL', 'JPM', 'V']
+    }
+}
+
+# Golden Records Directory Structure
+GOLDEN_RECORDS_DIR = 'src/golden_records'
+GOLDEN_RECORDS_SUBDIRS = {
+    'planning': f'{GOLDEN_RECORDS_DIR}/planning',
+    'research': f'{GOLDEN_RECORDS_DIR}/research', 
+    'regulatory': f'{GOLDEN_RECORDS_DIR}/regulatory',
+    'templates': f'{GOLDEN_RECORDS_DIR}/templates'
+}
+
+def get_golden_client_config(client_name: str) -> dict:
+    """Get golden client configuration by name"""
+    for key, config in GOLDEN_CLIENTS.items():
+        if f"{config['first_name']} {config['last_name']}" == client_name:
+            return config
+    return None
+
+def is_golden_client(first_name: str, last_name: str) -> bool:
+    """Check if client is a golden demo client"""
+    client_name = f"{first_name} {last_name}"
+    return get_golden_client_config(client_name) is not None
+
+def get_golden_document_path(category: str, client_name: str = None, document: str = None) -> str:
+    """Get path to golden record document"""
+    if client_name and document:
+        return f"{GOLDEN_RECORDS_SUBDIRS[category]}/{client_name}_{document}"
+    elif document:
+        return f"{GOLDEN_RECORDS_SUBDIRS[category]}/{document}"
+    else:
+        return GOLDEN_RECORDS_SUBDIRS[category]
+
+# Client Attribute Options
+RISK_TOLERANCE_OPTIONS = ['Conservative', 'Moderate', 'Aggressive']
+INVESTMENT_HORIZON_OPTIONS = ['Short-term', 'Medium-term', 'Long-term']
+
+# Demo Names (for consistent generation)
+DEMO_FIRST_NAMES = [
+    'Sarah', 'Michael', 'Jennifer', 'David', 'Lisa', 'Robert', 'Emily', 'James', 'Jessica', 'William', 
+    'Ashley', 'Christopher', 'Amanda', 'Daniel', 'Stephanie', 'Matthew', 'Michelle', 'Anthony', 'Kimberly', 'Mark',
+    'Elizabeth', 'Steven', 'Amy', 'Kenneth', 'Angela', 'Joshua', 'Brenda', 'Kevin', 'Emma', 'Brian'
+]
+
+DEMO_LAST_NAMES = [
+    'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez',
+    'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee',
+    'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker'
+]
+
+# Watchlist Configurations
+WATCHLIST_DEFINITIONS = {
+    'Carbon Negative Leaders': {
+        'type': 'ESG Thematic',
+        'description': 'Companies with strong carbon neutrality commitments and measurable progress toward net-zero emissions goals. Focus on technology and industrial leaders driving climate innovation.',
+        'securities': [
+            {'ticker': 'MSFT', 'rationale': 'Committed to being carbon negative by 2030, $1B climate innovation fund', 'esg_score': 8.5},
+            {'ticker': 'AAPL', 'rationale': 'Carbon neutral by 2030, renewable energy initiatives, sustainable supply chain', 'esg_score': 8.2},
+            {'ticker': 'NVDA', 'rationale': 'AI solutions for climate modeling and energy efficiency optimization', 'esg_score': 7.8}
+        ]
+    },
+    'AI Innovation Leaders': {
+        'type': 'Technology Thematic',
+        'description': 'Companies leading artificial intelligence development and implementation across chips, software, and cloud infrastructure.',
+        'securities': [
+            {'ticker': 'NVDA', 'rationale': 'Leading AI chip architecture for training and inference', 'esg_score': 7.5},
+            {'ticker': 'MSFT', 'rationale': 'AI infrastructure through Azure, OpenAI partnership, Copilot integration', 'esg_score': 8.5},
+            {'ticker': 'AAPL', 'rationale': 'On-device AI processing, machine learning capabilities', 'esg_score': 8.2}
+        ]
+    },
+    'ESG Leaders': {
+        'type': 'ESG Comprehensive', 
+        'description': 'Companies demonstrating leadership across Environmental, Social, and Governance factors with strong sustainability commitments.',
+        'securities': [
+            {'ticker': 'MSFT', 'rationale': 'Top ESG ratings, renewable energy, inclusive workplace, strong governance', 'esg_score': 8.5},
+            {'ticker': 'AAPL', 'rationale': 'Environmental leadership, supply chain responsibility, privacy protection', 'esg_score': 8.2},
+            {'ticker': 'SAP', 'rationale': 'Sustainability solutions, carbon neutral by 2025, diverse leadership', 'esg_score': 7.9}
+        ]
+    }
+}
+
+# Manager Configuration
+MANAGER_CONFIG = {
+    'name': 'Regional Manager',
+    'title': 'Regional Director',
+    'start_date_years_ago': 8
+}
+
+# Email Domain
+DEMO_EMAIL_DOMAIN = 'email.com'
+
 def get_build_mode():
     """Get build mode from environment or default to replace_all"""
     return os.getenv('BUILD_MODE', 'replace_all')

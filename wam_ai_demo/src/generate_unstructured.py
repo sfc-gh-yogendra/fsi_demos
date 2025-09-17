@@ -9,6 +9,7 @@ from snowflake.cortex import Complete
 import config
 import random
 from datetime import datetime, timedelta
+from src.golden_records_handler import load_golden_document, get_client_id_by_name
 
 def generate_unstructured_data(session: Session, test_mode: bool = False):
     """Generate all unstructured data using Cortex Complete"""
@@ -850,7 +851,10 @@ def generate_planning_corpus(session: Session, test_mode: bool = False):
     # Clean up temp table
     session.sql(f"DROP TABLE IF EXISTS {config.DATABASE_NAME}.RAW.TEMP_PLANNING_PROMPTS").collect()
     
-    print(f"    ✅ Generated planning corpus")
+    # Now insert golden planning documents
+    insert_golden_planning_documents(session)
+    
+    print(f"    ✅ Generated planning corpus with golden documents")
 
 def get_goal_category(doc_type: str) -> str:
     """Map document type to goal category"""
@@ -922,8 +926,9 @@ Instructions:
         # Special handling for Sarah Johnson demo client
         if client_name == 'Sarah Johnson':
             base_prompt += """
-- Focus on daughter Emily (age 17, starting university fall 2024) and potentially other children
-- Emily's immediate university funding needs should be the primary focus
+- Focus on daughter Emily (age 17-18, starting university next month) and potentially other children
+- Emily's immediate university funding needs should be the primary focus - she is beginning university very soon
+- Current funding status: 90% complete with $20,000 gap remaining for immediate semester needs
 - Estimate education costs for Emily and any other children with inflation adjustments
 - Recommend 529 plan or other education savings strategies
 - Calculate required monthly savings to meet education goals
@@ -931,9 +936,9 @@ Instructions:
 - Include timeline for education expenses and semester payment schedules
 - Address potential financial aid implications
 - Include specific action items for implementation (e.g., 529 distributions, account transfers)
-- Consider university billing deadlines and payment processing times
+- Consider university billing deadlines and payment processing times (semester starts next month)
 - Address contingency funding options if education costs exceed projections
-- For Emily specifically, focus on immediate funding needs for upcoming university enrollment
+- For Emily specifically, focus on immediate funding needs for upcoming university enrollment next month
 """
         else:
             base_prompt += """
@@ -1192,3 +1197,81 @@ Action items for team:
 
 Interview conducted by: Regional Manager
 """
+
+def insert_golden_planning_documents(session: Session):
+    """Insert pre-generated planning documents for golden clients"""
+    print("    → Inserting golden planning documents...")
+    
+    for client_key, client_config in config.GOLDEN_CLIENTS.items():
+        client_name = f"{client_config['first_name']} {client_config['last_name']}"
+        client_id = get_client_id_by_name(session, client_config['first_name'], client_config['last_name'])
+        
+        if not client_id:
+            print(f"      Warning: Golden client {client_name} not found in database")
+            continue
+        
+        # Get advisor information
+        try:
+            advisor_info = session.sql(f"""
+                SELECT a.AdvisorID, a.FirstName, a.LastName
+                FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT c
+                JOIN {config.DATABASE_NAME}.CURATED.DIM_ADVISOR a ON c.AdvisorID = a.AdvisorID
+                WHERE c.ClientID = {client_id}
+            """).collect()
+            
+            if not advisor_info:
+                print(f"      Warning: Could not find advisor for {client_name}")
+                continue
+                
+            advisor_id = advisor_info[0]['ADVISORID']
+            advisor_name = f"{advisor_info[0]['FIRSTNAME']} {advisor_info[0]['LASTNAME']}"
+        except Exception as e:
+            print(f"      Warning: Error getting advisor info for {client_name}: {e}")
+            continue
+        
+        # Get list of documents for this client
+        client_documents = config.GOLDEN_DOCUMENTS['planning_documents'].get(client_key, [])
+        
+        for doc_filename in client_documents:
+            try:
+                content = load_golden_document('planning', doc_filename, client_key)
+                if content:
+                    # Determine document type from filename
+                    if 'education' in doc_filename:
+                        doc_type = 'Education Funding Plan'
+                    elif 'ips' in doc_filename or 'policy' in doc_filename:
+                        doc_type = 'Investment Policy Statement'
+                    elif 'comprehensive' in doc_filename:
+                        doc_type = 'Comprehensive Financial Plan'
+                    else:
+                        doc_type = 'General Planning'
+                    
+                    # Create unique document ID
+                    document_id = f"GOLDEN_{client_name.upper().replace(' ', '_')}_{doc_type.upper().replace(' ', '_')}"
+                    
+                    # Escape single quotes in content
+                    escaped_content = content.replace("'", "''")
+                    
+                    # Insert document
+                    session.sql(f"""
+                        INSERT INTO {config.DATABASE_NAME}.CURATED.PLANNING_CORPUS 
+                        (DOCUMENT_ID, PLAN_TITLE, PLAN_TYPE, CLIENT_ID, ADVISOR_ID, 
+                         CREATED_DATE, GOAL_CATEGORY, DOCUMENT_TEXT)
+                        VALUES (
+                            '{document_id}',
+                            '{doc_type} for {client_name}',
+                            '{doc_type}',
+                            {client_id},
+                            {advisor_id},
+                            CURRENT_DATE(),
+                            '{get_goal_category(doc_type)}',
+                            '{escaped_content}'
+                        )
+                    """).collect()
+                    
+                    print(f"      ✅ Inserted golden document: {doc_type} for {client_name}")
+                    
+            except Exception as e:
+                print(f"      Warning: Could not insert golden document {doc_filename} for {client_name}: {e}")
+    
+    print("    ✅ Golden planning documents inserted")

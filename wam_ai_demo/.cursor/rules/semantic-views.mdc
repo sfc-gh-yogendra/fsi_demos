@@ -11,7 +11,8 @@ alwaysApply: true
 ## Current Views
 - `CLIENT_FINANCIALS_SV`: Portfolio metrics with issuer/sector hierarchy
 - `CLIENT_INTERACTIONS_SV`: Communication patterns and metrics  
-- `WATCHLIST_ANALYTICS_SV`: Thematic watchlist analytics (Phase 2)
+- `WATCHLIST_ANALYTICS_SV`: Thematic watchlist analytics
+- `ADVISOR_PERFORMANCE_SV`: TTM advisor performance metrics with peer quartiles
 
 ## Semantic View Creation Template
 

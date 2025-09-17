@@ -53,72 +53,76 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - Business rule integration (6.5% concentration threshold)
 - Natural language to SQL conversion
 
-#### Step 2: Latest Research for Holdings  
+#### Step 2: Latest Research for Top Holdings  
 **User Input**: 
 ```
-"What is the latest broker research saying about Apple, Commercial Metals, and Ribbon Communications?"
+"Based on those top holdings you just showed me, what is the latest broker research saying about our three largest positions?"
 ```
 
 **Expected Response**:
-- Bullet list: Company → Recent report titles with dates
-  - Apple Inc. (AAPL): Recent research reports with ratings and dates
-  - Commercial Metals Company (CMC): Recent research reports with ratings and dates  
-  - Ribbon Communications Inc. (RBBN): Recent research reports with ratings and dates
+- Bullet list: Company → Recent report titles with dates for the top 3 holdings from Step 1
+  - [Top Holding 1]: Recent research reports with ratings and dates
+  - [Top Holding 2]: Recent research reports with ratings and dates  
+  - [Top Holding 3]: Recent research reports with ratings and dates
 - Brief summaries of key investment themes
 - Ratings distribution (Buy/Hold/Sell)
+- Analysis of how research sentiment aligns with large position sizes
 
 **Talking Points**:
-- AI-powered document search across thousands of research reports
-- Automatic linking between portfolio holdings and research coverage
-- Intelligent summarization of key investment themes
+- AI automatically identifies research for the specific holdings shown in Step 1
+- Seamless transition from quantitative holdings data to qualitative research insights
+- Risk assessment: Large positions supported by positive research sentiment
 
 **Key Features Highlighted**: 
-- Cortex Search document intelligence
+- Contextual follow-up that builds on previous query results
 - SecurityID-based linkage between holdings and research
 - Automatic citation and source attribution
 
-#### Step 3: Benchmark Comparison
+#### Step 3: Sector Risk Assessment
 **User Input**: 
 ```
-"Show me the sector allocation for the SAM Technology & Infrastructure portfolio and compare it to technology sector averages."
+"Looking at those top holdings and their research, what's our sector concentration risk in this portfolio, especially for the companies with the largest positions?"
 ```
 
 **Expected Response**:
-- Portfolio sector allocation breakdown
-- Technology sector concentration analysis
+- Sector allocation breakdown highlighting the top holdings from Step 1
+- Concentration analysis showing sector exposure through large positions
 - Comparison to benchmark sector weights
-- Concentration warnings for positions >6.5%
+- Risk assessment combining position size and sector concentration
+- Specific flagging if top holdings create sector concentration >6.5%
 
 **Talking Points**:
-- Complex multi-table analytics combining portfolio and benchmark data
-- Sector-level risk analysis with automatic flagging
-- Comparative analysis that would typically require multiple systems
+- Integrated risk analysis that combines individual position risk (Step 1) with sector risk
+- Research sentiment (Step 2) now viewed through concentration lens
+- Comprehensive risk picture that builds on previous analysis
 
 **Key Features Highlighted**: 
-- Multi-table semantic view queries
-- Benchmark integration and comparison
-- Automated risk assessment and flagging
+- Multi-dimensional risk analysis building on previous queries
+- Sector-level concentration assessment linked to specific holdings
+- Integrated benchmark comparison with position-level context
 
-#### Step 4: Risk Assessment
+#### Step 4: Integrated Risk & Action Plan
 **User Input**: 
 ```
-"Which of my top holdings have negative recent research or emerging risks?"
+"Based on our concentration analysis and research findings, which of our largest positions need attention and what actions should we consider?"
 ```
 
 **Expected Response**:
-- List of flagged securities with specific concerns
-- Source citations (document type, date, analyst)
-- Recommended actions (review, monitor, consider reduction)
+- Integrated risk assessment for the top holdings identified in Steps 1-3
+- Combination of concentration risk (Step 3) and research sentiment (Step 2)
+- Specific concerns for positions that are both large AND have sector concentration risk
+- Prioritized action plan: positions requiring immediate attention vs monitoring
+- Recommended actions with specific rationale (reduce for concentration, hold for strong research, etc.)
 
 **Talking Points**:
-- Proactive risk monitoring using AI to scan research content
-- Multi-source intelligence combining different document types
-- Actionable insights with specific recommendations
+- Complete investment decision framework combining all previous analysis
+- Prioritized action plan based on integrated quantitative and qualitative risk assessment
+- Professional portfolio management workflow from analysis to action
 
 **Key Features Highlighted**: 
-- AI-powered sentiment analysis and risk detection
-- Multi-source document search and synthesis
-- Intelligent risk flagging and recommendation engine
+- Comprehensive decision support building on multi-step analysis
+- Integration of position size, sector risk, and research sentiment
+- Actionable recommendations with clear prioritization and rationale
 
 ### Scenario Wrap-up
 
@@ -202,71 +206,73 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Deep-Dive Company Analysis
 **User Input**: 
 ```
-"Based on those AI and cloud opportunities, give me a detailed analysis of Microsoft's recent performance and strategic positioning"
+"From those companies mentioned in the AI and cloud research, pick the one with the strongest themes and give me a detailed analysis of their recent performance and strategic positioning"
 ```
 
 **Expected Response**:
+- **Company Selection Rationale**: Why this company was chosen based on Step 1 research themes
 - **Financial Performance Metrics**: Revenue trends, EPS progression, analyst estimates vs. actuals
 - **Earnings Analysis**: Quarterly performance, earnings surprises, financial ratios
-- **Management Commentary**: Strategic positioning and forward guidance from earnings calls
-- **Analyst Perspectives**: Research opinions, price targets, and investment recommendations
-- **Corporate Developments**: Recent strategic announcements and business initiatives
-- **Comprehensive Synthesis**: Integration of quantitative performance with qualitative strategic context
+- **Management Commentary**: Strategic positioning and forward guidance from earnings calls that align with Step 1 themes
+- **Analyst Perspectives**: Research opinions and price targets that connect to AI/cloud opportunities from Step 1
+- **Corporate Developments**: Recent strategic announcements that support the themes identified in Step 1
+- **Comprehensive Synthesis**: Integration of quantitative performance with the specific qualitative themes from Step 1
 
 **Talking Points**:
-- **Complete Financial Picture**: Combines hard financial data with qualitative research insights
-- **Authentic Research Workflow**: Mirrors how professional analysts actually conduct company analysis
-- **Seamless Data Integration**: Demonstrates Snowflake's ability to blend structured and unstructured data
-- **Investment-Grade Analysis**: Provides both the numbers and the narrative context for decision-making
+- **Contextual Company Selection**: AI automatically identifies the most relevant company from Step 1 research
+- **Theme Continuity**: Deep-dive analysis directly builds on the AI/cloud themes from previous research
+- **Integrated Intelligence**: Financial analysis validates the qualitative themes identified in Step 1
 
 **Key Features Highlighted**: 
-- **Hybrid Analytics**: Seamless combination of Cortex Analyst (financial data) and Cortex Search (documents)
-- **Comprehensive Company Intelligence**: Financial metrics + management commentary + analyst research
-- **Contextual Follow-up**: Building on previous technology sector research with specific company deep-dive
+- **Contextual Follow-up**: Automatically selects relevant company based on Step 1 findings
+- **Theme-Based Analysis**: Deep-dive specifically addresses themes identified in previous step
+- **Integrated Validation**: Financial performance data supports or challenges qualitative research themes
 
 #### Step 3: Competitive Intelligence Gathering
 **User Input**: 
 ```
-"How does Microsoft's AI strategy compare to what Amazon and other technology companies are doing?"
+"How does [the company from Step 2]'s AI strategy compare to what other technology companies mentioned in Step 1 are doing?"
 ```
 
 **Expected Response**:
-- Comparative analysis of AI strategies across technology companies
-- Management commentary on competitive positioning from earnings calls
-- Strategic announcements and partnerships from press releases
-- Competitive landscape analysis with market positioning insights
+- Comparative analysis of AI strategies across the specific companies identified in Steps 1-2
+- Management commentary on competitive positioning from earnings calls of the Step 1 companies
+- Strategic announcements and partnerships from press releases that connect the Step 1 themes
+- Competitive landscape analysis focused on the AI/cloud opportunities from Step 1
+- Direct comparison showing how the Step 2 company stacks against Step 1 competitors
 
 **Talking Points**:
-- AI automatically identifies competitive dynamics across multiple companies
-- Comparative analysis that provides strategic investment context
-- Cross-company intelligence that reveals market positioning and opportunities
+- **Building Competitive Context**: Uses the specific companies and themes from previous steps
+- **Focused Comparison**: Avoids generic analysis by focusing on the companies already identified
+- **Strategic Investment Framework**: Builds a complete competitive picture for investment decision-making
 
 **Key Features Highlighted**: 
-- Competitive intelligence synthesis across multiple companies
-- Cross-document comparative analysis capabilities
-- Strategic positioning and market dynamics identification
+- **Multi-Step Intelligence**: Integrates findings from Steps 1 and 2 for focused competitive analysis
+- **Theme-Based Comparison**: Competitive analysis specifically addresses AI/cloud themes from Step 1
+- **Investment Decision Support**: Provides comparative context needed for investment decisions
 
 #### Step 4: Investment Thesis Validation
 **User Input**: 
 ```
-"Compare what Microsoft management is saying about AI growth prospects versus what analysts are forecasting"
+"Based on our analysis of [Step 2 company] and its competitive position, compare what management is saying about AI growth prospects versus what analysts are forecasting for this investment opportunity"
 ```
 
 **Expected Response**:
-- Management outlook and guidance from earnings transcripts
-- Analyst forecasts and price targets from broker research
-- Strategic initiatives and investments from press releases
-- Identification of consensus views and potential disconnects
+- Management outlook and guidance from earnings transcripts specific to the Step 2 company
+- Analyst forecasts and price targets from broker research that connect to Step 1 AI/cloud themes
+- Strategic initiatives and investments from press releases that support the competitive analysis from Step 3
+- Identification of consensus views and potential disconnects specifically for the investment case built in Steps 1-3
+- Final investment thesis validation that ties together all previous analysis
 
 **Talking Points**:
-- AI identifies consensus and divergent viewpoints automatically between management and analysts
-- Critical validation capability that reveals investment thesis strength
-- Perspective comparison that provides investment conviction and risk assessment
+- **Complete Investment Case**: Validates the entire research workflow from themes to company to competition
+- **Consensus Analysis**: Identifies alignment or disagreement between management and analysts for the specific opportunity
+- **Investment Decision Ready**: Provides final validation needed for investment committee presentation
 
 **Key Features Highlighted**: 
-- Cross-source perspective analysis and validation
-- Management vs. analyst consensus identification
-- Investment thesis strength assessment through multi-source validation
+- **Multi-Step Synthesis**: Integrates themes (Step 1), company analysis (Step 2), and competitive position (Step 3)
+- **Investment Thesis Validation**: Tests the strength of the complete investment case built through previous steps
+- **Decision Support**: Provides final consensus analysis needed for investment decisions
 
 ### Scenario Wrap-up
 
@@ -335,68 +341,73 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Thematic Research Discovery  
 **User Input**: 
 ```
-"What are the key thematic investment opportunities for 2024 according to research?"
+"Based on our current AI and technology exposure from Step 1, what are the emerging thematic investment opportunities that could enhance our positioning?"
 ```
 
 **Expected Response**:
-- Emerging investment themes from broker research
-- Corporate strategic initiatives from press releases
-- Management outlook on themes from earnings calls
-- Synthesis of macro trends and opportunities
+- Emerging investment themes from broker research that complement current AI/tech holdings
+- Corporate strategic initiatives from press releases in areas where we have limited exposure
+- Management outlook on themes from earnings calls that extend our current positioning
+- Synthesis of macro trends that build on our existing AI/technology exposure from Step 1
+- Gap analysis: themes where we could increase exposure vs themes where we're already well-positioned
 
 **Talking Points**:
-- AI identifies emerging themes from multiple research sources
-- Forward-looking theme identification based on management commentary
-- Synthesis of macro trends that human analysts might miss
+- **Strategic Theme Extension**: Identifies opportunities that build on current portfolio positioning
+- **Portfolio Gap Analysis**: Highlights thematic opportunities where current exposure is limited
+- **Complementary Trends**: Discovers themes that enhance rather than duplicate existing positioning
 
 **Key Features Highlighted**: 
-- Multi-source thematic research synthesis
-- Emerging trend identification and analysis
-- Forward-looking theme discovery from earnings guidance
+- **Portfolio-Contextual Research**: Theme discovery specifically informed by current positioning
+- **Strategic Enhancement**: Identifies themes that extend and complement existing exposures
+- **Gap-Based Opportunity Identification**: Focuses on themes where portfolio could be enhanced
 
 #### Step 3: Strategic Positioning Analysis
 **User Input**: 
 ```
-"How should we position for the energy transition theme based on current research and our holdings?"
+"From the emerging themes identified in Step 2, pick the most promising one and analyze how we should position our portfolios, considering our current AI/tech exposure from Step 1"
 ```
 
 **Expected Response**:
-- Current renewable energy exposure in portfolios
-- Energy transition research themes and opportunities
-- Corporate positioning strategies from press releases
-- Strategic positioning recommendations
+- Selection rationale: why this theme was chosen from Step 2 opportunities
+- Current portfolio exposure analysis for the selected theme (building on Step 1 foundation)
+- Research validation for the selected theme from Step 2 findings
+- Strategic positioning recommendations that complement existing AI/tech holdings
+- Portfolio optimization suggestions: specific actions to increase exposure to the selected theme
+- Integration analysis: how the new theme positioning works with existing AI/tech exposure
 
 **Talking Points**:
-- Integration of current portfolio positioning with thematic research
-- Strategic recommendations based on comprehensive analysis
-- Actionable insights for portfolio optimization
+- **Theme Selection Logic**: AI selects the most promising theme from Step 2 based on portfolio context
+- **Integrated Positioning Strategy**: Recommendations consider both current positioning and new opportunities
+- **Portfolio Optimization**: Specific actions that build on existing strengths while adding new themes
 
 **Key Features Highlighted**: 
-- Portfolio positioning analysis combined with thematic research
-- Strategic recommendation generation
-- Multi-source intelligence for investment decisions
+- **Multi-Step Strategy Development**: Integrates current positioning (Step 1) with emerging opportunities (Step 2)
+- **Contextual Theme Selection**: Chooses optimal theme based on portfolio positioning and research strength
+- **Integrated Investment Strategy**: Develops positioning that enhances rather than conflicts with existing exposures
 
-#### Step 4: Cross-Theme Validation
+#### Step 4: Integrated Investment Strategy
 **User Input**: 
 ```
-"Analyze ESG themes versus technology themes - are there overlap opportunities in our portfolios?"
+"Based on our AI/tech positioning from Step 1 and the [selected theme from Step 3], create an integrated investment strategy that optimizes our thematic exposure across portfolios"
 ```
 
 **Expected Response**:
-- ESG and technology theme intersection analysis
-- Companies positioned in both themes from holdings
-- Research validation of sustainable technology trends
-- Portfolio optimization recommendations
+- Integrated strategy that combines AI/tech exposure (Step 1) with selected theme (Step 3)
+- Cross-theme intersection analysis: companies that fit both themes
+- Portfolio allocation recommendations for optimal thematic balance
+- Research validation from Step 2 that supports the integrated approach
+- Implementation roadmap with specific actions for each portfolio
+- Risk assessment: concentration and diversification considerations for the integrated theme strategy
 
 **Talking Points**:
-- Complex thematic intersection analysis across multiple themes
-- Identification of companies positioned in multiple themes
-- Portfolio optimization opportunities based on theme overlap
+- **Complete Thematic Integration**: Develops unified strategy across multiple themes and portfolios
+- **Cross-Theme Optimization**: Identifies companies and sectors that provide exposure to multiple themes
+- **Implementation Ready**: Provides specific portfolio actions and allocation recommendations
 
 **Key Features Highlighted**: 
-- Multi-dimensional thematic analysis
-- Cross-theme intersection identification
-- Portfolio optimization based on thematic convergence
+- **Multi-Step Strategy Synthesis**: Integrates analysis from all previous steps into comprehensive strategy
+- **Cross-Portfolio Optimization**: Develops theme allocation strategy across all portfolios
+- **Implementation Framework**: Provides actionable roadmap for thematic investment strategy
 
 ### Scenario Wrap-up
 
@@ -451,65 +462,71 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Internal Context Retrieval
 **User Input**: 
 ```
-"Do we have any engagement history with Nike regarding supply chain issues?"
+"For the companies flagged in Step 1, do we have any engagement history with these companies regarding the specific ESG issues identified?"
 ```
 
 **Expected Response**:
-- Summary of previous engagement meetings and topics
-- Key commitments made by management
-- Follow-up actions and timelines from engagement logs
+- Summary of previous engagement meetings and topics for each flagged company from Step 1
+- Key commitments made by management specific to the ESG issues from Step 1
+- Follow-up actions and timelines from engagement logs that relate to the Step 1 controversies
+- Gap analysis: which flagged companies have no prior engagement history
 
 **Talking Points**:
-- Instant access to historical engagement records and context
-- Comprehensive tracking of management commitments and progress
-- Timeline analysis for engagement effectiveness assessment
+- **Contextual Engagement Review**: Focuses on the specific companies and issues from Step 1
+- **Issue-Specific History**: Reviews engagement records that directly relate to the identified controversies
+- **Strategic Gap Identification**: Highlights companies requiring new engagement based on Step 1 findings
 
 **Key Features Highlighted**: 
-- Internal knowledge retrieval and engagement tracking
-- Historical context analysis for informed decision-making
-- Commitment tracking and follow-up management
+- **Context-Aware Search**: Engagement search specifically targets Step 1 flagged companies and issues
+- **Issue-Specific Intelligence**: Historical context directly relevant to current controversies
+- **Strategic Planning Support**: Identifies engagement gaps based on current risk assessment
 
 #### Step 3: Policy Compliance Assessment
 **User Input**: 
 ```
-"What does our ESG policy say about human rights violations and what's our total exposure to Nike?"
+"What does our ESG policy say about the specific issues identified in Step 1, and what's our total exposure to each of the flagged companies?"
 ```
 
 **Expected Response**:
-- Relevant policy clause with exact text and section reference
-- Current total AUM exposure across all funds
-- Policy-mandated actions (review, exclusion, engagement requirements)
+- Relevant policy clauses with exact text and section references for each ESG issue type from Step 1
+- Current total AUM exposure across all funds for each company flagged in Step 1
+- Policy-mandated actions specific to each issue type (review, exclusion, engagement requirements)
+- Compliance assessment: which flagged situations require immediate action vs monitoring
+- Integration with Step 2 findings: where existing engagement supports policy compliance
 
 **Talking Points**:
-- Instant policy reference and compliance checking
-- Comprehensive exposure analysis across all portfolios
-- Clear guidance on required actions based on policy framework
+- **Issue-Specific Policy Guidance**: Policy assessment directly addresses the controversies from Step 1
+- **Comprehensive Exposure Analysis**: Total firm exposure to each specific flagged company
+- **Integrated Compliance Framework**: Combines policy requirements with engagement history from Step 2
 
 **Key Features Highlighted**: 
-- Policy integration and compliance checking
-- Cross-portfolio exposure aggregation
-- Automated compliance guidance and action recommendations
+- **Context-Specific Policy Search**: Policy analysis tailored to Step 1 ESG issues
+- **Multi-Company Risk Aggregation**: Total exposure analysis for all Step 1 flagged companies
+- **Integrated Compliance Assessment**: Policy requirements viewed alongside engagement history
 
 #### Step 4: Committee Reporting
 **User Input**: 
 ```
-"Draft a summary for the ESG committee on this Nike situation."
+"Draft a comprehensive ESG committee summary covering all the companies and issues we've analyzed in Steps 1-3."
 ```
 
 **Expected Response**:
-- Executive summary of the controversy and engagement history
-- Portfolio impact assessment with exposure calculations
-- Recommended actions with timeline and policy references
+- Executive summary covering all controversies identified in Step 1 with severity prioritization
+- Portfolio impact assessment with exposure calculations for each flagged company
+- Engagement status review for each company based on Step 2 findings
+- Policy compliance analysis for each issue type from Step 3
+- Recommended actions with timelines, prioritization, and policy references
+- Integration of all previous analysis into comprehensive ESG governance report
 
 **Talking Points**:
-- Comprehensive ESG governance reporting with all relevant context
-- Executive-level summary combining multiple data sources
-- Actionable recommendations with clear timelines and responsibilities
+- **Complete ESG Governance Report**: Synthesizes all findings from the 3-step analysis process
+- **Executive Decision Support**: Provides prioritized action plan based on comprehensive assessment
+- **Audit-Ready Documentation**: Creates complete record of ESG risk assessment and response
 
 **Key Features Highlighted**: 
-- Comprehensive ESG governance and reporting
-- Multi-source information synthesis for executive decision-making
-- Automated report generation with policy and exposure context
+- **Multi-Step Synthesis**: Integrates controversy detection, engagement review, and policy analysis
+- **Executive Reporting**: Complete ESG governance report ready for committee decision-making
+- **Comprehensive Documentation**: Full audit trail of ESG risk assessment and recommended actions
 
 ### Scenario Wrap-up
 
@@ -564,65 +581,73 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Rule Documentation
 **User Input**: 
 ```
-"Show me the exact IMA clause for the 7% single issuer concentration limit."
+"For the specific breaches identified in Step 1, show me the exact policy clauses and concentration limits that are being violated"
 ```
 
 **Expected Response**:
-- Exact policy text with section reference
-- Applicable portfolios and any exceptions
-- Historical context and rationale if available
+- Exact policy text with section references for each breach type from Step 1
+- Specific concentration limits and thresholds that apply to each flagged position
+- Applicable portfolios and any exceptions for each breach
+- Historical context and rationale for each rule being violated
+- Severity assessment: which breaches are hard limits vs warnings
 
 **Talking Points**:
-- Instant access to exact policy language and documentation
-- Clear identification of applicable portfolios and exceptions
-- Historical context for informed compliance decisions
+- **Context-Specific Policy Research**: Policy lookup directly addresses the breaches from Step 1
+- **Breach-Specific Documentation**: Exact clauses and limits for each identified violation
+- **Compliance Severity Assessment**: Understanding which violations require immediate action
 
 **Key Features Highlighted**: 
-- Policy search and exact clause retrieval
-- Document intelligence with section referencing
-- Comprehensive policy coverage and context
+- **Contextual Policy Search**: Policy research specifically targets Step 1 breach types
+- **Violation-Specific Intelligence**: Exact clauses and limits for each identified compliance issue
+- **Severity Classification**: Understanding of breach vs warning thresholds for prioritization
 
 #### Step 3: Remediation Planning
 **User Input**: 
 ```
-"What are our options for addressing the Microsoft overweight in the US Core portfolio?"
+"For each breach identified in Steps 1-2, what are our remediation options and what's the priority order for addressing these violations?"
 ```
 
 **Expected Response**:
-- Calculation of excess exposure amount above limits
-- Reduction scenarios with market impact considerations
-- Timeline recommendations for compliance restoration
+- Remediation options for each specific breach from Step 1, considering the policy requirements from Step 2
+- Calculation of excess exposure amounts above limits for each violation
+- Multiple reduction scenarios with market impact considerations for each breach
+- Priority ranking based on severity assessment from Step 2 (hard breaches vs warnings)
+- Timeline recommendations for compliance restoration with sequencing based on priority
+- Resource allocation: which breaches can be addressed simultaneously vs requiring sequential action
 
 **Talking Points**:
-- Quantitative analysis of breach magnitude and impact
-- Multiple remediation scenarios with market impact assessment
-- Timeline guidance for compliance restoration
+- **Comprehensive Remediation Strategy**: Addresses all breaches identified in Steps 1-2 with integrated planning
+- **Priority-Based Approach**: Sequences remediation based on severity and policy requirements
+- **Resource Optimization**: Efficient remediation plan considering market impact and operational capacity
 
 **Key Features Highlighted**: 
-- Remediation planning and impact assessment
-- Market impact analysis for informed decision-making
-- Timeline optimization for compliance restoration
+- **Multi-Breach Remediation Planning**: Integrated approach to addressing all compliance issues simultaneously
+- **Priority-Based Sequencing**: Remediation order based on severity assessment from Step 2
+- **Market Impact Optimization**: Remediation plans that minimize trading costs and market disruption
 
 #### Step 4: Audit Trail Documentation
 **User Input**: 
 ```
-"Generate a compliance incident report for this concentration breach."
+"Generate a comprehensive compliance incident report covering all breaches identified in Steps 1-3 with our complete remediation plan"
 ```
 
 **Expected Response**:
-- Formal incident documentation with timeline
-- Policy references and breach calculations
-- Remediation plan with milestones and responsibilities
+- Formal incident documentation covering all breaches from Step 1 with timeline
+- Policy references and breach calculations for each violation identified in Step 2
+- Complete remediation plan from Step 3 with milestones, priorities, and responsibilities
+- Executive summary of compliance status and remediation strategy
+- Regulatory documentation ready for audit review
+- Integration of all analysis from Steps 1-3 into comprehensive compliance record
 
 **Talking Points**:
-- Comprehensive audit trail creation for regulatory purposes
-- Formal documentation with all required elements
-- Clear remediation plan with accountability and timelines
+- **Comprehensive Compliance Documentation**: Complete audit trail covering all breaches and remediation plans
+- **Regulatory-Ready Reporting**: Full documentation meeting all audit and regulatory requirements
+- **Integrated Compliance Management**: Single report covering detection, analysis, and remediation strategy
 
 **Key Features Highlighted**: 
-- Audit trail creation and formal reporting
-- Comprehensive incident documentation
-- Regulatory-ready compliance reporting
+- **Multi-Step Documentation Synthesis**: Integrates breach detection, policy analysis, and remediation planning
+- **Regulatory Compliance Reporting**: Audit-ready documentation with complete compliance workflow
+- **Comprehensive Audit Trail**: Full record of compliance assessment and response for regulatory review
 
 ### Scenario Wrap-up
 
@@ -678,68 +703,72 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Template Integration
 **User Input**: 
 ```
-"Format this report using our standard monthly client template."
+"Format the ESG Leaders portfolio performance from Step 1 using our standard monthly client template"
 ```
 
 **Expected Response**:
-- Report restructured following template format
-- Professional sections (Executive Summary, Performance, Holdings, Outlook)
-- Consistent branding and compliance language
-- Client-appropriate tone and structure
+- Report restructured following template format using the specific performance data from Step 1
+- Professional sections (Executive Summary, Performance, Holdings, Outlook) populated with ESG Leaders data
+- Consistent branding and compliance language applied to the Step 1 performance metrics
+- Client-appropriate tone and structure that incorporates the specific portfolio results
+- Template formatting that maintains the quantitative analysis from Step 1
 
 **Talking Points**:
-- Consistent branding and professional presentation across all client reports
-- Template-based formatting ensures quality and compliance standards
-- Scalable approach for multiple client reports
+- **Data-Template Integration**: Professional formatting applied to specific portfolio analysis from Step 1
+- **Performance-Driven Presentation**: Template structure enhances rather than replaces the analytical content
+- **Consistent Professional Standards**: Quality formatting while preserving analytical rigor
 
 **Key Features Highlighted**: 
-- Template-based formatting and professional presentation
-- Consistent branding and messaging across all client communications
-- Scalable report generation for multiple clients
+- **Content-Aware Formatting**: Template application that preserves and enhances Step 1 analytical content
+- **Data-Driven Presentation**: Professional formatting of specific portfolio performance and metrics
+- **Integrated Client Communication**: Seamless combination of analytics and professional presentation
 
 #### Step 3: Philosophy Integration
 **User Input**: 
 ```
-"Add our ESG investment philosophy and approach to this report."
+"Add our ESG investment philosophy to this templated report, specifically explaining how it connects to the performance results shown in Steps 1-2"
 ```
 
 **Expected Response**:
-- Integration of approved ESG messaging and philosophy
-- Alignment of performance narrative with investment approach
-- Strategic positioning and value proposition
-- Consistent brand voice and messaging
+- Integration of approved ESG messaging and philosophy that specifically addresses the portfolio performance from Step 1
+- Alignment of performance narrative with investment approach using the templated format from Step 2
+- Strategic positioning that explains how the philosophy drives the results shown in the report
+- Consistent brand voice that connects investment approach to actual performance outcomes
+- Philosophy sections that reference specific metrics and performance data from Steps 1-2
 
 **Talking Points**:
-- Seamless integration of firm's investment philosophy and approach
-- Consistent messaging that reinforces brand positioning
-- Alignment between performance results and investment strategy
+- **Performance-Philosophy Alignment**: ESG philosophy specifically connected to actual portfolio results
+- **Results-Driven Messaging**: Philosophy explanation that validates the performance outcomes
+- **Integrated Value Proposition**: Clear connection between investment approach and delivered results
 
 **Key Features Highlighted**: 
-- Philosophy integration and consistent messaging
-- Brand voice alignment across all client communications
-- Strategic positioning and value proposition reinforcement
+- **Performance-Driven Philosophy**: Investment approach explanation that directly relates to portfolio results
+- **Integrated Messaging**: Philosophy integration that builds on performance data and professional formatting
+- **Results Validation**: Philosophy positioning that supports and explains the performance outcomes
 
 #### Step 4: Compliance Review
 **User Input**: 
 ```
-"Ensure this report includes all required compliance disclosures and disclaimers."
+"Review this complete ESG Leaders report from Steps 1-3 and ensure it includes all required compliance disclosures, disclaimers, and regulatory language appropriate for the performance data and philosophy statements included"
 ```
 
 **Expected Response**:
-- Addition of mandatory regulatory disclosures
-- Risk warnings and performance disclaimers
-- Fiduciary language and limitations
-- Compliance-ready final document
+- Addition of mandatory regulatory disclosures specific to ESG Leaders portfolio performance from Step 1
+- Risk warnings and performance disclaimers that address the specific metrics and results shown
+- Fiduciary language and limitations appropriate for the ESG investment philosophy from Step 3
+- ESG-specific compliance language and disclaimers relevant to sustainable investing
+- Template-compliant disclaimer placement that works with the formatting from Step 2
+- Compliance-ready final document that integrates all elements from previous steps
 
 **Talking Points**:
-- Automated compliance checking ensures all regulatory requirements met
-- Risk management through comprehensive disclosures and disclaimers
-- Audit-ready documentation with complete compliance coverage
+- **Context-Aware Compliance**: Regulatory language specifically appropriate for ESG portfolio and performance data
+- **Integrated Compliance Framework**: Disclaimers and disclosures that address all report elements
+- **Complete Regulatory Coverage**: Full compliance review of performance, philosophy, and presentation
 
 **Key Features Highlighted**: 
-- Compliance integration and regulatory adherence
-- Automated disclosure and disclaimer inclusion
-- Risk management through comprehensive compliance coverage
+- **Content-Specific Compliance**: Regulatory requirements tailored to ESG portfolio performance and philosophy
+- **Integrated Regulatory Framework**: Compliance review that addresses all report components from Steps 1-3
+- **Complete Audit Readiness**: Final document ready for regulatory review with comprehensive compliance coverage
 
 ### Scenario Wrap-up
 
@@ -795,68 +824,71 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Factor Comparison Analysis
 **User Input**: 
 ```
-"Compare factor loadings between our Value and Growth portfolios."
+"For the stocks with improving momentum and quality factors from Step 1, compare their factor loadings against our current Value and Growth portfolios"
 ```
 
 **Expected Response**:
-- Side-by-side factor loading comparison table
-- Statistical significance of differences
-- Factor tilt analysis and style drift assessment
-- Risk-adjusted performance implications
+- Side-by-side factor loading comparison between Step 1 screened securities and current portfolio holdings
+- Statistical significance of differences between screened stocks and portfolio averages
+- Factor tilt analysis showing how Step 1 securities would impact portfolio factor exposure
+- Risk-adjusted performance implications of adding Step 1 securities to existing portfolios
+- Style drift assessment: would adding these securities maintain or shift portfolio style characteristics
 
 **Talking Points**:
-- Comprehensive factor analysis across multiple portfolios
-- Statistical assessment of style differences and consistency
-- Risk-adjusted performance attribution to factor exposures
+- **Targeted Factor Analysis**: Factor comparison specifically focused on Step 1 screened securities vs existing holdings
+- **Portfolio Impact Assessment**: Understanding how new securities would change factor exposures
+- **Style Consistency Evaluation**: Maintaining investment style while improving factor characteristics
 
 **Key Features Highlighted**: 
-- Portfolio factor analysis and style comparison
-- Statistical significance testing of factor differences
-- Risk-adjusted performance attribution
+- **Screening-Based Comparison**: Factor analysis that builds directly on Step 1 security screening results
+- **Portfolio Integration Analysis**: Assessment of how screened securities fit with existing factor exposures
+- **Style Impact Evaluation**: Understanding factor changes from incorporating Step 1 findings
 
 #### Step 3: Backtesting Analysis
 **User Input**: 
 ```
-"Backtest a low volatility strategy over the last 3 years vs MSCI ACWI benchmark."
+"Based on the factor analysis from Step 2, backtest a strategy using the best-performing factor combinations from our screened securities over the last 3 years"
 ```
 
 **Expected Response**:
-- Simulated strategy performance vs benchmark
-- Risk metrics (Sharpe ratio, maximum drawdown, volatility)
-- Factor attribution of outperformance/underperformance
-- Statistical analysis of results
+- Simulated strategy performance using Step 1 screened securities and Step 2 factor insights vs benchmark
+- Risk metrics (Sharpe ratio, maximum drawdown, volatility) for the factor-driven strategy
+- Factor attribution showing how the specific factors from Steps 1-2 drove performance
+- Performance comparison between the new strategy and existing Value/Growth portfolios from Step 2
+- Statistical analysis validating the factor improvement thesis from previous steps
 
 **Talking Points**:
-- Comprehensive backtesting with multiple risk and return metrics
-- Factor attribution analysis to understand performance drivers
-- Statistical validation of strategy effectiveness
+- **Factor-Driven Strategy Testing**: Backtesting specifically validates the factor screening and analysis from Steps 1-2
+- **Integrated Strategy Validation**: Testing the complete factor improvement thesis built through previous analysis
+- **Comparative Performance Assessment**: Understanding how the new approach compares to existing strategies
 
 **Key Features Highlighted**: 
-- Backtesting capabilities and performance attribution
-- Comprehensive risk analysis and statistical validation
-- Factor-based performance decomposition
+- **Multi-Step Strategy Validation**: Backtesting that tests the complete factor analysis workflow from Steps 1-2
+- **Factor-Based Performance Attribution**: Understanding how specific factors from previous steps drive returns
+- **Integrated Strategy Development**: Complete quantitative process from screening to factor analysis to backtesting
 
 #### Step 4: Fundamental Context Integration
 **User Input**: 
 ```
-"What fundamental themes support the performance of our top-performing low volatility stocks?"
+"For the best-performing securities from our backtested strategy in Step 3, what fundamental themes and research support their factor performance and validate our quantitative findings?"
 ```
 
 **Expected Response**:
-- Analysis of fundamental characteristics of top performers
-- Earnings trends and analyst sentiment for these securities
-- Thematic and sector drivers of performance
-- Integration of quantitative and qualitative insights
+- Analysis of fundamental characteristics of top-performing securities from the Step 3 backtest
+- Earnings trends and analyst sentiment specifically for securities that drove the strategy performance
+- Thematic and sector drivers that explain why the Step 1 factor screening and Step 2 analysis were successful
+- Research validation showing fundamental support for the quantitative factor improvements
+- Integration of the complete workflow: factor screening (Step 1) → factor analysis (Step 2) → performance validation (Step 3) → fundamental context (Step 4)
 
 **Talking Points**:
-- Integration of quantitative factor analysis with fundamental research
-- Validation of quantitative findings with qualitative insights
-- Comprehensive investment thesis combining multiple analytical approaches
+- **Complete Investment Validation**: Fundamental research validates the entire quantitative process from Steps 1-3
+- **Factor-Fundamental Integration**: Understanding why the factor approach worked from both quantitative and qualitative perspectives  
+- **Investment Thesis Completion**: Full investment case combining systematic factor analysis with fundamental validation
 
 **Key Features Highlighted**: 
-- Integration of quantitative analysis with fundamental research
-- Multi-source intelligence for comprehensive investment insights
-- Quantitative-qualitative synthesis for robust investment decisions
+- **End-to-End Integration**: Complete quantitative-to-qualitative workflow validation from screening to fundamental context
+- **Multi-Step Synthesis**: Fundamental analysis that validates and explains the quantitative findings from Steps 1-3
+- **Comprehensive Investment Process**: Complete systematic investment approach combining factor analysis, backtesting, and fundamental research
 
 ### Scenario Wrap-up
 

@@ -23,6 +23,9 @@ def validate_all_components(session: Session):
     # Run business scenario tests
     run_business_scenario_tests(session)
     
+    # Validate golden records
+    validate_golden_records(session)
+    
     print("  ✅ Component validation complete")
 
 
@@ -605,3 +608,96 @@ def generate_validation_report(session: Session):
         print(f"       {status_icon} {component}: {details['status']}")
     
     return report
+
+def validate_golden_records(session: Session):
+    """Validate that all golden records are correctly generated"""
+    print("    → Validating golden records...")
+    
+    try:
+        # Validate Sarah Johnson client record
+        sarah_client = session.sql(f"""
+            SELECT ClientID, FirstName, LastName, RiskTolerance, InvestmentHorizon 
+            FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT 
+            WHERE FirstName = 'Sarah' AND LastName = 'Johnson'
+        """).collect()
+        
+        if len(sarah_client) != 1:
+            print(f"      ❌ Sarah Johnson client record not found or duplicated (found {len(sarah_client)})")
+            return False
+            
+        sarah_record = sarah_client[0]
+        if sarah_record['RISKTOLERANCE'] != 'Conservative':
+            print(f"      ❌ Sarah's risk tolerance incorrect: {sarah_record['RISKTOLERANCE']} != Conservative")
+            return False
+            
+        print(f"      ✅ Sarah Johnson client record validated")
+        
+        # Validate portfolio allocations
+        portfolio_check = session.sql(f"""
+            SELECT s.PrimaryTicker, p.MarketValue_Base, p.PortfolioWeight
+            FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR p
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_SECURITY s ON p.SecurityID = s.SecurityID
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO po ON p.PortfolioID = po.PortfolioID  
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_ACCOUNT a ON po.AccountID = a.AccountID
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_CLIENT c ON a.ClientID = c.ClientID
+            WHERE c.FirstName = 'Sarah' AND c.LastName = 'Johnson'
+            ORDER BY p.MarketValue_Base DESC
+        """).collect()
+        
+        if not portfolio_check:
+            print(f"      ❌ No portfolio positions found for Sarah Johnson")
+            return False
+            
+        # Check for V and JPM holdings
+        tickers = [row['PRIMARYTICKER'] for row in portfolio_check]
+        if 'V' not in tickers:
+            print(f"      ❌ Visa (V) not found in Sarah's portfolio")
+            return False
+        if 'JPM' not in tickers:
+            print(f"      ❌ JPMorgan (JPM) not found in Sarah's portfolio")
+            return False
+            
+        # Check allocation percentages
+        v_allocation = next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'V'), 0)
+        jpm_allocation = next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'JPM'), 0)
+        
+        expected_v = config.GOLDEN_CLIENTS['sarah_johnson']['portfolio_allocations']['V']
+        expected_jpm = config.GOLDEN_CLIENTS['sarah_johnson']['portfolio_allocations']['JPM']
+        
+        if abs(v_allocation - expected_v) > 0.01:  # 1% tolerance
+            print(f"      ❌ V allocation incorrect: {v_allocation:.3f} != {expected_v:.3f}")
+            return False
+        if abs(jpm_allocation - expected_jpm) > 0.01:  # 1% tolerance
+            print(f"      ❌ JPM allocation incorrect: {jpm_allocation:.3f} != {expected_jpm:.3f}")
+            return False
+            
+        print(f"      ✅ Portfolio allocations validated (V: {v_allocation:.1%}, JPM: {jpm_allocation:.1%})")
+        
+        # Validate planning documents
+        education_plan = session.sql(f"""
+            SELECT DOCUMENT_TEXT FROM {config.DATABASE_NAME}.CURATED.PLANNING_CORPUS p
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_CLIENT c ON p.CLIENT_ID = c.ClientID
+            WHERE c.FirstName = 'Sarah' AND c.LastName = 'Johnson' 
+            AND p.PLAN_TYPE = 'Education Funding Plan'
+        """).collect()
+        
+        if not education_plan:
+            print(f"      ❌ Sarah's education funding plan not found")
+            return False
+            
+        plan_content = education_plan[0]['DOCUMENT_TEXT']
+        if 'Emily' not in plan_content:
+            print(f"      ❌ Emily not mentioned in education plan")
+            return False
+        if 'next month' not in plan_content:
+            print(f"      ❌ Timeline inconsistency in education plan (missing 'next month')")
+            return False
+            
+        print(f"      ✅ Education funding plan validated")
+        
+        print("    ✅ All golden records validation passed")
+        return True
+        
+    except Exception as e:
+        print(f"    ❌ Golden records validation failed: {e}")
+        return False

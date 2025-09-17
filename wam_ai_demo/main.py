@@ -9,7 +9,7 @@ import argparse
 from snowflake.snowpark import Session
 import config
 from src.setup import setup_database_and_schemas
-from src.generate_structured import generate_advisors, generate_clients, generate_issuers_and_securities, generate_portfolios_and_accounts, generate_simplified_positions, generate_market_data, create_watchlists
+from src.generate_structured import generate_managers, generate_advisors, generate_clients, generate_issuers_and_securities, generate_portfolios_and_accounts, generate_simplified_positions, generate_market_data, create_watchlists, generate_advisor_client_relationships, generate_advisor_roster, generate_advisor_summary_ttm
 from src.generate_unstructured import generate_unstructured_data, enhance_esg_content
 from src.create_semantic_views import create_semantic_views
 from src.create_search_services import create_search_services
@@ -82,6 +82,7 @@ def main():
             create_foundation_tables(session)
             
             print("  → Generating structured data...")
+            generate_managers(session)
             generate_advisors(session)
             generate_clients(session)
             generate_issuers_and_securities(session)
@@ -94,6 +95,12 @@ def main():
             # Generate watchlists (part of structured data)
             print("  → Creating watchlists...")
             create_watchlists(session)
+            
+            # Generate advisor benchmarking data (part of structured data)
+            print("  → Generating advisor benchmarking data...")
+            generate_advisor_client_relationships(session)
+            generate_advisor_roster(session)
+            generate_advisor_summary_ttm(session)
             
             # Generate unstructured data (communications, research, regulatory)
             print("  → Generating unstructured data...")

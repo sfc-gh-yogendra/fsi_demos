@@ -36,6 +36,12 @@ Centralized, parameterized configuration to enable deterministic rebuilds and ea
 - Golden tickers (easy to change)
   - `golden_tickers = ["AAPL","MSFT","NVDA","JPM","V","SAP"]`
 
+- Golden Records (demo consistency)
+  - `GOLDEN_CLIENTS = { "sarah_johnson": {...} }` - Controlled client attributes
+  - `GOLDEN_DOCUMENTS = { "planning": {...} }` - Pre-generated document paths
+  - `WATCHLIST_DEFINITIONS = { "Carbon Negative Leaders": {...} }` - Watchlist configurations
+  - `MANAGER_CONFIG = { "name": "Regional Manager" }` - Manager hierarchy
+
 - Real data integration
   - `use_real_assets_csv = true`
   - `real_assets_csv_path = './data/real_assets.csv'`

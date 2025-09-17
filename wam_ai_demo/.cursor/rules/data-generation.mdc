@@ -15,6 +15,59 @@ alwaysApply: true
 - Region mix: 80% US, 20% EU securities
 - Golden tickers: `AAPL, MSFT, NVDA, JPM, V, SAP`
 
+## Golden Records System
+Golden Records provide controlled data generation for demo consistency:
+
+### Configuration Pattern (config.py)
+```python
+GOLDEN_CLIENTS = {
+    "sarah_johnson": {
+        "first_name": "Sarah", "last_name": "Johnson",
+        "risk_tolerance": "Conservative", "investment_horizon": "Long-term",
+        "advisor_id": 1, "portfolio_allocations": {"V": 0.25, "JPM": 0.25}
+    }
+}
+
+GOLDEN_DOCUMENTS = {
+    "planning": {"education_funding_plan": "src/golden_records/planning/sarah_johnson_education_funding_plan.md"}
+}
+```
+
+### Handler Pattern (src/golden_records_handler.py)
+- `is_golden_client_record(client_data: dict) -> bool`: Detection logic
+- `apply_golden_client_overrides(client_data: dict) -> dict`: Apply controlled attributes
+- `generate_golden_portfolio_positions()`: Control portfolio allocations
+- `load_golden_document()` and `insert_golden_*_documents()`: Use pre-generated content
+
+### Integration Points
+- `src/generate_structured.py`: Apply golden client overrides and portfolio positions
+- `src/generate_unstructured.py`: Insert golden planning and research documents
+- `src/validate_components.py`: Validate golden records meet criteria
+
+## Advisor Benchmarking System
+Complete TTM performance analytics for leadership insights:
+
+### Data Model Extensions (managed in src/setup.py)
+- `DIM_MANAGER`: Regional manager hierarchy  
+- `DIM_ADVISOR`: Enhanced with ManagerID
+- `DIM_CLIENT`: Enhanced with departure tracking (EndDate, DepartureReason, DepartureNotes)
+- `FACT_ADVISOR_CLIENT_RELATIONSHIP`: Advisor-client relationship history
+- `ADVISOR_ROSTER`: Summary table for advisor details
+- `ADVISOR_SUMMARY_TTM`: Pre-calculated TTM performance metrics
+- `DEPARTURE_CORPUS`: Exit questionnaires and feedback
+
+### Generation Pattern (src/generate_structured.py)
+```python
+# Advisor benchmarking data generation order:
+generate_managers(session)
+generate_advisors(session)
+generate_clients(session)  # with golden record integration
+# ... core data generation ...
+generate_advisor_client_relationships(session)
+generate_advisor_roster(session)
+generate_advisor_summary_ttm(session)
+```
+
 ## Critical Implementation Rules
 
 ### IDENTITY Column Handling
@@ -60,15 +113,21 @@ else:
 # Data Generation Section (--scope 'all' or 'data')
 if args.scope in ['all', 'data']:
     # Core structured data
+    generate_managers(session)
     generate_advisors(session)
-    generate_clients(session)
+    generate_clients(session)  # includes golden record integration
     generate_issuers_and_securities(session)
     generate_portfolios_and_accounts(session)
-    generate_simplified_positions(session)
+    generate_simplified_positions(session)  # includes golden portfolio allocations
     generate_market_data(session)
     
     # ✅ ALWAYS CALL: Watchlists are part of structured data
     create_watchlists(session)
+    
+    # ✅ ALWAYS CALL: Advisor benchmarking data
+    generate_advisor_client_relationships(session)
+    generate_advisor_roster(session)
+    generate_advisor_summary_ttm(session)
 ```
 
 **Unstructured Data Functions** must be called in the **Data Generation** section:
