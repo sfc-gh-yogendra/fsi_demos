@@ -18,6 +18,7 @@ Complete documentation of the data architecture using 14,000+ authentic securiti
 ✅ **Transaction-Based Holdings**: 27,000+ holdings using real securities  
 ✅ **Synthetic Market Data**: 4M+ records with realistic volatility patterns  
 ✅ **AI Components**: All semantic views and search services operational at scale  
+✅ **Implementation Planning**: Trading costs, liquidity, risk limits, and execution data for realistic portfolio management  
 
 ## Enhanced Data Model (Industry Standard)
 
@@ -37,11 +38,103 @@ FACT_TRANSACTION           -- Canonical transaction log with 12 months history
 FACT_POSITION_DAILY_ABOR   -- ABOR positions built from transactions
 FACT_MARKETDATA_TIMESERIES -- Synthetic market data with realistic volatility patterns
 
--- Additional analytics tables
-FA_FUNDAMENTALS           -- Quarterly financial metrics (placeholder)
-ESG_SCORES               -- Monthly ESG ratings (placeholder)
-FACTOR_EXPOSURES         -- Monthly factor scores (placeholder)
-BENCHMARK_HOLDINGS       -- Benchmark constituent positions (placeholder)
+-- Analytics and performance tables
+FACT_FUNDAMENTALS          -- Quarterly financial metrics with earnings data
+FACT_ESTIMATES             -- Analyst estimates and consensus forecasts
+FACT_ESG_SCORES           -- Monthly ESG ratings with sector differentiation
+FACT_FACTOR_EXPOSURES     -- Monthly factor scores (Value, Growth, Quality, etc.)
+FACT_BENCHMARK_HOLDINGS   -- Benchmark constituent positions
+
+-- Implementation planning tables (NEW)
+FACT_TRANSACTION_COSTS    -- Trading costs, bid-ask spreads, market impact data
+FACT_PORTFOLIO_LIQUIDITY  -- Cash positions, cash flows, liquidity scores
+FACT_RISK_LIMITS          -- Risk budgets, tracking error limits, concentration limits
+FACT_TRADING_CALENDAR     -- Earnings dates, blackout periods, market events
+FACT_TAX_IMPLICATIONS     -- Cost basis, unrealized gains, tax loss harvesting
+DIM_CLIENT_MANDATES       -- Client approval thresholds, sector ranges, ESG requirements
+```
+
+## Implementation Planning Data Model (NEW)
+
+### Portfolio Implementation Tables
+The enhanced data model includes comprehensive implementation planning data to support realistic trading execution, risk management, and operational workflows:
+
+#### Transaction Cost Analysis
+```sql
+FACT_TRANSACTION_COSTS (
+    SecurityID              BIGINT,
+    COST_DATE              DATE,
+    BID_ASK_SPREAD_BPS     DECIMAL(18,4),    -- Bid-ask spread in basis points
+    AVG_DAILY_VOLUME_M     DECIMAL(18,4),    -- Average daily volume in millions
+    MARKET_IMPACT_BPS_PER_1M DECIMAL(18,4),  -- Market impact per $1M traded
+    COMMISSION_BPS         DECIMAL(18,4),    -- Commission rate in basis points
+    SETTLEMENT_DAYS        INTEGER           -- Settlement period
+)
+```
+
+#### Liquidity & Cash Management
+```sql
+FACT_PORTFOLIO_LIQUIDITY (
+    PortfolioID            BIGINT,
+    LIQUIDITY_DATE         DATE,
+    CASH_POSITION_USD      DECIMAL(38,10),   -- Available cash position
+    NET_CASHFLOW_30D_USD   DECIMAL(38,10),   -- Expected 30-day cash flow
+    PORTFOLIO_LIQUIDITY_SCORE INTEGER,       -- Liquidity rating (1-10)
+    REBALANCING_FREQUENCY_DAYS INTEGER       -- Rebalancing frequency
+)
+```
+
+#### Risk Budget Management
+```sql
+FACT_RISK_LIMITS (
+    PortfolioID            BIGINT,
+    LIMITS_DATE            DATE,
+    TRACKING_ERROR_LIMIT_PCT DECIMAL(18,8),  -- Maximum tracking error
+    CURRENT_TRACKING_ERROR_PCT DECIMAL(18,8), -- Current tracking error
+    MAX_SINGLE_POSITION_PCT DECIMAL(18,8),   -- Maximum position size
+    MAX_SECTOR_CONCENTRATION_PCT DECIMAL(18,8), -- Maximum sector allocation
+    RISK_BUDGET_UTILIZATION_PCT DECIMAL(18,8), -- Risk budget used
+    VAR_LIMIT_1DAY_PCT     DECIMAL(18,8)     -- 1-day VaR limit
+)
+```
+
+#### Trading Calendar & Events
+```sql
+FACT_TRADING_CALENDAR (
+    SecurityID             BIGINT,
+    EVENT_DATE             DATE,
+    EVENT_TYPE             VARCHAR(50),      -- EARNINGS_ANNOUNCEMENT, etc.
+    IS_BLACKOUT_PERIOD     BOOLEAN,          -- Trading restricted
+    EXPECTED_VIX_LEVEL     DECIMAL(18,4),    -- Market volatility forecast
+    IS_OPTIONS_EXPIRATION  BOOLEAN           -- Options expiration indicator
+)
+```
+
+#### Tax Optimization
+```sql
+FACT_TAX_IMPLICATIONS (
+    PortfolioID            BIGINT,
+    SecurityID             BIGINT,
+    TAX_DATE               DATE,
+    COST_BASIS_USD         DECIMAL(38,10),   -- Tax cost basis
+    UNREALIZED_GAIN_LOSS_USD DECIMAL(38,10), -- Unrealized P&L
+    HOLDING_PERIOD_DAYS    INTEGER,          -- Holding period
+    TAX_TREATMENT          VARCHAR(20),      -- LONG_TERM/SHORT_TERM
+    TAX_LOSS_HARVEST_OPPORTUNITY BOOLEAN,    -- Loss harvesting flag
+    TAX_RATE               DECIMAL(18,8)     -- Applicable tax rate
+)
+```
+
+#### Client Mandates & Compliance
+```sql
+DIM_CLIENT_MANDATES (
+    PortfolioID            BIGINT,
+    POSITION_CHANGE_APPROVAL_THRESHOLD_PCT DECIMAL(18,8), -- Approval threshold
+    SECTOR_ALLOCATION_RANGES_JSON VARCHAR(1000),          -- Sector limits JSON
+    MIN_ESG_RATING         VARCHAR(10),                   -- ESG requirements
+    EXCLUSION_SECTORS_JSON VARCHAR(1000),                 -- Exclusion list JSON
+    MAX_REBALANCING_FREQUENCY_DAYS INTEGER                -- Rebalancing limits
+)
 ```
 
 ### Enhanced Document Integration (CURATED Schema)

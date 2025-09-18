@@ -42,24 +42,71 @@ python python/main.py --extract-real-market-data
 ```
 
 ### Build Validation
+
+#### Core Components
 ```sql
--- 1. Verify semantic view
+-- 1. Verify core semantic view
 DESCRIBE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW;
 
--- 2. Test semantic view functionality  
+-- 2. Verify implementation semantic view (NEW)
+DESCRIBE SEMANTIC VIEW SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW;
+
+-- 3. Test core semantic view functionality  
 SELECT * FROM SEMANTIC_VIEW(
     SAM_DEMO.AI.SAM_ANALYST_VIEW
     METRICS TOTAL_MARKET_VALUE
     DIMENSIONS PORTFOLIONAME
 ) LIMIT 5;
 
--- 3. Test search services
+-- 4. Test implementation semantic view functionality (NEW)
+SELECT * FROM SEMANTIC_VIEW(
+    SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW
+    METRICS TOTAL_CASH_POSITION, AVG_MARKET_IMPACT
+    DIMENSIONS PortfolioName, Ticker
+) LIMIT 5;
+
+#### Implementation Planning Validation (NEW)
+```sql
+-- 1. Verify transaction cost data
+SELECT COUNT(*) as transaction_cost_records,
+       AVG(BID_ASK_SPREAD_BPS) as avg_spread,
+       AVG(MARKET_IMPACT_BPS_PER_1M) as avg_impact
+FROM SAM_DEMO.CURATED.FACT_TRANSACTION_COSTS;
+
+-- 2. Verify liquidity data
+SELECT COUNT(*) as liquidity_records,
+       AVG(CASH_POSITION_USD) as avg_cash,
+       AVG(PORTFOLIO_LIQUIDITY_SCORE) as avg_liquidity_score
+FROM SAM_DEMO.CURATED.FACT_PORTFOLIO_LIQUIDITY;
+
+-- 3. Verify risk limits data
+SELECT COUNT(*) as risk_limit_records,
+       AVG(TRACKING_ERROR_LIMIT_PCT) as avg_te_limit,
+       AVG(RISK_BUDGET_UTILIZATION_PCT) as avg_risk_utilization
+FROM SAM_DEMO.CURATED.FACT_RISK_LIMITS;
+
+-- 4. Verify trading calendar data
+SELECT COUNT(*) as calendar_records,
+       COUNT(CASE WHEN IS_BLACKOUT_PERIOD THEN 1 END) as blackout_days,
+       AVG(EXPECTED_VIX_LEVEL) as avg_vix_forecast
+FROM SAM_DEMO.CURATED.FACT_TRADING_CALENDAR;
+
+-- 5. Verify tax implications data
+SELECT COUNT(*) as tax_records,
+       SUM(UNREALIZED_GAIN_LOSS_USD) as total_unrealized_pnl,
+       COUNT(CASE WHEN TAX_LOSS_HARVEST_OPPORTUNITY THEN 1 END) as harvest_opportunities
+FROM SAM_DEMO.CURATED.FACT_TAX_IMPLICATIONS;
+```
+
+#### Core Components (Continued)
+```sql
+-- 5. Test search services
 SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
     'SAM_DEMO.AI.SAM_BROKER_RESEARCH',
     '{"query": "technology investment", "limit": 2}'
 );
 
--- 4. Verify data volumes
+-- 6. Verify data volumes (including implementation tables)
 SELECT 'ABOR Holdings' as table_name, COUNT(*) as record_count FROM SAM_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
 UNION ALL
 SELECT 'Broker Research', COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS
@@ -68,7 +115,17 @@ SELECT 'Securities', COUNT(*) FROM SAM_DEMO.CURATED.DIM_SECURITY
 UNION ALL
 SELECT 'Market Data', COUNT(*) FROM SAM_DEMO.CURATED.FACT_MARKETDATA_TIMESERIES
 UNION ALL
-SELECT 'Transactions', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TRANSACTION;
+SELECT 'Transactions', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TRANSACTION
+UNION ALL
+SELECT 'Transaction Costs (NEW)', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TRANSACTION_COSTS
+UNION ALL
+SELECT 'Portfolio Liquidity (NEW)', COUNT(*) FROM SAM_DEMO.CURATED.FACT_PORTFOLIO_LIQUIDITY
+UNION ALL
+SELECT 'Risk Limits (NEW)', COUNT(*) FROM SAM_DEMO.CURATED.FACT_RISK_LIMITS
+UNION ALL
+SELECT 'Trading Calendar (NEW)', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TRADING_CALENDAR
+UNION ALL
+SELECT 'Tax Implications (NEW)', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TAX_IMPLICATIONS;
 
 -- 5. Check real market data integration (if enabled)
 SELECT 
@@ -125,6 +182,9 @@ Copy the Planning and Response instructions from `docs/agents_setup.md`
 - [ ] Generated documents contain authentic financial content
 - [ ] Search services return relevant results for investment queries
 - [ ] Agent responds appropriately to test queries from `docs/demo_scenarios.md`
+- [ ] Implementation planning data shows realistic trading costs and risk limits (NEW)
+- [ ] Portfolio Copilot provides detailed execution plans with specific dollar amounts (NEW)
+- [ ] Implementation semantic view returns trading costs, liquidity, and tax data (NEW)
 
 ## Troubleshooting Guide
 
@@ -151,9 +211,10 @@ Copy the Planning and Response instructions from `docs/agents_setup.md`
 - Test individual components before agent configuration
 
 ### Performance Notes
-- **Build Time**: ~10-15 minutes for complete portfolio_copilot scenario
-- **Data Volume**: 6.5M structured records + 2,800 generated documents
-- **Warehouse**: Uses warehouse from connection profile (recommend Medium or larger)
+- **Build Time**: ~12-18 minutes for complete portfolio_copilot scenario (includes implementation data)
+- **Data Volume**: 6.5M structured records + 2,800 generated documents + implementation planning tables
+- **New Tables**: 6 additional implementation tables (transaction costs, liquidity, risk limits, etc.)
+- **Warehouse**: Uses warehouse from connection profile (recommend Medium or larger for enhanced data volume)
 
 ### Verified Environment
 - ✅ **Snowflake Version**: 9.25.1

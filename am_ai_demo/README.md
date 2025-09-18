@@ -78,7 +78,7 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 
 | Scenario | Agent | Implementation Status | Key Capabilities |
 |----------|-------|----------------------|------------------|
-| **Portfolio Insights** | `portfolio_copilot` | **✅ FULLY IMPLEMENTED** | Holdings analysis, issuer-level exposure, benchmark comparison |
+| **Portfolio Insights** | `portfolio_copilot` | **✅ FULLY IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets |
 | **Research Intelligence** | `research_copilot` | **✅ FULLY IMPLEMENTED** | Document research and analysis across broker reports and earnings |
 | **Thematic Analysis** | `thematic_macro_advisor` | **✅ FULLY IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
 | **ESG Monitoring** | `esg_guardian` | **🔄 REQUIRES NEW DATA** | Controversy scanning, policy compliance, engagement tracking |
@@ -163,11 +163,12 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 - **Global Coverage**: Proper geographic distribution (55% US, 30% EU, 15% APAC/EM)
 
 ### 🤖 **Enhanced AI Components**
-- **Semantic View**: Multi-table analytics with issuer hierarchy support
+- **Semantic Views**: Multi-table analytics with issuer hierarchy support + implementation planning
 - **Search Services**: Enhanced with SecurityID/IssuerID attributes for stable document linkage
-- **Intelligent Agents**: 7 role-specific agents with enhanced capabilities
+- **Intelligent Agents**: 7 role-specific agents with professional portfolio management capabilities
+- **Implementation Planning**: Trading costs, liquidity analysis, risk budgets, and execution planning
 - **Dedicated Warehouses**: `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH`
-- **Industry-Standard Architecture**: Professional asset management data model
+- **Industry-Standard Architecture**: Complete professional asset management data model
 
 ### 📊 **Investment Themes**
 - **On-Device AI**: Semiconductor and software companies
