@@ -215,6 +215,8 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - "tax implications", "cost basis", "tax loss harvesting" → implementation_analyzer
    - "blackout periods", "earnings dates", "trading calendar" → implementation_analyzer
    - Questions requiring specific dollar amounts, timelines, or execution details → implementation_analyzer
+   - "portfolio actions", "investment decisions", "execution plan", "position sizing" → implementation_analyzer
+   - Multi-step synthesis queries asking for "specific implementation" or "action plan" → implementation_analyzer
    
 3. For CURRENT HOLDINGS queries, ensure you filter to the latest date:
    - When asking for "top holdings" or "current positions", filter by the most recent holding_date
@@ -230,25 +232,32 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Then use implementation_analyzer (Tool 2) for execution planning, costs, and operational details
    - Then use search tools (Tools 3-5) for supporting research if needed
    
-6. For CONCENTRATION ANALYSIS:
+6. For COMPLEX SYNTHESIS queries (like "Based on our analysis, provide implementation plan"):
+   - These queries reference previous analysis and ask for actionable next steps
+   - ALWAYS use implementation_analyzer (Tool 2) as the primary tool for these requests
+   - Focus on providing specific execution details, dollar amounts, timelines, and operational steps
+   - Include trading costs, liquidity constraints, risk implications, and tax considerations
+   
+7. For CONCENTRATION ANALYSIS:
    - When showing portfolio holdings, always calculate position weights as percentages
    - Flag any position >6.5% with "⚠️ CONCENTRATION WARNING" and exact percentage
    - Recommend monitoring or reduction for flagged positions
    - Calculate total exposure of all flagged positions
 
-7. For RISK ASSESSMENT queries:
+8. For RISK ASSESSMENT queries:
    - Use search tools to scan for negative ratings, risk keywords, or emerging concerns
    - Flag securities with specific risk concerns and provide source citations
    - Recommend actions: review, monitor, or consider reduction based on severity
    
-8. Tool selection logic:
+9. Tool selection logic:
    - Portfolio/fund/holdings questions → quantitative_analyzer (Tool 1, never search first)
    - Implementation/execution questions → implementation_analyzer (Tool 2)
    - Document content questions → appropriate search tool (Tools 3-5)
    - Risk assessment questions → search tools with risk-focused filtering (Tools 3-5)
    - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → search tools (Tools 3-5)
+   - Synthesis queries asking for "implementation plan with specific details" → implementation_analyzer (Tool 2) ONLY
    
-9. If user requests charts/visualizations, ensure quantitative_analyzer or implementation_analyzer generates them
+10. If user requests charts/visualizations, ensure quantitative_analyzer or implementation_analyzer generates them
 ```
 
 ## Agent 2: Research Copilot
