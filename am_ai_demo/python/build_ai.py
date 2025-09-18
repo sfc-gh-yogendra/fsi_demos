@@ -74,7 +74,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
 		
 		-- Security dimensions  
 		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('company','security_name','description') COMMENT='Security description or company name',
-		SECURITIES.PRIMARYTICKER AS Ticker WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Primary trading symbol',
+		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Primary trading symbol',
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('instrument_type','security_type','asset_class') COMMENT='Asset class: Equity, Corporate Bond, ETF',
 		
 		-- Issuer dimensions (for enhanced analysis)
@@ -164,7 +164,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_RESEARCH_VIEW
 	)
 	DIMENSIONS (
 		-- Security dimensions  
-		SECURITIES.PRIMARYTICKER AS Ticker WITH SYNONYMS=('ticker','symbol','ticker_symbol') COMMENT='Trading ticker symbol',
+		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('ticker','symbol','ticker_symbol') COMMENT='Trading ticker symbol',
 		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('company','name','security_name') COMMENT='Company name',
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('type','security_type','asset_class') COMMENT='Asset class',
 		
@@ -351,11 +351,11 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 			COMMENT='Security reference data',
 		TRANSACTION_COSTS AS {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION_COSTS
 			PRIMARY KEY (SECURITYID, COST_DATE)
-			WITH SYNONYMS=('trading_costs','execution_costs','market_impact','transaction_costs')
+			WITH SYNONYMS=('trading_costs','execution_costs','cost_data','transaction_costs')
 			COMMENT='Transaction costs and market microstructure data',
 		PORTFOLIO_LIQUIDITY AS {config.DATABASE_NAME}.CURATED.FACT_PORTFOLIO_LIQUIDITY
 			PRIMARY KEY (PORTFOLIOID, LIQUIDITY_DATE)
-			WITH SYNONYMS=('cash_flow','liquidity','cash_position','portfolio_liquidity')
+			WITH SYNONYMS=('liquidity_info','liquidity','cash_position','liquidity_data')
 			COMMENT='Portfolio cash and liquidity information',
 		RISK_LIMITS AS {config.DATABASE_NAME}.CURATED.FACT_RISK_LIMITS
 			PRIMARY KEY (PORTFOLIOID, LIMITS_DATE)
@@ -367,11 +367,11 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 			COMMENT='Trading calendar with blackout periods and events',
 		CLIENT_MANDATES AS {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES
 			PRIMARY KEY (PORTFOLIOID)
-			WITH SYNONYMS=('mandates','approvals','client_rules','client_mandates')
+			WITH SYNONYMS=('client_constraints','approvals','client_rules','client_mandates')
 			COMMENT='Client mandate requirements and approval thresholds',
 		TAX_IMPLICATIONS AS {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS
 			PRIMARY KEY (PORTFOLIOID, SECURITYID, TAX_DATE)
-			WITH SYNONYMS=('tax_data','cost_basis','gains_losses','tax_implications')
+			WITH SYNONYMS=('tax_data','tax_records','gains_losses','tax_implications')
 			COMMENT='Tax implications and cost basis data'
 	)
 	RELATIONSHIPS (
@@ -382,16 +382,17 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 		RISK_LIMITS_TO_PORTFOLIOS AS RISK_LIMITS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
 		TRADING_CALENDAR_TO_SECURITIES AS TRADING_CALENDAR(SECURITYID) REFERENCES SECURITIES(SECURITYID),
 		CLIENT_MANDATES_TO_PORTFOLIOS AS CLIENT_MANDATES(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
-		TAX_IMPLICATIONS_TO_HOLDINGS AS TAX_IMPLICATIONS(PORTFOLIOID, SECURITYID) REFERENCES HOLDINGS(PORTFOLIOID, SECURITYID)
+		TAX_IMPLICATIONS_TO_PORTFOLIOS AS TAX_IMPLICATIONS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		TAX_IMPLICATIONS_TO_SECURITIES AS TAX_IMPLICATIONS(SECURITYID) REFERENCES SECURITIES(SECURITYID)
 	)
 	DIMENSIONS (
 		-- Portfolio dimensions
-		PORTFOLIOS.PortfolioName AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio name',
-		PORTFOLIOS.Strategy AS STRATEGY WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy',
+		PORTFOLIOS.PORTFOLIONAME AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio name',
+		PORTFOLIOS.STRATEGY AS STRATEGY WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy',
 		
 		-- Security dimensions  
-		SECURITIES.Description AS DESCRIPTION WITH SYNONYMS=('security_name','security_description','name') COMMENT='Security description',
-		SECURITIES.Ticker AS PRIMARYTICKER WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Trading ticker symbol',
+		SECURITIES.DESCRIPTION AS DESCRIPTION WITH SYNONYMS=('security_name','security_description','name') COMMENT='Security description',
+		SECURITIES.TICKER AS TICKER WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Trading ticker symbol',
 		
 		-- Trading calendar dimensions
 		TRADING_CALENDAR.EventType AS EVENT_TYPE WITH SYNONYMS=('event','calendar_event','trading_event') COMMENT='Trading calendar event type',
