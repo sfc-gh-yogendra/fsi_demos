@@ -93,7 +93,7 @@ def validate_agent_data_readiness(session: Session):
 Agent Name: {agent_name}
 Display Name: {Agent Display Name}
 Description: {Business context and capabilities}
-Orchestration Model: Claude 4
+Response Instructions: {Tone, format, and output guidelines}
 
 Tools:
   - {analyst_tool_1} (Cortex Analyst)              # e.g., quantitative_analyzer
@@ -101,8 +101,8 @@ Tools:
   - search_{document_type_1} (Cortex Search)       # e.g., search_broker_research
   - search_{document_type_2} (Cortex Search)       # e.g., search_earnings_transcripts
 
+Orchestration Model: Claude 4
 Planning Instructions: {Tool selection logic for multiple analysts and document search}
-Response Instructions: {Tone, format, and output guidelines}
 ```
 
 **Multiple Cortex Analyst Agent (Pure Analytics):**
@@ -110,15 +110,15 @@ Response Instructions: {Tone, format, and output guidelines}
 Agent Name: {agent_name}
 Display Name: {Agent Display Name}
 Description: {Comprehensive quantitative analysis across multiple domains}
-Orchestration Model: Claude 4
+Response Instructions: {Data-focused tone and formatting guidelines}
 
 Tools:
   - {analyst_tool_1} (Cortex Analyst)              # e.g., portfolio_analyzer
   - {analyst_tool_2} (Cortex Analyst)              # e.g., risk_analyzer
   - {analyst_tool_3} (Cortex Analyst)              # e.g., performance_analyzer
 
+Orchestration Model: Claude 4
 Planning Instructions: {Logic for selecting appropriate analyst tool based on query type}
-Response Instructions: {Data-focused tone and formatting guidelines}
 ```
 
 **Single Cortex Analyst Agent (Focused Analytics):**
@@ -126,13 +126,13 @@ Response Instructions: {Data-focused tone and formatting guidelines}
 Agent Name: {agent_name}
 Display Name: {Agent Display Name}
 Description: {Specific analytical domain focus}
-Orchestration Model: Claude 4
+Response Instructions: {Domain-focused tone and formatting guidelines}
 
 Tools:
   - {analyst_tool_name} (Cortex Analyst)           # e.g., quantitative_analyzer, risk_analyzer
 
+Orchestration Model: Claude 4
 Planning Instructions: {Logic for single-domain quantitative analysis}
-Response Instructions: {Domain-focused tone and formatting guidelines}
 ```
 
 **Cortex Search Only Agent (Document Research):**
@@ -140,14 +140,14 @@ Response Instructions: {Domain-focused tone and formatting guidelines}
 Agent Name: {agent_name}
 Display Name: {Agent Display Name}
 Description: {Document search and qualitative research capabilities}
-Orchestration Model: Claude 4
+Response Instructions: {Research-focused tone with proper citations}
 
 Tools:
   - search_{document_type_1} (Cortex Search)       # e.g., search_policies
   - search_{document_type_2} (Cortex Search)       # e.g., search_engagement_notes
 
+Orchestration Model: Claude 4
 Planning Instructions: {Logic for document search and content synthesis}
-Response Instructions: {Research-focused tone with proper citations}
 ```
 
 ### 2.2 Tool Configuration Patterns
@@ -190,6 +190,8 @@ Agent Name: portfolio_copilot
 Display Name: Portfolio Co-Pilot
 Description: Expert AI assistant for portfolio managers providing instant access to portfolio analytics, holdings analysis, benchmark comparisons, and supporting research. Helps portfolio managers make informed investment decisions by combining quantitative portfolio data with qualitative market intelligence.
 
+Response Instructions: Professional, data-driven tone with concentration flagging and UK English terminology
+
 Tools:
   1. quantitative_analyzer (Cortex Analyst)
      - Semantic View: SAM_DEMO.AI.SAM_ANALYST_VIEW
@@ -212,6 +214,9 @@ Tools:
      - ID Column: DOCUMENT_ID
      - Title Column: DOCUMENT_TITLE
      - Description: "Search company press releases for corporate developments and announcements"
+
+Orchestration Model: Claude 4
+Planning Instructions: Use quantitative_analyzer for portfolio data, search tools for document content, flag concentrations >6.5%
 ```
 
 ## Step 3: Agent Instructions

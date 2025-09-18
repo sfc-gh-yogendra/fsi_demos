@@ -167,7 +167,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 10. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -272,7 +272,7 @@ Expert research assistant specializing in document analysis, investment research
 8. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: financial_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -347,7 +347,7 @@ Expert thematic investment strategist specializing in macro-economic trends, sec
 8. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -423,7 +423,7 @@ Expert AI assistant for ESG officers and risk managers focused on sustainability
 9. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -499,7 +499,7 @@ Expert AI assistant for compliance officers focused on investment mandate monito
 10. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -584,7 +584,7 @@ Expert AI assistant for client relationship managers and sales professionals foc
 10. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -659,7 +659,7 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
 8. Use UK English spelling and terminology
 ```
 
-### Tool Configurations:
+### Tools:
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
