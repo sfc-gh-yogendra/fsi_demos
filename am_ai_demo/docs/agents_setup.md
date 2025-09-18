@@ -174,31 +174,31 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Semantic View**: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
 - **Description**: "Use this tool for PORTFOLIO-FOCUSED quantitative analysis including holdings analysis, portfolio weights, sector allocations, concentration checks, and benchmark comparisons. It provides portfolio-level metrics, position analysis, and investment allocation insights. Use for portfolio management questions about fund composition, exposures, and risk monitoring."
 
-#### Tool 2: search_broker_research (Cortex Search)
+#### Tool 2: implementation_analyzer (Cortex Analyst)
+- **Type**: Cortex Analyst
+- **Semantic View**: `SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW`
+- **Description**: "Use this tool for IMPLEMENTATION PLANNING including trading costs, market impact analysis, liquidity assessment, risk budget utilization, tax implications, and execution timing. Provides detailed implementation metrics, transaction costs, cash flow analysis, and trading calendar information. Use for portfolio implementation questions about execution planning, trading strategies, compliance constraints, and operational details."
+
+#### Tool 3: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_BROKER_RESEARCH`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search broker research reports and analyst notes for qualitative insights, investment opinions, price targets, and market commentary."
 
-#### Tool 3: search_earnings_transcripts (Cortex Search)
+#### Tool 4: search_earnings_transcripts (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_EARNINGS_TRANSCRIPTS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search earnings call transcripts and management commentary for company guidance, strategic updates, and qualitative business insights."
 
-#### Tool 4: search_press_releases (Cortex Search)
+#### Tool 5: search_press_releases (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_PRESS_RELEASES`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search company press releases for product announcements, corporate developments, and official company communications."
-
-#### Tool 5: implementation_analyzer (Cortex Analyst)
-- **Type**: Cortex Analyst
-- **Semantic View**: `SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW`
-- **Description**: "Use this tool for IMPLEMENTATION PLANNING including trading costs, market impact analysis, liquidity assessment, risk budget utilization, tax implications, and execution timing. Provides detailed implementation metrics, transaction costs, cash flow analysis, and trading calendar information. Use for portfolio implementation questions about execution planning, trading strategies, compliance constraints, and operational details."
 
 ### Orchestration Model: Claude 4
 
@@ -208,7 +208,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - "top holdings", "fund holdings", "portfolio exposure", "fund performance", "sector allocation" → ALWAYS use quantitative_analyzer FIRST
    - "holdings by market value", "largest positions", "fund composition", "concentration" → ALWAYS use quantitative_analyzer FIRST
    
-2. For IMPLEMENTATION PLANNING queries, use implementation_analyzer:
+2. For IMPLEMENTATION PLANNING queries, use implementation_analyzer (Tool 2):
    - "implementation plan", "trading costs", "execution strategy", "market impact" → implementation_analyzer
    - "cash position", "liquidity", "settlement", "trading timeline" → implementation_analyzer
    - "risk budget", "tracking error", "position limits", "compliance constraints" → implementation_analyzer
@@ -226,9 +226,9 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - "what does research say about...", "find reports about..." → search tools
    
 5. For mixed questions requiring IMPLEMENTATION DETAILS:
-   - Start with quantitative_analyzer for basic holdings data
-   - Then use implementation_analyzer for execution planning, costs, and operational details
-   - Then use search tools for supporting research if needed
+   - Start with quantitative_analyzer (Tool 1) for basic holdings data
+   - Then use implementation_analyzer (Tool 2) for execution planning, costs, and operational details
+   - Then use search tools (Tools 3-5) for supporting research if needed
    
 6. For CONCENTRATION ANALYSIS:
    - When showing portfolio holdings, always calculate position weights as percentages
@@ -242,11 +242,11 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Recommend actions: review, monitor, or consider reduction based on severity
    
 8. Tool selection logic:
-   - Portfolio/fund/holdings questions → quantitative_analyzer (never search first)
-   - Implementation/execution questions → implementation_analyzer
-   - Document content questions → appropriate search tool
-   - Risk assessment questions → search tools with risk-focused filtering
-   - Mixed questions → quantitative_analyzer → implementation_analyzer → search tools
+   - Portfolio/fund/holdings questions → quantitative_analyzer (Tool 1, never search first)
+   - Implementation/execution questions → implementation_analyzer (Tool 2)
+   - Document content questions → appropriate search tool (Tools 3-5)
+   - Risk assessment questions → search tools with risk-focused filtering (Tools 3-5)
+   - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → search tools (Tools 3-5)
    
 9. If user requests charts/visualizations, ensure quantitative_analyzer or implementation_analyzer generates them
 ```

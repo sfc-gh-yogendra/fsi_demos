@@ -50,7 +50,7 @@ verify_tables_for_semantic_view(session, required_tables)
 ```
 
 ### 1.2 Plan Your Synonyms (CRITICAL)
-Plan all synonyms upfront to avoid duplicates:
+Plan all synonyms upfront to avoid duplicates. **MANDATORY**: Validate synonym uniqueness before creating semantic view:
 
 ```python
 def validate_synonym_uniqueness(dimensions_and_metrics: dict):
@@ -79,6 +79,15 @@ planned_synonyms = {
     'TOTAL_MARKET_VALUE': ['exposure', 'aum', 'market_value']
 }
 validate_synonym_uniqueness(planned_synonyms)
+
+# CRITICAL: Check for conflicts across ALL tables, dimensions, and metrics
+# Common conflicts to avoid:
+# - 'company' vs 'company_name' vs 'company_description'
+# - 'weight' vs 'weight_percent' 
+# - 'position' vs 'position_value' vs 'position_count'
+# - 'exposure' across different contexts
+# - 'risk' in different metrics
+# - 'date' across different date dimensions
 ```
 
 ## Step 2: Semantic View Creation
@@ -104,6 +113,11 @@ Follow these exact patterns for ALL sections:
 <table_alias>.<semantic_dimension_name> AS <database_column_name> WITH SYNONYMS=('synonym1','synonym2') COMMENT='Description'
 ```
 
+**CRITICAL**: `<database_column_name>` must be the EXACT column name from the physical table (case-sensitive).
+
+**SYNONYM UNIQUENESS RULE (MANDATORY):**
+Each synonym can only be used ONCE across ALL dimensions and metrics in a semantic view. Duplicate synonyms will cause compilation errors.
+
 **METRICS Section:**
 ```sql
 <table_alias>.<metric_name> AS <aggregation_function> WITH SYNONYMS=('synonym1','synonym2') COMMENT='Description'
@@ -117,8 +131,8 @@ HOLDINGS AS SAM_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
 -- ✅ CORRECT relationship declaration
 HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID)
 
--- ✅ CORRECT dimension (NO PUBLIC keyword)
-PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('fund_name','strategy_name')
+-- ✅ CORRECT dimension (NO PUBLIC keyword) - semantic_name AS database_column
+PORTFOLIOS.PortfolioName AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name')
 
 -- ✅ CORRECT metric (NO PUBLIC keyword)  
 HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MarketValue_Base) WITH SYNONYMS=('exposure','aum')
@@ -132,9 +146,13 @@ PUBLIC SECURITIES.COMPANY_NAME AS securities.COMPANY_NAME
 -- ❌ WRONG metric format with table.alias
 PUBLIC HOLDINGS.TOTAL_MARKET_VALUE AS holdings.MARKET_VALUE
 
--- ❌ DUPLICATE synonyms across dimensions
-SECURITIES: synonyms=('company_name')
-ISSUERS: synonyms=('company_name')  -- Conflict!
+-- ❌ DUPLICATE synonyms across dimensions and metrics (WILL CAUSE ERROR)
+SECURITIES.Description AS DESCRIPTION WITH SYNONYMS=('company_name')
+ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('company_name')  -- ERROR: 'company_name' used twice!
+
+-- ❌ DUPLICATE synonyms between dimensions and metrics (WILL CAUSE ERROR)  
+HOLDINGS.PortfolioWeight AS PORTFOLIO_WEIGHT WITH SYNONYMS=('weight')
+HOLDINGS.TOTAL_WEIGHT AS SUM(Weight) WITH SYNONYMS=('weight')  -- ERROR: 'weight' used twice!
 
 -- ❌ RESERVED word usage
 HOLDINGS.SELECT AS SELECT_VALUE  -- SELECT is reserved

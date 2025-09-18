@@ -367,7 +367,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 			COMMENT='Trading calendar with blackout periods and events',
 		CLIENT_MANDATES AS {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES
 			PRIMARY KEY (PORTFOLIOID)
-			WITH SYNONYMS=('mandates','approvals','constraints','client_mandates')
+			WITH SYNONYMS=('mandates','approvals','client_rules','client_mandates')
 			COMMENT='Client mandate requirements and approval thresholds',
 		TAX_IMPLICATIONS AS {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS
 			PRIMARY KEY (PORTFOLIOID, SECURITYID, TAX_DATE)
@@ -386,20 +386,20 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 	)
 	DIMENSIONS (
 		-- Portfolio dimensions
-		PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio name',
-		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy',
+		PORTFOLIOS.PortfolioName AS PORTFOLIONAME WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio name',
+		PORTFOLIOS.Strategy AS STRATEGY WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy',
 		
 		-- Security dimensions  
-		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('company','security_name','description') COMMENT='Security description',
-		SECURITIES.PRIMARYTICKER AS Ticker WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Trading ticker symbol',
+		SECURITIES.Description AS DESCRIPTION WITH SYNONYMS=('security_name','security_description','name') COMMENT='Security description',
+		SECURITIES.Ticker AS PRIMARYTICKER WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Trading ticker symbol',
 		
 		-- Trading calendar dimensions
-		TRADING_CALENDAR.EVENT_TYPE AS EventType WITH SYNONYMS=('event','calendar_event','trading_event') COMMENT='Trading calendar event type',
-		TRADING_CALENDAR.IS_BLACKOUT_PERIOD AS IsBlackoutPeriod WITH SYNONYMS=('blackout','restricted','no_trading') COMMENT='Blackout period indicator',
+		TRADING_CALENDAR.EventType AS EVENT_TYPE WITH SYNONYMS=('event','calendar_event','trading_event') COMMENT='Trading calendar event type',
+		TRADING_CALENDAR.IsBlackoutPeriod AS IS_BLACKOUT_PERIOD WITH SYNONYMS=('blackout','restricted','no_trading') COMMENT='Blackout period indicator',
 		
 		-- Tax dimensions
-		TAX_IMPLICATIONS.TAX_TREATMENT AS TaxTreatment WITH SYNONYMS=('tax_type','treatment','tax_treatment') COMMENT='Tax treatment classification',
-		TAX_IMPLICATIONS.TAX_LOSS_HARVEST_OPPORTUNITY AS TaxLossHarvestOpportunity WITH SYNONYMS=('tax_loss','harvest_opportunity','loss_harvest') COMMENT='Tax loss harvesting opportunity'
+		TAX_IMPLICATIONS.TaxTreatment AS TAX_TREATMENT WITH SYNONYMS=('tax_type','treatment','tax_treatment') COMMENT='Tax treatment classification',
+		TAX_IMPLICATIONS.TaxLossHarvestOpportunity AS TAX_LOSS_HARVEST_OPPORTUNITY WITH SYNONYMS=('tax_loss','harvest_opportunity','harvest_flag') COMMENT='Tax loss harvesting opportunity'
 	)
 	METRICS (
 		-- Position metrics
@@ -409,10 +409,10 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 		-- Transaction cost metrics
 		TRANSACTION_COSTS.AVG_BID_ASK_SPREAD AS AVG(BID_ASK_SPREAD_BPS) WITH SYNONYMS=('bid_ask_spread','spread','trading_spread') COMMENT='Average bid-ask spread in basis points',
 		TRANSACTION_COSTS.AVG_MARKET_IMPACT AS AVG(MARKET_IMPACT_BPS_PER_1M) WITH SYNONYMS=('market_impact','trading_impact','execution_cost') COMMENT='Average market impact per $1M traded',
-		TRANSACTION_COSTS.AVG_DAILY_VOLUME AS AVG(AVG_DAILY_VOLUME_M) WITH SYNONYMS=('daily_volume','trading_volume','liquidity') COMMENT='Average daily trading volume in millions',
+		TRANSACTION_COSTS.AVG_DAILY_VOLUME AS AVG(AVG_DAILY_VOLUME_M) WITH SYNONYMS=('daily_volume','trading_volume','volume') COMMENT='Average daily trading volume in millions',
 		
 		-- Liquidity metrics
-		PORTFOLIO_LIQUIDITY.TOTAL_CASH_POSITION AS SUM(CASH_POSITION_USD) WITH SYNONYMS=('cash_available','available_cash','cash_position') COMMENT='Total available cash position',
+		PORTFOLIO_LIQUIDITY.TOTAL_CASH_POSITION AS SUM(CASH_POSITION_USD) WITH SYNONYMS=('cash_available','available_cash','total_cash') COMMENT='Total available cash position',
 		PORTFOLIO_LIQUIDITY.NET_CASH_FLOW AS SUM(NET_CASHFLOW_30D_USD) WITH SYNONYMS=('cash_flow','net_flow','expected_flow') COMMENT='Expected net cash flow over 30 days',
 		PORTFOLIO_LIQUIDITY.AVG_LIQUIDITY_SCORE AS AVG(PORTFOLIO_LIQUIDITY_SCORE) WITH SYNONYMS=('liquidity_score','liquidity_rating','portfolio_liquidity') COMMENT='Portfolio liquidity score (1-10)',
 		
@@ -422,7 +422,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
 		RISK_LIMITS.CURRENT_TRACKING_ERROR AS AVG(CURRENT_TRACKING_ERROR_PCT) WITH SYNONYMS=('current_risk','tracking_error','portfolio_risk') COMMENT='Current tracking error percentage',
 		
 		-- Tax metrics
-		TAX_IMPLICATIONS.TOTAL_UNREALIZED_GAINS AS SUM(UNREALIZED_GAIN_LOSS_USD) WITH SYNONYMS=('unrealized_gains','capital_gains','gains_losses') COMMENT='Total unrealized gains/losses',
+		TAX_IMPLICATIONS.TOTAL_UNREALIZED_GAINS AS SUM(UNREALIZED_GAIN_LOSS_USD) WITH SYNONYMS=('unrealized_gains','capital_gains','unrealized_pnl') COMMENT='Total unrealized gains/losses',
 		TAX_IMPLICATIONS.TOTAL_COST_BASIS AS SUM(COST_BASIS_USD) WITH SYNONYMS=('cost_basis','original_cost','tax_basis') COMMENT='Total cost basis for tax calculations',
 		TAX_IMPLICATIONS.TAX_LOSS_HARVEST_VALUE AS SUM(CASE WHEN TAX_LOSS_HARVEST_OPPORTUNITY THEN ABS(UNREALIZED_GAIN_LOSS_USD) ELSE 0 END) WITH SYNONYMS=('harvest_value','tax_loss_value','loss_harvest_amount') COMMENT='Total value available for tax loss harvesting',
 		
