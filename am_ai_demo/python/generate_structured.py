@@ -94,6 +94,24 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     
     print("🎯 Building benchmark holdings...")
     build_benchmark_holdings(session)
+    
+    print("💰 Building transaction cost data...")
+    build_transaction_cost_data(session)
+    
+    print("💧 Building liquidity data...")
+    build_liquidity_data(session)
+    
+    print("📊 Building risk budget data...")
+    build_risk_budget_data(session)
+    
+    print("📅 Building trading calendar data...")
+    build_trading_calendar_data(session)
+    
+    print("📋 Building client mandate data...")
+    build_client_mandate_data(session)
+    
+    print("🧾 Building tax implications data...")
+    build_tax_implications_data(session)
 
 
 
@@ -1037,6 +1055,276 @@ def build_benchmark_holdings(session: Session):
     """).collect()
     
     print("✅ Created benchmark holdings with realistic index compositions")
+
+def build_transaction_cost_data(session: Session):
+    """Build transaction cost and market microstructure data for realistic execution planning."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION_COSTS AS
+        WITH equity_securities AS (
+            SELECT 
+                s.SecurityID,
+                s.Ticker,
+                i.GICS_Sector,
+                i.CountryOfIncorporation
+            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
+        ),
+        business_dates AS (
+            SELECT DATEADD(day, seq4(), DATEADD(month, -3, CURRENT_DATE())) as COST_DATE
+            FROM TABLE(GENERATOR(rowcount => 66))  -- ~3 months of business days
+            WHERE DAYOFWEEK(COST_DATE) BETWEEN 2 AND 6
+        )
+        SELECT 
+            es.SecurityID,
+            bd.COST_DATE,
+            -- Bid-ask spread (bps) - varies by market cap and sector
+            CASE 
+                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(3, 8, RANDOM())
+                WHEN es.GICS_Sector = 'Utilities' THEN UNIFORM(5, 12, RANDOM())
+                WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(4, 10, RANDOM())
+                ELSE UNIFORM(4, 9, RANDOM())
+            END as BID_ASK_SPREAD_BPS,
+            -- Average daily volume (shares in millions)
+            CASE 
+                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(2.0, 15.0, RANDOM())
+                ELSE UNIFORM(0.5, 8.0, RANDOM())
+            END as AVG_DAILY_VOLUME_M,
+            -- Market impact per $1M traded (bps)
+            CASE 
+                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(2, 6, RANDOM())
+                ELSE UNIFORM(3, 8, RANDOM())
+            END as MARKET_IMPACT_BPS_PER_1M,
+            -- Commission rate (bps)
+            UNIFORM(1, 3, RANDOM()) as COMMISSION_BPS,
+            -- Settlement period (days)
+            CASE 
+                WHEN es.CountryOfIncorporation = 'US' THEN 2
+                WHEN es.CountryOfIncorporation IN ('GB', 'DE', 'FR') THEN 2
+                ELSE 3
+            END as SETTLEMENT_DAYS
+        FROM equity_securities es
+        CROSS JOIN business_dates bd
+    """).collect()
+    
+    print("✅ Created transaction cost and market microstructure data")
+
+def build_liquidity_data(session: Session):
+    """Build liquidity and cash flow data for portfolio implementation planning."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_PORTFOLIO_LIQUIDITY AS
+        WITH portfolios AS (
+            SELECT PortfolioID, PortfolioName FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+        ),
+        monthly_dates AS (
+            SELECT DATEADD(month, seq4(), DATEADD(month, -12, CURRENT_DATE())) as LIQUIDITY_DATE
+            FROM TABLE(GENERATOR(rowcount => 12))
+        )
+        SELECT 
+            p.PortfolioID,
+            md.LIQUIDITY_DATE,
+            -- Available cash position
+            UNIFORM(1000000, 25000000, RANDOM()) as CASH_POSITION_USD,
+            -- Expected cash flows (subscriptions - redemptions)
+            UNIFORM(-5000000, 10000000, RANDOM()) as NET_CASHFLOW_30D_USD,
+            -- Liquidity score (1-10, 10 = most liquid)
+            CASE 
+                WHEN p.PortfolioName LIKE '%Technology%' THEN UNIFORM(7, 9, RANDOM())
+                WHEN p.PortfolioName LIKE '%ESG%' THEN UNIFORM(6, 8, RANDOM())
+                ELSE UNIFORM(5, 8, RANDOM())
+            END as PORTFOLIO_LIQUIDITY_SCORE,
+            -- Rebalancing frequency (days)
+            CASE 
+                WHEN p.PortfolioName LIKE '%Multi-Asset%' THEN 30
+                WHEN p.PortfolioName LIKE '%Balanced%' THEN 60
+                ELSE 90
+            END as REBALANCING_FREQUENCY_DAYS
+        FROM portfolios p
+        CROSS JOIN monthly_dates md
+    """).collect()
+    
+    print("✅ Created portfolio liquidity and cash flow data")
+
+def build_risk_budget_data(session: Session):
+    """Build risk budget and limits data for professional risk management."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_RISK_LIMITS AS
+        WITH portfolios AS (
+            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+        )
+        SELECT 
+            p.PortfolioID,
+            CURRENT_DATE() as LIMITS_DATE,
+            -- Tracking error limits
+            CASE 
+                WHEN p.Strategy = 'Active Equity' THEN UNIFORM(4.0, 6.0, RANDOM())
+                WHEN p.Strategy = 'Multi-Asset' THEN UNIFORM(3.0, 5.0, RANDOM())
+                ELSE UNIFORM(2.0, 4.0, RANDOM())
+            END as TRACKING_ERROR_LIMIT_PCT,
+            -- Current tracking error utilization
+            UNIFORM(2.5, 4.8, RANDOM()) as CURRENT_TRACKING_ERROR_PCT,
+            -- Maximum single position concentration
+            CASE 
+                WHEN p.PortfolioName LIKE '%Technology%' THEN 0.065  -- 6.5%
+                ELSE 0.07  -- 7%
+            END as MAX_SINGLE_POSITION_PCT,
+            -- Maximum sector concentration
+            CASE 
+                WHEN p.PortfolioName LIKE '%Technology%' THEN 0.50  -- 50%
+                WHEN p.PortfolioName LIKE '%Multi-Asset%' THEN 0.35  -- 35%
+                ELSE 0.40  -- 40%
+            END as MAX_SECTOR_CONCENTRATION_PCT,
+            -- Risk budget utilization
+            UNIFORM(65, 85, RANDOM()) as RISK_BUDGET_UTILIZATION_PCT,
+            -- VaR limits
+            UNIFORM(1.5, 3.0, RANDOM()) as VAR_LIMIT_1DAY_PCT
+        FROM portfolios p
+    """).collect()
+    
+    print("✅ Created risk budget and limits data")
+
+def build_trading_calendar_data(session: Session):
+    """Build trading calendar with blackout periods and market events."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TRADING_CALENDAR AS
+        WITH securities AS (
+            SELECT s.SecurityID, s.Ticker 
+            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            WHERE s.AssetClass = 'Equity'
+            AND EXISTS (
+                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                WHERE t.SecurityID = s.SecurityID
+            )
+        ),
+        future_dates AS (
+            SELECT DATEADD(day, seq4(), CURRENT_DATE()) as EVENT_DATE
+            FROM TABLE(GENERATOR(rowcount => 90))  -- Next 90 days
+        )
+        SELECT 
+            s.SecurityID,
+            fd.EVENT_DATE,
+            -- Earnings announcement dates (quarterly)
+            CASE 
+                WHEN MOD(DATEDIFF(day, CURRENT_DATE(), fd.EVENT_DATE), 90) = 0 THEN 'EARNINGS_ANNOUNCEMENT'
+                WHEN MOD(DATEDIFF(day, CURRENT_DATE(), fd.EVENT_DATE), 30) = 0 THEN 'MONTHLY_REBALANCING'
+                WHEN MOD(DATEDIFF(day, CURRENT_DATE(), fd.EVENT_DATE), 7) = 0 THEN 'WEEKLY_REVIEW'
+                ELSE NULL
+            END as EVENT_TYPE,
+            -- Blackout period indicator
+            CASE 
+                WHEN MOD(DATEDIFF(day, CURRENT_DATE(), fd.EVENT_DATE), 90) BETWEEN -2 AND 2 THEN TRUE
+                ELSE FALSE
+            END as IS_BLACKOUT_PERIOD,
+            -- Market volatility forecast
+            UNIFORM(12, 35, RANDOM()) as EXPECTED_VIX_LEVEL,
+            -- Options expiration indicator
+            CASE 
+                WHEN MOD(DATEDIFF(day, CURRENT_DATE(), fd.EVENT_DATE), 21) = 0 THEN TRUE
+                ELSE FALSE
+            END as IS_OPTIONS_EXPIRATION
+        FROM securities s
+        CROSS JOIN future_dates fd
+        WHERE fd.EVENT_DATE IS NOT NULL
+    """).collect()
+    
+    print("✅ Created trading calendar with blackout periods and events")
+
+def build_client_mandate_data(session: Session):
+    """Build client mandate and approval requirements data."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES AS
+        WITH portfolios AS (
+            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+        )
+        SELECT 
+            p.PortfolioID,
+            -- Approval thresholds
+            CASE 
+                WHEN p.PortfolioName LIKE '%Flagship%' THEN 0.03  -- 3% for flagship
+                WHEN p.PortfolioName LIKE '%ESG%' THEN 0.04  -- 4% for ESG
+                ELSE 0.05  -- 5% for others
+            END as POSITION_CHANGE_APPROVAL_THRESHOLD_PCT,
+            -- Sector allocation ranges
+            CASE 
+                WHEN p.PortfolioName LIKE '%Technology%' THEN '{{"Technology": [0.30, 0.50], "Healthcare": [0.05, 0.15]}}'
+                WHEN p.PortfolioName LIKE '%ESG%' THEN '{{"Technology": [0.15, 0.35], "Energy": [0.00, 0.05]}}'
+                ELSE '{{"Technology": [0.10, 0.40], "Healthcare": [0.05, 0.20]}}'
+            END as SECTOR_ALLOCATION_RANGES_JSON,
+            -- ESG requirements
+            CASE 
+                WHEN p.PortfolioName LIKE '%ESG%' THEN 'BBB'
+                WHEN p.PortfolioName LIKE '%Climate%' THEN 'BB'
+                ELSE NULL
+            END as MIN_ESG_RATING,
+            -- Exclusion lists
+            CASE 
+                WHEN p.PortfolioName LIKE '%ESG%' THEN '["Tobacco", "Weapons", "Thermal Coal"]'
+                WHEN p.PortfolioName LIKE '%Climate%' THEN '["Fossil Fuels", "Thermal Coal"]'
+                ELSE '[]'
+            END as EXCLUSION_SECTORS_JSON,
+            -- Rebalancing requirements
+            CASE 
+                WHEN p.Strategy = 'Multi-Asset' THEN 30
+                WHEN p.Strategy = 'Active Equity' THEN 90
+                ELSE 60
+            END as MAX_REBALANCING_FREQUENCY_DAYS
+        FROM portfolios p
+    """).collect()
+    
+    print("✅ Created client mandate and approval requirements data")
+
+def build_tax_implications_data(session: Session):
+    """Build tax implications and cost basis data for tax-efficient execution."""
+    
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS AS
+        WITH portfolio_holdings AS (
+            SELECT DISTINCT 
+                h.PortfolioID,
+                h.SecurityID,
+                h.MarketValue_Base,
+                h.PortfolioWeight
+            FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR h
+            WHERE h.HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR)
+        )
+        SELECT 
+            ph.PortfolioID,
+            ph.SecurityID,
+            CURRENT_DATE() as TAX_DATE,
+            -- Cost basis (synthetic - based on current market value with gain/loss)
+            ph.MarketValue_Base * UNIFORM(0.70, 1.30, RANDOM()) as COST_BASIS_USD,
+            -- Unrealized gain/loss
+            ph.MarketValue_Base - (ph.MarketValue_Base * UNIFORM(0.70, 1.30, RANDOM())) as UNREALIZED_GAIN_LOSS_USD,
+            -- Holding period (days)
+            UNIFORM(30, 1095, RANDOM()) as HOLDING_PERIOD_DAYS,
+            -- Tax treatment
+            CASE 
+                WHEN UNIFORM(30, 1095, RANDOM()) > 365 THEN 'LONG_TERM'
+                ELSE 'SHORT_TERM'
+            END as TAX_TREATMENT,
+            -- Tax loss harvesting opportunity
+            CASE 
+                WHEN ph.MarketValue_Base - (ph.MarketValue_Base * UNIFORM(0.70, 1.30, RANDOM())) < -10000 THEN TRUE
+                ELSE FALSE
+            END as TAX_LOSS_HARVEST_OPPORTUNITY,
+            -- Capital gains tax rate
+            CASE 
+                WHEN UNIFORM(30, 1095, RANDOM()) > 365 THEN 0.20  -- Long-term rate
+                ELSE 0.37  -- Short-term rate
+            END as TAX_RATE
+        FROM portfolio_holdings ph
+    """).collect()
+    
+    print("✅ Created tax implications and cost basis data")
 
 def build_scenario_data(session: Session, scenario: str):
     """Build scenario-specific data."""

@@ -124,6 +124,53 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - Integration of position size, sector risk, and research sentiment
 - Actionable recommendations with clear prioritization and rationale
 
+#### Step 5: Portfolio Management Decision
+**User Input**: 
+```
+"Based on our complete analysis from Steps 1-4, provide me with a specific implementation plan including exact position sizes, timelines, and dollar amounts for the portfolio actions we should take."
+```
+
+**Expected Response**:
+- **IMMEDIATE EXECUTION (Next 3 Trading Days)**:
+  - Apple: Reduce from $45.2M (8.2%) to $33.0M (6.0%) - Sell $12.2M
+    * Execute via TWAP over 3 days (current ADV $180M supports $4M/day)
+    * Estimated market impact: 8-12bps based on historical analysis
+    * Complete before earnings blackout begins Thursday
+    * Settlement provides $12.2M cash on T+2
+  - Risk budget impact: Tracking error reduces from 4.8% to 4.5% (within 5% limit)
+
+- **TAX AND LIQUIDITY ANALYSIS**:
+  - Tax implications: Realizes $890K capital gain - offset with CMC position (-$340K loss)
+  - Cash available: $8.1M current + $12.2M from Apple sale = $20.3M total
+  - Liquidity score: Portfolio remains at 7.2/10 (high liquidity)
+
+- **COMPLIANCE AND APPROVALS**:
+  - Position change >5% requires Investment Committee approval per mandate section 4.2
+  - Recommend emergency IC call Tuesday 2PM for approval
+  - Technology sector allocation moves from 45% to 42% (within 35-45% range)
+  - Risk budget utilization: 78% → 72% (well within 85% limit)
+
+- **IMPLEMENTATION TIMELINE**:
+  - Day 1: Obtain IC approval, initiate Apple TWAP execution ($4M)
+  - Day 2: Continue Apple execution ($4M), assess tax loss harvest for CMC
+  - Day 3: Complete Apple execution ($4.2M), execute CMC tax harvest if beneficial
+  - Settlement: T+2 cash available for redeployment
+
+- **MARKET CONDITIONS**:
+  - Current VIX: 24 (moderate volatility - suitable for systematic execution)
+  - Apple earnings: Thursday (complete sales before blackout)
+  - No major option expirations during execution window
+
+**Talking Points**:
+- **Complete Investment Workflow**: From analysis to specific executable actions
+- **Professional Portfolio Management**: Industry-standard implementation planning with exact specifications
+- **AI-Powered Decision Support**: Comprehensive analysis translated into precise, actionable investment decisions
+
+**Key Features Highlighted**: 
+- **End-to-End Investment Process**: Complete workflow from analysis to implementation
+- **Specific Action Planning**: Exact dollar amounts, percentages, and timelines
+- **Professional Investment Management**: Industry-standard decision framework with comprehensive risk management
+
 ### Scenario Wrap-up
 
 **Business Impact Summary**:

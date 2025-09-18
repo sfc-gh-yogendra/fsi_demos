@@ -116,6 +116,14 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
     except Exception as e:
         print(f"⚠️  Warning: Could not create research semantic view: {e}")
         # Don't raise - this is optional enhancement
+    
+    # Create implementation semantic view for portfolio management
+    try:
+        print("🎯 Creating implementation semantic view for portfolio management...")
+        create_implementation_semantic_view(session)
+    except Exception as e:
+        print(f"⚠️  Warning: Could not create implementation semantic view: {e}")
+        # Don't raise - this is optional enhancement
 
 def create_research_semantic_view(session: Session):
     """Create semantic view for research with fundamentals and estimates data."""
@@ -304,3 +312,125 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
             print(f"❌ Search services validation failed: {e}")
     
     print("✅ AI component validation complete")
+
+def create_implementation_semantic_view(session: Session):
+    """Create semantic view for portfolio implementation with trading, risk, and execution data."""
+    
+    # Check if implementation tables exist
+    required_tables = [
+        'FACT_TRANSACTION_COSTS',
+        'FACT_PORTFOLIO_LIQUIDITY', 
+        'FACT_RISK_LIMITS',
+        'FACT_TRADING_CALENDAR',
+        'DIM_CLIENT_MANDATES',
+        'FACT_TAX_IMPLICATIONS'
+    ]
+    
+    for table in required_tables:
+        try:
+            session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.{table} LIMIT 1").collect()
+        except:
+            print(f"⚠️  Implementation table {table} not found, skipping implementation view creation")
+            return
+    
+    # Create the implementation-focused semantic view
+    session.sql(f"""
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIEW
+	TABLES (
+		HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR
+			PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID) 
+			WITH SYNONYMS=('positions','investments','allocations','holdings') 
+			COMMENT='Current portfolio holdings for implementation planning',
+		PORTFOLIOS AS {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+			PRIMARY KEY (PORTFOLIOID) 
+			WITH SYNONYMS=('funds','strategies','mandates','portfolios') 
+			COMMENT='Portfolio information',
+		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+			PRIMARY KEY (SECURITYID) 
+			WITH SYNONYMS=('companies','stocks','instruments','securities') 
+			COMMENT='Security reference data',
+		TRANSACTION_COSTS AS {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION_COSTS
+			PRIMARY KEY (SECURITYID, COST_DATE)
+			WITH SYNONYMS=('trading_costs','execution_costs','market_impact','transaction_costs')
+			COMMENT='Transaction costs and market microstructure data',
+		PORTFOLIO_LIQUIDITY AS {config.DATABASE_NAME}.CURATED.FACT_PORTFOLIO_LIQUIDITY
+			PRIMARY KEY (PORTFOLIOID, LIQUIDITY_DATE)
+			WITH SYNONYMS=('cash_flow','liquidity','cash_position','portfolio_liquidity')
+			COMMENT='Portfolio cash and liquidity information',
+		RISK_LIMITS AS {config.DATABASE_NAME}.CURATED.FACT_RISK_LIMITS
+			PRIMARY KEY (PORTFOLIOID, LIMITS_DATE)
+			WITH SYNONYMS=('risk_budget','limits','constraints','risk_limits')
+			COMMENT='Risk limits and budget utilization',
+		TRADING_CALENDAR AS {config.DATABASE_NAME}.CURATED.FACT_TRADING_CALENDAR
+			PRIMARY KEY (SECURITYID, EVENT_DATE)
+			WITH SYNONYMS=('calendar','events','blackouts','earnings_dates','trading_calendar')
+			COMMENT='Trading calendar with blackout periods and events',
+		CLIENT_MANDATES AS {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES
+			PRIMARY KEY (PORTFOLIOID)
+			WITH SYNONYMS=('mandates','approvals','constraints','client_mandates')
+			COMMENT='Client mandate requirements and approval thresholds',
+		TAX_IMPLICATIONS AS {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS
+			PRIMARY KEY (PORTFOLIOID, SECURITYID, TAX_DATE)
+			WITH SYNONYMS=('tax_data','cost_basis','gains_losses','tax_implications')
+			COMMENT='Tax implications and cost basis data'
+	)
+	RELATIONSHIPS (
+		HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		HOLDINGS_TO_SECURITIES AS HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		TRANSACTION_COSTS_TO_SECURITIES AS TRANSACTION_COSTS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		PORTFOLIO_LIQUIDITY_TO_PORTFOLIOS AS PORTFOLIO_LIQUIDITY(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		RISK_LIMITS_TO_PORTFOLIOS AS RISK_LIMITS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		TRADING_CALENDAR_TO_SECURITIES AS TRADING_CALENDAR(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		CLIENT_MANDATES_TO_PORTFOLIOS AS CLIENT_MANDATES(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		TAX_IMPLICATIONS_TO_HOLDINGS AS TAX_IMPLICATIONS(PORTFOLIOID, SECURITYID) REFERENCES HOLDINGS(PORTFOLIOID, SECURITYID)
+	)
+	DIMENSIONS (
+		-- Portfolio dimensions
+		PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio name',
+		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy',
+		
+		-- Security dimensions  
+		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('company','security_name','description') COMMENT='Security description',
+		SECURITIES.PRIMARYTICKER AS Ticker WITH SYNONYMS=('ticker_symbol','symbol','primary_ticker') COMMENT='Trading ticker symbol',
+		
+		-- Trading calendar dimensions
+		TRADING_CALENDAR.EVENT_TYPE AS EventType WITH SYNONYMS=('event','calendar_event','trading_event') COMMENT='Trading calendar event type',
+		TRADING_CALENDAR.IS_BLACKOUT_PERIOD AS IsBlackoutPeriod WITH SYNONYMS=('blackout','restricted','no_trading') COMMENT='Blackout period indicator',
+		
+		-- Tax dimensions
+		TAX_IMPLICATIONS.TAX_TREATMENT AS TaxTreatment WITH SYNONYMS=('tax_type','treatment','tax_treatment') COMMENT='Tax treatment classification',
+		TAX_IMPLICATIONS.TAX_LOSS_HARVEST_OPPORTUNITY AS TaxLossHarvestOpportunity WITH SYNONYMS=('tax_loss','harvest_opportunity','loss_harvest') COMMENT='Tax loss harvesting opportunity'
+	)
+	METRICS (
+		-- Position metrics
+		HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MarketValue_Base) WITH SYNONYMS=('market_value','position_value','exposure') COMMENT='Total market value of positions',
+		HOLDINGS.PORTFOLIO_WEIGHT_PCT AS SUM(PortfolioWeight) * 100 WITH SYNONYMS=('weight_percent','allocation_percent','percentage_weight') COMMENT='Portfolio weight as percentage',
+		
+		-- Transaction cost metrics
+		TRANSACTION_COSTS.AVG_BID_ASK_SPREAD AS AVG(BID_ASK_SPREAD_BPS) WITH SYNONYMS=('bid_ask_spread','spread','trading_spread') COMMENT='Average bid-ask spread in basis points',
+		TRANSACTION_COSTS.AVG_MARKET_IMPACT AS AVG(MARKET_IMPACT_BPS_PER_1M) WITH SYNONYMS=('market_impact','trading_impact','execution_cost') COMMENT='Average market impact per $1M traded',
+		TRANSACTION_COSTS.AVG_DAILY_VOLUME AS AVG(AVG_DAILY_VOLUME_M) WITH SYNONYMS=('daily_volume','trading_volume','liquidity') COMMENT='Average daily trading volume in millions',
+		
+		-- Liquidity metrics
+		PORTFOLIO_LIQUIDITY.TOTAL_CASH_POSITION AS SUM(CASH_POSITION_USD) WITH SYNONYMS=('cash_available','available_cash','cash_position') COMMENT='Total available cash position',
+		PORTFOLIO_LIQUIDITY.NET_CASH_FLOW AS SUM(NET_CASHFLOW_30D_USD) WITH SYNONYMS=('cash_flow','net_flow','expected_flow') COMMENT='Expected net cash flow over 30 days',
+		PORTFOLIO_LIQUIDITY.AVG_LIQUIDITY_SCORE AS AVG(PORTFOLIO_LIQUIDITY_SCORE) WITH SYNONYMS=('liquidity_score','liquidity_rating','portfolio_liquidity') COMMENT='Portfolio liquidity score (1-10)',
+		
+		-- Risk metrics
+		RISK_LIMITS.TRACKING_ERROR_UTILIZATION AS AVG(CURRENT_TRACKING_ERROR_PCT / TRACKING_ERROR_LIMIT_PCT) * 100 WITH SYNONYMS=('risk_utilization','tracking_error_usage','risk_budget_used') COMMENT='Tracking error budget utilization percentage',
+		RISK_LIMITS.MAX_POSITION_LIMIT AS MAX(MAX_SINGLE_POSITION_PCT) * 100 WITH SYNONYMS=('concentration_limit','position_limit','max_weight_limit') COMMENT='Maximum single position limit as percentage',
+		RISK_LIMITS.CURRENT_TRACKING_ERROR AS AVG(CURRENT_TRACKING_ERROR_PCT) WITH SYNONYMS=('current_risk','tracking_error','portfolio_risk') COMMENT='Current tracking error percentage',
+		
+		-- Tax metrics
+		TAX_IMPLICATIONS.TOTAL_UNREALIZED_GAINS AS SUM(UNREALIZED_GAIN_LOSS_USD) WITH SYNONYMS=('unrealized_gains','capital_gains','gains_losses') COMMENT='Total unrealized gains/losses',
+		TAX_IMPLICATIONS.TOTAL_COST_BASIS AS SUM(COST_BASIS_USD) WITH SYNONYMS=('cost_basis','original_cost','tax_basis') COMMENT='Total cost basis for tax calculations',
+		TAX_IMPLICATIONS.TAX_LOSS_HARVEST_VALUE AS SUM(CASE WHEN TAX_LOSS_HARVEST_OPPORTUNITY THEN ABS(UNREALIZED_GAIN_LOSS_USD) ELSE 0 END) WITH SYNONYMS=('harvest_value','tax_loss_value','loss_harvest_amount') COMMENT='Total value available for tax loss harvesting',
+		
+		-- Calendar metrics  
+		TRADING_CALENDAR.BLACKOUT_DAYS AS COUNT(CASE WHEN IS_BLACKOUT_PERIOD THEN 1 END) WITH SYNONYMS=('blackout_count','restricted_days','no_trading_days') COMMENT='Count of blackout period days',
+		TRADING_CALENDAR.AVG_VIX_FORECAST AS AVG(EXPECTED_VIX_LEVEL) WITH SYNONYMS=('volatility_forecast','vix_forecast','market_volatility') COMMENT='Average expected VIX volatility level'
+	)
+	COMMENT='Implementation semantic view with trading costs, liquidity, risk limits, and execution planning data';
+    """).collect()
+    
+    print("✅ Created semantic view: SAM_IMPLEMENTATION_VIEW")
