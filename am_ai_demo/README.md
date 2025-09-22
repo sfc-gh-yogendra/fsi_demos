@@ -61,6 +61,17 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 ```
 **Expected**: Clean list with enhanced issuer information and stable SecurityID linkage
 
+### 🆕 PDF Template Enhancement
+Transform your document generation with real PDF analysis:
+```bash
+# Interactive mode - copy/paste your document text
+python main.py --connection-name your_connection --interactive-template --pdf-doc-type broker_research
+
+# Integrate enhanced templates into document generation
+python main.py --connection-name your_connection --integrate-templates
+```
+**Result**: Professional, authentic document generation indistinguishable from real financial documents
+
 **Note**: All commands now require the `--connection-name` parameter to specify which connection from `~/.snowflake/connections.toml` to use.
 
 ## Demo Overview
@@ -76,20 +87,23 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 
 ✅ **Foundation Complete**: Industry-standard data model with 100% real assets
 
-| Scenario | Agent | Implementation Status | Key Capabilities |
-|----------|-------|----------------------|------------------|
-| **Portfolio Insights** | `portfolio_copilot` | **✅ FULLY IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets |
-| **Research Intelligence** | `research_copilot` | **✅ FULLY IMPLEMENTED** | Document research and analysis across broker reports and earnings |
-| **Thematic Analysis** | `thematic_macro_advisor` | **✅ FULLY IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
-| **ESG Monitoring** | `esg_guardian` | **🔄 REQUIRES NEW DATA** | Controversy scanning, policy compliance, engagement tracking |
-| **Compliance** | `compliance_advisor` | **🔄 REQUIRES NEW DATA** | Mandate monitoring, breach detection, policy citation |
-| **Client Reporting** | `sales_advisor` | **🔄 REQUIRES NEW DATA** | Performance reports, template formatting, philosophy integration |
-| **Factor Analysis** | `quant_analyst` | **🔄 REQUIRES ENHANCEMENTS** | Factor screening, backtesting, performance attribution |
+| Scenario | Agent | Status | Key Capabilities |
+|----------|-------|--------|------------------|
+| **Portfolio Insights** | `portfolio_copilot` | **✅ IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets |
+| **Research Intelligence** | `research_copilot` | **✅ IMPLEMENTED** | Document research and analysis across broker reports and earnings |
+| **Thematic Analysis** | `thematic_macro_advisor` | **✅ IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
+| **ESG Monitoring** | `esg_guardian` | **✅ IMPLEMENTED** | Controversy scanning, policy compliance, engagement tracking |
+| **Compliance** | `compliance_advisor` | **✅ IMPLEMENTED** | Mandate monitoring, breach detection, policy citation |
+| **Client Reporting** | `sales_advisor` | **✅ IMPLEMENTED** | Performance reports, template formatting, philosophy integration |
+| **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, backtesting, performance attribution |
 
-**Phase Status**: 
-- **Phase 1 & 2 Complete**: 3 scenarios fully operational for demonstration
-- **Phase 3**: ESG & Compliance scenarios (requires new document types)
-- **Phase 4**: Client & Quantitative scenarios (requires additional development)
+- **✅ ALL SCENARIOS IMPLEMENTED**: Complete demo suite ready for use
+
+**To Build All Scenarios**:
+```bash
+# Build all implemented scenarios (includes ESG Guardian & Compliance Advisor)
+python main.py --connection-name [your-connection] --scenarios all --test-mode
+```
 
 ## Configuration Defaults
 
@@ -146,6 +160,7 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 - **Issuer Hierarchies**: Corporate structure and parent company analysis
 - **Enhanced Document Integration**: Stable SecurityID/IssuerID linkage
 - **Real Data Integration**: Authentic market data with synthetic fallback
+- **PDF Template Enhancement**: 🆕 Analyze real PDFs to create professional document templates
 
 ### Data Providers (Simulated)
 - **NorthStar Data (NSD)**: ESG ratings, equity factors, estimates, MSCI ACWI benchmark

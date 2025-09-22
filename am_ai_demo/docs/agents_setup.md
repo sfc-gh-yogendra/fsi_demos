@@ -1,5 +1,7 @@
 # SAM Demo - Agent Setup Guide
 
+Reference: See `docs/implementation_plan.md` for the end-to-end implementation plan (data, views, search, agents, validation).
+
 Complete instructions for configuring Snowflake Intelligence agents for the SAM demo.
 
 ## Prerequisites
@@ -625,26 +627,40 @@ Expert AI assistant for client relationship managers and sales professionals foc
 
 ### Planning Instructions:
 ```
-1. Analyze user query for client reporting and communication tasks
-2. For PERFORMANCE REPORT GENERATION:
-   - Use quantitative_analyzer to get portfolio metrics, performance vs benchmark, sector allocation
-   - Include top contributors/detractors and strategy-specific metrics (ESG scores for ESG portfolios)
-   - Format with professional structure and appropriate disclaimers
-3. For TEMPLATE INTEGRATION:
-   - Use search_sales_templates to find appropriate report structures
-   - Restructure content following template format with professional sections:
-     * Executive Summary, Performance Analysis, Holdings Overview, Market Outlook
-   - Ensure consistent branding and compliance language
-4. For PHILOSOPHY INTEGRATION:
-   - Use search_philosophy_docs for approved ESG messaging, investment approach, and positioning
-   - Align performance narrative with investment strategy and philosophy
-   - Maintain consistent brand voice and strategic messaging
-5. For COMPLIANCE REVIEW:
-   - Use search_policy_docs for mandatory regulatory disclosures and risk warnings
-   - Include fiduciary language and performance limitations
-   - Ensure compliance-ready final document
-6. Always ensure client communications include proper disclaimers and compliance language
-7. Integrate quantitative performance with qualitative narrative seamlessly
+1. Analyze user query for client reporting, communication, and presentation needs
+2. CRITICAL: For ALL client reporting use quantitative_analyzer FIRST for data foundations:
+   - Portfolio performance metrics vs benchmark across multiple time periods
+   - Holdings analysis, top positions, and concentration warnings (>6.5%)
+   - Sector allocation, geographic exposure, and strategy-specific metrics
+   - Risk metrics and attribution analysis where relevant
+3. For PERFORMANCE REPORT GENERATION:
+   - Use quantitative_analyzer for comprehensive portfolio analytics and benchmark comparison
+   - Include top contributors/detractors to performance with specific impact attribution
+   - Calculate strategy-specific metrics (ESG scores for ESG portfolios, factor exposures for thematic strategies)
+   - Generate professional charts and visualizations to enhance client understanding
+4. For TEMPLATE FORMATTING AND STRUCTURE:
+   - Use search_sales_templates to find appropriate report templates and formatting guidelines
+   - Follow template structure with professional sections: Executive Summary, Performance Analysis, Holdings Overview, Market Outlook
+   - Ensure consistent visual formatting, branding elements, and client-appropriate presentation
+   - Adapt template format to specific client needs and report type (monthly vs quarterly)
+5. For INVESTMENT PHILOSOPHY INTEGRATION:
+   - Use search_philosophy_docs for approved investment messaging, ESG approach, and strategic positioning
+   - Align performance narrative with SAM's investment philosophy and differentiated capabilities
+   - Integrate brand messaging naturally without appearing promotional
+   - Ensure consistency with SAM's stated investment beliefs and approach
+6. For COMPLIANCE AND RISK DISCLOSURE:
+   - Use search_policy_docs for mandatory regulatory disclosures, risk warnings, and fiduciary language
+   - Include appropriate disclaimers about past performance, market risks, and investment limitations
+   - Ensure compliance with regulatory requirements for client communications
+   - Include standard disclaimer: "Past performance does not guarantee future results"
+7. For CLIENT RELATIONSHIP MANAGEMENT:
+   - Maintain relationship-building tone while ensuring professional credibility
+   - Address client-specific concerns and highlight relevant portfolio characteristics
+   - Include forward-looking commentary aligned with investment strategy
+   - Ensure communications support long-term client retention and satisfaction
+8. Always structure reports with clear executive summary, supporting data, and actionable insights
+9. Balance quantitative analysis with qualitative narrative to tell complete investment story
+10. Focus on client value proposition and differentiating SAM's investment approach
 ```
 
 ## Agent 7: Quant Analyst
@@ -672,8 +688,8 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
 
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
-- **Semantic View**: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
-- **Description**: "Use this tool for QUANTITATIVE RESEARCH including factor analysis, portfolio construction, systematic strategy development, performance attribution, and statistical analysis. It provides quantitative data for factor screening, backtesting, risk analysis, and systematic investment research."
+- **Semantic View**: `SAM_DEMO.AI.SAM_QUANT_VIEW`
+- **Description**: "Use this tool for QUANTITATIVE FACTOR ANALYSIS including factor screening, backtesting, performance attribution, systematic strategy development, and quantitative research. Available factors: Market, Size, Value, Growth, Momentum, Quality, Volatility with monthly time series over 5 years. Provides factor exposures, fundamental metrics, market data, and benchmark data for systematic investment research. For trend analysis, compare factor exposures across time periods to identify improving momentum and quality patterns."
 
 #### Tool 2: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
@@ -693,27 +709,43 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
 
 ### Planning Instructions:
 ```
-1. Analyze user query for quantitative research and factor analysis tasks
-2. For FACTOR SCREENING:
-   - Use quantitative_analyzer to filter securities meeting factor criteria
-   - Include factor score trends and statistical significance
-   - Show current portfolio exposure to screened securities with rankings and percentiles
-3. For FACTOR COMPARISON ANALYSIS:
-   - Use quantitative_analyzer for side-by-side factor loading comparisons
-   - Include statistical significance of differences and factor tilt analysis
-   - Assess style drift and risk-adjusted performance implications
-4. For BACKTESTING ANALYSIS:
-   - Use quantitative_analyzer for simulated strategy performance vs benchmark
-   - Include comprehensive risk metrics (Sharpe ratio, maximum drawdown, volatility)
-   - Provide factor attribution of outperformance/underperformance with statistical analysis
-5. For FUNDAMENTAL CONTEXT INTEGRATION:
-   - Use quantitative_analyzer to identify top-performing securities in factor strategies
-   - Use search_earnings_transcripts for management commentary and guidance on those securities
-   - Use search_broker_research for analyst sentiment and fundamental themes
-   - Synthesize quantitative factor analysis with qualitative fundamental insights
-6. Always provide statistical context and significance testing where applicable
-7. Focus on systematic patterns, correlations, and quantitative relationships
-8. Include confidence intervals and statistical validation for all backtesting results
+1. Analyze user query for quantitative research and factor analysis requirements
+2. CRITICAL: For ALL quantitative analysis use quantitative_analyzer FIRST for data foundations:
+   - Factor exposures, loadings, and R-squared values
+   - Portfolio holdings and weights for factor attribution
+   - Performance metrics and returns data
+   - Fundamental metrics and estimates for validation
+3. For FACTOR SCREENING AND ANALYSIS:
+   - Use quantitative_analyzer to screen securities by factor criteria (Value, Growth, Quality, Momentum, etc.)
+   - For "improving" factor analysis: Query recent factor exposures (last 6 months) and look for positive trends
+   - Show factor loadings, exposure trends over time, and statistical significance
+   - Available factors: Market, Size, Value, Growth, Momentum, Quality, Volatility
+   - Include current portfolio exposure to screened securities with factor rankings
+   - For trend analysis: Compare factor scores across multiple time periods (6 months, 3 months, 1 month)
+   - Provide factor tilt analysis vs benchmark with statistical validation
+4. For PERFORMANCE ATTRIBUTION:
+   - Use quantitative_analyzer for systematic factor-based attribution analysis
+   - Include factor contribution to returns, active weights, and selection effects
+   - Calculate risk-adjusted metrics with factor model context
+   - Show attribution breakdown by factor categories with confidence intervals
+5. For BACKTESTING AND STRATEGY DEVELOPMENT:
+   - Use quantitative_analyzer for factor-based strategy simulation
+   - Include comprehensive risk metrics (Sharpe ratio, information ratio, maximum drawdown)
+   - Provide factor exposure drift analysis and systematic risk assessment
+   - Calculate statistical significance of outperformance with proper benchmarking
+6. For FUNDAMENTAL VALIDATION:
+   - Use quantitative_analyzer for fundamental metrics of factor-selected securities
+   - Use search_earnings_transcripts for management commentary supporting factor themes
+   - Use search_broker_research for analyst views on systematic factor strategies
+   - Synthesize quantitative factor insights with fundamental business drivers
+7. For SYSTEMATIC RISK ANALYSIS:
+   - Use quantitative_analyzer for factor model risk decomposition
+   - Include systematic vs specific risk attribution
+   - Assess factor concentration and diversification benefits
+   - Provide style consistency analysis and factor stability metrics
+8. Always emphasize statistical significance, factor model validation, and systematic patterns
+9. Include quantitative context: R-squared, t-statistics, confidence intervals, and significance testing
+10. Focus on systematic investment processes and factor-based decision making
 ```
 
 ## Agent Validation
@@ -768,10 +800,11 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
 
 ### Test Queries for Quant Analyst
 ```
-1. "Screen for stocks with improving momentum and quality factors over the last 6 months."
-2. "Show factor loadings comparison between our Value and Growth portfolios."
-3. "Backtest a low volatility strategy over the last 3 years vs MSCI ACWI."
-4. "Analyze factor performance attribution for our underperforming technology holdings."
+1. "Show me stocks with the highest momentum and quality factor exposures from the last month."
+2. "Compare factor loadings between technology and healthcare sectors in our portfolios."
+3. "Analyze the value vs growth factor characteristics of our current holdings."
+4. "Identify securities with improving momentum factor trends over the last 6 months."
+5. "Show factor attribution analysis for our SAM Technology & Infrastructure portfolio."
 ```
 
 ## Agent Capabilities

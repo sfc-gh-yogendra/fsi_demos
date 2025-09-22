@@ -18,6 +18,7 @@ Examples:
 import argparse
 import sys
 from typing import List, Optional
+from datetime import datetime
 
 # Import configuration
 from config import (
@@ -59,6 +60,31 @@ def parse_arguments() -> argparse.Namespace:
         '--extract-real-assets',
         action='store_true',
         help='Extract real asset data from Snowflake Marketplace and save to CSV (requires marketplace access)'
+    )
+    
+    parser.add_argument(
+        '--analyze-pdf',
+        type=str,
+        help='Analyze PDF file to create enhanced document templates (requires PDF path)'
+    )
+    
+    parser.add_argument(
+        '--pdf-doc-type',
+        type=str,
+        choices=['broker_research', 'earnings_transcripts', 'policy_docs', 'press_releases'],
+        help='Document type for PDF analysis (required with --analyze-pdf)'
+    )
+    
+    parser.add_argument(
+        '--integrate-templates',
+        action='store_true',
+        help='Integrate enhanced PDF-derived templates with document generation'
+    )
+    
+    parser.add_argument(
+        '--interactive-template',
+        action='store_true',
+        help='Interactive mode for copy/paste PDF text analysis'
     )
     
     parser.add_argument(
@@ -153,8 +179,12 @@ def create_demo_warehouses(session):
 
 def main():
     """Main execution function."""
+    start_time = datetime.now()
+    
     print("🏔️  Snowcrest Asset Management (SAM) Demo Builder")
     print("=" * 60)
+    print(f"⏰ Build started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
     
     # Parse arguments
     args = parse_arguments()
@@ -166,15 +196,90 @@ def main():
         scenario_list = [s.strip() for s in args.scenarios.split(',')]
     validated_scenarios = validate_scenarios(scenario_list)
     
-    print(f"📋 Building scenarios: {validated_scenarios}")
-    print(f"🎯 Scope: {args.scope}")
+    print(f"🎭 Scenarios: {', '.join(validated_scenarios)}")
+    print(f"🏗️  Scope: {args.scope}")
     print(f"🔗 Connection: {args.connection_name}")
     if args.test_mode:
-        print(f"🧪 Test Mode: Using 10% data volumes for faster development testing")
+        print(f"🧪 Test Mode: Using 10% data volumes")
     print()
+    print("=" * 60)
     
     # Create Snowpark session
     session = create_snowpark_session(args.connection_name)
+    
+    # Handle PDF template analysis if requested
+    if args.analyze_pdf or args.interactive_template:
+        if args.analyze_pdf and not args.pdf_doc_type:
+            print("❌ Error: --pdf-doc-type required when using --analyze-pdf")
+            sys.exit(1)
+        
+        print("📄 Analyzing PDF to create enhanced document templates...")
+        from pdf_template_analyzer import PDFTemplateAnalyzer, PDFTemplateIntegrator
+        
+        analyzer = PDFTemplateAnalyzer()
+        integrator = PDFTemplateIntegrator(analyzer)
+        
+        try:
+            if args.interactive_template:
+                print(f"Interactive mode: Please paste your document text below (press Ctrl+D when finished):")
+                print("-" * 50)
+                import sys as sys_module
+                text_input = sys_module.stdin.read()
+                
+                if not args.pdf_doc_type:
+                    print("Enter document type (broker_research, earnings_transcripts, policy_docs, press_releases):")
+                    doc_type = input().strip()
+                else:
+                    doc_type = args.pdf_doc_type
+                
+                template = integrator.process_text_input(text_input, doc_type)
+            else:
+                template = integrator.process_pdf_file(args.analyze_pdf, args.pdf_doc_type)
+                doc_type = args.pdf_doc_type
+            
+            # Generate enhanced function
+            enhanced_function = integrator.generate_enhanced_prompt_function(template, doc_type)
+            integrator.enhanced_templates[doc_type] = enhanced_function
+            
+            # Display results
+            print(f"\n📊 Analysis Results for {doc_type}:")
+            print(f"- Total word count: {template.total_word_count}")
+            print(f"- Sections found: {len(template.sections)}")
+            for section in template.sections:
+                print(f"  • {section.title}: {section.word_count} words")
+            print(f"- Key phrases: {len(template.key_phrases)}")
+            print(f"- Formatting patterns: {template.formatting_patterns}")
+            
+            # Save enhanced templates
+            integrator.save_enhanced_templates("enhanced_templates")
+            
+            print(f"\n✅ Enhanced template generated and saved to enhanced_templates/{doc_type}_enhanced.py")
+            print("\nNext steps:")
+            print("1. Review the enhanced template")
+            print("2. Run with --integrate-templates to apply changes")
+            print("3. Test with your SAM demo data generation")
+            
+        except Exception as e:
+            print(f"❌ PDF analysis failed: {e}")
+        
+        return  # Exit after PDF analysis
+    
+    # Handle template integration if requested
+    if args.integrate_templates:
+        print("🔄 Integrating enhanced PDF-derived templates...")
+        from template_integrator import TemplateIntegrationManager
+        
+        manager = TemplateIntegrationManager("python/generate_unstructured.py")
+        manager.integrate_enhanced_templates("enhanced_templates")
+        
+        if manager.test_integration():
+            print("✅ Template integration successful!")
+            print("🎯 Enhanced templates are now active in document generation")
+        else:
+            print("❌ Template integration failed")
+            print("💡 Use manager.rollback() if needed")
+        
+        return  # Exit after template integration
     
     # Handle real asset extraction if requested
     if args.extract_real_assets:
@@ -194,15 +299,20 @@ def main():
     build_semantic = args.scope in ['all', 'semantic'] 
     build_search = args.scope in ['all', 'search']
     
+    step_number = 1
+    total_steps = sum([build_data and 2 or 0, (build_semantic or build_search) and 1 or 0])
+    
     try:
         # Step 1: Build structured data (foundation + scenario-specific)
         if build_data:
-            print("📊 Building structured data...")
+            print(f"📊 Step {step_number}/{total_steps}: Building structured data...")
+            step_number += 1
             # Import and run structured data generation
             import generate_structured
             generate_structured.build_all(session, validated_scenarios, args.test_mode)
             
-            print("📝 Building unstructured data...")
+            print(f"📝 Step {step_number}/{total_steps}: Building unstructured data...")
+            step_number += 1
             # Import and run unstructured data generation
             import generate_unstructured
             required_doc_types = get_required_document_types(validated_scenarios)
@@ -210,14 +320,20 @@ def main():
         
         # Step 2: Build AI components
         if build_semantic or build_search:
-            print("🤖 Building AI components...")
+            print(f"🤖 Step {step_number}/{total_steps}: Building AI components...")
             import build_ai
             build_ai.build_all(session, validated_scenarios, build_semantic, build_search)
         
+        end_time = datetime.now()
+        duration = end_time - start_time
+        
         print()
+        print("=" * 60)
         print("🎉 SAM Demo Environment Build Complete!")
+        print(f"⏰ Build completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"⌛ Total duration: {duration}")
         print(f"📍 Database: {DATABASE_NAME}")
-        print(f"🎭 Scenarios: {validated_scenarios}")
+        print(f"🎭 Scenarios: {', '.join(validated_scenarios)}")
         print()
         print("Next steps:")
         print("1. Configure agents in Snowflake Intelligence (see docs/agents_setup.md)")
@@ -232,7 +348,21 @@ def main():
         print("- python/build_ai.py")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Build failed: {str(e)}")
+        end_time = datetime.now()
+        duration = end_time - start_time
+        print()
+        print("=" * 60)
+        print("🛑 BUILD FAILED!")
+        print(f"❌ Error: {str(e)}")
+        print(f"⏰ Failed after: {duration}")
+        print("=" * 60)
+        print()
+        print("💡 Troubleshooting tips:")
+        print("1. Check error message above for specific component that failed")
+        print("2. Verify all required data tables exist before AI component creation")
+        print("3. Review connection permissions and warehouse availability")
+        print("4. See docs/runbooks.md for common issues and solutions")
+        print()
         sys.exit(1)
     finally:
         if 'session' in locals():

@@ -433,8 +433,7 @@ When integrating additional real data sources:
 **Configuration**:
 ```python
 # Market data configuration (in config.py)
-USE_REAL_MARKET_DATA = False  # Disabled: Generate synthetic market data for all securities
-REAL_MARKET_DATA_CSV_PATH = None  # Not used in synthetic-only mode
+# All market data is generated synthetically for all securities
 ```
 
 **Working Commands**:

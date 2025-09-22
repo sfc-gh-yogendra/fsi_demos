@@ -235,7 +235,6 @@ REAL_ASSET_ISSUER_MAPPING = {
     'NESTLE': {'legal_name': 'Nestlé S.A.', 'country': 'CH', 'sector': 'Consumer Staples'}
 }
 
-# Market data extraction settings (not used - synthetic market data only)
 
 # Marketplace data source (requires subscription)
 MARKETPLACE_DATABASE = 'FINANCIALS_ECONOMICS_ENTERPRISE'
@@ -331,7 +330,5 @@ DOCUMENT_TYPES = {
     }
 }
 
-# Market data configuration (FINAL - synthetic only)
-USE_REAL_MARKET_DATA = False  # Generate synthetic market data for all securities
-REAL_MARKET_DATA_CSV_PATH = None  # Not used in synthetic-only mode
-EXTRACT_REAL_MARKET_DATA = False  # Not extracting real market data
+# Market data configuration (synthetic only)
+# All market data is generated synthetically for all securities

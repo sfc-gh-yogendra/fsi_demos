@@ -22,23 +22,39 @@ def build_all(session: Session, scenarios: List[str], build_semantic: bool = Tru
         build_search: Whether to build search services
     """
     print("🤖 Starting AI components build...")
+    print(f"   Scenarios: {', '.join(scenarios)}")
     
     if build_semantic:
         print("🧠 Building semantic views...")
-        create_semantic_views(session)
+        try:
+            create_semantic_views(session, scenarios)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Semantic view creation failed: {e}")
+            print("🛑 STOPPING BUILD - Cannot continue without semantic views")
+            raise
     
     if build_search:
         print("🔍 Building Cortex Search services...")
-        create_search_services(session, scenarios)
+        try:
+            create_search_services(session, scenarios)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Search service creation failed: {e}")
+            print("🛑 STOPPING BUILD - Cannot continue without required search services")
+            raise
     
     # Validate components
     print("✅ Validating AI components...")
-    validate_components(session, build_semantic, build_search)
+    try:
+        validate_components(session, build_semantic, build_search)
+    except Exception as e:
+        print(f"❌ CRITICAL FAILURE: AI component validation failed: {e}")
+        print("🛑 STOPPING BUILD - AI components not working properly")
+        raise
     
     print("✅ AI components build complete")
 
-def create_semantic_views(session: Session):
-    """Create the master semantic view for Cortex Analyst using correct Snowflake syntax."""
+def create_semantic_views(session: Session, scenarios: List[str] = None):
+    """Create semantic views required for the specified scenarios."""
     
     try:
         # Create proper semantic view with correct syntax patterns
@@ -103,27 +119,41 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
 	COMMENT='Multi-asset semantic view for portfolio analytics with issuer hierarchy support';
         """).collect()
         
-        print("✅ Created semantic view: SAM_ANALYST_VIEW")
+        print("   ✅ Created semantic view: SAM_ANALYST_VIEW")
         
     except Exception as e:
         print(f"❌ Failed to create semantic view: {e}")
         raise
     
-    # Create additional semantic view for research with fundamentals data
-    try:
-        print("📊 Creating research semantic view with fundamentals...")
-        create_research_semantic_view(session)
-    except Exception as e:
-        print(f"⚠️  Warning: Could not create research semantic view: {e}")
-        # Don't raise - this is optional enhancement
+    # Create scenario-specific semantic views
+    if scenarios and 'research_copilot' in scenarios:
+        try:
+            print("📊 Creating research semantic view with fundamentals...")
+            create_research_semantic_view(session)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Could not create research semantic view: {e}")
+            print("   This is required for research_copilot scenario")
+            raise Exception(f"Failed to create research semantic view: {e}")
+    
+    # Create quantitative semantic view for factor analysis
+    if scenarios and 'quant_analyst' in scenarios:
+        try:
+            print("📊 Creating quantitative semantic view for factor analysis...")
+            create_quantitative_semantic_view(session)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Could not create quantitative semantic view: {e}")
+            print("   This is required for quant_analyst scenarios")
+            raise Exception(f"Failed to create quantitative semantic view: {e}")
     
     # Create implementation semantic view for portfolio management
-    try:
-        print("🎯 Creating implementation semantic view for portfolio management...")
-        create_implementation_semantic_view(session)
-    except Exception as e:
-        print(f"⚠️  Warning: Could not create implementation semantic view: {e}")
-        # Don't raise - this is optional enhancement
+    if scenarios and ('portfolio_copilot' in scenarios or 'sales_advisor' in scenarios):
+        try:
+            print("🎯 Creating implementation semantic view for portfolio management...")
+            create_implementation_semantic_view(session)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Could not create implementation semantic view: {e}")
+            print("   This is required for portfolio_copilot and sales_advisor scenarios")
+            raise Exception(f"Failed to create implementation semantic view: {e}")
 
 def create_research_semantic_view(session: Session):
     """Create semantic view for research with fundamentals and estimates data."""
@@ -197,7 +227,140 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_RESEARCH_VIEW
 	COMMENT='Research semantic view with fundamentals and estimates for earnings analysis';
     """).collect()
     
-    print("✅ Created semantic view: SAM_RESEARCH_VIEW")
+    print("   ✅ Created semantic view: SAM_RESEARCH_VIEW")
+
+def create_quantitative_semantic_view(session: Session):
+    """Create semantic view for quantitative analysis with factors and attribution."""
+    
+    # First check if the quantitative tables exist
+    quant_tables = [
+        'FACT_FACTOR_EXPOSURES',
+        'FACT_FUNDAMENTALS',
+        'FACT_ESTIMATES', 
+        'FACT_MARKETDATA_TIMESERIES',
+        'FACT_BENCHMARK_HOLDINGS'
+    ]
+    
+    missing_tables = []
+    for table in quant_tables:
+        try:
+            session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.{table} LIMIT 1").collect()
+        except:
+            missing_tables.append(table)
+    
+    if missing_tables:
+        print(f"⚠️  Quantitative tables not found, skipping quant view creation: {missing_tables}")
+        return
+    
+    # Create the quantitative analysis semantic view
+    session.sql(f"""
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_QUANT_VIEW
+	TABLES (
+		HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR
+			PRIMARY KEY (HoldingDate, PORTFOLIOID, SECURITYID) 
+			WITH SYNONYMS=('quant_positions','factor_holdings','quantitative_holdings','quant_allocations') 
+			COMMENT='Portfolio holdings for factor analysis',
+		PORTFOLIOS AS {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+			PRIMARY KEY (PORTFOLIOID) 
+			WITH SYNONYMS=('quant_funds','factor_strategies','quantitative_mandates','quant_portfolios') 
+			COMMENT='Portfolio information',
+		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+			PRIMARY KEY (SECURITYID) 
+			WITH SYNONYMS=('factor_companies','quant_stocks','quantitative_instruments','factor_securities') 
+			COMMENT='Security reference data',
+		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+			PRIMARY KEY (ISSUERID) 
+			WITH SYNONYMS=('factor_issuers','quantitative_entities','quant_corporates') 
+			COMMENT='Issuer data',
+		FACTOR_EXPOSURES AS {config.DATABASE_NAME}.CURATED.FACT_FACTOR_EXPOSURES
+			PRIMARY KEY (SECURITYID, EXPOSURE_DATE, FACTOR_NAME)
+			WITH SYNONYMS=('factors','loadings','exposures','factor_data')
+			COMMENT='Factor exposures and loadings',
+		FUNDAMENTALS AS {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS
+			PRIMARY KEY (SECURITY_ID, REPORTING_DATE, METRIC_NAME)
+			WITH SYNONYMS=('financials','earnings','fundamentals','metrics')
+			COMMENT='Financial fundamentals data',
+		ESTIMATES AS {config.DATABASE_NAME}.CURATED.FACT_ESTIMATES
+			PRIMARY KEY (SECURITY_ID, ESTIMATE_DATE, FISCAL_PERIOD, METRIC_NAME)
+			WITH SYNONYMS=('forecasts','estimates','consensus','guidance')
+			COMMENT='Analyst estimates and guidance',
+		MARKET_DATA AS {config.DATABASE_NAME}.CURATED.FACT_MARKETDATA_TIMESERIES
+			PRIMARY KEY (PriceDate, SECURITYID)
+			WITH SYNONYMS=('prices','returns','market_data','performance')
+			COMMENT='Market data and returns',
+		BENCHMARK_HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_BENCHMARK_HOLDINGS
+			PRIMARY KEY (HOLDING_DATE, BENCHMARKID, SECURITYID)
+			WITH SYNONYMS=('benchmark_positions','index_holdings','benchmark_weights')
+			COMMENT='Benchmark constituent holdings and weights'
+	)
+	RELATIONSHIPS (
+		HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+		HOLDINGS_TO_SECURITIES AS HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		SECURITIES_TO_ISSUERS AS SECURITIES(ISSUERID) REFERENCES ISSUERS(ISSUERID),
+		FACTORS_TO_SECURITIES AS FACTOR_EXPOSURES(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		FUNDAMENTALS_TO_SECURITIES AS FUNDAMENTALS(SECURITY_ID) REFERENCES SECURITIES(SECURITYID),
+		ESTIMATES_TO_SECURITIES AS ESTIMATES(SECURITY_ID) REFERENCES SECURITIES(SECURITYID),
+		MARKET_DATA_TO_SECURITIES AS MARKET_DATA(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		BENCHMARK_TO_SECURITIES AS BENCHMARK_HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID)
+	)
+	DIMENSIONS (
+		-- Portfolio dimensions
+		PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('quant_fund_name','factor_strategy_name','quantitative_portfolio_name') COMMENT='Portfolio or fund name',
+		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('quant_investment_strategy','factor_portfolio_strategy') COMMENT='Investment strategy type',
+		
+		-- Security dimensions  
+		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('quant_ticker','factor_symbol','quantitative_ticker_symbol') COMMENT='Trading ticker symbol',
+		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('factor_company','quant_name','quantitative_security_name') COMMENT='Company name',
+		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('quant_type','factor_security_type','quantitative_asset_class') COMMENT='Asset class',
+		
+		-- Issuer dimensions
+		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('factor_issuer','quant_legal_name','quantitative_entity_name') COMMENT='Legal entity name',
+		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('factor_sector','quant_industry_sector','quantitative_gics') COMMENT='GICS sector',
+		ISSUERS.COUNTRYOFINCORPORATION AS CountryOfIncorporation WITH SYNONYMS=('factor_domicile','quant_country','quantitative_headquarters') COMMENT='Country of incorporation',
+		
+		-- Factor dimensions
+		FACTOR_EXPOSURES.FactorName AS FACTOR_NAME WITH SYNONYMS=('factor','factor_type','loading_type') COMMENT='Factor name (Value, Growth, Quality, etc.)',
+		FACTOR_EXPOSURES.ExposureDate AS EXPOSURE_DATE WITH SYNONYMS=('factor_date','loading_date','exposure_date') COMMENT='Factor exposure date',
+		
+		-- Fundamental dimensions
+		FUNDAMENTALS.ReportingDate AS REPORTING_DATE WITH SYNONYMS=('quant_report_date','factor_earnings_date','quantitative_fiscal_date') COMMENT='Financial reporting date',
+		FUNDAMENTALS.FiscalQuarter AS FISCAL_QUARTER WITH SYNONYMS=('quant_quarter','factor_period','quantitative_fiscal_period') COMMENT='Fiscal quarter',
+		FUNDAMENTALS.MetricName AS METRIC_NAME WITH SYNONYMS=('quant_metric','factor_measure','quantitative_financial_metric') COMMENT='Financial metric name',
+		
+		-- Time dimensions
+		HOLDINGS.HoldingDate AS HOLDINGDATE WITH SYNONYMS=('quant_position_date','factor_as_of_date','quantitative_holding_date') COMMENT='Holdings as-of date',
+		MARKET_DATA.PriceDate AS PRICEDATE WITH SYNONYMS=('quant_market_date','factor_price_date','quantitative_trading_date') COMMENT='Market data date'
+	)
+	METRICS (
+		-- Portfolio metrics
+		HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MarketValue_Base) WITH SYNONYMS=('quant_exposure','factor_total_exposure','quantitative_market_value','quant_position_value') COMMENT='Total market value in base currency',
+		HOLDINGS.PORTFOLIO_WEIGHT AS SUM(PortfolioWeight) WITH SYNONYMS=('quant_weight','factor_allocation','quantitative_portfolio_weight') COMMENT='Portfolio weight as decimal',
+		HOLDINGS.PORTFOLIO_WEIGHT_PCT AS SUM(PortfolioWeight) * 100 WITH SYNONYMS=('quant_weight_percent','factor_allocation_percent','quantitative_percentage_weight') COMMENT='Portfolio weight as percentage',
+		
+		-- Factor metrics (enhanced for trend analysis)
+		FACTOR_EXPOSURES.FACTOR_EXPOSURE AS SUM(EXPOSURE_VALUE) WITH SYNONYMS=('factor_loading','loading','factor_score','exposure') COMMENT='Factor exposure value',
+		FACTOR_EXPOSURES.FACTOR_R_SQUARED AS AVG(R_SQUARED) WITH SYNONYMS=('r_squared','model_fit','factor_rsq') COMMENT='Factor model R-squared',
+		FACTOR_EXPOSURES.MOMENTUM_SCORE AS AVG(CASE WHEN FACTOR_NAME = 'Momentum' THEN EXPOSURE_VALUE ELSE NULL END) WITH SYNONYMS=('momentum','momentum_factor','momentum_loading') COMMENT='Momentum factor exposure',
+		FACTOR_EXPOSURES.QUALITY_SCORE AS AVG(CASE WHEN FACTOR_NAME = 'Quality' THEN EXPOSURE_VALUE ELSE NULL END) WITH SYNONYMS=('quality','quality_factor','quality_loading') COMMENT='Quality factor exposure',
+		FACTOR_EXPOSURES.VALUE_SCORE AS AVG(CASE WHEN FACTOR_NAME = 'Value' THEN EXPOSURE_VALUE ELSE NULL END) WITH SYNONYMS=('value','value_factor','value_loading') COMMENT='Value factor exposure',
+		FACTOR_EXPOSURES.GROWTH_SCORE AS AVG(CASE WHEN FACTOR_NAME = 'Growth' THEN EXPOSURE_VALUE ELSE NULL END) WITH SYNONYMS=('growth','growth_factor','growth_loading') COMMENT='Growth factor exposure',
+		
+		-- Performance metrics
+		MARKET_DATA.TOTAL_RETURN AS SUM(TotalReturnFactor_Daily) WITH SYNONYMS=('quant_return','factor_performance','quantitative_total_return') COMMENT='Total return factor',
+		MARKET_DATA.PRICE_RETURN AS AVG(Price_Close) WITH SYNONYMS=('quant_price','factor_closing_price','quantitative_market_price') COMMENT='Closing price',
+		MARKET_DATA.VOLUME_TRADED AS SUM(Volume) WITH SYNONYMS=('quant_volume','factor_trading_volume','quantitative_daily_volume') COMMENT='Trading volume',
+		
+		-- Fundamental metrics
+		FUNDAMENTALS.FUNDAMENTAL_VALUE AS SUM(METRIC_VALUE) WITH SYNONYMS=('quant_fundamental','factor_financial_value','quantitative_metric_value') COMMENT='Fundamental metric value',
+		ESTIMATES.ESTIMATE_VALUE AS AVG(ESTIMATE_VALUE) WITH SYNONYMS=('quant_estimate','factor_forecast','quantitative_consensus') COMMENT='Consensus estimate value',
+		
+		-- Benchmark metrics
+		BENCHMARK_HOLDINGS.BenchmarkWeight AS SUM(BENCHMARK_WEIGHT) WITH SYNONYMS=('quant_benchmark_allocation','factor_index_weight','quantitative_benchmark_percentage') COMMENT='Benchmark constituent weight'
+	)
+	COMMENT='Quantitative analysis semantic view with factor exposures, performance attribution, and systematic analysis capabilities';
+    """).collect()
+    
+    print("   ✅ Created semantic view: SAM_QUANT_VIEW")
 
 def create_search_services(session: Session, scenarios: List[str]):
     """Create Cortex Search services for required document types."""
@@ -208,7 +371,7 @@ def create_search_services(session: Session, scenarios: List[str]):
         if scenario in config.SCENARIO_DATA_REQUIREMENTS:
             required_doc_types.update(config.SCENARIO_DATA_REQUIREMENTS[scenario])
     
-    print(f"Creating search services for: {list(required_doc_types)}")
+    print(f"   📑 Document types: {', '.join(required_doc_types)}")
     
     # Create search service for each required document type
     for doc_type in required_doc_types:
@@ -242,11 +405,12 @@ def create_search_services(session: Session, scenarios: List[str]):
                         FROM {corpus_table}
                 """).collect()
                 
-                print(f"✅ Created search service: {service_name}")
+                print(f"   ✅ Created search service: {service_name}")
                 
             except Exception as e:
-                print(f"❌ Failed to create search service {service_name}: {e}")
-                continue
+                print(f"❌ CRITICAL FAILURE: Failed to create search service {service_name}: {e}")
+                print(f"   This search service is required for scenarios using {doc_type}")
+                raise Exception(f"Failed to create required search service {service_name}: {e}")
 
 def validate_components(session: Session, semantic_built: bool, search_built: bool):
     """Validate that AI components are working correctly."""
@@ -283,8 +447,9 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
             print(f"✅ Advanced semantic view test passed: {len(advanced_result)} records")
             
         except Exception as e:
-            print(f"❌ Semantic view validation failed: {e}")
-            # Don't raise - continue with search services
+            print(f"❌ CRITICAL FAILURE: Semantic view validation failed: {e}")
+            print("   The main semantic view is essential for all agents")
+            raise Exception(f"Main semantic view validation failed: {e}")
     
     if search_built:
         print("🔍 Testing search services...")
@@ -306,10 +471,14 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
                     """).collect()
                     print(f"✅ Search service test passed: {service_name}")
                 except Exception as e:
-                    print(f"❌ Search service test failed for {service_name}: {e}")
+                    print(f"❌ CRITICAL FAILURE: Search service test failed for {service_name}: {e}")
+                    print(f"   This search service is required for document search functionality")
+                    raise Exception(f"Search service validation failed for {service_name}: {e}")
                     
         except Exception as e:
-            print(f"❌ Search services validation failed: {e}")
+            print(f"❌ CRITICAL FAILURE: Search services validation failed: {e}")
+            print("   Search services are required for document-based scenarios")
+            raise Exception(f"Search services validation failed: {e}")
     
     print("✅ AI component validation complete")
 

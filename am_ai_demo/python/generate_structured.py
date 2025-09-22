@@ -305,36 +305,11 @@ def build_dim_security_from_real_data(session: Session, securities_count: dict):
     
     # Save to database using Snowpark DataFrames
     if all_security_data:
-        # Debug: Check DataFrame structure before saving
-        print(f"📊 Creating DataFrame with {len(all_security_data)} securities...")
-        if all_security_data:
-            sample_record = all_security_data[0]
-            print(f"📋 Sample record keys: {list(sample_record.keys())}")
-            if 'FIGI' in sample_record:
-                print(f"✅ FIGI column present in data: {sample_record['FIGI']}")
-            else:
-                print("❌ FIGI column missing from data!")
-        
         securities_df = session.create_dataframe(all_security_data)
-        
-        # Debug: Check Snowpark DataFrame schema
-        print(f"📊 Snowpark DataFrame schema: {[field.name for field in securities_df.schema.fields]}")
-        
-        # Save using overwrite mode (automatically recreates table with correct schema)
         securities_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_SECURITY")
         
-        # Verify table structure was created correctly
-        try:
-            columns = session.sql(f"DESCRIBE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY").collect()
-            column_names = [col['name'] for col in columns]
-            if 'FIGI' in column_names:
-                print("✅ FIGI column confirmed in DIM_SECURITY table")
-            else:
-                print(f"❌ FIGI column missing! Available columns: {column_names}")
-        except Exception as e:
-            print(f"⚠️ Could not verify table structure: {e}")
-        
-        print(f"✅ Created {len(all_security_data)} securities from real asset data (100% authentic) with direct TICKER and FIGI columns")
+        total_securities = len(all_security_data)
+        print(f"✅ Created {total_securities:,} securities from real asset data")
         
         # Report actual counts achieved
         actual_counts = {}
@@ -342,11 +317,10 @@ def build_dim_security_from_real_data(session: Session, securities_count: dict):
             asset_class = sec['AssetClass']
             actual_counts[asset_class] = actual_counts.get(asset_class, 0) + 1
         
-        print("📊 Real asset utilization by category:")
         for asset_type, max_target in securities_count.items():
             asset_category = {'equities': 'Equity', 'bonds': 'Corporate Bond', 'etfs': 'ETF'}[asset_type]
             actual = actual_counts.get(asset_category, 0)
-            print(f"  {asset_category}: {actual:,} securities (target: {max_target:,})")
+            print(f"   📊 {asset_category}: {actual:,} securities")
     
     else:
         raise Exception("No real securities found - check data filtering criteria")
@@ -945,6 +919,13 @@ def build_factor_exposures(session: Session):
                 END as VALUE_FACTOR,
                 -- Momentum factor
                 UNIFORM(-0.4, 0.4, RANDOM()) as MOMENTUM_FACTOR,
+                -- Growth factor (inverse of value factor for most tech stocks)
+                CASE 
+                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.3, 0.8, RANDOM())
+                    WHEN es.GICS_Sector = 'Health Care' THEN UNIFORM(0.1, 0.6, RANDOM())
+                    WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(-0.4, 0.1, RANDOM())
+                    ELSE UNIFORM(-0.3, 0.4, RANDOM())
+                END as GROWTH_FACTOR,
                 -- Quality factor
                 CASE 
                     WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.2, 0.7, RANDOM())
@@ -965,6 +946,8 @@ def build_factor_exposures(session: Session):
         SELECT SecurityID, EXPOSURE_DATE, 'Size', SIZE_FACTOR, 0.75 FROM base_exposures
         UNION ALL
         SELECT SecurityID, EXPOSURE_DATE, 'Value', VALUE_FACTOR, 0.65 FROM base_exposures
+        UNION ALL
+        SELECT SecurityID, EXPOSURE_DATE, 'Growth', GROWTH_FACTOR, 0.60 FROM base_exposures
         UNION ALL
         SELECT SecurityID, EXPOSURE_DATE, 'Momentum', MOMENTUM_FACTOR, 0.45 FROM base_exposures
         UNION ALL

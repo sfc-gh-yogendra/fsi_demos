@@ -1,5 +1,7 @@
 # SAM Demo - Scenario Scripts
 
+Reference: See `docs/implementation_plan.md` for the build order and implementation details referenced by these scenarios.
+
 Complete demo scenario for Portfolio Copilot with step-by-step conversations, expected responses, and data flows.
 
 ## Current Implementation Status
@@ -9,13 +11,13 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - **Research Copilot**: ✅ Document research and analysis (Phase 2)
 - **Thematic Macro Advisor**: ✅ Thematic investment strategy (Phase 2)
 
+✅ **Phase 4 Complete**: Advanced factor analysis and client reporting
+- **Quant Analyst**: ✅ Factor analysis and performance attribution (Phase 4)
+- **Sales Advisor**: ✅ Client reporting and template formatting (Phase 4)
+
 🔄 **Phase 3 Ready for Implementation**: ESG & Compliance scenarios
 - **ESG Guardian**: ESG risk monitoring and policy compliance
 - **Compliance Advisor**: Mandate monitoring and breach detection
-
-🔄 **Phase 4 Future Implementation**: Client & Quantitative scenarios
-- **Sales Advisor**: Client reporting and template formatting
-- **Quant Analyst**: Factor analysis and performance attribution
 
 ## Scenario 1: Portfolio Copilot - Portfolio Insights & Benchmarking
 
@@ -950,3 +952,252 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - **Integrated Backtesting**: Comprehensive strategy testing with multiple risk and performance metrics
 - **Research Integration**: Unique combination of quantitative factor analysis with fundamental research
 - **Statistical Rigor**: Advanced statistical analysis and significance testing throughout the analytical process
+
+## Scenario 7: Quant Analyst - Factor Analysis & Attribution ❌ PHASE 4
+
+### Business Context Setup
+
+**Persona**: Dr. Sarah Chen, Quantitative Analyst at Snowcrest Asset Management  
+**Business Challenge**: Quantitative analysts need to conduct systematic factor analysis, performance attribution, and backtesting across complex multi-factor models. Traditional approaches require complex data extraction, manual factor calculation, and time-consuming statistical analysis across multiple systems, limiting the speed and depth of quantitative research.  
+**Value Proposition**: AI-powered quantitative analysis that instantly combines factor exposures, fundamental metrics, and performance data to enable systematic strategy development, rigorous backtesting, and comprehensive attribution analysis in minutes rather than hours.
+
+**Agent**: `quant_analyst`  
+**Data Available**: Factor exposures for 6 factors across 14,000+ securities, fundamentals & estimates, market data, benchmark holdings, portfolio positions
+
+### Demo Flow
+
+**Scene Setting**: Dr. Chen is developing a systematic factor strategy for the quantitative equity team and needs to analyze factor exposures, conduct performance attribution, and validate strategy backtesting across multiple quantitative models.
+
+#### Step 1: Factor Screening and Portfolio Analysis
+**User Input**: 
+```
+"Show me securities in our portfolios with high Quality factor exposure (>0.5) and their current portfolio weights across all strategies"
+```
+
+**Expected Response**:
+- **Factor-Filtered Securities**: Table showing companies with Quality factor >0.5
+- **Current Holdings**: Portfolio weights and exposures across SAM strategies  
+- **Factor Statistics**: Quality factor loadings, R-squared values, statistical significance
+- **Portfolio Impact**: Total exposure to high-quality securities by strategy
+- **Factor Characteristics**: Sector distribution and fundamental metrics of quality-screened securities
+
+**Talking Points**:
+- **Systematic Screening**: AI automatically filters 14,000+ securities by quantitative factor criteria
+- **Multi-Portfolio View**: Instant analysis across all portfolio strategies simultaneously
+- **Statistical Validation**: R-squared and significance testing for factor model reliability
+
+**Key Features Highlighted**: 
+- **SAM_QUANT_VIEW**: Advanced semantic view with factor exposures, fundamentals, and portfolio data
+- **Quantitative Filtering**: Sophisticated factor-based security screening capabilities
+- **Statistical Analysis**: Factor model validation with R-squared and significance metrics
+
+#### Step 2: Performance Attribution Analysis
+**User Input**: 
+```
+"For the SAM Technology & Infrastructure portfolio, break down last quarter's performance attribution by factor exposures - show me which factors contributed most to returns"
+```
+
+**Expected Response**:
+- **Factor Attribution Table**: Contribution to returns by factor (Market, Value, Growth, Quality, Momentum, Volatility)
+- **Active vs Passive**: Factor-based attribution of active return vs benchmark
+- **Statistical Significance**: Confidence intervals and t-statistics for factor contributions
+- **Risk Decomposition**: Systematic vs specific risk attribution with factor model context
+- **Attribution Summary**: Total factor effects vs security selection effects
+
+**Talking Points**:
+- **Systematic Attribution**: AI decomposes performance using rigorous factor models
+- **Risk-Adjusted Analysis**: Factor attribution with proper statistical validation
+- **Active Management Insight**: Quantifies skill vs factor exposure in performance
+
+**Key Features Highlighted**: 
+- **Factor Model Integration**: Comprehensive factor-based performance attribution
+- **Statistical Rigor**: Confidence intervals and significance testing for attribution analysis
+- **Risk Analytics**: Systematic risk decomposition using factor model framework
+
+#### Step 3: Factor Strategy Backtesting
+**User Input**: 
+```
+"Backtest a momentum factor strategy: screen for securities with momentum factor >0.3, equal-weight them, and show performance vs S&P 500 over the last 2 years with full risk metrics"
+```
+
+**Expected Response**:
+- **Strategy Definition**: Momentum factor >0.3 screening criteria and methodology
+- **Backtesting Results**: Strategy performance vs S&P 500 with monthly rebalancing
+- **Risk Metrics**: Sharpe ratio, information ratio, maximum drawdown, tracking error
+- **Factor Analysis**: Strategy's factor exposures vs benchmark over time
+- **Statistical Validation**: T-statistics, confidence intervals, and significance of outperformance
+- **Risk Attribution**: Factor-based risk decomposition and concentration analysis
+
+**Talking Points**:
+- **Systematic Strategy Testing**: Rigorous backtesting with factor-based methodology
+- **Comprehensive Risk Analysis**: Multiple risk metrics with statistical validation
+- **Factor Consistency**: Tracking factor exposure drift and strategy stability over time
+
+**Key Features Highlighted**: 
+- **Advanced Backtesting**: Sophisticated strategy simulation with factor model integration
+- **Risk-Adjusted Performance**: Comprehensive risk metrics with statistical significance
+- **Factor Stability Analysis**: Tracking systematic factor exposure consistency over time
+
+#### Step 4: Fundamental Validation and Research Integration
+**User Input**: 
+```
+"For the top 5 performing securities in that momentum strategy, show me their fundamental metrics and any recent earnings commentary to validate the factor signal"
+```
+
+**Expected Response**:
+- **Top Performers**: 5 best-performing securities from momentum strategy with factor scores
+- **Fundamental Validation**: Revenue growth, earnings trends, fundamental momentum metrics
+- **Management Commentary**: Earnings call excerpts supporting business momentum themes
+- **Analyst Research**: Broker research supporting fundamental momentum narratives  
+- **Factor Confirmation**: Statistical validation of fundamental momentum vs factor momentum
+- **Integrated Analysis**: Synthesis of quantitative factor signals with fundamental business drivers
+
+**Talking Points**:
+- **Factor Validation**: Confirms quantitative signals with fundamental business drivers
+- **Integrated Research**: Combines systematic factor analysis with qualitative fundamental insights
+- **Signal Verification**: Validates statistical factor models with business reality
+
+**Key Features Highlighted**: 
+- **Multi-Source Integration**: Combines factor analysis with fundamental research and management commentary
+- **Signal Validation**: Sophisticated approach to confirming quantitative models with qualitative evidence
+- **Systematic Research**: AI-driven validation of factor strategies using multiple data sources
+
+### Scenario Wrap-up
+
+**Business Impact Summary**:
+- **Research Velocity**: Factor analysis and backtesting completed in minutes vs hours, enabling rapid strategy iteration
+- **Statistical Rigor**: Comprehensive significance testing and validation provides confidence in systematic strategies
+- **Integrated Analysis**: Seamless combination of quantitative factor models with fundamental validation enhances decision quality
+- **Risk Management**: Detailed factor attribution and risk decomposition enables superior risk-adjusted strategy development
+
+**Technical Differentiators**:
+- **SAM_QUANT_VIEW**: Purpose-built semantic view combining factor exposures, fundamentals, market data, and portfolio holdings
+- **Factor Model Integration**: Native factor-based attribution and risk analysis with statistical validation throughout
+- **Systematic Research Framework**: AI-powered integration of quantitative factor analysis with qualitative fundamental research  
+- **Advanced Statistical Analysis**: Comprehensive significance testing, confidence intervals, and model validation capabilities
+
+## Scenario 8: Sales Advisor - Client Reporting & Templates ✅ PHASE 4
+
+### Business Context Setup
+
+**Persona**: James Mitchell, Client Relationship Manager at Snowcrest Asset Management  
+**Business Challenge**: Client relationship managers need to produce professional, compliant, and compelling client reports that integrate performance data with approved messaging templates and investment philosophy. Traditional processes require manual data gathering, template formatting, compliance review, and brand alignment, consuming significant time and introducing formatting inconsistencies.  
+**Value Proposition**: AI-powered client reporting that automatically combines portfolio analytics with approved templates, investment philosophy, and compliance language to generate professional, relationship-building client communications in minutes.
+
+**Agent**: `sales_advisor`  
+**Data Available**: Portfolio performance data, sales report templates, investment philosophy documents, compliance policies, brand messaging guidelines
+
+### Demo Flow
+
+**Scene Setting**: James needs to prepare a monthly client report for a key institutional client with their SAM Technology & Infrastructure portfolio, ensuring professional presentation with proper compliance language and brand messaging.
+
+#### Step 1: Portfolio Performance Foundation
+**User Input**: 
+```
+"Generate a client report for the SAM Technology & Infrastructure portfolio showing quarterly performance, top holdings, and sector allocation"
+```
+
+**Expected Response**:
+- **Performance Summary**: Quarterly returns vs benchmark with multiple time periods
+- **Top Holdings Table**: Largest positions with weights and contribution to performance
+- **Sector Allocation**: Technology sector breakdown with allocation percentages
+- **Performance Attribution**: Key contributors and detractors to portfolio performance
+- **Concentration Warnings**: Flag any positions >6.5% with "⚠️ CONCENTRATION WARNING"
+- **Professional Structure**: Executive summary format with clear data presentation
+
+**Talking Points**:
+- **Comprehensive Analytics**: AI instantly gathers all required portfolio data for client reporting
+- **Professional Formatting**: Automatically structures data in client-appropriate format
+- **Risk Highlighting**: Proactive flagging of concentration risks for client transparency
+
+**Key Features Highlighted**: 
+- **SAM_ANALYST_VIEW**: Complete portfolio analytics for client reporting foundation
+- **Automated Formatting**: AI structures complex portfolio data for client presentation
+- **Risk Management**: Automatic concentration warning and risk disclosure
+
+#### Step 2: Template Integration and Professional Formatting
+**User Input**: 
+```
+"Format this into a professional monthly client report using our approved template structure with proper sections and branding"
+```
+
+**Expected Response**:
+- **Template Structure**: Monthly Client Report format with standardised sections
+- **Executive Summary**: Key performance highlights and market commentary section
+- **Performance Analysis**: Detailed returns analysis with benchmark comparison
+- **Holdings Overview**: Portfolio composition and changes section
+- **Market Commentary**: Template-guided market outlook section
+- **Professional Layout**: Consistent formatting with SAM branding elements
+- **Section Headers**: Clear, template-compliant section organisation
+
+**Talking Points**:
+- **Template Compliance**: AI automatically applies approved report templates for consistency
+- **Brand Standards**: Ensures all client communications follow SAM brand guidelines
+- **Professional Presentation**: Client-ready formatting that enhances relationship value
+
+**Key Features Highlighted**: 
+- **SAM_SALES_TEMPLATES**: Comprehensive template library for consistent client communications
+- **Automated Formatting**: AI applies professional structure and branding consistently
+- **Template Intelligence**: Smart adaptation of content to template requirements
+
+#### Step 3: Investment Philosophy and Brand Integration
+**User Input**: 
+```
+"Integrate our ESG investment philosophy and technology innovation messaging to align the report with SAM's strategic positioning"
+```
+
+**Expected Response**:
+- **ESG Integration**: SAM's sustainable investment approach woven into performance narrative
+- **Technology Focus**: Innovation leadership messaging aligned with technology portfolio theme
+- **Investment Philosophy**: Core beliefs about ESG and technology investing naturally integrated
+- **Brand Messaging**: Competitive differentiators and unique capabilities highlighted
+- **Strategic Positioning**: SAM's forward-thinking, technology-enhanced approach emphasised
+- **Value Proposition**: Clear articulation of why SAM's approach benefits clients
+
+**Talking Points**:
+- **Philosophy Alignment**: Seamlessly integrates SAM's investment beliefs into client communications
+- **Brand Consistency**: Ensures all client touchpoints reinforce strategic positioning
+- **Relationship Building**: Enhances client understanding of SAM's unique value proposition
+
+**Key Features Highlighted**: 
+- **SAM_PHILOSOPHY_DOCS**: Comprehensive investment philosophy and brand messaging library
+- **Natural Integration**: AI weaves philosophy into performance narrative without appearing promotional
+- **Strategic Messaging**: Consistent reinforcement of SAM's competitive differentiators
+
+#### Step 4: Compliance Review and Final Document
+**User Input**: 
+```
+"Complete the compliance review by adding all required regulatory disclosures, risk warnings, and fiduciary language for final client delivery"
+```
+
+**Expected Response**:
+- **Regulatory Disclosures**: All mandatory disclaimers and risk warnings included
+- **Performance Disclaimers**: "Past performance does not guarantee future results" and appropriate caveats
+- **Fiduciary Language**: Professional standard disclaimers for investment advice
+- **Risk Warnings**: Market risk, concentration risk, and investment limitation disclosures
+- **Compliance Standards**: Full regulatory compliance for client communication
+- **Final Document**: Complete, compliance-ready client report for immediate delivery
+
+**Talking Points**:
+- **Regulatory Compliance**: AI ensures all client communications meet regulatory standards
+- **Risk Management**: Comprehensive risk disclosure protects both client and firm
+- **Fiduciary Excellence**: Professional-grade compliance language maintains highest standards
+
+**Key Features Highlighted**: 
+- **SAM_POLICY_DOCS**: Complete compliance manual and regulatory requirements library
+- **Compliance Automation**: AI automatically includes all required disclosures and warnings
+- **Professional Standards**: Ensures client communications meet institutional investment standards
+
+### Scenario Wrap-up
+
+**Business Impact Summary**:
+- **Productivity Gains**: Client report generation reduced from hours to minutes, enabling more client interaction time
+- **Consistency Assurance**: Automated template and brand compliance ensures professional standard across all client communications
+- **Compliance Excellence**: Comprehensive regulatory disclosure automation reduces compliance risk and review time
+- **Relationship Enhancement**: Professional, compelling reports strengthen client relationships and demonstrate institutional capabilities
+
+**Technical Differentiators**:
+- **Multi-Source Integration**: Seamlessly combines portfolio data, templates, philosophy, and compliance requirements in single workflow
+- **Template Intelligence**: AI-powered formatting that adapts content to professional report structures while maintaining brand consistency
+- **Compliance Automation**: Comprehensive regulatory disclosure integration ensures client communications meet institutional standards
+- **Brand Integration**: Natural weaving of investment philosophy and strategic messaging into performance narratives

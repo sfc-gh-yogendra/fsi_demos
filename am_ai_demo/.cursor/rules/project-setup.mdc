@@ -75,7 +75,6 @@ PROVIDER_MIX = {'NSD': 0.5, 'PLM': 0.5}
 USE_REAL_ASSETS_CSV = True
 REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
 # Market data: Synthetic generation for all securities
-USE_REAL_MARKET_DATA = False
 
 # Enhanced real asset to issuer mapping
 REAL_ASSET_ISSUER_MAPPING = {

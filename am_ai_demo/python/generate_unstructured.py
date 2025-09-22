@@ -743,7 +743,7 @@ def generate_content(session: Session, document_types: List[str]):
     
     # Process each document type separately for better control
     for doc_type in document_types:
-        print(f"🤖 Generating {doc_type} content with {config.MODEL_NAME}...")
+        print(f"   🤖 Generating {doc_type} content...")
         
         try:
             # Map document types to their filter patterns
@@ -780,7 +780,7 @@ def generate_content(session: Session, document_types: List[str]):
             # Transform to final RAW table with proper schema
             create_raw_table(session, doc_type)
             
-            print(f"✅ Generated {doc_type} content successfully")
+            print(f"   ✅ Generated {doc_type} content")
             
         except Exception as e:
             print(f"❌ Failed to generate {doc_type} content: {e}")

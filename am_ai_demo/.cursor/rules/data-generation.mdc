@@ -413,8 +413,7 @@ AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY = 2.5
 # Real data integration (preserved)
 USE_REAL_ASSETS_CSV = True
 REAL_ASSETS_CSV_PATH = '../data/real_assets.csv'
-USE_REAL_MARKET_DATA = True  
-REAL_MARKET_DATA_CSV_PATH = '../data/real_market_data.csv'
+# Market data: Synthetic generation for all securities
 
 # Enhanced real asset to issuer mapping
 REAL_ASSET_ISSUER_MAPPING = {
