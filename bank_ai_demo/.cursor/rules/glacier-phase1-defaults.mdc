@@ -19,7 +19,7 @@ alwaysApply: false
 ## Databases, Warehouses, Connections
 - **Database**: `BANK_AI_DEMO`
 - **Warehouses**: `BANK_AI_DEMO_COMPUTE_WH` (general), `BANK_AI_DEMO_SEARCH_WH` (Cortex Search)
-- **Connection Parameter**: script requires `connection_name`; fallback default `sfseeurope-mstellwall-aws-us-west3`
+- **Connection Parameter**: script requires `connection_name` (no fallback - must be provided)
 
 ## Response Instruction Defaults (embed into agents)
 - **Citations**: Always include document ID/title and publish/effective dates

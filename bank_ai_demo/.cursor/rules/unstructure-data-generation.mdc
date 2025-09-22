@@ -196,22 +196,25 @@ def generate_document_prompts(session: Session, doc_type: str, config: dict):
 
 ### Prompt Building Pattern
 ```python
-def build_prompt(entity: dict, doc_type: str, doc_config: dict, config: dict):
-    """Build document generation prompt with coherence hooks."""
+def build_prompt(entity: dict, doc_type: str) -> str:
+    """Build document generation prompt using current config patterns."""
+    import config
     
     base_prompt = f"""
-    Create a professional {doc_type.replace('_', ' ')} document for {entity['name']}.
+    Create a professional {doc_type.replace('_', ' ')} document for {entity['ENTITY_NAME']}.
     
     Requirements:
-    - Language: {config['LANGUAGE']}
-    - Word count: {doc_config['word_count_range'][0]}-{doc_config['word_count_range'][1]} words
-    - Professional tone appropriate for {config['COMPANY_NAME']}
-    - Include sections: {', '.join(doc_config['sections'])}
+    - Language: Professional {config.LANGUAGE} banking terminology
+    - Institution: {config.INSTITUTION_NAME}
+    - Currency: {config.CURRENCY}
+    - Regulatory Framework: {config.REGULATORY_FRAMEWORK}
+    - Entity: {entity['ENTITY_NAME']} ({entity['ENTITY_ID']})
     """
     
-    # Add scenario coherence themes
-    if 'themes' in config and 'keywords' in config['themes']:
-        base_prompt += f"\n- Emphasize themes: {', '.join(config['themes']['keywords'])}"
+    # Add market themes from config
+    if hasattr(config, 'MARKET_THEMES'):
+        themes = [theme['name'] for theme in config.MARKET_THEMES]
+        base_prompt += f"\n- Market themes: {', '.join(themes)}"
     
     # Add entity-specific context
     if doc_config['linkage_level'] == 'security':
@@ -393,4 +396,59 @@ custom_report:
 - [ ] Required entities from scenario included
 - [ ] Theme keywords appear in content
 - [ ] Search service can index the corpus
+
+## Current Implementation Patterns (2024 Update)
+
+### ✅ Correct Configuration Usage
+
+```python
+def generate_compliance_documents(session: Session, scale: str = "demo") -> None:
+    """Generate compliance documents using current config patterns."""
+    import config
+    
+    # ✅ CORRECT: Use config for all constants
+    entities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES")
+    
+    # ✅ CORRECT: Generate prompts with config values
+    prompts = []
+    for entity in entities:
+        prompt_text = f"""Create documentation for {entity['ENTITY_NAME']}.
+        
+REQUIREMENTS:
+- Language: Professional {config.LANGUAGE} banking terminology
+- Institution: {config.INSTITUTION_NAME}
+- Currency: {config.CURRENCY}
+        """
+        
+        prompts.append({
+            'ENTITY_NAME': entity['ENTITY_NAME'],
+            'LANGUAGE': config.LANGUAGE,  # ✅ Use config variable
+            'PROMPT_TEXT': prompt_text
+        })
+    
+    # ✅ CORRECT: Proper f-string usage in SQL
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENTS AS
+        SELECT 
+            SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', PROMPT_TEXT) AS CONTENT,
+            ENTITY_NAME
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.PROMPTS
+    """).collect()
+```
+
+### ❌ Anti-Patterns to Avoid
+
+```python
+# ❌ WRONG: Hardcoded values
+session.sql("CREATE TABLE BANK_AI_DEMO.RAW_DATA.DOCUMENTS...")
+prompts.append({'LANGUAGE': 'en-GB'})
+
+# ❌ WRONG: Redundant f-string
+session.sql(f"""FROM f"{config.SNOWFLAKE['database']}.RAW_DATA.PROMPTS""")
+
+# ❌ WRONG: Missing config import
+def generate_docs(session):
+    # Hardcoded instead of config usage
+    pass
+```
 

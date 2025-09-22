@@ -23,7 +23,7 @@ Demo scenarios must follow a standardized structure that provides clear business
 
 ### Business Context Setup
 
-**Persona**: {Full Name}, {Title} at Snowcrest Asset Management  
+**Persona**: {Full Name}, {Title} at Glacier First Bank  
 **Business Challenge**: {Detailed description of the specific business problem that traditional systems struggle with. Include pain points, inefficiencies, and risks of current manual processes.}  
 **Value Proposition**: {Clear articulation of how AI solves the challenge. Focus on speed, accuracy, integration, and business outcomes.}
 
@@ -86,9 +86,9 @@ Demo scenarios must follow a standardized structure that provides clear business
 
 **Persona Guidelines:**
 - Use full name and specific title
-- Always include "at Snowcrest Asset Management"
-- Choose realistic financial services roles
-- Examples: "Anna, Senior Portfolio Manager", "Dr. James Chen, Quantitative Analyst"
+- Always include "at Glacier First Bank"
+- Choose realistic banking and financial services roles
+- Examples: "Sarah Mitchell, AML Compliance Officer", "David Thomson, Senior Credit Analyst"
 
 **Business Challenge Guidelines:**
 - Describe specific pain points with current manual processes
@@ -251,7 +251,7 @@ Ensure all expected flagging behaviors are reflected in corresponding agent inst
 When creating or updating demo scenarios:
 
 - [ ] **Business Context Setup** includes all three required elements
-- [ ] **Persona** has full name and title at Snowcrest Asset Management
+- [ ] **Persona** has full name and title at Glacier First Bank
 - [ ] **Business Challenge** describes specific pain points and inefficiencies
 - [ ] **Value Proposition** clearly articulates AI solution benefits
 - [ ] **Scene Setting** provides realistic business context and urgency

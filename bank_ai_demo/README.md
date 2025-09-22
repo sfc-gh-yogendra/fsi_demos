@@ -2,345 +2,272 @@
 
 A comprehensive AI-powered banking intelligence demo showcasing Snowflake's Cortex AI capabilities for financial services, featuring cross-domain risk analysis, multi-step reasoning, and contradictory evidence synthesis.
 
-## Overview
+**This demo focuses on implementing complete end-to-end scenarios with realistic data generation. Check the "Available Demo Scenarios" section for implementation status. NOT IMPLEMENTED scenarios have no supporting data or objects created.**
+
+**Architecture**: The demo uses a modern, functional Python architecture with module-level configuration, table validation, and single-script orchestration for reliable, repeatable deployments.
+
+## High Level Overview
 
 This demo implements Phase 1 of the Glacier First Bank AI Intelligence platform, focusing on:
 
 - **AML/KYC Enhanced Due Diligence**: Automated compliance analysis with cross-domain intelligence
-- **Credit Risk Analysis**: Sophisticated loan origination assessment with cohort analysis
+- **Credit Risk Analysis**: Sophisticated loan origination assessment with cohort analysis  
 - **Cross-Domain Intelligence**: Risk contagion analysis through shared business relationships
 - **Multi-Step Reasoning**: Complex analytical workflows chaining evidence from multiple sources
 
-## Architecture
+The platform demonstrates how financial institutions can leverage AI to automate complex analytical workflows while maintaining regulatory compliance and providing complete audit trails.
 
-### Core Components
+## Prerequisites
 
-- **Configuration Management**: Unified YAML-based configuration system
-- **Data Generation**: Realistic demo data with cross-domain relationships
-- **Semantic Views**: Cortex Analyst views for structured data analysis
-- **Search Services**: Cortex Search for unstructured document analysis
-- **Agent Framework**: AI agents with sophisticated reasoning capabilities
-
-### Key Features
-
-- **Realistic Business Scenarios**: Authentic financial services use cases
-- **Cross-Domain Intelligence**: Shared ecosystem relationships creating risk contagion
-- **Contradictory Evidence Synthesis**: Balanced analysis of conflicting signals
-- **External Data Integration**: Simulated marketplace data providers
-- **Multi-Step Reasoning**: Transparent analytical workflows with audit trails
-
-## Quick Start
-
-### Prerequisites
-
-- Snowflake account with Cortex AI enabled
-- Python 3.8+ with Snowflake Snowpark
-- Access to create databases, warehouses, and Cortex services
-
-### Installation
-
-1. **Clone the repository**:
+### Repository Setup
+1. **Download or clone the repository**:
    ```bash
    git clone <repository-url>
    cd bank_ai_demo
    ```
 
-2. **Install dependencies**:
+2. **Navigate to the project folder**:
    ```bash
-   pip install -r requirements.txt
+   cd bank_ai_demo
    ```
 
-3. **Configure connection**:
-   ```bash
-   export CONNECTION_NAME="your_snowflake_connection"
-   ```
+### Snowflake Prerequisites
 
-4. **Run complete setup**:
-   ```bash
-   python src/main.py --scale demo
-   ```
+#### Cross-Region Inference
+You must have cross-region inference enabled in your Snowflake account. At minimum, you need **AWS_EU** enabled, but **ANY_REGIONS** is preferred for optimal performance.
 
-### Configuration
+📖 **Documentation**: [Cross-Region Inference Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference)
 
-The demo uses a unified configuration system in `config/glacier_demo_config.yaml`:
+#### Snowflake Intelligence
+Snowflake Intelligence must be enabled for your account for this demo.
 
-```yaml
-global:
-  institution_name: "Glacier First Bank"
-  language: "en-GB"
-  currency: "EUR"
-  snowflake:
-    database: "BANK_AI_DEMO"
-    compute_warehouse: "BANK_AI_DEMO_COMPUTE_WH"
-    search_warehouse: "BANK_AI_DEMO_SEARCH_WH"
+📖 **Documentation**: [Snowflake Intelligence Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
 
-data_generation:
-  default_scale: "demo"
-  scales:
-    mini: { entities: 50, transactions: 5000 }
-    demo: { entities: 500, transactions: 50000 }
-    full: { entities: 2000, transactions: 200000 }
+### Python Prerequisites
+
+- **Python 3.10+** (required for Snowpark compatibility)
+- **Install dependencies**:
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+### Configure Snowflake Connection
+
+You need to ensure that `~/.snowflake/connections.toml` has a valid connection configured.
+
+**Example connection configuration**:
+```toml
+[my_connection]
+account = "your-account.snowflakecomputing.com"
+user = "your-username"
+password = "your-password"  # or use other auth methods
+database = "BANK_AI_DEMO"
+schema = "RAW_DATA"
+warehouse = "BANK_AI_DEMO_COMPUTE_WH"
 ```
 
-## Demo Scenarios
+**Alternative authentication methods**:
+- SSO/SAML
+- Key pair authentication
+- OAuth
 
-### Scenario A: AML/KYC Enhanced Due Diligence
+Refer to [Snowflake connection documentation](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect) for detailed setup instructions.
 
-**Agent**: `aml_officer_agent`  
-**Entity**: Global Trade Ventures S.A.
+## Build Demo Environment
 
-**Demo Flow**:
-1. **Initial EDD Investigation**: Compile corporate structure, UBOs, and adverse media
-2. **Deep Dive Analysis**: Examine specific allegations and assess relevance
-3. **Regulatory Communication**: Draft RFI for source-of-funds clarification
-4. **Audit Trail**: Provide complete audit summary with evidence sources
-
-**Key Features**:
-- Multi-step reasoning across structured and unstructured data
-- PEP identification and risk assessment
-- Contradictory evidence synthesis
-- Regulatory compliance documentation
-
-### Scenario B: Credit Risk Analysis
-
-**Agent**: `credit_analyst_agent`  
-**Entity**: Innovate GmbH
-
-**Demo Flow**:
-1. **Initial Credit Assessment**: Analyze financial metrics and identify policy breaches
-2. **Historical Cohort Analysis**: Compare against similar risk profiles
-3. **Document Analysis**: Review business plan and strategy assessment
-4. **Cross-Domain Integration**: Assess shared vendor risks and portfolio impact
-
-**Key Features**:
-- Policy threshold flagging with severity indicators
-- Historical cohort performance analysis
-- Business plan document analysis
-- Cross-domain risk contagion assessment
-
-## Cross-Domain Intelligence
-
-### Shared Ecosystem Connections
-
-The demo features realistic business relationships that create authentic risk scenarios:
-
-- **Northern Supply Chain Ltd**: Shared logistics partner affecting multiple clients
-- **Regulatory Cascade**: ESG directives impacting both compliance and credit operations
-- **Industry Clustering**: Correlated risks across similar business sectors
-
-### Multi-Step Reasoning Examples
-
-```sql
--- Example: Cross-domain risk assessment
-WITH vendor_exposure AS (
-    SELECT * FROM SEMANTIC_VIEW(
-        ecosystem_risk_sv
-        METRICS average_risk_impact, relationship_count
-        DIMENSIONS primary_entity_name, related_entity_name
-        FILTERS relationship_type = 'VENDOR'
-    )
-),
-credit_impact AS (
-    SELECT * FROM SEMANTIC_VIEW(
-        credit_risk_sv
-        METRICS dscr, debt_to_equity, client_concentration
-        DIMENSIONS applicant_name
-    )
-)
-SELECT * FROM vendor_exposure v
-JOIN credit_impact c ON v.primary_entity_name = c.applicant_name;
-```
-
-## Data Model
-
-### Core Entities
-
-- **Global Trade Ventures S.A.** (Luxembourg): Primary AML/KYC subject with PEP connections
-- **Innovate GmbH** (Germany): Primary credit applicant with policy breaches
-- **Northern Supply Chain Ltd** (UK): Shared vendor creating cross-domain risk
-
-### Key Relationships
-
-```yaml
-risk_contagion_network:
-  northern_supply_chain:
-    clients:
-      - global_trade_ventures: { dependency: "PRIMARY", impact: 0.85 }
-      - innovate_gmbh: { dependency: "SECONDARY", impact: 0.45 }
-      - eurotech_industries: { dependency: "REGIONAL", impact: 0.25 }
-```
-
-### External Data Simulation
-
-The demo simulates realistic external data providers:
-
-- **S&P Global Market Intelligence**: Company financials and credit ratings
-- **Reuters News Feed**: Real-time news and market updates
-- **Thomson Reuters Regulatory Intelligence**: Regulatory updates and compliance guidance
-- **MSCI ESG Ratings**: Sustainability metrics and ESG scores
-- **Dow Jones Risk & Compliance**: Sanctions lists and PEP databases
-
-## Agent Configuration
-
-### AML Officer Agent
-
-```yaml
-agent_name: aml_officer_agent
-tools:
-  - compliance_docs_search_svc (Cortex Search)
-  - customer_risk_sv (Cortex Analyst)
-response_instructions: |
-  Use professional en-GB banking tone. Cite all sources with IDs/titles and dates.
-  Provide objective, non-speculative risk assessments.
-planning_instructions: |
-  For document analysis → use Cortex Search with entity/date filters.
-  For risk metrics → use Cortex Analyst on customer risk semantic view.
-```
-
-### Credit Analyst Agent
-
-```yaml
-agent_name: credit_analyst_agent
-tools:
-  - credit_risk_sv (Cortex Analyst)
-  - credit_policy_search_svc (Cortex Search)
-  - loan_documents_search_svc (Cortex Search)
-response_instructions: |
-  Flag policy breaches with ⚠️ warnings and 🚨 breach indicators.
-  Include policy references and effective dates for all thresholds.
-planning_instructions: |
-  For ratio analysis → use Cortex Analyst with cohort filters.
-  For policy thresholds → search credit policy documents.
-  For business plans → search loan documents by applicant.
-```
-
-## Validation and Testing
-
-### Automated Validation
-
-The setup includes comprehensive validation:
+Deploy the complete demo environment with a single command:
 
 ```bash
-# Run validation only
-python src/main.py --validate-only
+# Deploy all scenarios with demo scale
+python python/main.py --connection-name my_connection
 
-# Setup with validation
-python src/main.py --scale demo  # validation included by default
+# Deploy specific scenarios
+python python/main.py --connection-name my_connection --scenarios aml_kyc_edd --scale demo
 
-# Skip validation (faster setup)
-python src/main.py --scale demo --no-validate
+# Deploy only data (structured + unstructured)
+python python/main.py --connection-name my_connection --scope data --scale mini
+
+# Deploy only semantic views (requires data to exist)
+python python/main.py --connection-name my_connection --scope semantic
 ```
 
-### Manual Testing
+### Build Parameters
 
-Test semantic views:
-```sql
--- Test credit risk analysis
-SELECT * FROM SEMANTIC_VIEW(
-    BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
-    METRICS dscr, debt_to_equity, client_concentration
-    DIMENSIONS applicant_name, industry
-    FILTERS applicant_name = 'Innovate GmbH'
-);
+| Parameter | Options | Default | Description |
+|-----------|---------|---------|-------------|
+| `--connection-name` | string | *required* | Snowflake connection name from connections.toml |
+| `--scenarios` | `aml_kyc_edd`, `credit_analysis`, `all` | `all` | Comma-separated scenarios to build |
+| `--scope` | `all`, `data`, `semantic`, `search` | `all` | Build scope (infrastructure, data, views, services) |
+| `--scale` | `mini`, `demo`, `full` | `demo` | Data generation scale |
+| `--no-validate` | flag | false | Skip validation tests after build |
+| `--quiet` | flag | false | Suppress banner and detailed output |
+
+## Next Steps After Build
+
+### 1. Agent Configuration
+Configure AI agents in Snowflake Intelligence using the provided templates and instructions.
+
+📖 **See**: [docs/agent_setup.md](docs/agent_setup.md)
+
+### 2. Demo Scenarios  
+Review available demo scenarios and practice the guided demo flows.
+
+📖 **See**: [docs/demo_scenarios.md](docs/demo_scenarios.md)
+
+## Demo Overview
+
+### Available Demo Scenarios
+
+| Scenario | Agent | Status | Key Capabilities |
+|----------|-------|--------|------------------|
+| **AML/KYC Enhanced Due Diligence** | `aml_officer_agent` | ✅ IMPLEMENTED | • Automated compliance analysis<br>• Beneficial ownership extraction<br>• Adverse media screening<br>• PEP identification<br>• Cross-domain risk assessment |
+| **Credit Risk Analysis** | `credit_analyst_agent` | ✅ IMPLEMENTED | • Financial ratio analysis<br>• Policy threshold flagging<br>• Historical cohort modeling<br>• Document analysis<br>• Multi-step reasoning |
+| **Cross-Domain Intelligence** | Both agents | ✅ IMPLEMENTED | • Risk contagion analysis<br>• Shared vendor assessment<br>• Contradictory evidence synthesis<br>• Ecosystem impact analysis |
+| **Investment Portfolio Risk** | `portfolio_analyst_agent` | ❌ NOT IMPLEMENTED | • Portfolio concentration analysis<br>• ESG risk assessment<br>• Market correlation analysis |
+| **Fraud Detection** | `fraud_analyst_agent` | ❌ NOT IMPLEMENTED | • Transaction pattern analysis<br>• Anomaly detection<br>• Risk scoring |
+
+### Configuration Defaults
+
+| Setting | Default Value | Description |
+|---------|---------------|-------------|
+| **Institution** | Glacier First Bank | Demo bank name |
+| **Database** | BANK_AI_DEMO | Snowflake database name |
+| **Compute Warehouse** | BANK_AI_DEMO_COMPUTE_WH | Main processing warehouse |
+| **Search Warehouse** | BANK_AI_DEMO_SEARCH_WH | Cortex Search dedicated warehouse |
+| **Connection** | *Required* | No fallback - connection name must be provided |
+| **Data Scale** | demo | Default data generation scale (500 entities, 50K transactions) |
+| **Language** | en-GB | British English for regulatory compliance |
+| **Currency** | EUR | Euro for pan-European banking |
+| **Regulatory Framework** | EU/EBA | European Banking Authority standards |
+| **LLM Model** | llama3.1-70b | Cortex Complete model for content generation |
+| **Generation Seed** | 42 | Reproducible data generation |
+
+**Configuration Management**: Python-based module-level configuration in `python/config.py` with direct variable access and helper functions.
+
+### Architecture Approach
+
+The demo follows a **functional, module-based architecture**:
+
+- ✅ **Module-Level Functions**: No classes - all functionality as standalone functions
+- ✅ **Direct Configuration Access**: `import config` → `config.INSTITUTION_NAME`
+- ✅ **Separate Concerns**: Distinct modules for structured data, unstructured data, views, and services
+- ✅ **Table Validation**: Pre-creation checks ensure all dependencies exist
+- ✅ **Single Orchestration**: One `main.py` script manages entire deployment
+- ✅ **Required Connections**: No fallback connections - explicit security-first approach
+
+## Project Structure
+
+```
+bank_ai_demo/
+├── python/                          # Main Python codebase
+│   ├── main.py                      # Single orchestration script
+│   ├── config.py                    # Module-level configuration
+│   ├── generate_structured.py      # Structured data generation
+│   ├── generate_unstructured.py    # Unstructured data generation
+│   ├── create_semantic_views.py    # Cortex Analyst semantic views
+│   └── create_search_services.py   # Cortex Search services
+├── sql/                             # SQL archive and reference
+│   └── archive/                     # Archived SQL files (reference only)
+│       ├── 01_setup_database.sql
+│       ├── 02_create_semantic_views.sql
+│       ├── 03_create_search_services.sql
+│       └── 04_create_pdf_generator.sql
+├── tests/                           # Validation test suite
+│   └── test_scenarios.py           # Scenario validation tests
+├── docs/                           # Documentation
+│   ├── agent_setup.md              # Agent configuration guide
+│   ├── demo_scenarios.md           # Demo scenario guide
+│   ├── DEPLOYMENT_COMPLETE.md      # Deployment verification
+│   └── DEPLOYMENT_GUIDE.md         # Detailed deployment guide
+├── research/                       # Research and development notes
+├── .cursor/                        # Cursor IDE rules and templates
+│   └── rules/                      # Code generation rules
+├── requirements.txt                # Python dependencies
+├── .gitignore                      # Git ignore patterns
+└── README.md                       # This file
 ```
 
-Test search services:
-```sql
--- Test compliance document search
-SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    'BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc',
-    '{"query": "Global Trade Ventures beneficial ownership", "limit": 3}'
-);
-```
+## Data Architecture
 
-## Performance Targets
+### Core Data Model
 
-- **Simple queries**: < 5 seconds
-- **Complex analysis**: < 15 seconds
-- **Cross-domain intelligence**: < 20 seconds
-- **Document synthesis**: < 10 seconds
+The demo uses a realistic banking data model with cross-domain relationships:
+
+#### **Entities & Relationships**
+- **Entities**: Companies, organizations, and individuals
+- **Entity Relationships**: Business partnerships, vendor relationships, ownership structures
+- **Customers**: Bank customers linked to entities
+
+#### **Financial Data**
+- **Loan Applications**: Credit applications with financial ratios and policy checks
+- **Historical Loans**: Past loan performance for cohort analysis
+- **Transactions**: Banking transactions with risk scoring
+
+#### **Compliance Data**
+- **Compliance Documents**: KYC documents, onboarding records, due diligence reports
+- **News & Research**: Adverse media, regulatory updates, market analysis
+- **External Data**: Simulated marketplace data (S&P Global, Reuters, Dow Jones)
+
+#### **AI Services**
+- **Semantic Views**: 5 views supporting complex analytical queries (created via Python)
+- **Search Services**: 5 services for unstructured document analysis (created via Python)
+- **Cross-Domain Intelligence**: Shared relationships enabling risk contagion analysis
+- **PDF Generation**: Custom Snowpark stored procedure for report generation
+
+### Key Demo Entities
+
+| Entity | Country | Industry | Role in Demo |
+|--------|---------|----------|--------------|
+| **Global Trade Ventures S.A.** | Luxembourg | International Trade | Primary AML/KYC subject |
+| **Innovate GmbH** | Germany | Software Services | Primary credit applicant |
+| **Northern Supply Chain Ltd** | UK | Logistics | Shared vendor creating cross-domain risk |
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Connection Errors**:
-   ```bash
-   export CONNECTION_NAME="your_connection_name"
-   # or
-   python src/main.py --connection your_connection_name
-   ```
+#### 1. Connection Problems
+**Error**: `Connection failed` or `Connection name must be provided`
+- **Solution**: Ensure `--connection-name` parameter is provided (no fallback connections)
+- **Check**: Verify connection name exists in `~/.snowflake/connections.toml`
+- **Check**: Connection has necessary privileges (database creation, warehouse usage)
 
-2. **Search Service Creation Fails**:
-   - Ensure Cortex AI is enabled in your Snowflake account
-   - Verify warehouse permissions for search services
-   - Check that source tables have data before creating services
+#### 2. Cortex AI Not Available
+**Error**: `Cortex Search Service does not exist` or `Semantic View not authorized`
+- **Solution**: Ensure Snowflake Intelligence is enabled for your account
+- **Check**: Cross-region inference is configured with AWS_EU minimum
 
-3. **Semantic View Errors**:
-   - Validate all referenced tables exist and have data
-   - Check foreign key relationships are properly defined
-   - Ensure column names match exactly in semantic view definitions
+#### 3. Data Generation Fails
+**Error**: `Database does not exist or not authorized`
+- **Solution**: Ensure connection has CREATE DATABASE privileges
+- **Check**: Warehouse exists and is accessible
 
-4. **Data Generation Issues**:
-   - Use smaller scale for testing: `--scale mini`
-   - Check available compute resources
-   - Verify database and schema permissions
+#### 4. Validation Tests Fail
+**Error**: Various SQL compilation errors in validation
+- **Solution**: Run with `--no-validate` to skip tests, or ensure all services are created
+- **Check**: All semantic views and search services were created successfully
 
-### Debug Mode
+#### 5. Table Dependencies Missing
+**Error**: `Required table {table_name} does not exist`
+- **Solution**: Module validates table existence before creating dependent objects
+- **Check**: Run with `--scope data` first to ensure all base tables exist
+- **Check**: Verify data generation completed successfully
 
-Enable detailed logging:
-```bash
-export LOG_LEVEL=DEBUG
-python src/main.py --scale mini
-```
+### Support Resources
 
-## Extending the Demo
+- **Agent Configuration**: [docs/agent_setup.md](docs/agent_setup.md)
+- **Demo Scenarios**: [docs/demo_scenarios.md](docs/demo_scenarios.md)
+- **Deployment Guide**: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 
-### Adding New Document Types
+### Getting Help
 
-1. **Update configuration**:
-   ```yaml
-   document_generation:
-     types:
-       new_document_type:
-         table_name: "NEW_DOCS_RAW"
-         corpus_name: "NEW_DOCS_CORPUS"
-         word_count_range: [500, 1000]
-   ```
+1. Check deployment logs: `tail -f glacier_demo.log`
+2. Validate prerequisites are met
+3. Try minimal scale deployment: `--scale mini`
+4. Review connection configuration
 
-2. **Create search service**:
-   ```sql
-   CREATE CORTEX SEARCH SERVICE new_docs_search_svc
-       ON CONTENT
-       ATTRIBUTES ID, TITLE, CATEGORY
-       WAREHOUSE = BANK_AI_DEMO_SEARCH_WH
-       AS SELECT ID, TITLE, CONTENT, CATEGORY FROM NEW_DOCS_RAW;
-   ```
-
-### Adding New Entities
-
-Update key entities in configuration:
-```yaml
-data_generation:
-  key_entities:
-    new_entity:
-      entity_id: "NEW_001"
-      name: "New Entity Ltd"
-      country: "GBR"
-      industry: "Technology"
-```
-
-## Support and Documentation
-
-- **Configuration Reference**: See `config/glacier_demo_config.yaml` for all options
-- **API Documentation**: Generated from docstrings in source code
-- **Architecture Diagrams**: Available in `docs/` directory
-- **Performance Benchmarks**: See `docs/performance.md`
+---
 
 ## License
 
 This demo is provided for educational and demonstration purposes. See LICENSE file for details.
-
----
-
-**Glacier First Bank AI Intelligence Demo** - Showcasing the future of AI-powered financial services with Snowflake Cortex AI.

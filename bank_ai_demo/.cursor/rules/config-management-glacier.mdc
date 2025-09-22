@@ -9,49 +9,71 @@ This rule defines the unified configuration management system supporting all pha
 
 ## Master Configuration Schema
 
-### Configuration File Structure
-```yaml
-# config/glacier_demo_config.yaml
+### Module-Level Configuration Structure
+```python
+# python/config.py
 
-# Global Settings
-global:
-  demo_name: "Glacier First Bank AI Intelligence Demo"
-  institution_name: "Glacier First Bank"
-  institution_profile: "pan-EU universal bank; strong Corporate & Commercial; strong Wealth"
-  
-  # Environment Configuration
-  snowflake:
-    database: "BANK_AI_DEMO"
-    compute_warehouse: "BANK_AI_DEMO_COMPUTE_WH"
-    search_warehouse: "BANK_AI_DEMO_SEARCH_WH"
-    connection_name: "${CONNECTION_NAME}"  # Parameter injection
-    connection_fallback: "sfseeurope-mstellwall-aws-us-west3"
-  
-  # Demo Standards
-  language: "en-GB"
-  currency: "EUR"
-  currency_format: "€1,234,567.89"  # en-GB with euro symbol
-  regulatory_framework: "EU/EBA"
-  timezone: "Europe/Brussels"
-  
-  # Content Generation
-  llm_model: "llama3.1-70b"
-  generation_temperature: 0.7
-  generation_seed: 42  # For reproducible content
-  max_tokens: 4000
+"""
+Glacier First Bank AI Intelligence Demo Configuration
+Module-level variables for simplified configuration management
+"""
 
-# Phase Configuration
-phases:
-  current_phase: 1
-  
-  phase_1:
-    name: "Foundation - AML/KYC & Credit Analysis"
-    scenarios: ["aml_kyc_edd", "credit_analysis"]
-    completion_criteria:
-      - "Both scenarios work end-to-end with realistic data"
-      - "Cross-domain intelligence connections demonstrable"
-      - "All wow moments polished and reliable"
-      - "Presenter guidance complete"
+import os
+from typing import Dict, Any, List
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+
+DEMO_NAME = "Glacier First Bank AI Intelligence Demo"
+INSTITUTION_NAME = "Glacier First Bank"
+INSTITUTION_PROFILE = "pan-EU universal bank; strong Corporate & Commercial; strong Wealth"
+
+# =============================================================================
+# ENVIRONMENT CONFIGURATION  
+# =============================================================================
+
+SNOWFLAKE = {
+    "database": "BANK_AI_DEMO",
+    "compute_warehouse": "BANK_AI_DEMO_COMPUTE_WH", 
+    "search_warehouse": "BANK_AI_DEMO_SEARCH_WH"
+    # No connection_fallback - connection_name is required
+}
+    
+# =============================================================================
+# DEMO STANDARDS
+# =============================================================================
+
+LANGUAGE = "en-GB"
+CURRENCY = "EUR"
+CURRENCY_FORMAT = "€1,234,567.89"
+REGULATORY_FRAMEWORK = "EU/EBA"
+TIMEZONE = "Europe/Brussels"
+
+# =============================================================================
+# CONTENT GENERATION
+# =============================================================================
+
+LLM_MODEL = "llama3.1-70b"
+GENERATION_TEMPERATURE = 0.7
+GENERATION_SEED = 42  # For reproducible content
+MAX_TOKENS = 4000
+
+# =============================================================================
+# PHASE CONFIGURATION
+# =============================================================================
+
+CURRENT_PHASE = 1
+PHASE_1 = {
+    "name": "Foundation - AML/KYC & Credit Analysis",
+    "scenarios": ["aml_kyc_edd", "credit_analysis"],
+    "completion_criteria": [
+        "Both scenarios work end-to-end with realistic data",
+        "Cross-domain intelligence connections demonstrable", 
+        "All wow moments polished and reliable",
+        "Presenter guidance complete"
+    ]
+}
   
   phase_2:
     name: "Expansion - Corporate RM & Investment Banking"
@@ -406,94 +428,58 @@ extensions:
 
 ## Configuration Management Patterns
 
-### Environment-Specific Configuration Loading
+### Module-Level Configuration Functions
 ```python
-import yaml
-import os
-from typing import Dict, Any
+# =============================================================================
+# CONFIGURATION HELPER FUNCTIONS
+# =============================================================================
 
-class GlacierDemoConfig:
-    """Unified configuration manager for Glacier First Bank demo."""
+def get_snowflake_config(connection_name: str = None) -> Dict[str, str]:
+    """Get Snowflake connection configuration."""
+    config = SNOWFLAKE.copy()
+    if connection_name:
+        config["connection_name"] = connection_name
+    elif os.getenv('CONNECTION_NAME'):
+        config["connection_name"] = os.getenv('CONNECTION_NAME')
+    else:
+        raise ValueError("Connection name must be provided via argument or CONNECTION_NAME environment variable")
+    return config
+
+def get_scale_config(scale: str = None) -> Dict[str, Any]:
+    """Get data generation scale configuration."""
+    scale = scale or DEFAULT_SCALE
+    if scale not in SCALES:
+        raise ValueError(f"Invalid scale '{scale}'. Valid scales: {list(SCALES.keys())}")
+    return SCALES[scale]
+
+def get_all_scenarios() -> List[str]:
+    """Get list of all available scenarios."""
+    return ["aml_kyc_edd", "credit_analysis"]
+
+def validate_scenarios(scenarios: List[str]) -> List[str]:
+    """Validate and return list of scenarios."""
+    all_scenarios = get_all_scenarios()
+    if "all" in scenarios:
+        return all_scenarios
     
-    def __init__(self, config_path: str = "config/glacier_demo_config.yaml", 
-                 connection_name: str = None):
-        self.config_path = config_path
-        self.connection_name = connection_name or os.getenv('CONNECTION_NAME')
-        self.config = self._load_config()
-        self._validate_config()
-    
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration with parameter substitution."""
-        with open(self.config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Parameter substitution
-        if self.connection_name:
-            config['global']['snowflake']['connection_name'] = self.connection_name
-        else:
-            config['global']['snowflake']['connection_name'] = config['global']['snowflake']['connection_fallback']
-        
-        return config
-    
-    def get_scale_config(self, scale: str = None) -> Dict[str, int]:
-        """Get data generation scale configuration."""
-        scale = scale or self.config['data_generation']['default_scale']
-        return self.config['data_generation']['scales'][scale]
-    
-    def get_entity_config(self, entity_key: str) -> Dict[str, Any]:
-        """Get specific entity configuration."""
-        return self.config['data_generation']['key_entities'][entity_key]
-    
-    def get_policy_threshold(self, metric: str) -> Dict[str, Any]:
-        """Get policy threshold configuration for specific metric."""
-        for category, thresholds in self.config['policy_thresholds'].items():
-            if metric in thresholds:
-                return thresholds[metric]
-        raise ValueError(f"Policy threshold not found for metric: {metric}")
-    
-    def get_market_themes(self) -> Dict[str, Any]:
-        """Get current market themes configuration."""
-        return self.config['market_themes']['current_themes']
-    
-    def get_external_provider(self, provider_type: str) -> Dict[str, Any]:
-        """Get external data provider configuration."""
-        return self.config['external_data_providers'][provider_type]
-    
-    def get_document_config(self, doc_category: str, doc_type: str) -> Dict[str, Any]:
-        """Get document generation configuration."""
-        return self.config['document_generation']['types'][doc_category][doc_type]
-    
-    def _validate_config(self):
-        """Validate configuration consistency and completeness."""
-        required_sections = [
-            'global', 'phases', 'data_generation', 'market_themes',
-            'external_data_providers', 'policy_thresholds'
-        ]
-        
-        for section in required_sections:
-            if section not in self.config:
-                raise ValueError(f"Missing required configuration section: {section}")
-        
-        # Validate current phase exists
-        current_phase = self.config['phases']['current_phase']
-        phase_key = f"phase_{current_phase}"
-        if phase_key not in self.config['phases']:
-            raise ValueError(f"Current phase {current_phase} not defined in configuration")
-        
-        # Validate default scale exists
-        default_scale = self.config['data_generation']['default_scale']
-        if default_scale not in self.config['data_generation']['scales']:
-            raise ValueError(f"Default scale {default_scale} not defined in scales")
+    invalid_scenarios = [s for s in scenarios if s not in all_scenarios]
+    if invalid_scenarios:
+        raise ValueError(f"Invalid scenarios: {invalid_scenarios}. Valid: {all_scenarios}")
+    return scenarios
+
+def validate_connection(connection_name: str) -> None:
+    """Validate connection name parameter."""
+    if not connection_name or not connection_name.strip():
+        raise ValueError("Connection name cannot be empty")
 ```
 
 ### Configuration-Driven Data Generation
 ```python
-def generate_entities_from_config(session: Session, config: GlacierDemoConfig, 
-                                 scale: str = None) -> None:
+def generate_entities_from_config(session: Session, scale: str = None) -> None:
     """Generate entities based on configuration specifications."""
     
-    scale_config = config.get_scale_config(scale)
-    key_entities = config.config['data_generation']['key_entities']
+    scale_config = get_scale_config(scale)
+    key_entities = KEY_ENTITIES
     
     # Generate key entities first (guaranteed to exist for scenarios)
     key_entity_data = []
@@ -625,36 +611,41 @@ class ConfigValidator:
 
 ### Basic Configuration Usage
 ```python
-# Initialize configuration
-config = GlacierDemoConfig(connection_name="my_snowflake_connection")
+import config
+
+# Get Snowflake connection configuration
+snowflake_config = config.get_snowflake_config("my_snowflake_connection")
+print(f"Database: {snowflake_config['database']}")
 
 # Get data generation scale
 scale_config = config.get_scale_config("demo")
 print(f"Generating {scale_config['entities']} entities")
 
-# Get policy threshold for validation
-dscr_threshold = config.get_policy_threshold("debt_service_coverage_ratio")
-print(f"DSCR warning threshold: {dscr_threshold['warning_threshold']}")
+# Access configuration values directly
+print(f"Institution: {config.INSTITUTION_NAME}")
+print(f"Currency: {config.CURRENCY}")
+print(f"LLM Model: {config.LLM_MODEL}")
 
-# Get market themes for content generation
-themes = config.get_market_themes()
-esg_theme = next(theme for theme in themes if theme['name'] == 'ESG Compliance')
-print(f"ESG theme weight: {esg_theme['weight']}")
+# Get scenarios
+all_scenarios = config.get_all_scenarios()
+print(f"Available scenarios: {all_scenarios}")
 ```
 
 ### Environment-Specific Deployment
 ```python
-# Development environment
-dev_config = GlacierDemoConfig()
-dev_config.config['deployment']['environments']['development']['scale'] = "mini"
+import config
 
-# Demo environment
-demo_config = GlacierDemoConfig()
-demo_config.config['deployment']['environments']['demo']['performance_monitoring'] = True
+# Development environment - use mini scale
+scale_config = config.get_scale_config("mini")
+snowflake_config = config.get_snowflake_config("dev_connection")
 
-# Production environment
-prod_config = GlacierDemoConfig()
-prod_config.config['deployment']['environments']['production']['audit_logging'] = True
+# Demo environment - use demo scale  
+scale_config = config.get_scale_config("demo")
+snowflake_config = config.get_snowflake_config("demo_connection")
+
+# Production environment - use full scale
+scale_config = config.get_scale_config("full")
+snowflake_config = config.get_snowflake_config("prod_connection")
 ```
 
 ## Configuration Extension Points
@@ -690,13 +681,112 @@ alternative_data:
   schema_pattern: "SAT_ANALYTICS_*"
 ```
 
-This configuration management system provides:
+This module-level configuration system provides:
 
-1. **Unified Control**: Single source of truth for all demo parameters
-2. **Environment Flexibility**: Easy switching between development, demo, and production scales
-3. **Theme Integration**: Consistent market theme application across all generated content
-4. **External Provider Simulation**: Realistic data source attribution for marketplace story
-5. **Quality Assurance**: Built-in validation and quality gates
-6. **Extensibility**: Clear patterns for adding new phases, scenarios, and data types
-7. **Performance Optimization**: Configurable scales and performance targets
-8. **Auditability**: Complete configuration tracking and validation logging
+1. **Simplified Management**: Direct access to configuration variables without class overhead
+2. **Required Connection Validation**: Strict connection name requirements for security
+3. **Environment Flexibility**: Easy switching between development, demo, and production scales
+4. **Clean Import Structure**: Simple `import config` and direct variable access
+5. **Helper Functions**: Dedicated functions for configuration retrieval and validation
+6. **No Fallback Dependencies**: Explicit connection name requirements
+7. **Module-Level Variables**: Easy access to constants like `config.INSTITUTION_NAME`
+8. **Functional Design**: Stateless functions aligned with project architecture
+
+## Configuration Usage Best Practices
+
+### 1. Always Use Config Variables - Never Hardcode Values
+
+**❌ NEVER Hardcode:**
+```python
+# Bad - hardcoded values
+session.sql("CREATE TABLE BANK_AI_DEMO.RAW_DATA.ENTITIES...")
+prompts = {"LANGUAGE": "en-GB", "CURRENCY": "EUR"}
+title = "Glacier First Bank Report"
+```
+
+**✅ ALWAYS Use Config:**
+```python
+# Good - use config variables
+session.sql(f"CREATE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES...")
+prompts = {"LANGUAGE": config.LANGUAGE, "CURRENCY": config.CURRENCY}
+title = f"{config.INSTITUTION_NAME} Report"
+```
+
+### 2. Proper F-String Usage in SQL
+
+**❌ WRONG - Redundant f-string inside f-string:**
+```python
+# Bad - redundant f" inside session.sql(f"""
+session.sql(f"""
+    CREATE OR REPLACE TABLE f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES AS
+    SELECT * FROM f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+""")
+```
+
+**✅ CORRECT - Clean f-string usage:**
+```python
+# Good - proper f-string usage
+session.sql(f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES AS
+    SELECT * FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+""")
+```
+
+### 3. SQL Function Parameters Need Quotes
+
+**✅ CORRECT - String parameters in quotes:**
+```python
+# Good - LLM model needs quotes as SQL string parameter
+session.sql(f"""
+    SELECT SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', prompt_text) AS content
+    FROM {config.SNOWFLAKE['database']}.RAW_DATA.PROMPTS
+""")
+```
+
+### 4. Outside F-Strings Need Full F-String Syntax
+
+**✅ CORRECT - Full f-string for non-SQL contexts:**
+```python
+# Good - table names in save_as_table calls
+df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES", mode="overwrite")
+
+# Good - session.table calls
+entities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES")
+```
+
+### 5. Configuration Import Pattern
+
+**✅ ALWAYS Import at Module Level:**
+```python
+# Good - import config at top of file
+import config
+from snowflake.snowpark import Session
+
+def my_function(session: Session):
+    # Use config variables throughout function
+    database = config.SNOWFLAKE['database']
+    currency = config.CURRENCY
+```
+
+### 6. Configuration Validation
+
+**✅ ALWAYS Validate Configuration:**
+```python
+# Good - validate required config before use
+def validate_required_tables(session: Session, table_names: List[str]) -> None:
+    """Validate that required tables exist before creating dependent objects."""
+    for table_name in table_names:
+        if not validate_table_exists(session, table_name):
+            raise RuntimeError(f"Required table {table_name} does not exist in {config.SNOWFLAKE['database']}")
+```
+
+## Configuration Anti-Patterns to Avoid
+
+### ❌ Never Do These:
+
+1. **Hardcoded Database Names**: `"BANK_AI_DEMO.RAW_DATA.ENTITIES"`
+2. **Hardcoded Currencies**: `'CURRENCY': 'EUR'`
+3. **Hardcoded Languages**: `'LANGUAGE': 'en-GB'`
+4. **Redundant F-Strings**: `f"{config.SNOWFLAKE['database']}"` inside `session.sql(f"""`
+5. **Missing Config Import**: Using hardcoded values instead of importing config
+6. **Scattered Constants**: Defining the same constant in multiple files

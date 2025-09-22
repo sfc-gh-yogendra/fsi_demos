@@ -14,18 +14,18 @@ from snowflake.snowpark import Session
 import sys
 import os
 
-# Add src directory to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# Add python directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'python'))
 
-from config_manager import GlacierDemoConfig
+import config
 
 
 class ScenarioValidator:
     """Validates demo scenarios and agent capabilities."""
     
-    def __init__(self, session: Session, config: GlacierDemoConfig):
+    def __init__(self, session: Session, scenarios: List[str]):
         self.session = session
-        self.config = config
+        self.scenarios = scenarios
         
     def validate_aml_kyc_scenario(self) -> Dict[str, bool]:
         """Validate AML/KYC Enhanced Due Diligence scenario."""
@@ -308,7 +308,7 @@ class ScenarioValidator:
                     BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
                     METRICS dscr, debt_to_equity, client_concentration
                     DIMENSIONS applicant_name
-                    FILTERS applicant_name = 'Innovate GmbH'
+                ) WHERE applicant_name = 'Innovate GmbH'
                 )
             """
             
@@ -336,8 +336,7 @@ class ScenarioValidator:
                     BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
                     METRICS cohort_default_rate, total_loss_amount, application_count
                     DIMENSIONS historical_industry
-                    FILTERS historical_industry = 'Software Services'
-                )
+                ) WHERE historical_industry = 'Software Services'
             """
             
             result = self.session.sql(cohort_query).collect()
@@ -390,8 +389,7 @@ class ScenarioValidator:
                     BANK_AI_DEMO.SEMANTIC_LAYER.ecosystem_risk_sv
                     METRICS relationship_count, average_risk_impact, vendor_dependency_count
                     DIMENSIONS related_entity_name, relationship_type
-                    FILTERS related_entity_name = 'Northern Supply Chain Ltd'
-                )
+                ) WHERE related_entity_name = 'Northern Supply Chain Ltd'
             """
             
             result = self.session.sql(ecosystem_query).collect()
@@ -423,8 +421,7 @@ class ScenarioValidator:
                     BANK_AI_DEMO.SEMANTIC_LAYER.ecosystem_risk_sv
                     METRICS relationship_count, average_risk_impact
                     DIMENSIONS primary_entity_name, related_entity_name, relationship_type
-                    FILTERS relationship_type = 'VENDOR'
-                )
+                ) WHERE relationship_type = 'VENDOR'
                 GROUP BY related_entity_name
                 HAVING COUNT(DISTINCT primary_entity_name) > 1
             """
@@ -448,8 +445,7 @@ class ScenarioValidator:
                         BANK_AI_DEMO.SEMANTIC_LAYER.ecosystem_risk_sv
                         METRICS average_risk_impact, relationship_count
                         DIMENSIONS primary_entity_name, related_entity_name, relationship_strength
-                        FILTERS related_entity_name = 'Northern Supply Chain Ltd'
-                    )
+                    ) WHERE related_entity_name = 'Northern Supply Chain Ltd'
                 ),
                 client_credit_risk AS (
                     SELECT * FROM SEMANTIC_VIEW(
@@ -489,7 +485,7 @@ class ScenarioValidator:
                     BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
                     METRICS dscr, debt_to_equity, annual_revenue
                     DIMENSIONS applicant_name
-                    FILTERS applicant_name = 'Innovate GmbH'
+                ) WHERE applicant_name = 'Innovate GmbH'
                 )
             """
             
@@ -556,10 +552,11 @@ class ScenarioValidator:
             return False
 
 
-def run_scenario_validation(session: Session, config: GlacierDemoConfig) -> Dict[str, Any]:
+def run_scenario_validation(session: Session, scenarios: List[str] = None) -> Dict[str, Any]:
     """Run complete scenario validation suite."""
     
-    validator = ScenarioValidator(session, config)
+    scenarios = scenarios or config.get_all_scenarios()
+    validator = ScenarioValidator(session, scenarios)
     
     print("🧪 Running Glacier First Bank Demo Validation Suite...")
     print("=" * 60)
