@@ -839,10 +839,10 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 
 **Persona**: Dr. James Chen, Quantitative Analyst at Snowcrest Asset Management  
 **Business Challenge**: Quantitative analysts need advanced factor analysis, performance attribution, and systematic strategy development tools to identify patterns, screen securities, and develop data-driven investment approaches. Traditional quant tools are siloed and don't integrate fundamental research insights with quantitative analysis.  
-**Value Proposition**: AI-powered quantitative analysis that combines sophisticated factor modeling with fundamental research integration, enabling systematic strategy development with both quantitative rigor and qualitative context.
+**Value Proposition**: AI-powered quantitative analysis that instantly accesses comprehensive factor exposures and combines sophisticated factor modeling with fundamental research integration, enabling systematic strategy development with both quantitative rigor and qualitative context in seconds rather than minutes.
 
 **Agent**: `quant_analyst`  
-**Data Available**: 1,200 broker reports, 800 earnings transcripts, factor exposure data
+**Data Available**: Enhanced factor exposures (7 factors × 5 years × monthly), fundamentals data, 1,200 broker reports, 800 earnings transcripts
 
 ### Demo Flow
 
@@ -854,21 +854,27 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 "Screen for stocks with improving momentum and quality factors over the last 6 months."
 ```
 
+**Alternative Query (if needed)**: 
+```
+"Show me stocks with the highest momentum and quality factor exposures from the latest data."
+```
+
 **Expected Response**:
-- Filtered list of securities meeting factor criteria
-- Factor score trends and statistical significance
-- Current portfolio exposure to screened securities
-- Factor ranking and percentile information
+- Table of securities with highest momentum and quality factor scores from recent period
+- Specific momentum and quality factor exposures (numerical values showing factor loadings)
+- Securities ranked by combined momentum and quality factor characteristics
+- Available factors confirmed: Market, Size, Value, Growth, Momentum, Quality, Volatility
+- Portfolio context showing which screened securities are already held
 
 **Talking Points**:
-- Systematic factor screening with statistical rigor
-- Quantitative identification of securities with improving factor profiles
-- Portfolio context for existing exposure and opportunity assessment
+- **Instant Factor Recognition**: Agent immediately understands available factors (Momentum, Quality, Value, Growth, etc.) without data exploration
+- **Direct Factor Screening**: Systematic screening using pre-built factor metrics with statistical rigor
+- **Portfolio Integration**: Immediate identification of factor exposures with portfolio context
 
 **Key Features Highlighted**: 
-- Systematic factor screening and quantitative analysis
-- Statistical significance testing and trend analysis
-- Portfolio integration and exposure analysis
+- **Enhanced Factor Metrics**: Pre-built factor-specific metrics (MOMENTUM_SCORE, QUALITY_SCORE, VALUE_SCORE, GROWTH_SCORE)
+- **Time-Series Factor Analysis**: Monthly factor exposures over 5 years enabling trend identification
+- **Comprehensive Factor Coverage**: Complete factor universe (Market, Size, Value, Growth, Momentum, Quality, Volatility)
 
 #### Step 2: Factor Comparison Analysis
 **User Input**: 
@@ -942,16 +948,16 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 ### Scenario Wrap-up
 
 **Business Impact Summary**:
-- **Strategy Development**: Enhanced systematic strategy development with integrated quantitative and qualitative analysis
-- **Risk Management**: Comprehensive factor analysis and backtesting for robust risk assessment
-- **Investment Edge**: Earlier identification of factor-based opportunities with fundamental validation
-- **Research Integration**: Seamless combination of quantitative models with fundamental research insights
+- **Speed & Efficiency**: Instant factor screening and analysis eliminating traditional data exploration delays (seconds vs minutes)
+- **Strategy Development**: Enhanced systematic strategy development with pre-built factor metrics and time-series analysis
+- **Investment Edge**: Earlier identification of factor-based opportunities with comprehensive 7-factor model coverage
+- **Research Integration**: Seamless combination of quantitative factor models with fundamental research validation
 
 **Technical Differentiators**:
-- **Advanced Factor Analysis**: Sophisticated factor screening, comparison, and attribution capabilities
-- **Integrated Backtesting**: Comprehensive strategy testing with multiple risk and performance metrics
-- **Research Integration**: Unique combination of quantitative factor analysis with fundamental research
-- **Statistical Rigor**: Advanced statistical analysis and significance testing throughout the analytical process
+- **Pre-Built Factor Metrics**: Instant access to factor-specific metrics (MOMENTUM_SCORE, QUALITY_SCORE) eliminating data exploration delays
+- **Time-Series Factor Analysis**: 5 years of monthly factor exposures enabling sophisticated trend analysis and screening
+- **Complete Factor Universe**: 7-factor model (Market, Size, Value, Growth, Momentum, Quality, Volatility) with sector-specific characteristics
+- **Research Integration**: Unique combination of quantitative factor analysis with fundamental research validation
 
 ## Scenario 7: Quant Analyst - Factor Analysis & Attribution ❌ PHASE 4
 
