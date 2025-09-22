@@ -529,7 +529,13 @@ class GlacierDemoOrchestrator:
             # Step 3: Generate demo data
             self.generate_demo_data(scale)
             
-            # Step 4: Validate setup (optional)
+            # Step 4: Create semantic views (after data exists)
+            self.create_semantic_views()
+            
+            # Step 5: Create search services (after data and views exist)
+            self.create_search_services()
+            
+            # Step 6: Validate setup (optional)
             if validate:
                 validation_passed = self.validate_setup()
                 if not validation_passed:

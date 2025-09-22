@@ -167,16 +167,14 @@ class ScenarioValidator:
                         BANK_AI_DEMO.SEMANTIC_LAYER.customer_risk_sv
                         METRICS aml_flag_count, average_relationship_risk
                         DIMENSIONS entity_name, risk_rating
-                        FILTERS entity_name IN ('Global Trade Ventures S.A.', 'Innovate GmbH')
-                    )
+                    ) WHERE entity_name IN ('Global Trade Ventures S.A.', 'Innovate GmbH')
                 ),
                 credit_risk AS (
                     SELECT * FROM SEMANTIC_VIEW(
                         BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
                         METRICS dscr, debt_to_equity, client_concentration
                         DIMENSIONS applicant_name
-                        FILTERS applicant_name IN ('Global Trade Ventures S.A.', 'Innovate GmbH')
-                    )
+                    ) WHERE applicant_name IN ('Global Trade Ventures S.A.', 'Innovate GmbH')
                 )
                 SELECT 
                     a.entity_name,

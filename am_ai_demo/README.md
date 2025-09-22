@@ -2,6 +2,8 @@
 
 A comprehensive demonstration of Snowflake Intelligence capabilities for asset management customers, featuring 14,000+ authentic securities from OpenFIGI, realistic multi-asset portfolios, AI-powered analytics, and intelligent agents.
 
+**Please be aware that everything is not 100% tested and the focus has been to make sure there is data that support the demo scenarios, meaning having data supporting the flow described in docs/demo_scenarios.md`. Also check the status in the  Available Demo Scenarios section, if something has the NOT IMPLEMENTED status then it means there is no data genrated or objects created for supporting that scenario.**
+
 ## Quick Start
 
 ### Prerequisites
@@ -95,7 +97,7 @@ python main.py --connection-name your_connection --integrate-templates
 | **ESG Monitoring** | `esg_guardian` | **✅ IMPLEMENTED** | Controversy scanning, policy compliance, engagement tracking |
 | **Compliance** | `compliance_advisor` | **✅ IMPLEMENTED** | Mandate monitoring, breach detection, policy citation |
 | **Client Reporting** | `sales_advisor` | **✅ IMPLEMENTED** | Performance reports, template formatting, philosophy integration |
-| **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, backtesting, performance attribution |
+| **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, time-series analysis, factor evolution trends |
 
 - **✅ ALL SCENARIOS IMPLEMENTED**: Complete demo suite ready for use
 

@@ -327,15 +327,32 @@ def build_dim_security_from_real_data(session: Session, securities_count: dict):
 
 
 def build_dim_portfolio(session: Session):
-    """Build portfolio dimension from configuration."""
+    """Build portfolio dimension from configuration with proper strategy classification."""
     
     portfolio_data = []
     for i, portfolio in enumerate(config.PORTFOLIO_LINEUP):
+        # Assign realistic investment strategies based on portfolio names
+        portfolio_name = portfolio['name']
+        if 'Multi-Asset' in portfolio_name:
+            strategy = 'Multi-Asset'
+        elif 'Value' in portfolio_name:
+            strategy = 'Value'
+        elif any(growth_term in portfolio_name for growth_term in ['Technology', 'AI', 'Innovation', 'Tech Disruptors']):
+            strategy = 'Growth'
+        elif any(theme_term in portfolio_name for theme_term in ['ESG', 'Renewable', 'Climate']):
+            strategy = 'ESG'
+        elif 'Core' in portfolio_name:
+            strategy = 'Core'
+        elif 'Balanced' in portfolio_name or 'Income' in portfolio_name:
+            strategy = 'Income'
+        else:
+            strategy = 'Equity'
+            
         portfolio_data.append({
             'PortfolioID': i + 1,
             'PortfolioCode': f"SAM_{i+1:02d}",
-            'PortfolioName': portfolio['name'],
-            'Strategy': 'Multi-Asset' if 'Multi-Asset' in portfolio['name'] else 'Equity',
+            'PortfolioName': portfolio_name,
+            'Strategy': strategy,
             'BaseCurrency': 'USD',
             'InceptionDate': datetime(2019, 1, 1).date()
         })

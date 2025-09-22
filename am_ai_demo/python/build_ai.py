@@ -86,7 +86,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
 	DIMENSIONS (
 		-- Portfolio dimensions
 		PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('fund_name','strategy_name','portfolio_name') COMMENT='Portfolio or fund name',
-		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('investment_strategy','portfolio_strategy') COMMENT='Investment strategy type',
+		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('investment_strategy','portfolio_strategy','strategy_type','value_strategy','growth_strategy') COMMENT='Investment strategy: Value, Growth, ESG, Core, Multi-Asset, Income',
 		
 		-- Security dimensions  
 		SECURITIES.DESCRIPTION AS Description WITH SYNONYMS=('company','security_name','description') COMMENT='Security description or company name',
@@ -306,7 +306,7 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_QUANT_VIEW
 	DIMENSIONS (
 		-- Portfolio dimensions
 		PORTFOLIOS.PORTFOLIONAME AS PortfolioName WITH SYNONYMS=('quant_fund_name','factor_strategy_name','quantitative_portfolio_name') COMMENT='Portfolio or fund name',
-		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('quant_investment_strategy','factor_portfolio_strategy') COMMENT='Investment strategy type',
+		PORTFOLIOS.STRATEGY AS Strategy WITH SYNONYMS=('quant_investment_strategy','factor_portfolio_strategy','value_strategy','growth_strategy','strategy_type') COMMENT='Investment strategy: Value, Growth, ESG, Core, Multi-Asset, Income',
 		
 		-- Security dimensions  
 		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('quant_ticker','factor_symbol','quantitative_ticker_symbol') COMMENT='Trading ticker symbol',

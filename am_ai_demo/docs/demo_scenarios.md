@@ -879,70 +879,70 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 #### Step 2: Factor Comparison Analysis
 **User Input**: 
 ```
-"For the stocks with improving momentum and quality factors from Step 1, compare their factor loadings against our current Value and Growth portfolios"
+"For the stocks with improving momentum and quality factors, compare their factor loadings against our current Value strategy and Growth strategy portfolios."
 ```
 
 **Expected Response**:
-- Side-by-side factor loading comparison between Step 1 screened securities and current portfolio holdings
-- Statistical significance of differences between screened stocks and portfolio averages
-- Factor tilt analysis showing how Step 1 securities would impact portfolio factor exposure
-- Risk-adjusted performance implications of adding Step 1 securities to existing portfolios
+- Side-by-side factor loading comparison between screened securities and current portfolio holdings
+- Statistical significance of differences between high momentum/quality stocks and portfolio averages
+- Factor tilt analysis showing how these securities would impact portfolio factor exposure
+- Risk-adjusted performance implications of adding screened securities to existing portfolios
 - Style drift assessment: would adding these securities maintain or shift portfolio style characteristics
 
 **Talking Points**:
-- **Targeted Factor Analysis**: Factor comparison specifically focused on Step 1 screened securities vs existing holdings
-- **Portfolio Impact Assessment**: Understanding how new securities would change factor exposures
+- **Targeted Factor Analysis**: Factor comparison focused on high momentum/quality securities vs existing holdings
+- **Portfolio Impact Assessment**: Understanding how these securities would change factor exposures
 - **Style Consistency Evaluation**: Maintaining investment style while improving factor characteristics
 
 **Key Features Highlighted**: 
-- **Screening-Based Comparison**: Factor analysis that builds directly on Step 1 security screening results
+- **Conversation-Aware Analysis**: Factor analysis that builds directly on previous screening conversation
 - **Portfolio Integration Analysis**: Assessment of how screened securities fit with existing factor exposures
-- **Style Impact Evaluation**: Understanding factor changes from incorporating Step 1 findings
+- **Style Impact Evaluation**: Understanding factor changes from incorporating screened securities
 
-#### Step 3: Backtesting Analysis
+#### Step 3: Factor Evolution Analysis
 **User Input**: 
 ```
-"Based on the factor analysis from Step 2, backtest a strategy using the best-performing factor combinations from our screened securities over the last 3 years"
+"Analyze the factor exposure trends of our momentum and quality securities over the last 3 years and show how their factor characteristics have evolved."
 ```
 
 **Expected Response**:
-- Simulated strategy performance using Step 1 screened securities and Step 2 factor insights vs benchmark
-- Risk metrics (Sharpe ratio, maximum drawdown, volatility) for the factor-driven strategy
-- Factor attribution showing how the specific factors from Steps 1-2 drove performance
-- Performance comparison between the new strategy and existing Value/Growth portfolios from Step 2
-- Statistical analysis validating the factor improvement thesis from previous steps
+- Time-series analysis of momentum and quality factor exposures for screened securities
+- Factor stability analysis showing consistency of factor characteristics over time
+- Comparison of factor evolution between screened securities and benchmark constituents
+- Statistical significance of factor improvements over the 3-year period
+- Portfolio impact assessment: how factor evolution affects current holdings
 
 **Talking Points**:
-- **Factor-Driven Strategy Testing**: Backtesting specifically validates the factor screening and analysis from Steps 1-2
-- **Integrated Strategy Validation**: Testing the complete factor improvement thesis built through previous analysis
-- **Comparative Performance Assessment**: Understanding how the new approach compares to existing strategies
+- **Time-Series Factor Analysis**: Sophisticated analysis of factor evolution using 5 years of monthly data
+- **Factor Stability Assessment**: Understanding consistency and persistence of factor characteristics
+- **Trend Validation**: Statistical validation of factor improvement trends over time
 
 **Key Features Highlighted**: 
-- **Multi-Step Strategy Validation**: Backtesting that tests the complete factor analysis workflow from Steps 1-2
-- **Factor-Based Performance Attribution**: Understanding how specific factors from previous steps drive returns
-- **Integrated Strategy Development**: Complete quantitative process from screening to factor analysis to backtesting
+- **Time-Series Analysis**: 5 years of monthly factor exposure data enabling sophisticated trend analysis
+- **Factor Persistence Studies**: Understanding factor stability and consistency over time periods
+- **Statistical Validation**: Rigorous analysis of factor improvement trends with significance testing
 
 #### Step 4: Fundamental Context Integration
 **User Input**: 
 ```
-"For the best-performing securities from our backtested strategy in Step 3, what fundamental themes and research support their factor performance and validate our quantitative findings?"
+"For the securities with the strongest factor evolution trends, what fundamental themes and research support their improving factor characteristics?"
 ```
 
 **Expected Response**:
-- Analysis of fundamental characteristics of top-performing securities from the Step 3 backtest
-- Earnings trends and analyst sentiment specifically for securities that drove the strategy performance
-- Thematic and sector drivers that explain why the Step 1 factor screening and Step 2 analysis were successful
+- Analysis of fundamental characteristics of top-performing momentum and quality securities
+- Earnings trends and analyst sentiment for securities that drove the strategy performance
+- Thematic and sector drivers that explain the success of momentum and quality factor selection
 - Research validation showing fundamental support for the quantitative factor improvements
-- Integration of the complete workflow: factor screening (Step 1) → factor analysis (Step 2) → performance validation (Step 3) → fundamental context (Step 4)
+- Integration of the complete workflow: factor screening → factor analysis → performance validation → fundamental context
 
 **Talking Points**:
-- **Complete Investment Validation**: Fundamental research validates the entire quantitative process from Steps 1-3
+- **Complete Investment Validation**: Fundamental research validates the entire momentum/quality quantitative process
 - **Factor-Fundamental Integration**: Understanding why the factor approach worked from both quantitative and qualitative perspectives  
 - **Investment Thesis Completion**: Full investment case combining systematic factor analysis with fundamental validation
 
 **Key Features Highlighted**: 
 - **End-to-End Integration**: Complete quantitative-to-qualitative workflow validation from screening to fundamental context
-- **Multi-Step Synthesis**: Fundamental analysis that validates and explains the quantitative findings from Steps 1-3
+- **Conversational Synthesis**: Fundamental analysis that validates and explains the quantitative findings developed in conversation
 - **Comprehensive Investment Process**: Complete systematic investment approach combining factor analysis, backtesting, and fundamental research
 
 ### Scenario Wrap-up
