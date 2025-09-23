@@ -96,6 +96,11 @@ def create_all_semantic_views(session: Session, scenarios: List[str] = None) -> 
     if 'credit_analysis' in scenarios:
         create_credit_risk_semantic_view(session)
     
+    # Create cross-domain intelligence semantic view for ecosystem analysis
+    # This supports both AML and credit scenarios
+    if any(scenario in scenarios for scenario in ['aml_kyc_edd', 'credit_analysis']):
+        create_cross_domain_intelligence_semantic_view(session)
+    
     logger.info("All semantic views created successfully")
 
 
@@ -172,7 +177,7 @@ def create_aml_kyc_risk_semantic_view(session: Session) -> None:
                 COMMENT='Customer transaction activity summary for AML monitoring'
         )
         RELATIONSHIPS (
-            customer_risk.CUSTOMER_ID = transaction_summary.CUSTOMER_ID
+            customer_to_transactions AS customer_risk(CUSTOMER_ID) REFERENCES transaction_summary(CUSTOMER_ID)
         )
         FACTS (
             customer_risk.AML_FLAGS AS aml_flags
@@ -348,33 +353,61 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
     """Create cross-domain intelligence semantic view for ecosystem analysis."""
     logger.info("Creating cross-domain intelligence semantic view...")
     
-    # This would be a more complex semantic view that joins multiple domains
-    # For now, we'll create a simplified version that can be expanded later
+    # Validate required tables exist
+    validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
+    
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.cross_domain_view AS
-        SELECT 
-            e.ENTITY_ID,
-            e.ENTITY_NAME,
-            e.INDUSTRY_SECTOR,
-            e.COUNTRY_CODE,
-            c.CUSTOMER_ID,
-            c.RISK_RATING,
-            c.KYC_STATUS,
-            la.APPLICATION_ID,
-            la.REQUESTED_AMOUNT,
-            la.APPLICATION_STATUS,
-            er.RELATIONSHIP_TYPE,
-            er.RELATED_ENTITY_ID,
-            re.ENTITY_NAME AS related_entity_name,
-            er.RISK_IMPACT_SCORE
-        FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS c ON e.ENTITY_ID = c.ENTITY_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_APPLICATIONS la ON c.CUSTOMER_ID = la.CUSTOMER_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS er ON e.ENTITY_ID = er.PRIMARY_ENTITY_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES re ON er.RELATED_ENTITY_ID = re.ENTITY_ID
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.SEMANTIC_LAYER.cross_domain_intelligence_sv
+        TABLES (
+            entities AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES
+                PRIMARY KEY (ENTITY_ID)
+                COMMENT='Core entity information for cross-domain analysis',
+            
+            relationships AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS
+                PRIMARY KEY (RELATIONSHIP_ID)
+                COMMENT='Entity relationships for ecosystem analysis'
+        )
+        RELATIONSHIPS (
+            entity_to_relationships AS entities(ENTITY_ID) REFERENCES relationships(PRIMARY_ENTITY_ID)
+        )
+        FACTS (
+            relationships.RISK_IMPACT_SCORE AS risk_impact_score
+                WITH SYNONYMS=('risk impact', 'relationship risk', 'contagion risk')
+                COMMENT='Risk impact score of the relationship (0-1 scale)',
+            
+            entities.ANNUAL_REVENUE AS annual_revenue
+                WITH SYNONYMS=('yearly revenue', 'company revenue', 'turnover')
+                COMMENT='Annual revenue of the entity in {config.CURRENCY}'
+        )
+        DIMENSIONS (
+            entities.ENTITY_ID AS entity_id
+                WITH SYNONYMS=('company id', 'entity identifier')
+                COMMENT='Unique entity identifier',
+            
+            entities.ENTITY_NAME AS entity_name
+                WITH SYNONYMS=('company name', 'organization name')
+                COMMENT='Legal entity name',
+            
+            entities.INDUSTRY_SECTOR AS industry_sector
+                WITH SYNONYMS=('industry', 'business sector', 'sector')
+                COMMENT='Industry classification of the entity',
+            
+            entities.COUNTRY_CODE AS country_code
+                WITH SYNONYMS=('country', 'jurisdiction', 'location')
+                COMMENT='Country code where entity is incorporated',
+            
+            relationships.RELATIONSHIP_TYPE AS relationship_type
+                WITH SYNONYMS=('connection type', 'business relationship')
+                COMMENT='Type of business relationship (SUPPLIER, CUSTOMER, VENDOR, etc.)',
+            
+            relationships.RELATED_ENTITY_ID AS related_entity_id
+                WITH SYNONYMS=('connected entity', 'relationship target')
+                COMMENT='Entity ID of the related entity in the relationship'
+        )
+        COMMENT='Cross-domain intelligence view for ecosystem analysis and risk contagion modeling'
     """).collect()
     
-    logger.info("Cross-domain intelligence view created successfully")
+    logger.info("Cross-domain intelligence semantic view created successfully")
 
 
 def main():

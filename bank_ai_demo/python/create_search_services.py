@@ -233,9 +233,9 @@ def create_news_research_search_service(session: Session) -> None:
                 PUBLISH_DATE,
                 SOURCE,
                 SENTIMENT_SCORE,
-                ESG_RELEVANCE,
-                SUPPLY_CHAIN_RELEVANCE,
-                INFLATION_RELEVANCE
+                CASE WHEN ESG_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS ESG_RELEVANCE,
+                CASE WHEN SUPPLY_CHAIN_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS SUPPLY_CHAIN_RELEVANCE,
+                CASE WHEN INFLATION_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS INFLATION_RELEVANCE
             FROM {config.SNOWFLAKE['database']}.RAW_DATA.NEWS_AND_RESEARCH
     """).collect()
     

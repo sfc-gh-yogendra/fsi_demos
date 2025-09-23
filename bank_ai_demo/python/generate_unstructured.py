@@ -126,8 +126,10 @@ def generate_loan_documents(session: Session, scale: str = "demo", scenarios: Li
     prompts = []
     
     # Generate business plan prompts for key applications
+    # Use GTV_SA_001 which has both entity and customer records (and loan applications)
+    key_applicant_id = config.KEY_ENTITIES['primary_aml_subject']['entity_id']  # GTV_SA_001
     for app in applications:
-        if app['APPLICANT_NAME'] == 'Innovate GmbH':  # Key demo application
+        if app['APPLICANT_NAME'] == key_applicant_id:  # Key demo application
             prompts.extend(_create_business_plan_prompts(app))
     
     # Step 2: Store prompts in Snowflake table
@@ -393,8 +395,8 @@ def _create_business_plan_prompts(application: Dict[str, Any]) -> List[Dict[str,
     """Create business plan document prompts for a loan application."""
     prompts = []
     
-    if application['APPLICANT_NAME'] == 'Innovate GmbH':
-        prompt_text = f"""Create a comprehensive business plan for {application['APPLICANT_NAME']}, a German software services company applying for a €{application['REQUESTED_AMOUNT']/1000000:.1f}M loan.
+    if application['APPLICANT_NAME'] == config.KEY_ENTITIES['primary_aml_subject']['entity_id']:  # GTV_SA_001
+        prompt_text = f"""Create a comprehensive business plan for {config.KEY_ENTITIES['primary_aml_subject']['name']}, a Luxembourg international trade company applying for a €{application['REQUESTED_AMOUNT']/1000000:.1f}M loan.
 
 REQUIREMENTS:
 - Document type: Business Plan 2024-2029
@@ -411,13 +413,13 @@ Company Overview:
 - EBITDA: €{application['EBITDA']/1000000:.1f}M
 
 EXECUTIVE SUMMARY:
-{application['APPLICANT_NAME']} is a leading {application['INDUSTRY_SECTOR']} company specializing in enterprise solutions for mid-market clients across Germany and Europe.
+{config.KEY_ENTITIES['primary_aml_subject']['name']} is a leading {config.KEY_ENTITIES['primary_aml_subject']['industry']} company specializing in cross-border trade facilitation and logistics solutions across Europe, Asia, and emerging markets.
 
 MARKET STRATEGY:
-- Target market: Mid-market enterprises (€10M-€100M revenue)
-- Geographic expansion: DACH region focus with selective European expansion
-- Service diversification: AI/ML consulting and cloud migration services
-- Key differentiator: Industry-specific solutions with rapid deployment
+- Target market: Mid-market importers/exporters (€5M-€50M annual trade volume)
+- Geographic expansion: Eastern European and Asian market penetration
+- Service diversification: Digital trade finance and customs automation
+- Key differentiator: Comprehensive supply chain solutions with regulatory expertise
 
 FINANCIAL PROJECTIONS:
 - Revenue growth: 25% CAGR 2024-2029
@@ -434,8 +436,8 @@ Include sections: Executive Summary, Market Strategy, Financial Projections, Key
 Format as a professional business plan with clear structure and financial analysis."""
 
         prompts.append({
-            'PROMPT_ID': f'INNOVATE_GMBH_BUSINESS_PLAN_2024',
-            'DOCUMENT_TITLE': f'{application["APPLICANT_NAME"]} - Business Plan 2024-2029',
+            'PROMPT_ID': f'GTV_SA_BUSINESS_PLAN_2024',
+            'DOCUMENT_TITLE': f'{config.KEY_ENTITIES["primary_aml_subject"]["name"]} - Business Plan 2024-2029',
             'PROMPT_TEXT': prompt_text,
             'APPLICANT_NAME': application['APPLICANT_NAME'],
             'DOC_TYPE': 'Business Plan',
