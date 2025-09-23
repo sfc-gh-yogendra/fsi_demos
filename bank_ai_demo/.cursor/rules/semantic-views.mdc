@@ -102,6 +102,29 @@ ISSUERS: synonyms=('company_name')  -- Conflict!
 -- ❌ RESERVED word usage
 HOLDINGS.SELECT AS SELECT_VALUE  -- SELECT is reserved
 
+### CRITICAL COLUMN REFERENCE RULES
+```sql
+-- ✅ CORRECT: Reference columns that exist in the table
+entities.ENTITY_NAME AS entity_name
+
+-- ❌ WRONG: Reference columns that don't exist in the table
+entities.ANNUAL_REVENUE AS annual_revenue  -- If ANNUAL_REVENUE doesn't exist in ENTITIES table
+```
+
+### RELATIONSHIP DEFINITION RULES
+```sql
+-- ✅ CORRECT: Foreign key references primary key
+relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
+
+-- ❌ WRONG: Primary key references foreign key (backwards)
+entity_to_relationships AS entities(ENTITY_ID) REFERENCES relationships(PRIMARY_ENTITY_ID)
+```
+
+**IMPORTANT**: 
+- Always verify that columns exist in the referenced tables before using them in FACTS, DIMENSIONS, or METRICS
+- In RELATIONSHIPS, the foreign key column should reference the primary key of the other table
+- The relationship direction matters: FK_TABLE(FK_COLUMN) REFERENCES PK_TABLE(PK_COLUMN)
+
 ## Semantic View Testing Pattern
 
 ```sql
@@ -127,3 +150,28 @@ SELECT * FROM SEMANTIC_VIEW(
     FILTERS {business_filters}
 ) LIMIT 20;
 ```
+
+## Stored Procedures with @sproc Decorator
+
+When creating stored procedures using Snowpark's `@sproc` decorator, be aware that the function runs on Snowflake's server, not locally:
+
+```python
+# ❌ WRONG: Importing local modules inside @sproc function
+@sproc(...)
+def my_function(session: Session, ...):
+    import config  # This will fail - config module doesn't exist on Snowflake
+    return f"Institution: {config.INSTITUTION_NAME}"
+
+# ✅ CORRECT: Hardcode values that would come from config
+@sproc(...)
+def my_function(session: Session, ...):
+    # Hardcode configuration values
+    institution_name = "Glacier First Bank"
+    return f"Institution: {institution_name}"
+```
+
+**KEY POINTS**:
+- Functions decorated with @sproc run on Snowflake servers
+- Local Python modules (like config.py) are NOT available inside @sproc functions
+- All configuration values must be hardcoded or passed as parameters
+- Only packages specified in the `packages` parameter of @sproc are available

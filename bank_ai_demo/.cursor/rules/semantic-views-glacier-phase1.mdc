@@ -402,6 +402,15 @@ SELECT * FROM SEMANTIC_VIEW(
 ) LIMIT 15;
 ```
 
+## Implementation Note
+
+The Python implementation creates a simplified `cross_domain_intelligence_sv` view instead of the full `ecosystem_risk_sv` defined above. The simplified version:
+- Uses only ENTITIES and ENTITY_RELATIONSHIPS tables
+- Provides basic cross-domain intelligence capabilities
+- Has corrected relationship definition: `relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)`
+
+Future implementations should consider using the full ecosystem_risk_sv definition for richer analysis capabilities.
+
 ## Cross-Domain Intelligence Patterns
 
 ### Multi-Step Reasoning Support

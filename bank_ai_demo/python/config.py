@@ -4,6 +4,7 @@ Master configuration for all phases and scenarios
 """
 
 import os
+from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
 # =============================================================================
@@ -105,11 +106,15 @@ DEFAULT_SCALE = "demo"
 # DATE RANGES
 # =============================================================================
 
+# Calculate dates dynamically based on current date
+_current_date = datetime.now().date()
+_yesterday = _current_date - timedelta(days=1)
+
 DATE_RANGES = {
-    "historical_start": "2019-01-01",
-    "historical_end": "2024-09-30",
-    "current_date": "2024-09-30",
-    "future_projections": "2026-12-31"
+    "historical_start": (_yesterday - timedelta(days=365*5)).strftime("%Y-%m-%d"),  # 5 years before yesterday
+    "historical_end": _yesterday.strftime("%Y-%m-%d"),
+    "current_date": _yesterday.strftime("%Y-%m-%d"),
+    "future_projections": (_yesterday + timedelta(days=365*2)).strftime("%Y-%m-%d")  # 2 years from yesterday
 }
 
 # =============================================================================
