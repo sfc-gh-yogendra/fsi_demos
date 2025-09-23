@@ -227,7 +227,7 @@ def create_pdf_generator(session: Session) -> None:
                 # Glacier First Bank logo (text-based for demo)
                 glacier_logo = """
                 <div style="text-align: center; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: white; padding: 20px; margin-bottom: 30px; border-radius: 10px;">
-                    <h1 style="margin: 0; font-size: 28px; color: white; border: none;">🏔️ {config.INSTITUTION_NAME.upper()}</h1>
+                    <h1 style="margin: 0; font-size: 28px; color: white; border: none;">🏔️ GLACIER FIRST BANK</h1>
                     <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Pan-European Universal Bank</p>
                 </div>
                 """
@@ -258,7 +258,7 @@ def create_pdf_generator(session: Session) -> None:
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>{config.INSTITUTION_NAME} - {report_type} Report</title>
+                    <title>Glacier First Bank - {report_type} Report</title>
                     <style>{css}</style>
                 </head>
                 <body>

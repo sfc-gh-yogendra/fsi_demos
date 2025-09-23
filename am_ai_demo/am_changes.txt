@@ -1,0 +1,38 @@
+DOCUMENT TYPES
+==================
+
+Investment Philosophies:
+Common investment philosophies:
+* Value investing involves buying stocks that an investor believes are underpriced on the expectation they will rise significantly.
+* Fundamental analysis relies on identifying companies with strong earnings prospects.
+* Growth investing is where investors buy shares of newer companies that are generating above-average sales and earnings growth, in hopes of rising stock prices.
+* Socially responsible investing (SRI), focuses on investing in companies whose practices align with an investor's values as they pertain to the company's impact on society and the environment. SRI is sometimes known as ESG investing.
+* Technical analysis relies on the examination of past market data to uncover hallmark visual patterns in trading activity on which to base buy and sell decisions.
+* Contrarian investing, as the name implies, goes in the opposite direction of the crowd. Swimming against the current, these investors assume the market is usually wrong at both its extreme lows and highs, selling into rallies and buying when markets tumble.
+
+Broker research report:
+
+	Contents:
+		* Recommendation – Typically to either buy, sell, or hold shares in the company. This section also usually includes a target price (i.e., $47.00 in the next 12 months).
+		* Company Update – Any recent information, new releases, quarterly or annual results, major contracts, management changes, or any other important information about the company.
+		* Investment Thesis – A summary of why the analyst believes the stock will over or underperform and what will cause it to reach the share price target included in the recommendation. This is probably the most interesting part of the report.
+		* Financial Information & Valuation – A forecast of the company’s income statement, balance sheet, cash flow, and valuation. This section is often an output from a financial model built in Excel.
+		* Risk & Disclaimers – An overview of the risks associated with investing in the stock. This is usually a laundry list that includes all conceivable risks, thus making it feel like a legal disclaimer. The reports also have extensive disclaimers in addition to the risk section.
+
+	
+  A full equity research report, as opposed to a short one-page “note”, usually includes the following sections:
+
+   * Investment Recommendation ➝ The equity research analyst’s investment rating
+   * Key Takeaways ➝ A one-page summary of what the analyst thinks is about to happen (ahead of an earnings release) or his/her interpretation of the key takeaways from what has just happened (immediately after the earnings release)
+   * Quarterly Update ➝ Comprehensive detail about the preceding quarter (when a company has just reported earnings)
+   * Catalysts ➝ Details about the company’s near-term (or long-term) catalysts that are developing are discussed here.
+   * Financial Exhibits ➝ Snapshots of the analyst’s earnings model and detailed forecasts
+
+  Types of reports:
+
+   * Initiating Coverage – A long report (often 50-100+ pages long) that is released when a firm starts covering a stock for the first time.
+   * Industry Reports – General industry updates about a few companies in a sector.
+   * Top Picks – A list and summary of a firm’s top stock picks and their targeted returns.
+   * Quarterly Results – A report that focuses on the company’s quarterly earnings release and any updated guidance.
+   * Flash Reports – Quick 1-2 page report that comments on a new release from the company or other quick information.
+

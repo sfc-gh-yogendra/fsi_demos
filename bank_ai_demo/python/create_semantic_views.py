@@ -368,16 +368,12 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
                 COMMENT='Entity relationships for ecosystem analysis'
         )
         RELATIONSHIPS (
-            entity_to_relationships AS entities(ENTITY_ID) REFERENCES relationships(PRIMARY_ENTITY_ID)
+            relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
         )
         FACTS (
             relationships.RISK_IMPACT_SCORE AS risk_impact_score
                 WITH SYNONYMS=('risk impact', 'relationship risk', 'contagion risk')
-                COMMENT='Risk impact score of the relationship (0-1 scale)',
-            
-            entities.ANNUAL_REVENUE AS annual_revenue
-                WITH SYNONYMS=('yearly revenue', 'company revenue', 'turnover')
-                COMMENT='Annual revenue of the entity in {config.CURRENCY}'
+                COMMENT='Risk impact score of the relationship (0-1 scale)'
         )
         DIMENSIONS (
             entities.ENTITY_ID AS entity_id
