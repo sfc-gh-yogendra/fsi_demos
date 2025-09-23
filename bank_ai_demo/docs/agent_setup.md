@@ -71,9 +71,9 @@ Each agent combines multiple tools for sophisticated cross-domain analysis and m
 **Custom Tool Identifier**: `BANK_AI_DEMO.AGENT_FRAMEWORK.GENERATE_PDF_REPORT`  
 **Warehouse**: `BANK_AI_DEMO_COMPUTE_WH`  
 **Parameters**:
-- `REPORT_CONTENT` (VARCHAR, Required): The complete analysis content formatted in markdown. Include headers (##), bullet points, tables, and key findings. This will be the main body of the PDF report.
-- `REPORT_TYPE` (VARCHAR, Required): Specify the type of analysis - use "AML" for Anti-Money Laundering reports, "CREDIT" for credit risk assessments, or "ANALYSIS" for general financial analysis.
-- `ENTITY_NAME` (VARCHAR, Required): Full legal name of the entity, customer, or organization being analyzed. This will appear in the PDF filename and header.
+- `ARG1` (VARCHAR, Required): The complete analysis content formatted in markdown. Include headers (##), bullet points, tables, and key findings. This will be the main body of the PDF report.
+- `ARG2` (VARCHAR, Required): Specify the type of analysis - use "AML" for Anti-Money Laundering reports, "CREDIT" for credit risk assessments, or "ANALYSIS" for general financial analysis.
+- `ARG3` (VARCHAR, Required): Full legal name of the entity, customer, or organization being analyzed. This will appear in the PDF filename and header.
 **Description**: Generate professional PDF reports from analysis content with Glacier First Bank branding. Saves reports to secure stage for download and sharing.
 
 ### Response Instructions

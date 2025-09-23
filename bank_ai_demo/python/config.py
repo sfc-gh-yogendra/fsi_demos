@@ -86,17 +86,6 @@ SCALES = {
         "loan_applications": 25,
         "historical_loans": 1500,
         "news_articles": 1200,
-    },
-    "full": {
-        "description": "Large scale for stress testing",
-        "entities": 2000,
-        "entity_relationships": 5000,
-        "customers": 800,
-        "transactions": 200000,
-        "compliance_documents": 3000,
-        "loan_applications": 100,
-        "historical_loans": 6000,
-        "news_articles": 5000,
     }
 }
 

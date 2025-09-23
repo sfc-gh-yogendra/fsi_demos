@@ -98,7 +98,7 @@ python python/main.py --connection-name my_connection --scope semantic
 | `--connection-name` | string | *required* | Snowflake connection name from connections.toml |
 | `--scenarios` | `aml_kyc_edd`, `credit_analysis`, `all` | `all` | Comma-separated scenarios to build |
 | `--scope` | `all`, `data`, `semantic`, `search` | `all` | Build scope (infrastructure, data, views, services) |
-| `--scale` | `mini`, `demo`, `full` | `demo` | Data generation scale |
+| `--scale` | `mini`, `demo` | `demo` | Data generation scale |
 | `--no-validate` | flag | false | Skip validation tests after build |
 | `--quiet` | flag | false | Suppress banner and detailed output |
 

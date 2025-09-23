@@ -454,7 +454,7 @@ Examples:
                        help='Comma-separated list of scenarios to build, or "all" for all scenarios (default: all)')
     parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search'], default='all',
                        help='Scope of build: all=everything, data=structured+unstructured, semantic=views only, search=services only (default: all)')
-    parser.add_argument('--scale', choices=['mini', 'demo', 'full'], default='demo',
+    parser.add_argument('--scale', choices=['mini', 'demo'], default='demo',
                        help='Data generation scale (default: demo)')
     parser.add_argument('--no-validate', action='store_true',
                        help='Skip validation after deployment')

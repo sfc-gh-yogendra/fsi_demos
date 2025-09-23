@@ -27,13 +27,10 @@ export CONNECTION_NAME="your_snowflake_connection"
 
 ```bash
 # Full deployment with demo-scale data
-python deploy.py --connection your_connection_name
+python main.py --connection-name your_connection_name
 
 # Quick test deployment with minimal data
-python deploy.py --scale mini
-
-# Production deployment with full data
-python deploy.py --scale full
+python main.py --connection-name your_connection_name --scale mini
 ```
 
 ### 3. Verify Deployment
