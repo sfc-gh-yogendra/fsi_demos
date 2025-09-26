@@ -15,7 +15,7 @@ A comprehensive demonstration of Snowflake Intelligence capabilities for asset m
 #### **Snowflake Account**
 - Make sure you have cross-region inference enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference, at minimum you need to have AWS_EU enabled byt ANY_REGIONS is prefered.
 - Snowflake Intelligence enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence
-- **Optional**: Access to "Data Financials & Economics: Enterprise" dataset from Snowflake Marketplace (only required if you want to update the `real_assets.csv` file with fresh data)
+- Access to "SEC Filings", https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings?search=SEC%20fillings, product from Snowflake Marketplace
 
 #### **Python Environment**
 - Python 3.10+
@@ -34,7 +34,7 @@ warehouse = "your-warehouse"
 
 ### Build Demo Environment (100% Real Assets)
 ```bash
-# Build everything with 14,000 real securities (all scenarios)
+# Build everything with 14,000+ real securities (all scenarios)
 python python/main.py --connection-name my_demo_connection
 
 # Test mode: Build with 1,400 real securities for faster development testing
@@ -45,9 +45,6 @@ python python/main.py --connection-name my_demo_connection --scenarios portfolio
 
 # Build only data layer
 python python/main.py --connection-name my_demo_connection --scope data
-
-# Optional: Extract fresh real assets (requires Marketplace access)
-python python/main.py --connection-name my_demo_connection --extract-real-assets
 ```
 
 ## Next Steps After Build
@@ -62,17 +59,6 @@ python python/main.py --connection-name my_demo_connection --extract-real-assets
 "What are my top 10 holdings by market value in the SAM Global Thematic Growth portfolio?"
 ```
 **Expected**: Clean list with enhanced issuer information and stable SecurityID linkage
-
-### 🆕 PDF Template Enhancement
-Transform your document generation with real PDF analysis:
-```bash
-# Interactive mode - copy/paste your document text
-python main.py --connection-name your_connection --interactive-template --pdf-doc-type broker_research
-
-# Integrate enhanced templates into document generation
-python main.py --connection-name your_connection --integrate-templates
-```
-**Result**: Professional, authentic document generation indistinguishable from real financial documents
 
 **Note**: All commands now require the `--connection-name` parameter to specify which connection from `~/.snowflake/connections.toml` to use.
 
@@ -120,7 +106,7 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 | **Language** | UK English | All generated content and agent responses |
 | **Currency** | USD (fully hedged) | Base currency for all analytics |
 | **Returns** | Monthly | Performance calculation frequency |
-| **Real Assets** | ✅ Required | 14,000+ authentic securities from Snowflake Marketplace |
+| **Real Assets** | ✅ Always Used | 14,000+ authentic securities from SEC Filings dataset |
 | **Market Data** | Synthetic | Realistic OHLCV prices for all securities |
 | **Test Mode** | Available | 10% data volumes for faster development |
 | **Warehouses** | Dedicated | Separate warehouses for execution and Cortex Search |
@@ -140,9 +126,8 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 │   ├── generate_structured.py  # Structured data generation
 │   ├── generate_unstructured.py # Unstructured content generation
 │   ├── build_ai.py             # AI components (semantic views, search)
-│   └── extract_real_assets.py  # Real asset data extraction
-├── data/                       # Real asset data storage
-│   └── real_assets.csv         # Authentic securities from Marketplace
+│   └── extract_real_assets.py  # Real asset view creation
+├── data/                       # Optional data storage directory
 ├── generic_rules/              # Development patterns and rules
 ├── research/                   # Background research and analysis
 ├── requirements.txt            # Python dependencies
@@ -162,7 +147,6 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 - **Issuer Hierarchies**: Corporate structure and parent company analysis
 - **Enhanced Document Integration**: Stable SecurityID/IssuerID linkage
 - **Real Data Integration**: Authentic market data with synthetic fallback
-- **PDF Template Enhancement**: 🆕 Analyze real PDFs to create professional document templates
 
 ### Data Providers (Simulated)
 - **NorthStar Data (NSD)**: ESG ratings, equity factors, estimates, MSCI ACWI benchmark
@@ -172,7 +156,7 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 ## Key Features
 
 ### 🎯 **Realistic Data**
-- **Authentic Tickers**: 14,000+ real securities from Snowflake Marketplace (AAPL, NVDA, ASML, TSM, NESTLE)
+- **Authentic Tickers**: 14,000+ real securities from SEC Filings dataset (AAPL, NVDA, ASML, TSM, NESTLE)
 - **Synthetic Market Data**: Realistic OHLCV records for all 14,000+ securities with proper volatility patterns
 - **Correlated Relationships**: P/E ratios align with growth, sector-specific factor scores
 - **Temporal Consistency**: Earnings dates align with transcripts, quarterly reporting cycles
@@ -206,27 +190,16 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 - **Build fails**: Check warehouse has sufficient compute resources
 - **Enhanced data model**: Uses SecurityID-based architecture with transaction audit trails
 - **Agent terminology**: Agents now understand both 'fund' and 'portfolio' queries
-- **Real assets missing**: Run `--connection-name <name> --extract-real-assets` to refresh data (optional)
+- **Real assets missing**: Ensure access to SEC Filings dataset - view is created automatically
 
 ### Support Resources
 - **Setup Instructions**: Complete documentation in `docs/` directory
 - **Agent Configuration**: See `docs/agents_setup.md` for detailed agent setup
 - **Demo Scripts**: Ready-to-use conversation flows in `docs/demo_scenarios.md`
 - **Troubleshooting**: Validation procedures in `docs/runbooks.md`
-- **Development Patterns**: Technical guides in `generic_rules/` directory
 
 ## Real Asset Data
 
-The demo uses 14,000+ authentic financial instruments from Snowflake Marketplace OpenFIGI dataset. This provides maximum realism and authenticity for customer demonstrations with 100% real Bloomberg identifiers. 
+The demo uses 14,000+ authentic financial instruments from the SEC Filings dataset (OpenFIGI). This provides maximum realism and authenticity for customer demonstrations with 100% real Bloomberg identifiers.
 
-**Default Usage**: The demo includes a pre-populated `data/real_assets.csv` file with 14,000+ real securities, so **no Marketplace access is required** for normal operation.
-
-**Optional: Update Real Assets** (requires Marketplace access)
-If you want to refresh the real assets data with the latest from Snowflake Marketplace:
-1. Ensure you have access to the "Financials & Economics: Enterprise" dataset
-2. Name your share `FINANCIALS_ECONOMICS_ENTERPRISE`
-3. Run the extraction command:
-
-```bash
-python python/main.py --connection-name my_demo_connection --extract-real-assets
-```
+**Usage**: Real assets are automatically loaded via the `V_REAL_ASSETS` view created from the SEC Filings dataset during the build process. No manual data extraction or CSV files needed.

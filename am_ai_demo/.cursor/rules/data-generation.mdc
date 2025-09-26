@@ -4,7 +4,7 @@ alwaysApply: true
 
 # SAM Demo - 100% Real Asset Data Model Guide
 
-Complete guide for the industry-standard data model using 100% authentic securities from Snowflake Marketplace OpenFIGI dataset. **No synthetic securities generated.**
+Complete guide for the industry-standard data model using 100% authentic securities from SEC Filings dataset (OpenFIGI). **No synthetic securities generated.**
 
 ## Overview
 
@@ -411,8 +411,8 @@ TRANSACTION_TYPES = ['BUY', 'SELL', 'DIVIDEND', 'CORPORATE_ACTION']
 AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY = 2.5
 
 # Real data integration (preserved)
-USE_REAL_ASSETS_CSV = True
-REAL_ASSETS_CSV_PATH = '../data/real_assets.csv'
+USE_REAL_ASSETS_CSV = True  # Still required for real-only mode
+REAL_ASSETS_VIEW = 'V_REAL_ASSETS'  # View in RAW schema
 # Market data: Synthetic generation for all securities
 
 # Enhanced real asset to issuer mapping

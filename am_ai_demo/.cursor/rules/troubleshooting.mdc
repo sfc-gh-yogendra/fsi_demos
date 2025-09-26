@@ -124,10 +124,10 @@ Comprehensive troubleshooting guide for resolving issues with agents, semantic v
 
 ### Real Asset Integration
 
-**"Real assets CSV not found"**
-- **Cause**: File path incorrect or extraction not run
-- **Solution**: Run `python main.py --extract-real-assets` first
-- **Reference**: See @real-assets.mdc for extraction patterns
+**"Real assets view returned no data"**
+- **Cause**: V_REAL_ASSETS view not created or SEC Filings access issue
+- **Solution**: Check SEC_FILINGS database access, view will auto-create during build
+- **Reference**: See @real-assets.mdc for view creation patterns
 
 **"'float' object has no attribute 'lower'"**
 - **Cause**: pandas NaN values in string operations

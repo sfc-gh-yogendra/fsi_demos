@@ -9,7 +9,8 @@ Complete instructions for configuring Snowflake Intelligence agents for the SAM 
 **Required Components** (automatically created by `python main.py`):
 - **Semantic Views**: 
   - `SAM_DEMO.AI.SAM_ANALYST_VIEW` - Portfolio analytics (holdings, weights, concentrations)
-  - `SAM_DEMO.AI.SAM_RESEARCH_VIEW` - Financial analysis (fundamentals, estimates, earnings)
+  - `SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW` - SEC filing financial analysis (28.7M real filing records)
+  - `SAM_DEMO.AI.SAM_RESEARCH_VIEW` - Research analytics (fundamentals, estimates, earnings) 
   - `SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW` - Implementation planning (trading costs, liquidity, risk limits, calendar)
 - **Search Services**: Enhanced services with SecurityID/IssuerID attributes
 - **Data Foundation**: Industry-standard dimension/fact model + AI-generated documents + implementation data
@@ -35,7 +36,14 @@ The SAM demo creates two semantic views for different use cases:
    - Portfolio weights, market values, concentrations
    - Used by Portfolio Copilot, ESG Guardian, and other portfolio-focused agents
 
-2. **`SAM_DEMO.AI.SAM_RESEARCH_VIEW`** - Research analytics view containing:
+2. **`SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`** - SEC filing financial analysis view containing:
+   - 28.7M authentic SEC filing records from EDGAR database
+   - Comprehensive financial statements: Income Statement, Balance Sheet, Cash Flow
+   - Real financial metrics: Revenue, Net Income, EPS, Assets, Liabilities, Cash Flow
+   - Quarter-by-quarter progression for 5,147 companies over 7 years (2020-2026)
+   - Used by Portfolio Copilot, Research Copilot, and Quant Analyst for authentic financial analysis
+
+3. **`SAM_DEMO.AI.SAM_RESEARCH_VIEW`** - Research analytics view containing:
    - Securities, issuers, fundamentals, and estimates
    - Earnings data, revenue, EPS, guidance
    - Earnings surprise calculations
@@ -181,21 +189,26 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Semantic View**: `SAM_DEMO.AI.SAM_IMPLEMENTATION_VIEW`
 - **Description**: "Use this tool for IMPLEMENTATION PLANNING including trading costs, market impact analysis, liquidity assessment, risk budget utilization, tax implications, and execution timing. Provides detailed implementation metrics, transaction costs, cash flow analysis, and trading calendar information. Use for portfolio implementation questions about execution planning, trading strategies, compliance constraints, and operational details."
 
-#### Tool 3: search_broker_research (Cortex Search)
+#### Tool 3: financial_analyzer (Cortex Analyst)
+- **Type**: Cortex Analyst
+- **Semantic View**: `SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`
+- **Description**: "Use this tool for FINANCIAL ANALYSIS OF HOLDINGS using authentic SEC filing data to analyze portfolio companies' financial health, profitability, leverage, and growth metrics. Essential for questions about debt-to-equity ratios, profit margins, revenue growth, cash flow analysis, and fundamental financial metrics of portfolio holdings. Provides 28.7M real SEC filing records for comprehensive company-level financial analysis."
+
+#### Tool 4: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_BROKER_RESEARCH`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search broker research reports and analyst notes for qualitative insights, investment opinions, price targets, and market commentary."
 
-#### Tool 4: search_earnings_transcripts (Cortex Search)
+#### Tool 5: search_earnings_transcripts (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_EARNINGS_TRANSCRIPTS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search earnings call transcripts and management commentary for company guidance, strategic updates, and qualitative business insights."
 
-#### Tool 5: search_press_releases (Cortex Search)
+#### Tool 6: search_press_releases (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_PRESS_RELEASES`
 - **ID Column**: `DOCUMENT_ID`
@@ -219,47 +232,56 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Questions requiring specific dollar amounts, timelines, or execution details → implementation_analyzer
    - "portfolio actions", "investment decisions", "execution plan", "position sizing" → implementation_analyzer
    - Multi-step synthesis queries asking for "specific implementation" or "action plan" → implementation_analyzer
+
+3. For FINANCIAL ANALYSIS of holdings, use financial_analyzer (Tool 3):
+   - "debt-to-equity ratio", "financial health", "leverage ratios", "balance sheet strength" → financial_analyzer
+   - "profit margins", "revenue growth", "earnings trends", "cash flow analysis" → financial_analyzer
+   - "financial ratios", "ROE", "ROA", "current ratio", "quick ratio" → financial_analyzer
+   - "company fundamentals", "financial performance", "earnings quality" → financial_analyzer
+   - CRITICAL: For questions about financial metrics of portfolio companies, ALWAYS use financial_analyzer for authentic SEC filing data
    
-3. For CURRENT HOLDINGS queries, ensure you filter to the latest date:
+4. For CURRENT HOLDINGS queries, ensure you filter to the latest date:
    - When asking for "top holdings" or "current positions", filter by the most recent holding_date
    - Use "WHERE holding_date = (SELECT MAX(holding_date) FROM holdings)" pattern
    - This prevents duplicate records across historical dates
    
-4. Only use search tools for DOCUMENT CONTENT:
-   - "latest research", "analyst opinions", "earnings commentary" → search tools
-   - "what does research say about...", "find reports about..." → search tools
+5. Only use search tools for DOCUMENT CONTENT:
+   - "latest research", "analyst opinions", "earnings commentary" → search tools (Tools 4-6)
+   - "what does research say about...", "find reports about..." → search tools (Tools 4-6)
    
-5. For mixed questions requiring IMPLEMENTATION DETAILS:
+6. For mixed questions requiring IMPLEMENTATION DETAILS:
    - Start with quantitative_analyzer (Tool 1) for basic holdings data
    - Then use implementation_analyzer (Tool 2) for execution planning, costs, and operational details
-   - Then use search tools (Tools 3-5) for supporting research if needed
+   - Use financial_analyzer (Tool 3) for company financial analysis if needed
+   - Then use search tools (Tools 4-6) for supporting research if needed
    
-6. For COMPLEX SYNTHESIS queries (like "Based on our analysis, provide implementation plan"):
+7. For COMPLEX SYNTHESIS queries (like "Based on our analysis, provide implementation plan"):
    - These queries reference previous analysis and ask for actionable next steps
    - ALWAYS use implementation_analyzer (Tool 2) as the primary tool for these requests
    - Focus on providing specific execution details, dollar amounts, timelines, and operational steps
    - Include trading costs, liquidity constraints, risk implications, and tax considerations
    
-7. For CONCENTRATION ANALYSIS:
+8. For CONCENTRATION ANALYSIS:
    - When showing portfolio holdings, always calculate position weights as percentages
    - Flag any position >6.5% with "⚠️ CONCENTRATION WARNING" and exact percentage
    - Recommend monitoring or reduction for flagged positions
    - Calculate total exposure of all flagged positions
 
-8. For RISK ASSESSMENT queries:
+9. For RISK ASSESSMENT queries:
    - Use search tools to scan for negative ratings, risk keywords, or emerging concerns
    - Flag securities with specific risk concerns and provide source citations
    - Recommend actions: review, monitor, or consider reduction based on severity
    
-9. Tool selection logic:
+10. Tool selection logic:
    - Portfolio/fund/holdings questions → quantitative_analyzer (Tool 1, never search first)
    - Implementation/execution questions → implementation_analyzer (Tool 2)
-   - Document content questions → appropriate search tool (Tools 3-5)
-   - Risk assessment questions → search tools with risk-focused filtering (Tools 3-5)
-   - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → search tools (Tools 3-5)
+   - Financial analysis of holdings → financial_analyzer (Tool 3)
+   - Document content questions → appropriate search tool (Tools 4-6)
+   - Risk assessment questions → search tools with risk-focused filtering (Tools 4-6)
+   - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → financial_analyzer (Tool 3) → search tools (Tools 4-6)
    - Synthesis queries asking for "implementation plan with specific details" → implementation_analyzer (Tool 2) ONLY
    
-10. If user requests charts/visualizations, ensure quantitative_analyzer or implementation_analyzer generates them
+11. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
 ```
 
 ## Agent 2: Research Copilot
@@ -287,8 +309,8 @@ Expert research assistant specializing in document analysis, investment research
 
 #### Tool 1: financial_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
-- **Semantic View**: `SAM_DEMO.AI.SAM_RESEARCH_VIEW`
-- **Description**: "Use this tool for ALL company performance analysis and quantitative financial data including revenue trends, EPS progression, analyst estimates, earnings surprises, and financial ratios. ALWAYS use this tool FIRST when analyzing company performance, financial results, or conducting detailed company analysis. It provides comprehensive financial metrics and performance data for fundamental analysis."
+- **Semantic View**: `SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`
+- **Description**: "Use this tool for ALL company financial analysis using authentic SEC filing data including revenue, net income, EPS, balance sheet metrics, cash flow analysis, and comprehensive financial ratios. ALWAYS use this tool FIRST when analyzing company performance, financial results, or conducting detailed company analysis. It provides 28.7M real SEC filing records across Income Statement, Balance Sheet, and Cash Flow statements for fundamental analysis."
 
 #### Tool 2: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
@@ -317,24 +339,24 @@ Expert research assistant specializing in document analysis, investment research
 ```
 1. Analyze the user's query to identify research requirements and determine if quantitative financial data is needed
 2. CRITICAL: For ANY query mentioning "performance", "financial results", "earnings", "revenue", or "detailed analysis" of a company:
-   - ALWAYS use financial_analyzer FIRST for quantitative metrics (revenue, EPS, estimates, ratios)
+   - ALWAYS use financial_analyzer FIRST for authentic SEC filing data (revenue, net income, EPS, balance sheet, cash flow)
    - Then use search tools for qualitative context and management commentary
-   - Synthesize financial data with qualitative insights for comprehensive analysis
+   - Synthesize real SEC financial data with qualitative insights for comprehensive analysis
 4. Classify additional information needs by source:
-   - FINANCIAL METRICS: Use financial_analyzer for revenue trends, EPS, estimates, earnings surprises
+   - SEC FINANCIAL DATA: Use financial_analyzer for revenue, profit margins, EPS, assets, liabilities, cash flow from real SEC filings
    - ANALYST VIEWS: Use search_broker_research for investment opinions, ratings, recommendations
    - MANAGEMENT COMMENTARY: Use search_earnings_transcripts for guidance and strategic updates
    - CORPORATE DEVELOPMENTS: Use search_press_releases for business developments and announcements
 5. For comprehensive company analysis workflow:
-   - Start with financial_analyzer to establish quantitative foundation
+   - Start with financial_analyzer to establish SEC filing foundation (28.7M real records)
    - Add search_earnings_transcripts for management perspective on the numbers
    - Include search_broker_research for analyst interpretation and recommendations
    - Use search_press_releases for recent strategic developments
 6. For thematic or sector research:
    - Use search tools to identify trends and themes across multiple companies
-   - Use financial_analyzer to validate themes with quantitative performance data
-7. Always combine quantitative financial analysis with qualitative research insights
-8. When financial data is unavailable, clearly state limitations and focus on available research sources
+   - Use financial_analyzer to validate themes with authentic SEC filing performance data
+7. Always combine authentic SEC financial analysis with qualitative research insights
+8. Leverage comprehensive financial statements: Income Statement, Balance Sheet, Cash Flow data available
 ```
 
 ## Agent 3: Thematic Macro Advisor
@@ -691,14 +713,19 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
 - **Semantic View**: `SAM_DEMO.AI.SAM_QUANT_VIEW`
 - **Description**: "Use this tool for QUANTITATIVE FACTOR ANALYSIS including factor screening, backtesting, performance attribution, systematic strategy development, and quantitative research. Available factors: Market, Size, Value, Growth, Momentum, Quality, Volatility with monthly time series over 5 years. Provides factor exposures, fundamental metrics, market data, and benchmark data for systematic investment research. For trend analysis, compare factor exposures across time periods to identify improving momentum and quality patterns."
 
-#### Tool 2: search_broker_research (Cortex Search)
+#### Tool 2: financial_analyzer (Cortex Analyst)
+- **Type**: Cortex Analyst
+- **Semantic View**: `SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`
+- **Description**: "Use this tool for FUNDAMENTAL VALIDATION using authentic SEC filing data including revenue growth, profit margins, EPS trends, balance sheet strength, and cash flow analysis. Use to validate factor-based stock selections with real financial performance metrics from SEC filings. Provides 28.7M filing records for fundamental screening and quantitative validation of systematic strategies."
+
+#### Tool 3: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_BROKER_RESEARCH`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search broker research reports and analyst notes for qualitative insights, investment opinions, price targets, and market commentary."
 
-#### Tool 3: search_earnings_transcripts (Cortex Search)
+#### Tool 4: search_earnings_transcripts (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_EARNINGS_TRANSCRIPTS`
 - **ID Column**: `DOCUMENT_ID`
@@ -734,10 +761,11 @@ Expert AI assistant for quantitative analysts focused on factor analysis, perfor
    - Provide factor exposure drift analysis and systematic risk assessment
    - Calculate statistical significance of outperformance with proper benchmarking
 6. For FUNDAMENTAL VALIDATION:
-   - Use quantitative_analyzer for fundamental metrics of factor-selected securities
+   - Use quantitative_analyzer for factor screening and systematic analysis
+   - Use financial_analyzer for authentic SEC filing validation (revenue growth, margins, cash flow)
    - Use search_earnings_transcripts for management commentary supporting factor themes
    - Use search_broker_research for analyst views on systematic factor strategies
-   - Synthesize quantitative factor insights with fundamental business drivers
+   - Synthesize quantitative factor insights with fundamental business drivers from real SEC data
 7. For SYSTEMATIC RISK ANALYSIS:
    - Use quantitative_analyzer for factor model risk decomposition
    - Include systematic vs specific risk attribution

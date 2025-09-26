@@ -1,6 +1,6 @@
 # SAM Demo - Data Model Documentation (100% Real Assets)
 
-Complete documentation of the data architecture using 14,000+ authentic securities from Snowflake Marketplace OpenFIGI dataset following industry-standard asset management practices.
+Complete documentation of the data architecture using 14,000+ authentic securities from SEC Filings dataset (OpenFIGI) following industry-standard asset management practices.
 
 ## Database Architecture
 

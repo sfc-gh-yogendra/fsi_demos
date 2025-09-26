@@ -35,9 +35,9 @@ Project structure, configuration management, and setup procedures for the SAM AI
 │   ├── generate_structured.py # Enhanced structured data generation (SecurityID model)
 │   ├── generate_unstructured.py # Unstructured content generation (SecurityID integration)
 │   ├── build_ai.py            # AI components (semantic views, search services)
-│   └── extract_real_assets.py # Real asset data extraction from Marketplace
-├── data/                      # Real asset data storage
-│   └── real_assets.csv        # Real securities data from Snowflake Marketplace
+│   └── extract_real_assets.py # Real asset data extraction and view creation
+├── data/                      # Real asset data storage (optional)
+│   └── real_assets.csv        # Optional CSV export from SEC Filings dataset
 ├── research/                  # Research documents and analysis
 │   └── [research files...]    # Industry research and model documentation
 └── README.md                  # Quick setup guide
@@ -71,9 +71,9 @@ AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY = 2.5
 PROVIDERS = ['NSD', 'PLM']  # NorthStar Data, PolarMetrics
 PROVIDER_MIX = {'NSD': 0.5, 'PLM': 0.5}
 
-# Real asset integration
-USE_REAL_ASSETS_CSV = True
-REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
+# Real asset integration (view-based)
+USE_REAL_ASSETS_CSV = True  # Still required for real-only mode
+REAL_ASSETS_VIEW = 'V_REAL_ASSETS'  # View in RAW schema
 # Market data: Synthetic generation for all securities
 
 # Enhanced real asset to issuer mapping
@@ -103,7 +103,7 @@ REAL_ASSET_ISSUER_MAPPING = {
 - `--connection-name` (optional): Snowflake connection name
 - `--scenarios` (optional): Comma-separated list of scenarios to build
 - `--scope` (optional): `all|data|semantic|search` (default: `all`)
-- `--extract-real-assets` (optional): Extract real asset data from Marketplace
+- `--extract-real-assets` (optional): Extract real asset data to CSV from SEC Filings dataset
 - `--test-mode` (optional): Use 10% data volumes for faster development testing
 
 **Examples**:
@@ -120,7 +120,7 @@ python main.py --scenarios portfolio_copilot,research_copilot
 # Test mode: Build all scenarios with 10% data for faster development testing
 python main.py --test-mode
 
-# Extract real assets (requires Marketplace access)
+# Optional: Extract real assets to CSV (requires SEC Filings access)
 python main.py --extract-real-assets
 
 # Build with synthetic market data (default behavior)

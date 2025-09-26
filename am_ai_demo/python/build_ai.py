@@ -154,6 +154,15 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
             print(f"❌ CRITICAL FAILURE: Could not create implementation semantic view: {e}")
             print("   This is required for portfolio_copilot and sales_advisor scenarios")
             raise Exception(f"Failed to create implementation semantic view: {e}")
+    
+    # Create SEC filings semantic view for financial analysis
+    try:
+        print("💰 Creating SEC filings semantic view for financial analysis...")
+        create_sec_filings_semantic_view(session)
+    except Exception as e:
+        print(f"❌ CRITICAL FAILURE: Could not create SEC filings semantic view: {e}")
+        print("   This is required for comprehensive financial analysis")
+        raise Exception(f"Failed to create SEC filings semantic view: {e}")
 
 def create_research_semantic_view(session: Session):
     """Create semantic view for research with fundamentals and estimates data."""
@@ -604,3 +613,92 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIE
     """).collect()
     
     print("✅ Created semantic view: SAM_IMPLEMENTATION_VIEW")
+
+def create_sec_filings_semantic_view(session: Session):
+    """Create semantic view for SEC filings financial analysis."""
+    
+    # Check if SEC filings table exists
+    try:
+        session.sql(f"SELECT COUNT(*) FROM {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS LIMIT 1").collect()
+    except Exception as e:
+        print(f"⚠️  FACT_SEC_FILINGS table not found: {e}")
+        print("   SEC filings semantic view creation skipped")
+        return
+    
+    session.sql(f"""
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_SEC_FILINGS_VIEW
+	TABLES (
+		SEC_FILINGS AS {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS
+			PRIMARY KEY (FILINGID) 
+			WITH SYNONYMS=('sec_filings','filings','financial_statements','sec_data') 
+			COMMENT='SEC filing financial data with comprehensive metrics across Income Statement, Balance Sheet, and Cash Flow',
+		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+			PRIMARY KEY (SECURITYID) 
+			WITH SYNONYMS=('companies','stocks','bonds','instruments','securities') 
+			COMMENT='Master security reference data',
+		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+			PRIMARY KEY (ISSUERID) 
+			WITH SYNONYMS=('issuers','entities','corporates') 
+			COMMENT='Issuer and corporate hierarchy data'
+	)
+	RELATIONSHIPS (
+		SEC_FILINGS_TO_SECURITIES AS SEC_FILINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		SECURITIES_TO_ISSUERS AS SECURITIES(ISSUERID) REFERENCES ISSUERS(ISSUERID)
+	)
+	DIMENSIONS (
+		-- Company dimensions
+		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('company','issuer_name','legal_name') COMMENT='Company legal name',
+		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('symbol','ticker_symbol') COMMENT='Stock ticker symbol',
+		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('industry','sector','gics_sector') COMMENT='Industry sector',
+		
+		-- SEC Filing specific dimensions
+		SEC_FILINGS.CIK AS CIK WITH SYNONYMS=('cik','sec_cik','company_cik') COMMENT='SEC Central Index Key',
+		SEC_FILINGS.FORMTYPE AS FormType WITH SYNONYMS=('form_type','sec_form','filing_form') COMMENT='SEC form type (10-K, 10-Q, etc.)',
+		SEC_FILINGS.TAG AS TAG WITH SYNONYMS=('tag','measure','metric_name','sec_measure') COMMENT='SEC financial measure tag name',
+		SEC_FILINGS.MEASUREDESCRIPTION AS MeasureDescription WITH SYNONYMS=('measure_description','description','label') COMMENT='Human-readable description of the measure',
+		SEC_FILINGS.UNITOFMEASURE AS UnitOfMeasure WITH SYNONYMS=('unit','measure_unit','unit_of_measure') COMMENT='Unit of measurement',
+		SEC_FILINGS.STATEMENT AS Statement WITH SYNONYMS=('statement','financial_statement','fs_type') COMMENT='Financial statement type (Income Statement, Balance Sheet, Cash Flow)',
+		
+		-- Time dimensions
+		SEC_FILINGS.REPORTINGDATE AS ReportingDate WITH SYNONYMS=('report_date','period_date','date') COMMENT='Standardized financial reporting date',
+		SEC_FILINGS.FISCALPERIOD AS FiscalPeriod WITH SYNONYMS=('period','quarter','fiscal_period') COMMENT='Fiscal reporting period',
+		SEC_FILINGS.FISCALYEAR AS FiscalYear WITH SYNONYMS=('year','fiscal_year') COMMENT='Fiscal year',
+		SEC_FILINGS.PERIODSTARTDATE AS PeriodStartDate WITH SYNONYMS=('start_date','period_start') COMMENT='Financial period start date',
+		SEC_FILINGS.PERIODENDDATE AS PeriodEndDate WITH SYNONYMS=('end_date','period_end') COMMENT='Financial period end date'
+	)
+	METRICS (
+		-- SEC Filing data metrics
+		SEC_FILINGS.MEASURE_VALUE AS SUM(MeasureValue) WITH SYNONYMS=('value','sec_value','filing_value','amount') COMMENT='SEC filing measure value',
+		SEC_FILINGS.FILING_COUNT AS COUNT(FilingID) WITH SYNONYMS=('filing_count','number_of_filings','sec_filing_count','count') COMMENT='Count of SEC filings',
+		
+		-- Income Statement metrics
+		SEC_FILINGS.TOTAL_REVENUE AS SUM(CASE WHEN TAG IN ('Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax') THEN MeasureValue END) WITH SYNONYMS=('revenue','sales','total_revenue','top_line') COMMENT='Total company revenue from SEC filings',
+		SEC_FILINGS.NET_INCOME AS SUM(CASE WHEN TAG = 'NetIncomeLoss' THEN MeasureValue END) WITH SYNONYMS=('profit','net_income','earnings','bottom_line') COMMENT='Net income from SEC filings',
+		SEC_FILINGS.GROSS_PROFIT AS SUM(CASE WHEN TAG = 'GrossProfit' THEN MeasureValue END) WITH SYNONYMS=('gross_profit','gross_income') COMMENT='Gross profit from SEC filings',
+		SEC_FILINGS.OPERATING_INCOME AS SUM(CASE WHEN TAG = 'OperatingIncomeLoss' THEN MeasureValue END) WITH SYNONYMS=('operating_income','operating_profit') COMMENT='Operating income from SEC filings',
+		SEC_FILINGS.INTEREST_EXPENSE AS SUM(CASE WHEN TAG = 'InterestExpense' THEN MeasureValue END) WITH SYNONYMS=('interest_expense','interest_cost') COMMENT='Interest expense from SEC filings',
+		SEC_FILINGS.OPERATING_EXPENSES AS SUM(CASE WHEN TAG = 'OperatingExpenses' THEN MeasureValue END) WITH SYNONYMS=('operating_expenses','opex') COMMENT='Total operating expenses from SEC filings',
+		SEC_FILINGS.EPS_BASIC AS AVG(CASE WHEN TAG = 'EarningsPerShareBasic' THEN MeasureValue END) WITH SYNONYMS=('eps','earnings_per_share','eps_basic') COMMENT='Basic earnings per share from SEC filings',
+		SEC_FILINGS.EPS_DILUTED AS AVG(CASE WHEN TAG = 'EarningsPerShareDiluted' THEN MeasureValue END) WITH SYNONYMS=('eps_diluted','diluted_eps') COMMENT='Diluted earnings per share from SEC filings',
+		
+		-- Balance Sheet metrics
+		SEC_FILINGS.TOTAL_ASSETS AS SUM(CASE WHEN TAG = 'Assets' THEN MeasureValue END) WITH SYNONYMS=('assets','total_assets') COMMENT='Total assets from SEC filings',
+		SEC_FILINGS.CURRENT_ASSETS AS SUM(CASE WHEN TAG = 'AssetsCurrent' THEN MeasureValue END) WITH SYNONYMS=('current_assets','liquid_assets') COMMENT='Current assets from SEC filings',
+		SEC_FILINGS.TOTAL_EQUITY AS SUM(CASE WHEN TAG = 'StockholdersEquity' THEN MeasureValue END) WITH SYNONYMS=('equity','shareholders_equity','total_equity') COMMENT='Total equity from SEC filings',
+		SEC_FILINGS.TOTAL_LIABILITIES AS SUM(CASE WHEN TAG = 'Liabilities' THEN MeasureValue END) WITH SYNONYMS=('liabilities','total_debt','debt') COMMENT='Total liabilities from SEC filings',
+		SEC_FILINGS.CURRENT_LIABILITIES AS SUM(CASE WHEN TAG = 'LiabilitiesCurrent' THEN MeasureValue END) WITH SYNONYMS=('current_liabilities','short_term_debt') COMMENT='Current liabilities from SEC filings',
+		SEC_FILINGS.CASH_AND_EQUIVALENTS AS SUM(CASE WHEN TAG = 'CashAndCashEquivalentsAtCarryingValue' THEN MeasureValue END) WITH SYNONYMS=('cash','cash_equivalents') COMMENT='Cash and equivalents from SEC filings',
+		SEC_FILINGS.GOODWILL AS SUM(CASE WHEN TAG = 'Goodwill' THEN MeasureValue END) WITH SYNONYMS=('goodwill','intangible_assets') COMMENT='Goodwill from SEC filings',
+		SEC_FILINGS.RETAINED_EARNINGS AS SUM(CASE WHEN TAG = 'RetainedEarningsAccumulatedDeficit' THEN MeasureValue END) WITH SYNONYMS=('retained_earnings','accumulated_deficit') COMMENT='Retained earnings from SEC filings',
+		
+		-- Cash Flow metrics
+		SEC_FILINGS.OPERATING_CASH_FLOW AS SUM(CASE WHEN TAG = 'NetCashProvidedByUsedInOperatingActivities' THEN MeasureValue END) WITH SYNONYMS=('operating_cash_flow','ocf','cash_from_operations') COMMENT='Operating cash flow from SEC filings',
+		SEC_FILINGS.INVESTING_CASH_FLOW AS SUM(CASE WHEN TAG = 'NetCashProvidedByUsedInInvestingActivities' THEN MeasureValue END) WITH SYNONYMS=('investing_cash_flow','icf','capex_flow') COMMENT='Investing cash flow from SEC filings',
+		SEC_FILINGS.FINANCING_CASH_FLOW AS SUM(CASE WHEN TAG = 'NetCashProvidedByUsedInFinancingActivities' THEN MeasureValue END) WITH SYNONYMS=('financing_cash_flow','fcf','debt_equity_flow') COMMENT='Financing cash flow from SEC filings',
+		SEC_FILINGS.DEPRECIATION AS SUM(CASE WHEN TAG = 'DepreciationDepletionAndAmortization' THEN MeasureValue END) WITH SYNONYMS=('depreciation','amortization','d_and_a') COMMENT='Depreciation and amortization from SEC filings',
+		SEC_FILINGS.STOCK_BASED_COMPENSATION AS SUM(CASE WHEN TAG = 'ShareBasedCompensation' THEN MeasureValue END) WITH SYNONYMS=('stock_compensation','share_based_comp') COMMENT='Stock-based compensation from SEC filings'
+	)
+	COMMENT='SEC filing data semantic view for financial analysis using authentic EDGAR data';
+    """).collect()
+    
+    print("✅ Created semantic view: SAM_SEC_FILINGS_VIEW")

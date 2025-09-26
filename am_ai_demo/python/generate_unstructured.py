@@ -29,6 +29,14 @@ def build_all(session: Session, document_types: List[str], test_mode: bool = Fal
     """
     print("📝 Starting unstructured data generation...")
     
+    # Ensure database context is set (needed for temp table operations)
+    try:
+        session.sql(f"USE DATABASE {config.DATABASE_NAME}").collect()
+        session.sql(f"USE SCHEMA RAW").collect()
+    except Exception as e:
+        print(f"⚠️  Could not set database context: {e}")
+        print("   This is expected if database doesn't exist yet")
+    
     # Step 1: Generate prompts for each document type
     print("🎯 Generating content prompts...")
     if test_mode:

@@ -11,7 +11,10 @@ Usage:
 Examples:
     python main.py --connection-name my_demo                              # Build everything 
     python main.py --connection-name my_demo --scenarios portfolio_copilot # Build foundation + portfolio scenario
-    python main.py --connection-name my_demo --scope data                # Build only data layer
+    python main.py --connection-name my_demo --scope structured          # Build only structured data (tables)
+    python main.py --connection-name my_demo --scope unstructured        # Build only unstructured data (documents)
+    python main.py --connection-name my_demo --scope data                # Build structured + unstructured data
+    python main.py --connection-name my_demo --scope ai                  # Build only AI components (semantic + search)
     python main.py --connection-name my_demo --test-mode                 # Use test mode
 """
 
@@ -51,40 +54,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--scope',
         type=str,
-        choices=['all', 'data', 'semantic', 'search'],
+        choices=['all', 'data', 'structured', 'unstructured', 'ai', 'semantic', 'search'],
         default='all',
-        help='Scope of build: all=everything, data=structured+unstructured, semantic=views only, search=services only'
-    )
-    
-    parser.add_argument(
-        '--extract-real-assets',
-        action='store_true',
-        help='Extract real asset data from Snowflake Marketplace and save to CSV (requires marketplace access)'
-    )
-    
-    parser.add_argument(
-        '--analyze-pdf',
-        type=str,
-        help='Analyze PDF file to create enhanced document templates (requires PDF path)'
-    )
-    
-    parser.add_argument(
-        '--pdf-doc-type',
-        type=str,
-        choices=['broker_research', 'earnings_transcripts', 'policy_docs', 'press_releases'],
-        help='Document type for PDF analysis (required with --analyze-pdf)'
-    )
-    
-    parser.add_argument(
-        '--integrate-templates',
-        action='store_true',
-        help='Integrate enhanced PDF-derived templates with document generation'
-    )
-    
-    parser.add_argument(
-        '--interactive-template',
-        action='store_true',
-        help='Interactive mode for copy/paste PDF text analysis'
+        help='Scope of build: all=everything, data=structured+unstructured, structured=tables only, unstructured=documents only, ai=semantic+search, semantic=views only, search=services only'
     )
     
     parser.add_argument(
@@ -207,118 +179,48 @@ def main():
     # Create Snowpark session
     session = create_snowpark_session(args.connection_name)
     
-    # Handle PDF template analysis if requested
-    if args.analyze_pdf or args.interactive_template:
-        if args.analyze_pdf and not args.pdf_doc_type:
-            print("❌ Error: --pdf-doc-type required when using --analyze-pdf")
-            sys.exit(1)
-        
-        print("📄 Analyzing PDF to create enhanced document templates...")
-        from pdf_template_analyzer import PDFTemplateAnalyzer, PDFTemplateIntegrator
-        
-        analyzer = PDFTemplateAnalyzer()
-        integrator = PDFTemplateIntegrator(analyzer)
-        
-        try:
-            if args.interactive_template:
-                print(f"Interactive mode: Please paste your document text below (press Ctrl+D when finished):")
-                print("-" * 50)
-                import sys as sys_module
-                text_input = sys_module.stdin.read()
-                
-                if not args.pdf_doc_type:
-                    print("Enter document type (broker_research, earnings_transcripts, policy_docs, press_releases):")
-                    doc_type = input().strip()
-                else:
-                    doc_type = args.pdf_doc_type
-                
-                template = integrator.process_text_input(text_input, doc_type)
-            else:
-                template = integrator.process_pdf_file(args.analyze_pdf, args.pdf_doc_type)
-                doc_type = args.pdf_doc_type
-            
-            # Generate enhanced function
-            enhanced_function = integrator.generate_enhanced_prompt_function(template, doc_type)
-            integrator.enhanced_templates[doc_type] = enhanced_function
-            
-            # Display results
-            print(f"\n📊 Analysis Results for {doc_type}:")
-            print(f"- Total word count: {template.total_word_count}")
-            print(f"- Sections found: {len(template.sections)}")
-            for section in template.sections:
-                print(f"  • {section.title}: {section.word_count} words")
-            print(f"- Key phrases: {len(template.key_phrases)}")
-            print(f"- Formatting patterns: {template.formatting_patterns}")
-            
-            # Save enhanced templates
-            integrator.save_enhanced_templates("enhanced_templates")
-            
-            print(f"\n✅ Enhanced template generated and saved to enhanced_templates/{doc_type}_enhanced.py")
-            print("\nNext steps:")
-            print("1. Review the enhanced template")
-            print("2. Run with --integrate-templates to apply changes")
-            print("3. Test with your SAM demo data generation")
-            
-        except Exception as e:
-            print(f"❌ PDF analysis failed: {e}")
-        
-        return  # Exit after PDF analysis
-    
-    # Handle template integration if requested
-    if args.integrate_templates:
-        print("🔄 Integrating enhanced PDF-derived templates...")
-        from template_integrator import TemplateIntegrationManager
-        
-        manager = TemplateIntegrationManager("python/generate_unstructured.py")
-        manager.integrate_enhanced_templates("enhanced_templates")
-        
-        if manager.test_integration():
-            print("✅ Template integration successful!")
-            print("🎯 Enhanced templates are now active in document generation")
-        else:
-            print("❌ Template integration failed")
-            print("💡 Use manager.rollback() if needed")
-        
-        return  # Exit after template integration
-    
-    # Handle real asset extraction if requested
-    if args.extract_real_assets:
-        print("🌍 Extracting real asset data from Snowflake Marketplace...")
-        import extract_real_assets
-        success = extract_real_assets.extract_real_assets_to_csv(session)
-        if success:
-            print("✅ Real asset data extracted successfully")
-            print("💡 To use real assets in future builds, set USE_REAL_ASSETS_CSV = True in config.py")
-        else:
-            print("❌ Real asset extraction failed - continuing with generated data")
-        print()
-        return  # Exit after extraction
-    
     # Determine what to build based on scope
-    build_data = args.scope in ['all', 'data']
-    build_semantic = args.scope in ['all', 'semantic'] 
-    build_search = args.scope in ['all', 'search']
+    build_structured = args.scope in ['all', 'data', 'structured']
+    build_unstructured = args.scope in ['all', 'data', 'unstructured']
+    build_semantic = args.scope in ['all', 'ai', 'semantic'] 
+    build_search = args.scope in ['all', 'ai', 'search']
     
     step_number = 1
-    total_steps = sum([build_data and 2 or 0, (build_semantic or build_search) and 1 or 0])
+    total_steps = sum([
+        build_structured and 1 or 0,
+        build_unstructured and 1 or 0, 
+        (build_semantic or build_search) and 1 or 0
+    ])
     
     try:
         # Step 1: Build structured data (foundation + scenario-specific)
-        if build_data:
+        if build_structured:
             print(f"📊 Step {step_number}/{total_steps}: Building structured data...")
             step_number += 1
             # Import and run structured data generation
             import generate_structured
             generate_structured.build_all(session, validated_scenarios, args.test_mode)
             
+        # Step 2: Build unstructured data (documents and content)
+        if build_unstructured:
             print(f"📝 Step {step_number}/{total_steps}: Building unstructured data...")
             step_number += 1
+            
+            # Validate that structured data exists (unstructured depends on it)
+            try:
+                session.sql(f"SELECT COUNT(*) FROM {DATABASE_NAME}.CURATED.DIM_SECURITY LIMIT 1").collect()
+            except Exception as e:
+                print("❌ Unstructured data generation requires structured data to exist first.")
+                print("💡 Run with --scope structured first, or use --scope data to build both together.")
+                print(f"   Error details: {e}")
+                raise
+            
             # Import and run unstructured data generation
             import generate_unstructured
             required_doc_types = get_required_document_types(validated_scenarios)
             generate_unstructured.build_all(session, required_doc_types, args.test_mode)
         
-        # Step 2: Build AI components
+        # Step 3: Build AI components
         if build_semantic or build_search:
             print(f"🤖 Step {step_number}/{total_steps}: Building AI components...")
             import build_ai

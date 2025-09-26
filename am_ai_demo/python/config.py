@@ -213,10 +213,9 @@ CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 # Get the project root (parent of python/ directory)
 PROJECT_ROOT = os.path.dirname(CONFIG_DIR)
 
-# Real asset data extraction settings
-EXTRACT_REAL_ASSETS = False  # Set to True to extract real assets from Snowflake Marketplace
-REAL_ASSETS_CSV_PATH = os.path.join(PROJECT_ROOT, 'data', 'real_assets.csv')  # Always in project/data/
-USE_REAL_ASSETS_CSV = True  # Set to True to use existing CSV instead of generating fake data
+# Real assets view name (created in RAW schema)
+REAL_ASSETS_VIEW = 'V_REAL_ASSETS'
+# Note: Real assets are always used via V_REAL_ASSETS view - no CSV files needed
 
 # Market data settings (synthetic only - see bottom of file for final configuration)
 
@@ -236,9 +235,13 @@ REAL_ASSET_ISSUER_MAPPING = {
 }
 
 
-# Marketplace data source (requires subscription)
-MARKETPLACE_DATABASE = 'FINANCIALS_ECONOMICS_ENTERPRISE'
-OPENFIGI_SCHEMA = 'CYBERSYN'
+# SEC Filings dataset configuration
+# Dataset: "SEC Filings" - Financial statements, press releases, & fiscal calendars for US public companies
+SEC_FILINGS_DATABASE = 'SEC_FILINGS'
+SEC_FILINGS_SCHEMA = 'CYBERSYN'
+
+# Real assets view name (created in RAW schema)
+REAL_ASSETS_VIEW = 'V_REAL_ASSETS'
 
 # Available scenarios
 AVAILABLE_SCENARIOS = [

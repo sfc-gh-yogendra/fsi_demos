@@ -62,6 +62,15 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     """Build all foundation tables in dependency order."""
     random.seed(config.RNG_SEED)
     
+    # Create real assets view first (required for issuer and security dimensions)
+    print("📊 Creating real assets view...")
+    try:
+        from extract_real_assets import create_real_assets_view
+        create_real_assets_view(session)
+    except Exception as e:
+        print(f"❌ Real assets view creation failed: {e}")
+        raise  # Don't continue without the view
+    
     print("🏢 Building issuer dimension...")
     build_dim_issuer(session, test_mode)
     
@@ -83,8 +92,8 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     print("📈 Building market data...")
     build_fact_marketdata_timeseries(session, test_mode)
     
-    print("💰 Building fundamentals and estimates...")
-    build_fundamentals_and_estimates(session)
+    print("💰 Building SEC filings and fundamentals...")
+    build_sec_filings_and_fundamentals(session)
     
     print("🌱 Building ESG scores...")
     build_esg_scores(session)
@@ -115,215 +124,134 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
 
 
 
-def check_temp_real_assets_exists(session: Session) -> bool:
-    """Check if TEMP_REAL_ASSETS table exists in the session."""
-    try:
-        session.sql("SELECT 1 FROM TEMP_REAL_ASSETS LIMIT 1").collect()
-        return True
-    except Exception:
-        return False
 
 def build_dim_issuer(session: Session, test_mode: bool = False):
-    """Build issuer dimension exclusively from real asset data."""
+    """Build issuer dimension directly from V_REAL_ASSETS view using SQL."""
     
-    # Real assets required - no synthetic fallback
-    if not config.USE_REAL_ASSETS_CSV:
-        raise Exception("Real assets CSV required - set USE_REAL_ASSETS_CSV = True in config.py")
+    print("✅ Building issuer dimension from real asset data")
     
-    if not os.path.exists(config.REAL_ASSETS_CSV_PATH):
-        raise Exception(f"Real assets CSV not found at {config.REAL_ASSETS_CSV_PATH} - run 'python main.py --extract-real-assets' first")
-    
-    print("✅ Building issuer dimension from 100% real asset data")
-    build_dim_issuer_from_real_data(session)
-
-def build_dim_issuer_from_real_data(session: Session):
-    """Build issuer dimension from real asset data using efficient Snowpark operations."""
-    
-    # Load real assets from CSV (required - no fallback)
+    # Verify V_REAL_ASSETS view exists (should have been created during foundation build)
     try:
-        from extract_real_assets import load_real_assets_from_csv
-        real_assets_df_pandas = load_real_assets_from_csv()
-        
-        if real_assets_df_pandas is None:
-            raise Exception("Real assets CSV not found - required for real-only mode")
+        from extract_real_assets import verify_real_assets_view_exists
+        verify_real_assets_view_exists(session)
     except Exception as e:
-        print(f"❌ Error loading real assets: {e}")
-        print("   To fix: Run 'python main.py --extract-real-assets' first")
+        print(f"❌ Error: {e}")
         raise
     
-    # Upload to temporary table for efficient processing (will be reused by other functions)
-    real_assets_df = session.write_pandas(
-        real_assets_df_pandas,
-        table_name="TEMP_REAL_ASSETS",
-        quote_identifiers=False,
-        auto_create_table=True, 
-        table_type="temp"
-    )
-    print("✅ Created TEMP_REAL_ASSETS table for reuse by other functions")
+    # Build issuer dimension using direct SQL query on the view
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_ISSUER AS
+        WITH distinct_issuers AS (
+            SELECT DISTINCT
+                COALESCE(ISSUER_NAME, SECURITY_NAME) as LegalName,
+                COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
+                COALESCE(INDUSTRY_SECTOR, 'Diversified') as GICS_Sector,
+                CIK
+            FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS
+            WHERE COALESCE(ISSUER_NAME, SECURITY_NAME) IS NOT NULL
+                AND COALESCE(ISSUER_NAME, SECURITY_NAME) != 'Unknown'
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY LegalName) as IssuerID,
+            NULL as UltimateParentIssuerID,
+            SUBSTR(TRIM(LegalName), 1, 255) as LegalName,
+            'LEI' || LPAD(ABS(HASH(LegalName)) % 1000000, 6, '0') as LEI,
+            CountryOfIncorporation,
+            GICS_Sector,
+            CIK
+        FROM distinct_issuers
+        ORDER BY LegalName
+    """).collect()
     
-    from snowflake.snowpark.functions import (
-        col, lit, ifnull, row_number, abs as abs_func, hash as hash_func,
-        regexp_replace, substr, trim, to_varchar, concat
-    )
-    from snowflake.snowpark import Window
-    
-    # Create issuers DataFrame using optimized Snowpark operations
-    issuers_df = (real_assets_df.select(
-        ifnull(col("ISSUER_NAME"), col("SECURITY_NAME")).alias("LegalName"),
-        ifnull(col("COUNTRY_OF_DOMICILE"), lit("US")).alias("CountryOfIncorporation"),
-        ifnull(col("INDUSTRY_SECTOR"), lit('Diversified')).alias("INDUSTRY_SECTOR")
-    )
-    .filter((col("LegalName").isNotNull()) & (col("LegalName") != lit("Unknown")))
-    .distinct()
-    .select(
-        # Add required columns for the DIM_ISSUER table
-        row_number().over(Window.order_by("LegalName")).alias("IssuerID"),
-        lit(None).alias("UltimateParentIssuerID"),
-        substr(trim(col("LegalName")), 1, 255).alias("LegalName"),  # Ensure it fits column
-        regexp_replace(
-            concat(lit("LEI"), to_varchar(abs_func(hash_func(col("LegalName"))) % lit(1000000))),
-            r'(\d+)', r'00000\1'
-        ).substr(1, 20).alias("LEI"),  # Generate LEI with proper format
-        col("CountryOfIncorporation"),
-        col("INDUSTRY_SECTOR").alias("GICS_Sector")  # Keep same column name for compatibility
-    ))
-    
-    # Save to database using overwrite mode (automatically recreates table)
-    issuers_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_ISSUER")
-    
-    issuer_count = issuers_df.count()
-    print(f"✅ Created {issuer_count} issuers from real asset data using Snowpark operations")
+    # Get count for reporting
+    issuer_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.DIM_ISSUER").collect()[0]['CNT']
+    print(f"✅ Created {issuer_count:,} issuers from real asset data")
 
 
 
 def build_dim_security(session: Session, test_mode: bool = False):
-    """Build securities with immutable SecurityID and direct TICKER/FIGI columns."""
+    """Build securities directly from V_REAL_ASSETS view using SQL."""
     
-    # Use test mode counts if specified
+    # Use test mode counts if specified (for reporting only)
     securities_count = config.TEST_SECURITIES_COUNT if test_mode else config.SECURITIES_COUNT
     
-    # Real assets only mode - no synthetic fallback
-    if not config.USE_REAL_ASSETS_CSV:
-        raise Exception("Real assets CSV required - set USE_REAL_ASSETS_CSV = True in config.py")
+    print("✅ Building securities from real asset data")
     
-    if not os.path.exists(config.REAL_ASSETS_CSV_PATH):
-        raise Exception(f"Real assets CSV not found at {config.REAL_ASSETS_CSV_PATH} - run 'python main.py --extract-real-assets' first")
+    # Verify V_REAL_ASSETS view exists (should have been created during foundation build)
+    try:
+        from extract_real_assets import verify_real_assets_view_exists
+        verify_real_assets_view_exists(session)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        raise
     
-    print("✅ Using real asset data for securities (100% authentic mode)")
-    build_dim_security_from_real_data(session, securities_count)
-
-def build_dim_security_from_real_data(session: Session, securities_count: dict):
-    """Build securities using real asset data only - no synthetic fallback."""
+    # Build security dimension using direct SQL query on the view and issuer table
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY AS
+        WITH security_data AS (
+            SELECT 
+                ra.TOP_LEVEL_OPENFIGI_ID,
+                ra.PRIMARY_TICKER,
+                ra.SECURITY_NAME,
+                ra.ASSET_CATEGORY,
+                ra.COUNTRY_OF_DOMICILE,
+                ra.ISSUER_NAME,
+                i.IssuerID
+            FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS ra
+            LEFT JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i
+                ON COALESCE(ra.ISSUER_NAME, ra.SECURITY_NAME) = i.LegalName
+            WHERE ra.PRIMARY_TICKER IS NOT NULL
+                AND ra.TOP_LEVEL_OPENFIGI_ID IS NOT NULL
+                AND (
+                    -- Corporate bonds can have longer tickers
+                    (ra.ASSET_CATEGORY = 'Corporate Bond' AND LENGTH(ra.PRIMARY_TICKER) <= 50) OR
+                    -- Equity and ETF have shorter tickers
+                    (ra.ASSET_CATEGORY IN ('Equity', 'ETF') AND LENGTH(ra.PRIMARY_TICKER) <= 15)
+                )
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY ASSET_CATEGORY, PRIMARY_TICKER) as SecurityID,
+            COALESCE(IssuerID, 1) as IssuerID,
+            PRIMARY_TICKER as Ticker,
+            TOP_LEVEL_OPENFIGI_ID as FIGI,
+            SUBSTR(SECURITY_NAME, 1, 255) as Description,
+            ASSET_CATEGORY as AssetClass,
+            CASE 
+                WHEN ASSET_CATEGORY = 'Equity' THEN 'Common Stock'
+                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN 'Corporate Bond'
+                WHEN ASSET_CATEGORY = 'ETF' THEN 'Exchange Traded Fund'
+                ELSE 'Other'
+            END as SecurityType,
+            COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfRisk,
+            DATE('2010-01-01') as IssueDate,
+            CASE 
+                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN DATE('2030-01-01')
+                ELSE NULL
+            END as MaturityDate,
+            CASE 
+                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN 5.0
+                ELSE NULL
+            END as CouponRate,
+            CURRENT_TIMESTAMP() as RecordStartDate,
+            NULL as RecordEndDate,
+            TRUE as IsActive
+        FROM security_data
+        ORDER BY SecurityID
+    """).collect()
     
-    # Check if TEMP_REAL_ASSETS table already exists (created by build_dim_issuer)
-    if check_temp_real_assets_exists(session):
-        print("✅ Reusing existing TEMP_REAL_ASSETS table (optimization)")
-        # Load real assets from existing temp table
-        real_assets_df = session.table("TEMP_REAL_ASSETS").to_pandas()
-    else:
-        print("📥 Loading real assets from CSV (TEMP_REAL_ASSETS not found)")
-        # Load real assets from CSV
-        try:
-            from extract_real_assets import load_real_assets_from_csv
-            real_assets_df = load_real_assets_from_csv()
-            
-            if real_assets_df is None:
-                raise Exception("Real assets CSV not found - required for real-only mode")
-        except Exception as e:
-            print(f"❌ Error loading real assets: {e}")
-            print("   To fix: Run 'python main.py --extract-real-assets' first")
-            raise
+    # Get and report counts
+    count_by_class = session.sql(f"""
+        SELECT AssetClass, COUNT(*) as cnt 
+        FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY 
+        GROUP BY AssetClass
+        ORDER BY AssetClass
+    """).collect()
     
-    # Get existing issuers for mapping (optimized single query)
-    issuers = session.sql(f"SELECT IssuerID, LegalName FROM {config.DATABASE_NAME}.CURATED.DIM_ISSUER").collect()
-    issuer_map = {row['LEGALNAME']: row['ISSUERID'] for row in issuers}
+    total_securities = sum(row['CNT'] for row in count_by_class)
+    print(f"✅ Created {total_securities:,} securities from real asset data")
     
-    # Process each asset category efficiently
-    all_security_data = []
-    security_id = 1
-    
-    for asset_category in ['Equity', 'Corporate Bond', 'ETF']:
-        
-        # Load ALL available assets of this category that meet quality criteria
-        if asset_category == 'Corporate Bond':
-            # Corporate bonds have complex tickers with coupons, dates, etc.
-            category_assets = real_assets_df[
-                (real_assets_df['ASSET_CATEGORY'] == asset_category) &
-                (real_assets_df['PRIMARY_TICKER'].notna()) &
-                (real_assets_df['PRIMARY_TICKER'].str.len() <= 50) &  # More generous for bonds
-                (real_assets_df['TOP_LEVEL_OPENFIGI_ID'].notna())  # Ensure FIGI available
-            ]
-        else:
-            # Equity and ETF filtering - load ALL assets that meet quality criteria
-            # Don't deduplicate by ticker since tickers are not unique across markets/exchanges
-            category_assets = real_assets_df[
-                (real_assets_df['ASSET_CATEGORY'] == asset_category) &
-                (real_assets_df['PRIMARY_TICKER'].notna()) &
-                (real_assets_df['PRIMARY_TICKER'].str.len() <= 15) &  # More flexible length
-                (real_assets_df['TOP_LEVEL_OPENFIGI_ID'].notna())     # Ensure FIGI available
-            ]
-        
-        available_count = len(category_assets)
-        print(f"  📊 Loading {available_count} real {asset_category} securities (all available assets)")
-        
-        # Batch process securities for this category
-        for _, asset in category_assets.iterrows():
-            # Issuer lookup with fallback
-            issuer_name = asset.get('ISSUER_NAME') or asset.get('SECURITY_NAME', 'Unknown')
-            issuer_id = issuer_map.get(issuer_name, 1)  # Default to first issuer
-            
-            # Security type mapping
-            security_type_map = {
-                'Equity': 'Common Stock',
-                'Corporate Bond': 'Corporate Bond', 
-                'ETF': 'Exchange Traded Fund'
-            }
-            
-            # Country handling - use COUNTRY_OF_DOMICILE directly
-            country = asset.get('COUNTRY_OF_DOMICILE', 'US')
-            if pd.isna(country) or not isinstance(country, str):
-                country = 'US'
-            
-            all_security_data.append({
-                'SecurityID': security_id,
-                'IssuerID': issuer_id,
-                'Ticker': asset['PRIMARY_TICKER'],  # Direct ticker column
-                'FIGI': asset.get('TOP_LEVEL_OPENFIGI_ID', f"BBG{abs(hash(asset['PRIMARY_TICKER'])) % 1000000:06d}"),  # Direct FIGI column
-                'Description': str(asset.get('SECURITY_NAME', asset['PRIMARY_TICKER']))[:255],
-                'AssetClass': asset_category,
-                'SecurityType': security_type_map.get(asset_category, 'Other'),
-                'CountryOfRisk': country,
-                'IssueDate': datetime(2010, 1, 1).date(),
-                'MaturityDate': datetime(2030, 1, 1).date() if asset_category == 'Corporate Bond' else None,
-                'CouponRate': 5.0 if asset_category == 'Corporate Bond' else None,
-                'RecordStartDate': datetime.now(),
-                'RecordEndDate': None,
-                'IsActive': True
-            })
-            
-            security_id += 1
-    
-    # Save to database using Snowpark DataFrames
-    if all_security_data:
-        securities_df = session.create_dataframe(all_security_data)
-        securities_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_SECURITY")
-        
-        total_securities = len(all_security_data)
-        print(f"✅ Created {total_securities:,} securities from real asset data")
-        
-        # Report actual counts achieved
-        actual_counts = {}
-        for sec in all_security_data:
-            asset_class = sec['AssetClass']
-            actual_counts[asset_class] = actual_counts.get(asset_class, 0) + 1
-        
-        for asset_type, max_target in securities_count.items():
-            asset_category = {'equities': 'Equity', 'bonds': 'Corporate Bond', 'etfs': 'ETF'}[asset_type]
-            actual = actual_counts.get(asset_category, 0)
-            print(f"   📊 {asset_category}: {actual:,} securities")
-    
-    else:
-        raise Exception("No real securities found - check data filtering criteria")
+    for row in count_by_class:
+        print(f"   📊 {row['ASSETCLASS']}: {row['CNT']:,} securities")
 
 
 def build_dim_portfolio(session: Session):
@@ -807,6 +735,115 @@ def build_fundamentals_and_estimates(session: Session):
     """).collect()
     
     print("✅ Created fundamentals and estimates with realistic relationships")
+
+def build_sec_filings_and_fundamentals(session: Session):
+    """Build SEC filings table and synthetic fundamentals as fallback."""
+    
+    # First, create the FACT_SEC_FILINGS table structure
+    print("🏗️  Creating FACT_SEC_FILINGS table structure...")
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS (
+            FilingID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            SecurityID BIGINT NOT NULL,
+            IssuerID BIGINT NOT NULL,
+            CIK VARCHAR(20) NOT NULL,
+            CompanyName VARCHAR(255),
+            FiscalYear INTEGER NOT NULL,
+            FiscalPeriod VARCHAR(10) NOT NULL,           -- 'Q1', 'Q2', 'Q3', 'Q4', 'FY'
+            FormType VARCHAR(10) NOT NULL,               -- '10-K', '10-Q', '8-K'
+            FilingDate DATE NOT NULL,
+            PeriodStartDate DATE,                        -- From SEC_REPORT_ATTRIBUTES.PERIOD_START_DATE
+            PeriodEndDate DATE,                          -- From SEC_REPORT_ATTRIBUTES.PERIOD_END_DATE
+            ReportingDate DATE NOT NULL,                 -- Standardized reporting date
+            -- SEC measures (preserving original measure names and descriptions)
+            TAG VARCHAR(200) NOT NULL,
+            MeasureDescription VARCHAR(500),
+            MeasureValue DECIMAL(38, 2),
+            UnitOfMeasure VARCHAR(50),
+            Statement VARCHAR(100),                      -- Financial statement: Income Statement, Balance Sheet, Cash Flow
+            -- Data lineage
+            DataSource VARCHAR(50) DEFAULT 'SEC_FILINGS_CYBERSYN',
+            LoadTimestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+        )
+    """).collect()
+    
+    # Try to load real SEC filing data, fallback to synthetic fundamentals if not available
+    try:
+        print("📄 Attempting to load real SEC filing data...")
+        
+        # Test SEC_FILINGS database access
+        test_result = session.sql("SELECT COUNT(*) as cnt FROM SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES LIMIT 1").collect()
+        print("✅ SEC_FILINGS database accessible")
+        
+        # Load SEC filing data using our enhanced view approach
+        session.sql(f"""
+            INSERT INTO {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS 
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY s.SecurityID, sri.FISCAL_YEAR, sri.FISCAL_PERIOD, sra.TAG) as FilingID,
+                s.SecurityID,
+                s.IssuerID,
+                sra.CIK,
+                i.LegalName as CompanyName,
+                sri.FISCAL_YEAR as FiscalYear,
+                sri.FISCAL_PERIOD as FiscalPeriod,
+                sri.FORM_TYPE as FormType,
+                sri.FILED_DATE as FilingDate,
+                sra.PERIOD_START_DATE as PeriodStartDate,
+                sra.PERIOD_END_DATE as PeriodEndDate,
+                -- Standardized reporting date calculation
+                (CASE 
+                    WHEN sri.FISCAL_PERIOD = 'Q1' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 3, 31)
+                    WHEN sri.FISCAL_PERIOD = 'Q2' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 6, 30)
+                    WHEN sri.FISCAL_PERIOD = 'Q3' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 9, 30)
+                    WHEN sri.FISCAL_PERIOD = 'Q4' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 12, 31)
+                    ELSE DATE_FROM_PARTS(sri.FISCAL_YEAR, 12, 31)  -- Annual reports
+                END) as ReportingDate,
+                sra.TAG,
+                sra.MEASURE_DESCRIPTION as MeasureDescription,
+                sra.VALUE as MeasureValue,
+                sra.UNIT_OF_MEASURE as UnitOfMeasure,
+                sra.STATEMENT,
+                'SEC_FILINGS_CYBERSYN' as DataSource,
+                CURRENT_TIMESTAMP() as LoadTimestamp
+            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES sra ON i.CIK = sra.CIK
+            JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_INDEX sri ON sra.ADSH = sri.ADSH AND sra.CIK = sri.CIK
+            WHERE sri.FISCAL_YEAR >= YEAR(CURRENT_DATE) - {config.YEARS_OF_HISTORY}
+                AND sri.FORM_TYPE IN ('10-K', '10-Q')
+                AND sra.TAG IN (
+                    -- Income Statement
+                    'Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax',
+                    'NetIncomeLoss', 'GrossProfit', 'OperatingIncomeLoss',
+                    'InterestExpense', 'GeneralAndAdministrativeExpense', 'OperatingExpenses',
+                    'EarningsPerShareBasic', 'EarningsPerShareDiluted',
+                    -- Balance Sheet
+                    'Assets', 'AssetsCurrent', 'StockholdersEquity', 
+                    'Liabilities', 'LiabilitiesCurrent', 'Goodwill',
+                    'CashAndCashEquivalentsAtCarryingValue', 'AccountsPayableCurrent',
+                    'RetainedEarningsAccumulatedDeficit',
+                    -- Cash Flow
+                    'NetCashProvidedByUsedInOperatingActivities',
+                    'NetCashProvidedByUsedInInvestingActivities', 
+                    'NetCashProvidedByUsedInFinancingActivities',
+                    'DepreciationDepletionAndAmortization', 'ShareBasedCompensation'
+                )
+                AND sra.VALUE IS NOT NULL
+                AND s.AssetClass = 'Equity'
+        """).collect()
+        
+        # Get count of loaded records
+        sec_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS").collect()[0]['CNT']
+        print(f"✅ Loaded {sec_count:,} SEC filing records from real data")
+        
+    except Exception as e:
+        print(f"⚠️  SEC filing data not available: {e}")
+        print("📊 Falling back to synthetic fundamentals generation...")
+        
+        # Call the existing fundamentals function as fallback
+        build_fundamentals_and_estimates(session)
+    
+    print("✅ SEC filings and fundamentals data ready")
 
 def build_esg_scores(session: Session):
     """Build ESG scores with SecurityID linkage using efficient SQL generation."""
