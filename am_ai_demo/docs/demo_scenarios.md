@@ -2,24 +2,42 @@
 
 Reference: See `docs/implementation_plan.md` for the build order and implementation details referenced by these scenarios.
 
-Complete demo scenario for Portfolio Copilot with step-by-step conversations, expected responses, and data flows.
+Complete demo scenarios organized by role and agent, with step-by-step conversations, expected responses, and data flows.
 
-## Current Implementation Status
+## Available Scenarios by Role
 
-✅ **Phase 1 & 2 Complete**: 3 scenarios fully operational for demonstration
-- **Portfolio Copilot**: ✅ Portfolio analytics and benchmarking (Phase 1)
-- **Research Copilot**: ✅ Document research and analysis (Phase 2)
-- **Thematic Macro Advisor**: ✅ Thematic investment strategy (Phase 2)
+### Portfolio Manager
+**Agent: Portfolio Copilot** ✅ **IMPLEMENTED**
+- Portfolio Insights & Benchmarking ✅ **READY FOR DEMO**
 
-✅ **Phase 4 Complete**: Advanced factor analysis and client reporting
-- **Quant Analyst**: ✅ Factor analysis and performance attribution (Phase 4)
-- **Sales Advisor**: ✅ Client reporting and template formatting (Phase 4)
+**Agent: Thematic Macro Advisor** ✅ **IMPLEMENTED**  
+- Investment Theme Analysis ✅ **READY FOR DEMO**
 
-🔄 **Phase 3 Ready for Implementation**: ESG & Compliance scenarios
-- **ESG Guardian**: ESG risk monitoring and policy compliance
-- **Compliance Advisor**: Mandate monitoring and breach detection
+### Research Analyst
+**Agent: Research Copilot** ✅ **IMPLEMENTED**
+- Document Research & Analysis ✅ **READY FOR DEMO**
+- Earnings Intelligence Extensions ✅ **READY FOR DEMO**
 
-## Scenario 1: Portfolio Copilot - Portfolio Insights & Benchmarking
+### Quantitative Analyst
+**Agent: Quant Analyst** ✅ **IMPLEMENTED**
+- Factor Analysis & Performance Attribution ✅ **READY FOR DEMO**
+
+### Client Relations
+**Agent: Sales Advisor** ✅ **IMPLEMENTED**
+- Client Reporting & Template Formatting ✅ **READY FOR DEMO**
+
+### Risk & Compliance Officer
+**Agent: ESG Guardian** 🔄 **READY FOR IMPLEMENTATION**
+- ESG Risk Monitoring & Policy Compliance 🔄 **REQUIRES ESG DOCUMENTS**
+
+**Agent: Compliance Advisor** 🔄 **READY FOR IMPLEMENTATION**
+- Mandate Monitoring & Breach Detection 🔄 **REQUIRES POLICY DOCUMENTS**
+
+---
+
+## Portfolio Manager
+
+### Portfolio Copilot - Portfolio Insights & Benchmarking ✅ **READY FOR DEMO**
 
 ### Business Context Setup
 
@@ -215,7 +233,24 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - ✅ **Citations**: Proper source attribution for all document references
 - ✅ **Realism**: Authentic-looking financial data and research content
 
-## Scenario 2: Research Copilot - Document Research & Analysis ✅ PHASE 2
+### Thematic Macro Advisor - Investment Theme Analysis ✅ **READY FOR DEMO**
+
+#### Business Context Setup
+
+**Persona**: Anna, Portfolio Manager (Thematic Focus) at Snowcrest Asset Management  
+**Business Challenge**: Portfolio managers need to identify and validate investment opportunities across macro trends by combining quantitative portfolio analysis with thematic research. Traditional approaches struggle to connect portfolio positioning with emerging themes and market trends effectively.  
+**Value Proposition**: AI-powered thematic analysis that combines current portfolio positioning with comprehensive research synthesis to identify theme-based investment opportunities and optimize strategic allocation decisions.
+
+**Agent**: `thematic_macro_advisor`  
+**Data Available**: Portfolio holdings data + 100 broker reports, 75 press releases, 75 earnings transcripts
+
+*[Complete scenario details moved from original Scenario 3 location...]*
+
+---
+
+## Research Analyst
+
+### Research Copilot - Document Research & Analysis ✅ **READY FOR DEMO**
 
 ### Business Context Setup
 
@@ -350,7 +385,155 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 3. **Visualize Data**: Step 3 highlights chart generation from financial data
 4. **Competitive Intelligence**: Step 4 shows sector-wide analysis capabilities
 
-## Scenario 3: Thematic Macro Advisor - Investment Theme Analysis ✅ PHASE 2
+### Research Copilot - Earnings Intelligence Extensions ✅ **READY FOR DEMO**
+
+### Business Context Setup
+
+**Persona**: Sarah, Senior Research Analyst at Snowcrest Asset Management  
+**Business Challenge**: Research analysts need to rapidly analyze quarterly earnings releases, integrate financial data with management commentary, and identify sentiment shifts that could signal investment opportunities or risks. Traditional earnings analysis requires hours of manual transcription, data extraction, and cross-referencing across multiple documents, often missing subtle but critical sentiment changes.  
+**Value Proposition**: AI-powered earnings intelligence that automatically processes financial filings, earnings call transcripts, and press releases to provide instant financial analysis combined with sentiment insights, enabling analysts to detect emerging trends and risks within minutes of earnings releases.
+
+**Agent**: `research_copilot`  
+**Data Available**: SEC filings for 14,000+ securities, earnings transcripts, press releases, financial fundamentals
+
+### Demo Flow
+
+**Scene Setting**: Sarah is analyzing the latest quarterly earnings for a major technology holding and needs to quickly assess the financial performance, understand management sentiment, and identify any shifts in forward guidance that could impact the investment thesis.
+
+#### Step 1: Integrated Earnings Analysis
+**User Input**: 
+```
+"Give me a comprehensive analysis of Microsoft's latest quarterly earnings, including reported financial metrics versus consensus estimates and key management commentary from the earnings call."
+```
+
+**Expected Response**:
+- **Financial Performance**: Reported revenue, net income, and EPS vs. analyst consensus estimates from SEC filings
+- **Key Metrics Analysis**: Margin trends, growth rates, and segment performance from FACT_SEC_FILINGS
+- **Management Commentary**: Key quotes and themes from earnings transcript regarding future outlook
+- **Guidance Updates**: Forward-looking statements and any revisions to company guidance
+- **Document Sources**: Citations from SEC filings, earnings transcript, and press releases
+
+**Talking Points**:
+- Instant integration of structured financial data with unstructured earnings commentary
+- Automatic comparison of reported results against consensus estimates
+- AI-powered extraction of key management insights from lengthy earnings calls
+
+**Key Features Highlighted**: 
+- SEC filings integration providing authentic financial data (28.7M records)
+- Multi-document synthesis combining quantitative and qualitative analysis
+- Real-time financial analysis with management commentary context
+
+#### Step 2: Sentiment Analysis and Red Flags
+**User Input**: 
+```
+"Compare the sentiment between Microsoft's prepared remarks and the Q&A session. Are there any concerning shifts or defensive language that could indicate management uncertainty?"
+```
+
+**Expected Response**:
+- **Sentiment Comparison**: Quantified sentiment scores for prepared remarks vs. Q&A session
+- **Tone Analysis**: Description of management confidence levels and any defensive language
+- **Key Questions**: Specific analyst questions that triggered defensive responses
+- **Risk Indicators**: Areas where management showed uncertainty or provided evasive answers
+- **Comparative Context**: How this sentiment compares to previous quarters
+
+**Talking Points**:
+- AI quantifies subjective "gut feelings" about earnings call tone into measurable data
+- Sentiment delta between prepared remarks and Q&A often reveals management confidence levels
+- Early warning system for detecting management pressure before it shows in financial results
+
+**Key Features Highlighted**: 
+- Advanced sentiment analysis turning qualitative assessments into quantitative signals
+- Comparative analysis across different sections of earnings calls
+- Predictive insights from management tone and language patterns
+
+#### Step 3: Strategic Commentary Evolution
+**User Input**: 
+```
+"How has Microsoft's commentary on cloud computing and AI strategy evolved over the past three quarters? Are there any shifts in their strategic messaging or capital allocation priorities?"
+```
+
+**Expected Response**:
+- **Strategic Theme Evolution**: Changes in management emphasis on cloud computing and AI initiatives
+- **Investment Priorities**: Shifts in capital expenditure focus and R&D allocation
+- **Competitive Positioning**: How Microsoft's messaging has evolved relative to market dynamics
+- **Forward Guidance**: Changes in growth expectations for cloud and AI segments
+- **Historical Context**: Comparison with previous quarters' strategic commentary
+
+**Talking Points**:
+- Historical analysis reveals strategic shifts that may not be apparent in single-quarter analysis
+- AI tracks consistency in management messaging and identifies strategic pivots
+- Long-term strategic evolution analysis supports investment thesis development
+
+**Key Features Highlighted**: 
+- Multi-quarter analysis tracking strategic narrative evolution
+- Cross-document intelligence linking financial data with strategic commentary
+- Historical context providing deeper investment insights
+
+#### Step 4: Investment Committee Summary
+**User Input**: 
+```
+"Draft a concise investment committee memo summarizing Microsoft's earnings results, highlighting the key financial metrics, sentiment analysis findings, and any strategic shifts that impact our investment thesis."
+```
+
+**Expected Response**:
+- **Executive Summary**: Key financial highlights and performance vs. expectations
+- **Sentiment Assessment**: Summary of management confidence and any concerning shifts
+- **Strategic Updates**: Notable changes in cloud/AI strategy and capital allocation
+- **Investment Implications**: How findings support or challenge current investment thesis
+- **Action Items**: Recommended follow-up analysis or portfolio actions
+- **Supporting Data**: References to specific SEC filing metrics and transcript quotes
+
+**Talking Points**:
+- Automated synthesis of complex earnings analysis into executive-ready format
+- Integration of quantitative financial analysis with qualitative sentiment insights
+- Professional documentation supporting investment decision-making process
+
+**Key Features Highlighted**: 
+- Comprehensive report generation combining multiple data sources and analytical perspectives
+- Professional formatting suitable for investment committee review
+- Complete audit trail with source citations for compliance and verification
+
+### Scenario Wrap-up
+
+**Business Impact Summary**:
+- **Speed Enhancement**: Earnings analysis reduced from hours to minutes, enabling faster decision-making
+- **Analytical Depth**: Combined quantitative and qualitative analysis provides comprehensive investment insights
+- **Risk Detection**: Sentiment analysis creates early warning system for management confidence shifts
+- **Strategic Intelligence**: Multi-quarter analysis reveals strategic evolution and competitive positioning changes
+
+**Technical Differentiators**:
+- **Authentic Data Integration**: Real SEC filings (28.7M records) provide institutional-grade financial analysis
+- **Multi-Modal Intelligence**: Seamless combination of structured financial data with unstructured earnings commentary
+- **Predictive Sentiment Analysis**: Quantified sentiment scoring creates measurable signals from qualitative management tone
+- **Historical Context Engine**: Multi-quarter strategic analysis reveals long-term trends and strategic pivots
+
+---
+
+## Quantitative Analyst
+
+### Quant Analyst - Factor Analysis & Performance Attribution ✅ **READY FOR DEMO**
+
+*[This section will be moved later - placeholder for now]*
+
+---
+
+## Client Relations  
+
+### Sales Advisor - Client Reporting & Template Formatting ✅ **READY FOR DEMO**
+
+*[This section will be moved later - placeholder for now]*
+
+---
+
+## Risk & Compliance Officer
+
+### ESG Guardian - ESG Risk Monitoring & Policy Compliance 🔄 **READY FOR IMPLEMENTATION**
+
+*[This section will be moved later - placeholder for now]*
+
+### Compliance Advisor - Mandate Monitoring & Breach Detection 🔄 **READY FOR IMPLEMENTATION**
+
+*[This section will be moved later - placeholder for now]*
 
 ### Business Context Setup
 
@@ -472,738 +655,3 @@ Complete demo scenario for Portfolio Copilot with step-by-step conversations, ex
 - **Multi-Theme Intersection**: Advanced analysis of theme convergence and overlap opportunities
 - **Strategic Integration**: Seamless combination of quantitative positioning with qualitative thematic research
 
-## Scenario 4: ESG Guardian - ESG Risk Monitoring
-
-### Business Context Setup
-
-**Persona**: Sofia, ESG & Risk Officer at Snowcrest Asset Management  
-**Business Challenge**: ESG officers need proactive monitoring of sustainability risks, policy compliance, and engagement tracking to maintain ESG leadership and avoid reputational damage. Manual monitoring of ESG controversies across hundreds of portfolio companies is time-consuming and risks missing critical issues.  
-**Value Proposition**: AI-powered ESG risk monitoring that automatically scans for controversies, tracks engagement history, and ensures policy compliance, enabling proactive risk management and comprehensive ESG governance.
-
-**Agent**: `esg_guardian`  
-**Data Available**: 500 NGO reports, 150 engagement notes, 8 policy documents
-
-### Demo Flow
-
-**Scene Setting**: Sofia has received alerts about potential ESG issues affecting portfolio companies and needs to quickly assess the situation, review engagement history, check policy compliance, and prepare a comprehensive report for the ESG committee.
-
-#### Step 1: Proactive Controversy Scanning
-**User Input**: 
-```
-"Scan for any new ESG controversies affecting our portfolio companies in the last 30 days."
-```
-
-**Expected Response**:
-- List of flagged controversies with severity levels (High/Medium/Low)
-- Affected portfolio companies and exposure amounts
-- Source citations with NGO names and publication dates
-
-**Talking Points**:
-- Automated ESG controversy detection across all portfolio holdings
-- Risk severity assessment and prioritization for immediate action
-- Comprehensive source attribution for credibility and follow-up
-
-**Key Features Highlighted**: 
-- Proactive ESG risk monitoring and automatic flagging
-- Portfolio exposure analysis for risk quantification
-- Multi-source NGO report analysis and synthesis
-
-#### Step 2: Internal Context Retrieval
-**User Input**: 
-```
-"For the companies flagged in Step 1, do we have any engagement history with these companies regarding the specific ESG issues identified?"
-```
-
-**Expected Response**:
-- Summary of previous engagement meetings and topics for each flagged company from Step 1
-- Key commitments made by management specific to the ESG issues from Step 1
-- Follow-up actions and timelines from engagement logs that relate to the Step 1 controversies
-- Gap analysis: which flagged companies have no prior engagement history
-
-**Talking Points**:
-- **Contextual Engagement Review**: Focuses on the specific companies and issues from Step 1
-- **Issue-Specific History**: Reviews engagement records that directly relate to the identified controversies
-- **Strategic Gap Identification**: Highlights companies requiring new engagement based on Step 1 findings
-
-**Key Features Highlighted**: 
-- **Context-Aware Search**: Engagement search specifically targets Step 1 flagged companies and issues
-- **Issue-Specific Intelligence**: Historical context directly relevant to current controversies
-- **Strategic Planning Support**: Identifies engagement gaps based on current risk assessment
-
-#### Step 3: Policy Compliance Assessment
-**User Input**: 
-```
-"What does our ESG policy say about the specific issues identified in Step 1, and what's our total exposure to each of the flagged companies?"
-```
-
-**Expected Response**:
-- Relevant policy clauses with exact text and section references for each ESG issue type from Step 1
-- Current total AUM exposure across all funds for each company flagged in Step 1
-- Policy-mandated actions specific to each issue type (review, exclusion, engagement requirements)
-- Compliance assessment: which flagged situations require immediate action vs monitoring
-- Integration with Step 2 findings: where existing engagement supports policy compliance
-
-**Talking Points**:
-- **Issue-Specific Policy Guidance**: Policy assessment directly addresses the controversies from Step 1
-- **Comprehensive Exposure Analysis**: Total firm exposure to each specific flagged company
-- **Integrated Compliance Framework**: Combines policy requirements with engagement history from Step 2
-
-**Key Features Highlighted**: 
-- **Context-Specific Policy Search**: Policy analysis tailored to Step 1 ESG issues
-- **Multi-Company Risk Aggregation**: Total exposure analysis for all Step 1 flagged companies
-- **Integrated Compliance Assessment**: Policy requirements viewed alongside engagement history
-
-#### Step 4: Committee Reporting
-**User Input**: 
-```
-"Draft a comprehensive ESG committee summary covering all the companies and issues we've analyzed in Steps 1-3."
-```
-
-**Expected Response**:
-- Executive summary covering all controversies identified in Step 1 with severity prioritization
-- Portfolio impact assessment with exposure calculations for each flagged company
-- Engagement status review for each company based on Step 2 findings
-- Policy compliance analysis for each issue type from Step 3
-- Recommended actions with timelines, prioritization, and policy references
-- Integration of all previous analysis into comprehensive ESG governance report
-
-**Talking Points**:
-- **Complete ESG Governance Report**: Synthesizes all findings from the 3-step analysis process
-- **Executive Decision Support**: Provides prioritized action plan based on comprehensive assessment
-- **Audit-Ready Documentation**: Creates complete record of ESG risk assessment and response
-
-**Key Features Highlighted**: 
-- **Multi-Step Synthesis**: Integrates controversy detection, engagement review, and policy analysis
-- **Executive Reporting**: Complete ESG governance report ready for committee decision-making
-- **Comprehensive Documentation**: Full audit trail of ESG risk assessment and recommended actions
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Risk Mitigation**: Proactive identification and management of ESG controversies
-- **Governance Excellence**: Comprehensive ESG committee reporting and decision support
-- **Compliance Assurance**: Automated policy compliance checking and guidance
-- **Operational Efficiency**: Reduced manual monitoring and reporting time from days to minutes
-
-**Technical Differentiators**:
-- **Proactive Monitoring**: AI-powered controversy detection across multiple NGO sources
-- **Historical Context**: Comprehensive engagement tracking and commitment monitoring
-- **Policy Integration**: Automated compliance checking with policy-based action guidance
-- **Executive Reporting**: Multi-source synthesis for comprehensive ESG governance
-
-## Scenario 5: Compliance Advisor - Mandate Monitoring
-
-### Business Context Setup
-
-**Persona**: Michael, Compliance Officer at Snowcrest Asset Management  
-**Business Challenge**: Compliance officers need automated monitoring of investment mandates, breach detection, and policy adherence to ensure regulatory compliance and fiduciary responsibility. Manual compliance monitoring across multiple portfolios is error-prone and time-consuming, risking regulatory violations and client mandate breaches.  
-**Value Proposition**: AI-powered compliance monitoring that automatically detects breaches, provides policy guidance, and generates audit-ready documentation, ensuring continuous compliance and reducing regulatory risk.
-
-**Agent**: `compliance_advisor`  
-**Data Available**: 8 policy documents, 150 engagement logs, portfolio holdings
-
-### Demo Flow
-
-**Scene Setting**: Michael is conducting his daily compliance review and needs to check for any mandate breaches, investigate specific concentration limits, plan remediation actions, and prepare documentation for audit purposes.
-
-#### Step 1: Compliance Breach Detection
-**User Input**: 
-```
-"Check all portfolios for active compliance breaches as of today."
-```
-
-**Expected Response**:
-- List of breaches by portfolio and rule type
-- Severity assessment (breach vs warning thresholds)
-- Affected positions with amounts and percentages
-
-**Talking Points**:
-- Automated daily compliance monitoring across all portfolios
-- Real-time breach detection with severity assessment
-- Comprehensive coverage of all mandate and regulatory requirements
-
-**Key Features Highlighted**: 
-- Automated compliance monitoring and breach detection
-- Real-time portfolio analysis against mandate requirements
-- Risk prioritization with severity assessment
-
-#### Step 2: Rule Documentation
-**User Input**: 
-```
-"For the specific breaches identified in Step 1, show me the exact policy clauses and concentration limits that are being violated"
-```
-
-**Expected Response**:
-- Exact policy text with section references for each breach type from Step 1
-- Specific concentration limits and thresholds that apply to each flagged position
-- Applicable portfolios and any exceptions for each breach
-- Historical context and rationale for each rule being violated
-- Severity assessment: which breaches are hard limits vs warnings
-
-**Talking Points**:
-- **Context-Specific Policy Research**: Policy lookup directly addresses the breaches from Step 1
-- **Breach-Specific Documentation**: Exact clauses and limits for each identified violation
-- **Compliance Severity Assessment**: Understanding which violations require immediate action
-
-**Key Features Highlighted**: 
-- **Contextual Policy Search**: Policy research specifically targets Step 1 breach types
-- **Violation-Specific Intelligence**: Exact clauses and limits for each identified compliance issue
-- **Severity Classification**: Understanding of breach vs warning thresholds for prioritization
-
-#### Step 3: Remediation Planning
-**User Input**: 
-```
-"For each breach identified in Steps 1-2, what are our remediation options and what's the priority order for addressing these violations?"
-```
-
-**Expected Response**:
-- Remediation options for each specific breach from Step 1, considering the policy requirements from Step 2
-- Calculation of excess exposure amounts above limits for each violation
-- Multiple reduction scenarios with market impact considerations for each breach
-- Priority ranking based on severity assessment from Step 2 (hard breaches vs warnings)
-- Timeline recommendations for compliance restoration with sequencing based on priority
-- Resource allocation: which breaches can be addressed simultaneously vs requiring sequential action
-
-**Talking Points**:
-- **Comprehensive Remediation Strategy**: Addresses all breaches identified in Steps 1-2 with integrated planning
-- **Priority-Based Approach**: Sequences remediation based on severity and policy requirements
-- **Resource Optimization**: Efficient remediation plan considering market impact and operational capacity
-
-**Key Features Highlighted**: 
-- **Multi-Breach Remediation Planning**: Integrated approach to addressing all compliance issues simultaneously
-- **Priority-Based Sequencing**: Remediation order based on severity assessment from Step 2
-- **Market Impact Optimization**: Remediation plans that minimize trading costs and market disruption
-
-#### Step 4: Audit Trail Documentation
-**User Input**: 
-```
-"Generate a comprehensive compliance incident report covering all breaches identified in Steps 1-3 with our complete remediation plan"
-```
-
-**Expected Response**:
-- Formal incident documentation covering all breaches from Step 1 with timeline
-- Policy references and breach calculations for each violation identified in Step 2
-- Complete remediation plan from Step 3 with milestones, priorities, and responsibilities
-- Executive summary of compliance status and remediation strategy
-- Regulatory documentation ready for audit review
-- Integration of all analysis from Steps 1-3 into comprehensive compliance record
-
-**Talking Points**:
-- **Comprehensive Compliance Documentation**: Complete audit trail covering all breaches and remediation plans
-- **Regulatory-Ready Reporting**: Full documentation meeting all audit and regulatory requirements
-- **Integrated Compliance Management**: Single report covering detection, analysis, and remediation strategy
-
-**Key Features Highlighted**: 
-- **Multi-Step Documentation Synthesis**: Integrates breach detection, policy analysis, and remediation planning
-- **Regulatory Compliance Reporting**: Audit-ready documentation with complete compliance workflow
-- **Comprehensive Audit Trail**: Full record of compliance assessment and response for regulatory review
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Regulatory Compliance**: Automated monitoring ensures continuous compliance with all mandates
-- **Risk Reduction**: Proactive breach detection prevents regulatory violations and client issues
-- **Operational Efficiency**: Reduced manual compliance monitoring time by 80%
-- **Audit Readiness**: Comprehensive documentation and audit trails for regulatory reviews
-
-**Technical Differentiators**:
-- **Real-time Monitoring**: Continuous compliance assessment across all portfolios and mandates
-- **Policy Intelligence**: AI-powered policy search and interpretation with exact clause retrieval
-- **Impact Analysis**: Sophisticated remediation planning with market impact considerations
-- **Audit Documentation**: Automated generation of regulatory-ready compliance reports
-
-## Scenario 6: Sales Advisor - Client Reporting
-
-### Business Context Setup
-
-**Persona**: Sarah, Client Relationship Manager at Snowcrest Asset Management  
-**Business Challenge**: Client relationship managers need to generate professional client reports, integrate investment philosophy, and maintain consistent messaging while ensuring compliance with regulatory requirements. Manual report creation is time-consuming and risks inconsistent messaging or missing compliance disclosures.  
-**Value Proposition**: AI-powered client reporting that automatically generates professional reports, integrates approved messaging and philosophy, and ensures compliance adherence, enabling consistent high-quality client communication at scale.
-
-**Agent**: `sales_advisor`  
-**Data Available**: 2 sales templates, 3 philosophy documents, 8 policy documents
-
-### Demo Flow
-
-**Scene Setting**: Sarah needs to prepare the monthly performance report for a key institutional client invested in the ESG Leaders Global Equity portfolio. The report must be professional, include the firm's investment philosophy, and meet all regulatory compliance requirements.
-
-#### Step 1: Performance Report Generation
-**User Input**: 
-```
-"Generate a monthly performance report for the ESG Leaders Global Equity portfolio."
-```
-
-**Expected Response**:
-- Performance summary vs benchmark with key metrics
-- Top contributors and detractors to performance
-- Sector allocation and ESG score summary
-- Professional formatting with appropriate disclaimers
-
-**Talking Points**:
-- Automated performance reporting with comprehensive analytics
-- Professional formatting and presentation ready for client delivery
-- Integration of ESG metrics relevant to the strategy
-
-**Key Features Highlighted**: 
-- Automated performance reporting and data synthesis
-- ESG-specific analytics and scoring integration
-- Professional client-ready formatting
-
-#### Step 2: Template Integration
-**User Input**: 
-```
-"Format the ESG Leaders portfolio performance from Step 1 using our standard monthly client template"
-```
-
-**Expected Response**:
-- Report restructured following template format using the specific performance data from Step 1
-- Professional sections (Executive Summary, Performance, Holdings, Outlook) populated with ESG Leaders data
-- Consistent branding and compliance language applied to the Step 1 performance metrics
-- Client-appropriate tone and structure that incorporates the specific portfolio results
-- Template formatting that maintains the quantitative analysis from Step 1
-
-**Talking Points**:
-- **Data-Template Integration**: Professional formatting applied to specific portfolio analysis from Step 1
-- **Performance-Driven Presentation**: Template structure enhances rather than replaces the analytical content
-- **Consistent Professional Standards**: Quality formatting while preserving analytical rigor
-
-**Key Features Highlighted**: 
-- **Content-Aware Formatting**: Template application that preserves and enhances Step 1 analytical content
-- **Data-Driven Presentation**: Professional formatting of specific portfolio performance and metrics
-- **Integrated Client Communication**: Seamless combination of analytics and professional presentation
-
-#### Step 3: Philosophy Integration
-**User Input**: 
-```
-"Add our ESG investment philosophy to this templated report, specifically explaining how it connects to the performance results shown in Steps 1-2"
-```
-
-**Expected Response**:
-- Integration of approved ESG messaging and philosophy that specifically addresses the portfolio performance from Step 1
-- Alignment of performance narrative with investment approach using the templated format from Step 2
-- Strategic positioning that explains how the philosophy drives the results shown in the report
-- Consistent brand voice that connects investment approach to actual performance outcomes
-- Philosophy sections that reference specific metrics and performance data from Steps 1-2
-
-**Talking Points**:
-- **Performance-Philosophy Alignment**: ESG philosophy specifically connected to actual portfolio results
-- **Results-Driven Messaging**: Philosophy explanation that validates the performance outcomes
-- **Integrated Value Proposition**: Clear connection between investment approach and delivered results
-
-**Key Features Highlighted**: 
-- **Performance-Driven Philosophy**: Investment approach explanation that directly relates to portfolio results
-- **Integrated Messaging**: Philosophy integration that builds on performance data and professional formatting
-- **Results Validation**: Philosophy positioning that supports and explains the performance outcomes
-
-#### Step 4: Compliance Review
-**User Input**: 
-```
-"Review this complete ESG Leaders report from Steps 1-3 and ensure it includes all required compliance disclosures, disclaimers, and regulatory language appropriate for the performance data and philosophy statements included"
-```
-
-**Expected Response**:
-- Addition of mandatory regulatory disclosures specific to ESG Leaders portfolio performance from Step 1
-- Risk warnings and performance disclaimers that address the specific metrics and results shown
-- Fiduciary language and limitations appropriate for the ESG investment philosophy from Step 3
-- ESG-specific compliance language and disclaimers relevant to sustainable investing
-- Template-compliant disclaimer placement that works with the formatting from Step 2
-- Compliance-ready final document that integrates all elements from previous steps
-
-**Talking Points**:
-- **Context-Aware Compliance**: Regulatory language specifically appropriate for ESG portfolio and performance data
-- **Integrated Compliance Framework**: Disclaimers and disclosures that address all report elements
-- **Complete Regulatory Coverage**: Full compliance review of performance, philosophy, and presentation
-
-**Key Features Highlighted**: 
-- **Content-Specific Compliance**: Regulatory requirements tailored to ESG portfolio performance and philosophy
-- **Integrated Regulatory Framework**: Compliance review that addresses all report components from Steps 1-3
-- **Complete Audit Readiness**: Final document ready for regulatory review with comprehensive compliance coverage
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Client Service Excellence**: Professional, consistent reporting that enhances client relationships
-- **Operational Efficiency**: Reduced report preparation time from hours to minutes
-- **Compliance Assurance**: Automated inclusion of all required disclosures and disclaimers
-- **Brand Consistency**: Unified messaging and philosophy integration across all client communications
-
-**Technical Differentiators**:
-- **Template Intelligence**: AI-powered formatting using approved templates and branding guidelines
-- **Philosophy Integration**: Seamless incorporation of investment philosophy and messaging
-- **Compliance Automation**: Automated inclusion of regulatory disclosures and risk warnings
-- **Scalable Reporting**: Consistent high-quality reports across multiple clients and strategies
-
-## Scenario 7: Quant Analyst - Factor Analysis
-
-### Business Context Setup
-
-**Persona**: Dr. James Chen, Quantitative Analyst at Snowcrest Asset Management  
-**Business Challenge**: Quantitative analysts need advanced factor analysis, performance attribution, and systematic strategy development tools to identify patterns, screen securities, and develop data-driven investment approaches. Traditional quant tools are siloed and don't integrate fundamental research insights with quantitative analysis.  
-**Value Proposition**: AI-powered quantitative analysis that instantly accesses comprehensive factor exposures and combines sophisticated factor modeling with fundamental research integration, enabling systematic strategy development with both quantitative rigor and qualitative context in seconds rather than minutes.
-
-**Agent**: `quant_analyst`  
-**Data Available**: Enhanced factor exposures (7 factors × 5 years × monthly), fundamentals data, 1,200 broker reports, 800 earnings transcripts
-
-### Demo Flow
-
-**Scene Setting**: Dr. Chen is developing a new systematic strategy focused on quality and momentum factors. He needs to screen securities, analyze factor exposures, backtest strategies, and validate findings with fundamental research to present a comprehensive investment case.
-
-#### Step 1: Factor Screening
-**User Input**: 
-```
-"Screen for stocks with improving momentum and quality factors over the last 6 months."
-```
-
-**Alternative Query (if needed)**: 
-```
-"Show me stocks with the highest momentum and quality factor exposures from the latest data."
-```
-
-**Expected Response**:
-- Table of securities with highest momentum and quality factor scores from recent period
-- Specific momentum and quality factor exposures (numerical values showing factor loadings)
-- Securities ranked by combined momentum and quality factor characteristics
-- Available factors confirmed: Market, Size, Value, Growth, Momentum, Quality, Volatility
-- Portfolio context showing which screened securities are already held
-
-**Talking Points**:
-- **Instant Factor Recognition**: Agent immediately understands available factors (Momentum, Quality, Value, Growth, etc.) without data exploration
-- **Direct Factor Screening**: Systematic screening using pre-built factor metrics with statistical rigor
-- **Portfolio Integration**: Immediate identification of factor exposures with portfolio context
-
-**Key Features Highlighted**: 
-- **Enhanced Factor Metrics**: Pre-built factor-specific metrics (MOMENTUM_SCORE, QUALITY_SCORE, VALUE_SCORE, GROWTH_SCORE)
-- **Time-Series Factor Analysis**: Monthly factor exposures over 5 years enabling trend identification
-- **Comprehensive Factor Coverage**: Complete factor universe (Market, Size, Value, Growth, Momentum, Quality, Volatility)
-
-#### Step 2: Factor Comparison Analysis
-**User Input**: 
-```
-"For the stocks with improving momentum and quality factors, compare their factor loadings against our current Value strategy and Growth strategy portfolios."
-```
-
-**Expected Response**:
-- Side-by-side factor loading comparison between screened securities and current portfolio holdings
-- Statistical significance of differences between high momentum/quality stocks and portfolio averages
-- Factor tilt analysis showing how these securities would impact portfolio factor exposure
-- Risk-adjusted performance implications of adding screened securities to existing portfolios
-- Style drift assessment: would adding these securities maintain or shift portfolio style characteristics
-
-**Talking Points**:
-- **Targeted Factor Analysis**: Factor comparison focused on high momentum/quality securities vs existing holdings
-- **Portfolio Impact Assessment**: Understanding how these securities would change factor exposures
-- **Style Consistency Evaluation**: Maintaining investment style while improving factor characteristics
-
-**Key Features Highlighted**: 
-- **Conversation-Aware Analysis**: Factor analysis that builds directly on previous screening conversation
-- **Portfolio Integration Analysis**: Assessment of how screened securities fit with existing factor exposures
-- **Style Impact Evaluation**: Understanding factor changes from incorporating screened securities
-
-#### Step 3: Factor Evolution Analysis
-**User Input**: 
-```
-"Analyze the factor exposure trends of our momentum and quality securities over the last 3 years and show how their factor characteristics have evolved."
-```
-
-**Expected Response**:
-- Time-series analysis of momentum and quality factor exposures for screened securities
-- Factor stability analysis showing consistency of factor characteristics over time
-- Comparison of factor evolution between screened securities and benchmark constituents
-- Statistical significance of factor improvements over the 3-year period
-- Portfolio impact assessment: how factor evolution affects current holdings
-
-**Talking Points**:
-- **Time-Series Factor Analysis**: Sophisticated analysis of factor evolution using 5 years of monthly data
-- **Factor Stability Assessment**: Understanding consistency and persistence of factor characteristics
-- **Trend Validation**: Statistical validation of factor improvement trends over time
-
-**Key Features Highlighted**: 
-- **Time-Series Analysis**: 5 years of monthly factor exposure data enabling sophisticated trend analysis
-- **Factor Persistence Studies**: Understanding factor stability and consistency over time periods
-- **Statistical Validation**: Rigorous analysis of factor improvement trends with significance testing
-
-#### Step 4: Fundamental Context Integration
-**User Input**: 
-```
-"For the securities with the strongest factor evolution trends, what fundamental themes and research support their improving factor characteristics?"
-```
-
-**Expected Response**:
-- Analysis of fundamental characteristics of top-performing momentum and quality securities
-- Earnings trends and analyst sentiment for securities that drove the strategy performance
-- Thematic and sector drivers that explain the success of momentum and quality factor selection
-- Research validation showing fundamental support for the quantitative factor improvements
-- Integration of the complete workflow: factor screening → factor analysis → performance validation → fundamental context
-
-**Talking Points**:
-- **Complete Investment Validation**: Fundamental research validates the entire momentum/quality quantitative process
-- **Factor-Fundamental Integration**: Understanding why the factor approach worked from both quantitative and qualitative perspectives  
-- **Investment Thesis Completion**: Full investment case combining systematic factor analysis with fundamental validation
-
-**Key Features Highlighted**: 
-- **End-to-End Integration**: Complete quantitative-to-qualitative workflow validation from screening to fundamental context
-- **Conversational Synthesis**: Fundamental analysis that validates and explains the quantitative findings developed in conversation
-- **Comprehensive Investment Process**: Complete systematic investment approach combining factor analysis, backtesting, and fundamental research
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Speed & Efficiency**: Instant factor screening and analysis eliminating traditional data exploration delays (seconds vs minutes)
-- **Strategy Development**: Enhanced systematic strategy development with pre-built factor metrics and time-series analysis
-- **Investment Edge**: Earlier identification of factor-based opportunities with comprehensive 7-factor model coverage
-- **Research Integration**: Seamless combination of quantitative factor models with fundamental research validation
-
-**Technical Differentiators**:
-- **Pre-Built Factor Metrics**: Instant access to factor-specific metrics (MOMENTUM_SCORE, QUALITY_SCORE) eliminating data exploration delays
-- **Time-Series Factor Analysis**: 5 years of monthly factor exposures enabling sophisticated trend analysis and screening
-- **Complete Factor Universe**: 7-factor model (Market, Size, Value, Growth, Momentum, Quality, Volatility) with sector-specific characteristics
-- **Research Integration**: Unique combination of quantitative factor analysis with fundamental research validation
-
-## Scenario 7: Quant Analyst - Factor Analysis & Attribution ❌ PHASE 4
-
-### Business Context Setup
-
-**Persona**: Dr. Sarah Chen, Quantitative Analyst at Snowcrest Asset Management  
-**Business Challenge**: Quantitative analysts need to conduct systematic factor analysis, performance attribution, and backtesting across complex multi-factor models. Traditional approaches require complex data extraction, manual factor calculation, and time-consuming statistical analysis across multiple systems, limiting the speed and depth of quantitative research.  
-**Value Proposition**: AI-powered quantitative analysis that instantly combines factor exposures, fundamental metrics, and performance data to enable systematic strategy development, rigorous backtesting, and comprehensive attribution analysis in minutes rather than hours.
-
-**Agent**: `quant_analyst`  
-**Data Available**: Factor exposures for 6 factors across 14,000+ securities, fundamentals & estimates, market data, benchmark holdings, portfolio positions
-
-### Demo Flow
-
-**Scene Setting**: Dr. Chen is developing a systematic factor strategy for the quantitative equity team and needs to analyze factor exposures, conduct performance attribution, and validate strategy backtesting across multiple quantitative models.
-
-#### Step 1: Factor Screening and Portfolio Analysis
-**User Input**: 
-```
-"Show me securities in our portfolios with high Quality factor exposure (>0.5) and their current portfolio weights across all strategies"
-```
-
-**Expected Response**:
-- **Factor-Filtered Securities**: Table showing companies with Quality factor >0.5
-- **Current Holdings**: Portfolio weights and exposures across SAM strategies  
-- **Factor Statistics**: Quality factor loadings, R-squared values, statistical significance
-- **Portfolio Impact**: Total exposure to high-quality securities by strategy
-- **Factor Characteristics**: Sector distribution and fundamental metrics of quality-screened securities
-
-**Talking Points**:
-- **Systematic Screening**: AI automatically filters 14,000+ securities by quantitative factor criteria
-- **Multi-Portfolio View**: Instant analysis across all portfolio strategies simultaneously
-- **Statistical Validation**: R-squared and significance testing for factor model reliability
-
-**Key Features Highlighted**: 
-- **SAM_QUANT_VIEW**: Advanced semantic view with factor exposures, fundamentals, and portfolio data
-- **Quantitative Filtering**: Sophisticated factor-based security screening capabilities
-- **Statistical Analysis**: Factor model validation with R-squared and significance metrics
-
-#### Step 2: Performance Attribution Analysis
-**User Input**: 
-```
-"For the SAM Technology & Infrastructure portfolio, break down last quarter's performance attribution by factor exposures - show me which factors contributed most to returns"
-```
-
-**Expected Response**:
-- **Factor Attribution Table**: Contribution to returns by factor (Market, Value, Growth, Quality, Momentum, Volatility)
-- **Active vs Passive**: Factor-based attribution of active return vs benchmark
-- **Statistical Significance**: Confidence intervals and t-statistics for factor contributions
-- **Risk Decomposition**: Systematic vs specific risk attribution with factor model context
-- **Attribution Summary**: Total factor effects vs security selection effects
-
-**Talking Points**:
-- **Systematic Attribution**: AI decomposes performance using rigorous factor models
-- **Risk-Adjusted Analysis**: Factor attribution with proper statistical validation
-- **Active Management Insight**: Quantifies skill vs factor exposure in performance
-
-**Key Features Highlighted**: 
-- **Factor Model Integration**: Comprehensive factor-based performance attribution
-- **Statistical Rigor**: Confidence intervals and significance testing for attribution analysis
-- **Risk Analytics**: Systematic risk decomposition using factor model framework
-
-#### Step 3: Factor Strategy Backtesting
-**User Input**: 
-```
-"Backtest a momentum factor strategy: screen for securities with momentum factor >0.3, equal-weight them, and show performance vs S&P 500 over the last 2 years with full risk metrics"
-```
-
-**Expected Response**:
-- **Strategy Definition**: Momentum factor >0.3 screening criteria and methodology
-- **Backtesting Results**: Strategy performance vs S&P 500 with monthly rebalancing
-- **Risk Metrics**: Sharpe ratio, information ratio, maximum drawdown, tracking error
-- **Factor Analysis**: Strategy's factor exposures vs benchmark over time
-- **Statistical Validation**: T-statistics, confidence intervals, and significance of outperformance
-- **Risk Attribution**: Factor-based risk decomposition and concentration analysis
-
-**Talking Points**:
-- **Systematic Strategy Testing**: Rigorous backtesting with factor-based methodology
-- **Comprehensive Risk Analysis**: Multiple risk metrics with statistical validation
-- **Factor Consistency**: Tracking factor exposure drift and strategy stability over time
-
-**Key Features Highlighted**: 
-- **Advanced Backtesting**: Sophisticated strategy simulation with factor model integration
-- **Risk-Adjusted Performance**: Comprehensive risk metrics with statistical significance
-- **Factor Stability Analysis**: Tracking systematic factor exposure consistency over time
-
-#### Step 4: Fundamental Validation and Research Integration
-**User Input**: 
-```
-"For the top 5 performing securities in that momentum strategy, show me their fundamental metrics and any recent earnings commentary to validate the factor signal"
-```
-
-**Expected Response**:
-- **Top Performers**: 5 best-performing securities from momentum strategy with factor scores
-- **Fundamental Validation**: Revenue growth, earnings trends, fundamental momentum metrics
-- **Management Commentary**: Earnings call excerpts supporting business momentum themes
-- **Analyst Research**: Broker research supporting fundamental momentum narratives  
-- **Factor Confirmation**: Statistical validation of fundamental momentum vs factor momentum
-- **Integrated Analysis**: Synthesis of quantitative factor signals with fundamental business drivers
-
-**Talking Points**:
-- **Factor Validation**: Confirms quantitative signals with fundamental business drivers
-- **Integrated Research**: Combines systematic factor analysis with qualitative fundamental insights
-- **Signal Verification**: Validates statistical factor models with business reality
-
-**Key Features Highlighted**: 
-- **Multi-Source Integration**: Combines factor analysis with fundamental research and management commentary
-- **Signal Validation**: Sophisticated approach to confirming quantitative models with qualitative evidence
-- **Systematic Research**: AI-driven validation of factor strategies using multiple data sources
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Research Velocity**: Factor analysis and backtesting completed in minutes vs hours, enabling rapid strategy iteration
-- **Statistical Rigor**: Comprehensive significance testing and validation provides confidence in systematic strategies
-- **Integrated Analysis**: Seamless combination of quantitative factor models with fundamental validation enhances decision quality
-- **Risk Management**: Detailed factor attribution and risk decomposition enables superior risk-adjusted strategy development
-
-**Technical Differentiators**:
-- **SAM_QUANT_VIEW**: Purpose-built semantic view combining factor exposures, fundamentals, market data, and portfolio holdings
-- **Factor Model Integration**: Native factor-based attribution and risk analysis with statistical validation throughout
-- **Systematic Research Framework**: AI-powered integration of quantitative factor analysis with qualitative fundamental research  
-- **Advanced Statistical Analysis**: Comprehensive significance testing, confidence intervals, and model validation capabilities
-
-## Scenario 8: Sales Advisor - Client Reporting & Templates ✅ PHASE 4
-
-### Business Context Setup
-
-**Persona**: James Mitchell, Client Relationship Manager at Snowcrest Asset Management  
-**Business Challenge**: Client relationship managers need to produce professional, compliant, and compelling client reports that integrate performance data with approved messaging templates and investment philosophy. Traditional processes require manual data gathering, template formatting, compliance review, and brand alignment, consuming significant time and introducing formatting inconsistencies.  
-**Value Proposition**: AI-powered client reporting that automatically combines portfolio analytics with approved templates, investment philosophy, and compliance language to generate professional, relationship-building client communications in minutes.
-
-**Agent**: `sales_advisor`  
-**Data Available**: Portfolio performance data, sales report templates, investment philosophy documents, compliance policies, brand messaging guidelines
-
-### Demo Flow
-
-**Scene Setting**: James needs to prepare a monthly client report for a key institutional client with their SAM Technology & Infrastructure portfolio, ensuring professional presentation with proper compliance language and brand messaging.
-
-#### Step 1: Portfolio Performance Foundation
-**User Input**: 
-```
-"Generate a client report for the SAM Technology & Infrastructure portfolio showing quarterly performance, top holdings, and sector allocation"
-```
-
-**Expected Response**:
-- **Performance Summary**: Quarterly returns vs benchmark with multiple time periods
-- **Top Holdings Table**: Largest positions with weights and contribution to performance
-- **Sector Allocation**: Technology sector breakdown with allocation percentages
-- **Performance Attribution**: Key contributors and detractors to portfolio performance
-- **Concentration Warnings**: Flag any positions >6.5% with "⚠️ CONCENTRATION WARNING"
-- **Professional Structure**: Executive summary format with clear data presentation
-
-**Talking Points**:
-- **Comprehensive Analytics**: AI instantly gathers all required portfolio data for client reporting
-- **Professional Formatting**: Automatically structures data in client-appropriate format
-- **Risk Highlighting**: Proactive flagging of concentration risks for client transparency
-
-**Key Features Highlighted**: 
-- **SAM_ANALYST_VIEW**: Complete portfolio analytics for client reporting foundation
-- **Automated Formatting**: AI structures complex portfolio data for client presentation
-- **Risk Management**: Automatic concentration warning and risk disclosure
-
-#### Step 2: Template Integration and Professional Formatting
-**User Input**: 
-```
-"Format this into a professional monthly client report using our approved template structure with proper sections and branding"
-```
-
-**Expected Response**:
-- **Template Structure**: Monthly Client Report format with standardised sections
-- **Executive Summary**: Key performance highlights and market commentary section
-- **Performance Analysis**: Detailed returns analysis with benchmark comparison
-- **Holdings Overview**: Portfolio composition and changes section
-- **Market Commentary**: Template-guided market outlook section
-- **Professional Layout**: Consistent formatting with SAM branding elements
-- **Section Headers**: Clear, template-compliant section organisation
-
-**Talking Points**:
-- **Template Compliance**: AI automatically applies approved report templates for consistency
-- **Brand Standards**: Ensures all client communications follow SAM brand guidelines
-- **Professional Presentation**: Client-ready formatting that enhances relationship value
-
-**Key Features Highlighted**: 
-- **SAM_SALES_TEMPLATES**: Comprehensive template library for consistent client communications
-- **Automated Formatting**: AI applies professional structure and branding consistently
-- **Template Intelligence**: Smart adaptation of content to template requirements
-
-#### Step 3: Investment Philosophy and Brand Integration
-**User Input**: 
-```
-"Integrate our ESG investment philosophy and technology innovation messaging to align the report with SAM's strategic positioning"
-```
-
-**Expected Response**:
-- **ESG Integration**: SAM's sustainable investment approach woven into performance narrative
-- **Technology Focus**: Innovation leadership messaging aligned with technology portfolio theme
-- **Investment Philosophy**: Core beliefs about ESG and technology investing naturally integrated
-- **Brand Messaging**: Competitive differentiators and unique capabilities highlighted
-- **Strategic Positioning**: SAM's forward-thinking, technology-enhanced approach emphasised
-- **Value Proposition**: Clear articulation of why SAM's approach benefits clients
-
-**Talking Points**:
-- **Philosophy Alignment**: Seamlessly integrates SAM's investment beliefs into client communications
-- **Brand Consistency**: Ensures all client touchpoints reinforce strategic positioning
-- **Relationship Building**: Enhances client understanding of SAM's unique value proposition
-
-**Key Features Highlighted**: 
-- **SAM_PHILOSOPHY_DOCS**: Comprehensive investment philosophy and brand messaging library
-- **Natural Integration**: AI weaves philosophy into performance narrative without appearing promotional
-- **Strategic Messaging**: Consistent reinforcement of SAM's competitive differentiators
-
-#### Step 4: Compliance Review and Final Document
-**User Input**: 
-```
-"Complete the compliance review by adding all required regulatory disclosures, risk warnings, and fiduciary language for final client delivery"
-```
-
-**Expected Response**:
-- **Regulatory Disclosures**: All mandatory disclaimers and risk warnings included
-- **Performance Disclaimers**: "Past performance does not guarantee future results" and appropriate caveats
-- **Fiduciary Language**: Professional standard disclaimers for investment advice
-- **Risk Warnings**: Market risk, concentration risk, and investment limitation disclosures
-- **Compliance Standards**: Full regulatory compliance for client communication
-- **Final Document**: Complete, compliance-ready client report for immediate delivery
-
-**Talking Points**:
-- **Regulatory Compliance**: AI ensures all client communications meet regulatory standards
-- **Risk Management**: Comprehensive risk disclosure protects both client and firm
-- **Fiduciary Excellence**: Professional-grade compliance language maintains highest standards
-
-**Key Features Highlighted**: 
-- **SAM_POLICY_DOCS**: Complete compliance manual and regulatory requirements library
-- **Compliance Automation**: AI automatically includes all required disclosures and warnings
-- **Professional Standards**: Ensures client communications meet institutional investment standards
-
-### Scenario Wrap-up
-
-**Business Impact Summary**:
-- **Productivity Gains**: Client report generation reduced from hours to minutes, enabling more client interaction time
-- **Consistency Assurance**: Automated template and brand compliance ensures professional standard across all client communications
-- **Compliance Excellence**: Comprehensive regulatory disclosure automation reduces compliance risk and review time
-- **Relationship Enhancement**: Professional, compelling reports strengthen client relationships and demonstrate institutional capabilities
-
-**Technical Differentiators**:
-- **Multi-Source Integration**: Seamlessly combines portfolio data, templates, philosophy, and compliance requirements in single workflow
-- **Template Intelligence**: AI-powered formatting that adapts content to professional report structures while maintaining brand consistency
-- **Compliance Automation**: Comprehensive regulatory disclosure integration ensures client communications meet institutional standards
-- **Brand Integration**: Natural weaving of investment philosophy and strategic messaging into performance narratives
