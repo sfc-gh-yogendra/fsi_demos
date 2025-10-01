@@ -197,12 +197,17 @@ CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.CLIENT_MARKET_IMPACT_VIEW
 		DISCUSSIONS AS RAW_DATA.CLIENT_DISCUSSIONS
 			PRIMARY KEY (CLIENT_ID, DISCUSSION_DATE)
 			WITH SYNONYMS=('client_meetings','strategic_discussions','relationship_management')
-			COMMENT='Client discussion and meeting tracking'
+			COMMENT='Client discussion and meeting tracking',
+		REPORTS AS RAW_DATA.RESEARCH_REPORTS
+			PRIMARY KEY (REPORT_ID)
+			WITH SYNONYMS=('research_reports','content_library','thematic_reports')
+			COMMENT='Internal research reports with thematic tags and topics'
 	)
 	RELATIONSHIPS (
 		TRADING_TO_CLIENTS AS TRADING(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
 		ENGAGEMENT_TO_CLIENTS AS ENGAGEMENT(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
-		DISCUSSIONS_TO_CLIENTS AS DISCUSSIONS(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID)
+		DISCUSSIONS_TO_CLIENTS AS DISCUSSIONS(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
+		ENGAGEMENT_TO_REPORTS AS ENGAGEMENT(CONTENT_ID) REFERENCES REPORTS(REPORT_ID)
 	)
 	DIMENSIONS (
 		CLIENTS.CLIENT_ID AS CLIENT_ID WITH SYNONYMS=('client','customer_id','account_id') COMMENT='Unique client identifier',
@@ -213,16 +218,23 @@ CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.CLIENT_MARKET_IMPACT_VIEW
 		TRADING.ASSET_CLASS AS ASSET_CLASS WITH SYNONYMS=('product_type','instrument_class') COMMENT='Asset class of derivative trade',
 		TRADING.DERIVATIVE_TYPE AS DERIVATIVE_TYPE WITH SYNONYMS=('product','instrument_type','trade_type') COMMENT='Specific derivative instrument type',
 		TRADING.CLEARING_CCP AS CLEARING_CCP WITH SYNONYMS=('ccp','clearing_house','central_counterparty') COMMENT='Central counterparty for clearing',
-		ENGAGEMENT.ENGAGEMENT_TYPE AS ENGAGEMENT_TYPE WITH SYNONYMS=('interaction_type','content_action') COMMENT='Type of content engagement',
+		ENGAGEMENT.ENGAGEMENT_TYPE AS ENGAGEMENT_TYPE WITH SYNONYMS=('interaction_type','content_action','content_type') COMMENT='Type of content engagement',
 		ENGAGEMENT.CONTENT_ID AS CONTENT_ID WITH SYNONYMS=('report_id','research_id','document_id') COMMENT='Research content identifier',
+		ENGAGEMENT.ENGAGEMENT_TIMESTAMP AS ENGAGEMENT_TIMESTAMP WITH SYNONYMS=('engagement_date','interaction_date','content_date','engagement_time') COMMENT='Date and time of content engagement',
 		DISCUSSIONS.DISCUSSION_TYPE AS DISCUSSION_TYPE WITH SYNONYMS=('meeting_type','interaction_type') COMMENT='Type of client discussion',
-		DISCUSSIONS.RELATIONSHIP_MANAGER AS RELATIONSHIP_MANAGER WITH SYNONYMS=('account_manager','rm','contact') COMMENT='Relationship manager name'
+		DISCUSSIONS.RELATIONSHIP_MANAGER AS RELATIONSHIP_MANAGER WITH SYNONYMS=('account_manager','rm','contact') COMMENT='Relationship manager name',
+		DISCUSSIONS.TOPICS_DISCUSSED AS TOPICS_DISCUSSED WITH SYNONYMS=('discussion_topics','meeting_topics','conversation_themes') COMMENT='Topics discussed in client meetings',
+		REPORTS.TITLE AS TITLE WITH SYNONYMS=('content_title','research_title','document_title','report_title') COMMENT='Research report title',
+		REPORTS.THEMATIC_TAGS AS THEMATIC_TAGS WITH SYNONYMS=('topics','themes','subject_tags','content_themes','topic_category','ficc_topics','emir_3_0','electronic_trading','bond_transparency','mifid_ii','esg_integration','market_structure_topics') COMMENT='Thematic tags including FICC, EMIR 3.0, Electronic Trading, Bond Markets, MiFID II, ESG Integration',
+		REPORTS.REPORT_TYPE AS REPORT_TYPE WITH SYNONYMS=('content_type','research_type','document_type') COMMENT='Type of research report',
+		REPORTS.AUTHOR AS AUTHOR WITH SYNONYMS=('content_author','research_author','document_author','report_author') COMMENT='Research report author'
 	)
 	METRICS (
 		CLIENTS.TOTAL_AUM AS SUM(AUM_BILLIONS) WITH SYNONYMS=('total_assets','sum_aum','aggregate_assets') COMMENT='Total assets under management',
 		TRADING.TOTAL_NOTIONAL AS SUM(NOTIONAL_VALUE) WITH SYNONYMS=('total_trading_volume','sum_notional','aggregate_volume') COMMENT='Total notional trading volume',
 		TRADING.TRADE_COUNT AS COUNT(TRADE_ID) WITH SYNONYMS=('number_of_trades','trading_frequency','transaction_count') COMMENT='Count of derivative trades',
 		ENGAGEMENT.ENGAGEMENT_COUNT AS COUNT(ENGAGEMENT_TIMESTAMP) WITH SYNONYMS=('content_interactions','download_count','interaction_count') COMMENT='Count of research content engagements',
+		ENGAGEMENT.ENGAGEMENT_DURATION AS SUM(ENGAGEMENT_DURATION_MINUTES) WITH SYNONYMS=('engagement_score','interaction_score','content_score','total_duration') COMMENT='Total engagement duration in minutes',
 		DISCUSSIONS.DISCUSSION_COUNT AS COUNT(DISCUSSION_DATE) WITH SYNONYMS=('meeting_count','interaction_frequency') COMMENT='Count of client discussions and meetings'
 	)
 	COMMENT='Client market impact analysis for personalized research and EMIR 3.0 risk assessment';
