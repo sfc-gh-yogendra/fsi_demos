@@ -2,65 +2,87 @@
 description: Glacier First Bank Phase 1 demo defaults and guardrails
 alwaysApply: false
 ---
-# Glacier First Bank — Phase 1 Demo Defaults
+# Glacier First Bank — Phase 1 Standards
 
-## Fictional Institution & Locale Defaults
-- **Institution**: Glacier First Bank (pan‑EU universal bank; strong Corporate & Commercial; strong Wealth)
-- **Language/Tone**: en‑GB, professional EU banking tone
-- **Regulatory**: EU/EBA‑style policy language (generic)
-- **Currency**: EUR, en‑GB formatting (e.g., €1,234,567.89)
+## Overview
+This rule defines Phase 1 specific standards and patterns. All configuration values are in `config.py` - this rule provides the standards and patterns unique to Phase 1.
 
-## Scope & Narrative Cadence
-- **Phase 1 Scenarios**: AML/KYC (EDD) and Credit Analyst (loan origination assessment)
-- **Story Flow**: Each scenario uses 3–4 dependent turns (user question → agent answer → user follow‑up, etc.)
-- **Timing**: Each scenario should run independently in ~15 minutes (not cumulative)
-- **Multi‑tool Orchestration**: Agents may combine Cortex Analyst, Cortex Search, and generation/summarisation in a single turn when needed
+## Phase 1 Scope
+- **Scenarios**: AML/KYC Enhanced Due Diligence + Credit Risk Analysis
+- **Integration Focus**: Cross-domain intelligence through shared vendor relationships
+- **Demonstration Goal**: Show AI-powered analysis with multi-step reasoning
 
-## Databases, Warehouses, Connections
-- **Database**: `BANK_AI_DEMO`
-- **Warehouses**: `BANK_AI_DEMO_COMPUTE_WH` (general), `BANK_AI_DEMO_SEARCH_WH` (Cortex Search)
-- **Connection Parameter**: script requires `connection_name` (no fallback - must be provided)
+## Demo Flow Standards
+- **Story Structure**: 3-4 conversational turns per scenario
+- **Turn Pattern**: User question → Agent analysis → Follow-up → Deeper insight
+- **Timing Target**: ~15 minutes per scenario (not cumulative)
+- **Multi-tool Usage**: Agents should demonstrate both search and analytical capabilities
 
-## Response Instruction Defaults (embed into agents)
-- **Citations**: Always include document ID/title and publish/effective dates
-- **Units/Windows**: Always state currency, period, and cohort filters where relevant
-- **Threshold Flagging**: Show metric, threshold, and severity icon
-  - Use ⚠️ for warnings and 🚨 for breaches
-- **Auditability**: Offer a short “audit summary of steps and sources” on request
-- **Visual Defaults** (when a visual is implied or requested; UI renders charts):
-  - Time series: Line chart
-  - Cohort comparisons: Horizontal bar chart
-  - Composition by category: Stacked bar chart
-  - Distribution: Histogram
-  - KPI vs threshold: Inline KPI with colour flag; optional small comparative bar
+## Agent Response Standards
 
-## Planning Instruction Defaults (decision logic)
-- If the question requires quantitative metrics, cohorts, or filters over structured data → use Cortex Analyst on relevant Semantic View(s)
-- If the question interrogates policies, PDFs, onboarding docs, news/adverse media, or free‑text → use Cortex Search (with attribute filters)
-- If both are relevant → use both tools and synthesise into one answer
-- SQL visibility is handled by Snowflake Intelligence; surface only on explicit user request
+### Citation Requirements
+- Include source document ID/title with dates
+- State currency, time period, and filters
+- Provide data freshness indicators
 
-## Policy Threshold Bands (EU/EBA‑style; configurable)
-- **DSCR**: warning < 1.25; breach < 1.10
-- **Debt‑to‑Equity**: warning > 3.0; breach > 3.5
-- **Current Ratio**: warning < 1.20; breach < 1.10
-- **Single‑client concentration**: warning > 60%; breach > 70%
+### Risk Flagging Pattern
+- ⚠️ **WARNING**: Approaching threshold
+- 🚨 **BREACH**: Threshold exceeded
+- Always include specific metric value and threshold
 
-## AML/KYC Document Taxonomy & Attributes
-- **doc_type**: `Onboarding` | `Adverse Media` | `PEP/Sanctions` | `Internal Memo`
-- **risk_signal**: `Low` | `Medium` | `High`
-- Recommended Cortex Search attributes: `id`, `title`, `content`, `entity_name`, `doc_type`, `publish_date`, `risk_signal`
-- Create and validate Cortex Search services per [cortex-search.mdc](mdc:cortex-search.mdc)
+### Visualization Patterns
+When user implies need for visual analysis:
+- **Trends**: Suggest line chart
+- **Comparisons**: Suggest bar chart
+- **Composition**: Suggest stacked chart
+- **Distribution**: Suggest histogram
+- **KPI**: Inline value with severity color
 
-## Semantic Views & Testing
-- Build Semantic Views per [semantic-views.mdc](mdc:semantic-views.mdc)
-- Provide basic and cohort test queries using `SEMANTIC_VIEW(...)` (for verification and “show SQL” support in UI)
+## Tool Selection Logic
+- **Quantitative questions** → Cortex Analyst on semantic views
+- **Document questions** → Cortex Search services
+- **Comprehensive analysis** → Both tools with synthesis
+- **SQL visibility** → Only on explicit user request
 
-## Acceptance Criteria (Phase 1)
-- Each scenario completes a 3–4 turn story with correct tool orchestration and consistent tone
-- All quantitative answers include currency, time window, and any cohort filters
-- Flags appear at configured thresholds with clear severity and policy citations
-- Search services pass `SEARCH_PREVIEW` tests for generic and domain queries
-- Semantic views return expected metrics; “Show SQL” displays in UI on request
-- Agent audit summary accurately lists steps/tools/sources
+## Risk Threshold Standards
+Phase 1 uses EU/EBA-style thresholds (defined in config.py):
+- Financial ratios with warning/breach levels
+- Concentration limits for risk management
+- Time-based monitoring requirements
+
+## Document Taxonomy Patterns
+### AML/KYC Documents
+- Types: Onboarding, Adverse Media, PEP/Sanctions, Internal
+- Risk Signals: Low, Medium, High
+- Standard Attributes: id, title, content, entity_name, doc_type, date
+
+### Credit Documents  
+- Types: Business Plans, Financial Statements, Policy Documents
+- Standard Attributes: id, title, content, applicant_name, doc_type, date
+
+See patterns in respective implementation guides.
+
+## Phase 1 Acceptance Criteria
+
+### Functional Requirements
+- [ ] Both scenarios complete 3-4 turn demo flow
+- [ ] Tool orchestration works correctly
+- [ ] Cross-domain intelligence demonstrated
+
+### Data Quality
+- [ ] Citations include source and date
+- [ ] Thresholds flagged with severity
+- [ ] Currency and time periods stated
+
+### Technical Validation  
+- [ ] Search services return relevant results
+- [ ] Semantic views aggregate correctly
+- [ ] Agent audit trail available
+- [ ] Performance within demo targets
+
+### Demo Readiness
+- [ ] Compelling "wow moments" identified
+- [ ] Smooth narrative flow
+- [ ] Clear value proposition
+- [ ] No technical hiccups
 

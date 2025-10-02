@@ -62,6 +62,9 @@ def get_required_tables_for_search_services(scenarios: List[str]) -> Set[str]:
     # Always include news and research (used by multiple scenarios)
     required_tables.add('NEWS_AND_RESEARCH')
     
+    # Always include document templates (used by agent framework)
+    required_tables.add('DOCUMENT_TEMPLATES')
+    
     return required_tables
 
 
@@ -123,6 +126,9 @@ def create_all_search_services(session: Session, scenarios: List[str] = None) ->
     # Create document templates search service for agent framework
     create_document_templates_search_service(session)
     
+    # Validate all search services were created successfully
+    validate_search_services(session)
+    
     logger.info("All Cortex Search services created successfully")
 
 
@@ -134,7 +140,7 @@ def create_compliance_documents_search_service(session: Session) -> None:
     validate_required_tables(session, ['COMPLIANCE_DOCUMENTS'])
     
     session.sql(f"""
-        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.compliance_docs_search_svc
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.compliance_docs_search_svc
             ON CONTENT
             ATTRIBUTES ID, TITLE, ENTITY_NAME, DOC_TYPE, PUBLISH_DATE, RISK_SIGNAL
             WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
@@ -162,7 +168,7 @@ def create_credit_policy_search_service(session: Session) -> None:
     validate_required_tables(session, ['CREDIT_POLICY_DOCUMENTS'])
     
     session.sql(f"""
-        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.credit_policy_search_svc
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.credit_policy_search_svc
             ON CONTENT
             ATTRIBUTES ID, TITLE, POLICY_SECTION, EFFECTIVE_DATE, VERSION, REGULATORY_FRAMEWORK
             WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
@@ -190,7 +196,7 @@ def create_loan_documents_search_service(session: Session) -> None:
     validate_required_tables(session, ['LOAN_DOCUMENTS'])
     
     session.sql(f"""
-        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.loan_documents_search_svc
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.loan_documents_search_svc
             ON CONTENT
             ATTRIBUTES ID, TITLE, APPLICANT_NAME, DOC_TYPE, DOCUMENT_SECTION, PROCESSING_STATUS
             WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
@@ -218,7 +224,7 @@ def create_news_research_search_service(session: Session) -> None:
     validate_required_tables(session, ['NEWS_AND_RESEARCH'])
     
     session.sql(f"""
-        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.news_research_search_svc
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.news_research_search_svc
             ON CONTENT
             ATTRIBUTES ID, TITLE, ENTITY_NAME, ARTICLE_TYPE, PUBLISH_DATE, SOURCE, SENTIMENT_SCORE, ESG_RELEVANCE, SUPPLY_CHAIN_RELEVANCE, INFLATION_RELEVANCE
             WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
@@ -246,42 +252,29 @@ def create_document_templates_search_service(session: Session) -> None:
     """Create Cortex Search service for document templates (RFIs, credit memos, etc.)."""
     logger.info("Creating document templates search service...")
     
-    # First check if the document templates table exists
-    try:
-        table_exists = session.sql(f"""
-            SELECT COUNT(*) as cnt 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = 'RAW_DATA' 
-            AND TABLE_NAME = 'DOCUMENT_TEMPLATES'
-            AND TABLE_CATALOG = '{config.SNOWFLAKE['database']}'
-        """).collect()[0]['CNT'] > 0
-        
-        if table_exists:
-            session.sql(f"""
-                CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.document_templates_search_svc
-                    ON TEMPLATE_CONTENT
-                    ATTRIBUTES TEMPLATE_ID, TEMPLATE_NAME, TEMPLATE_TYPE, SCENARIO, USE_CASE, REGULATORY_FRAMEWORK, REQUIRED_VARIABLES
-                    WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
-                    TARGET_LAG = '5 minutes'
-                    AS 
-                    SELECT 
-                        TEMPLATE_ID,
-                        TEMPLATE_NAME,
-                        TEMPLATE_CONTENT,
-                        TEMPLATE_TYPE,
-                        SCENARIO,
-                        USE_CASE,
-                        REGULATORY_FRAMEWORK,
-                        REQUIRED_VARIABLES
-                    FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES
-            """).collect()
-            
-            logger.info("Document templates search service created successfully")
-        else:
-            logger.warning("Document templates table does not exist - skipping search service creation")
-            
-    except Exception as e:
-        logger.warning(f"Could not create document templates search service: {e}")
+    # Validate required table exists
+    validate_required_tables(session, ['DOCUMENT_TEMPLATES'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.document_templates_search_svc
+            ON TEMPLATE_CONTENT
+            ATTRIBUTES TEMPLATE_ID, TEMPLATE_NAME, TEMPLATE_TYPE, SCENARIO, USE_CASE, REGULATORY_FRAMEWORK, REQUIRED_VARIABLES
+            WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
+            TARGET_LAG = '5 minutes'
+            AS 
+            SELECT 
+                TEMPLATE_ID,
+                TEMPLATE_NAME,
+                TEMPLATE_CONTENT,
+                TEMPLATE_TYPE,
+                SCENARIO,
+                USE_CASE,
+                REGULATORY_FRAMEWORK,
+                REQUIRED_VARIABLES
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES
+    """).collect()
+    
+    logger.info("Document templates search service created successfully")
 
 
 def create_external_data_search_service(session: Session) -> None:
@@ -300,21 +293,23 @@ def validate_search_services(session: Session) -> None:
     try:
         # List all search services
         services = session.sql(f"""
-            SHOW CORTEX SEARCH SERVICES IN SCHEMA {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK
+            SHOW CORTEX SEARCH SERVICES IN SCHEMA {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}
         """).collect()
         
         service_names = [row['name'] for row in services]
         logger.info(f"Created search services: {service_names}")
         
-        # Check specific services
+        # Check specific services (convert to lowercase for comparison)
+        service_names_lower = [name.lower() for name in service_names]
         expected_services = [
             'compliance_docs_search_svc',
             'credit_policy_search_svc', 
             'loan_documents_search_svc',
-            'news_research_search_svc'
+            'news_research_search_svc',
+            'document_templates_search_svc'
         ]
         
-        missing_services = [svc for svc in expected_services if svc not in service_names]
+        missing_services = [svc for svc in expected_services if svc not in service_names_lower]
         if missing_services:
             logger.warning(f"Missing search services: {missing_services}")
         else:
@@ -330,7 +325,7 @@ def drop_search_service(session: Session, service_name: str) -> None:
     
     try:
         session.sql(f"""
-            DROP CORTEX SEARCH SERVICE IF EXISTS {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.{service_name}
+            DROP CORTEX SEARCH SERVICE IF EXISTS {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.{service_name}
         """).collect()
         
         logger.info(f"Search service {service_name} dropped successfully")
@@ -345,7 +340,7 @@ def refresh_search_service(session: Session, service_name: str) -> None:
     
     try:
         session.sql(f"""
-            ALTER CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.{service_name} REFRESH
+            ALTER CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.{service_name} REFRESH
         """).collect()
         
         logger.info(f"Search service {service_name} refreshed successfully")

@@ -1,0 +1,711 @@
+---
+description: Scenario validation rules and best practices
+alwaysApply: false
+---
+# Scenario Validation Patterns - Glacier First Bank
+
+## Overview
+This rule provides patterns for validating demo scenarios, ensuring multi-step reasoning, cross-domain intelligence, and proper agent behavior. For specific scenario examples, see `demo-scenario-documentation.mdc`.
+
+## Validation Framework
+
+### Multi-Step Reasoning Validation
+```python
+# Pattern for validating reasoning chains
+def validate_multi_step_reasoning(scenario: str) -> Dict[str, bool]:
+    """Ensure agents follow logical reasoning steps."""
+    
+    validation_steps = {
+        "information_discovery": """
+            Agent should gather information before making assessments
+        """,
+        "progressive_depth": """
+            Each turn should build on previous discoveries
+        """,
+        "evidence_synthesis": """
+            Final responses should reference multiple evidence sources
+        """,
+        "logical_flow": """
+            Conclusions should follow from presented evidence
+        """
+    }
+    
+    return validation_steps
+```
+
+### Cross-Domain Intelligence Validation
+```python
+# Pattern for validating cross-domain connections
+def validate_cross_domain_intelligence() -> List[Dict]:
+    """Test cases for cross-domain discovery."""
+    
+    test_patterns = [
+        {
+            "pattern": "Shared vendor impact",
+            "query": "Analyze risks if {vendor} fails",
+            "expected_domains": ["credit", "operational", "compliance"],
+            "validation": "Should identify all affected clients"
+        },
+        {
+            "pattern": "Entity risk profile", 
+            "query": "Complete assessment of {entity}",
+            "expected_domains": ["financial", "compliance", "market"],
+            "validation": "Should synthesize multiple perspectives"
+        },
+        {
+            "pattern": "Regulatory cascade",
+            "query": "Impact of new {regulation}",
+            "expected_domains": ["compliance", "operational", "financial"],
+            "validation": "Should trace impacts across functions"
+        }
+    ]
+    
+    return test_patterns
+```
+
+## Scenario Testing Patterns
+
+### Turn-by-Turn Validation
+```python
+# Pattern for multi-turn conversation testing
+class ScenarioValidator:
+    def validate_conversation_flow(self, turns: List[Dict]) -> Dict:
+        """Validate each turn builds appropriately."""
+        
+        validations = {}
+        
+        # Turn 1: Discovery
+        validations["turn_1"] = {
+            "retrieves_relevant_data": True,
+            "uses_appropriate_tools": True,
+            "provides_initial_assessment": True
+        }
+        
+        # Turn 2: Deep dive
+        validations["turn_2"] = {
+            "references_turn_1_findings": True,
+            "adds_new_information": True,
+            "shows_deeper_analysis": True
+        }
+        
+        # Turn 3: Synthesis/Action
+        validations["turn_3"] = {
+            "synthesizes_all_findings": True,
+            "provides_recommendations": True,
+            "maintains_context": True
+        }
+        
+        return validations
+```
+
+### Tool Usage Validation
+```python
+# Pattern for validating tool orchestration
+def validate_tool_usage(agent_response: str, expected_tools: List[str]) -> Dict:
+    """Ensure agents use tools appropriately."""
+    
+    tool_checks = {
+        "tool_selection": """
+            Did agent choose the right tool for the query type?
+        """,
+        "tool_combination": """
+            For complex queries, did agent use multiple tools?
+        """,
+        "tool_efficiency": """
+            Did agent avoid unnecessary tool calls?
+        """,
+        "result_integration": """
+            Were tool results properly synthesized?
+        """
+    }
+    
+    return tool_checks
+```
+
+## Validation Test Cases
+
+### AML/KYC Scenario Patterns
+```python
+# Key validation points for AML scenarios
+AML_VALIDATION_PATTERNS = {
+    "entity_discovery": {
+        "test": "Find UBOs and corporate structure",
+        "validation": [
+            "Identifies all beneficial owners",
+            "Shows ownership percentages",
+            "Notes any PEP connections"
+        ]
+    },
+    "risk_screening": {
+        "test": "Screen against adverse media and sanctions",
+        "validation": [
+            "Searches entity AND individual UBOs",
+            "Identifies temporal relevance",
+            "Assesses risk severity properly"
+        ]
+    },
+    "evidence_synthesis": {
+        "test": "Compile findings into assessment",
+        "validation": [
+            "Reconciles any conflicts",
+            "Provides risk rating with justification",
+            "Suggests appropriate next steps"
+        ]
+    }
+}
+```
+
+### Credit Analysis Scenario Patterns
+```python
+# Key validation points for credit scenarios
+CREDIT_VALIDATION_PATTERNS = {
+    "ratio_analysis": {
+        "test": "Calculate and assess financial ratios",
+        "validation": [
+            "Computes ratios correctly",
+            "Compares against policy thresholds",
+            "Flags breaches with severity"
+        ]
+    },
+    "cohort_comparison": {
+        "test": "Compare to historical peer performance",
+        "validation": [
+            "Identifies relevant peer group",
+            "Uses appropriate time window",
+            "Provides statistical context"
+        ]
+    },
+    "document_analysis": {
+        "test": "Analyze business plans and projections",
+        "validation": [
+            "Extracts key assumptions",
+            "Assesses feasibility",
+            "Links to financial metrics"
+        ]
+    }
+}
+```
+
+## Contradiction Handling Validation
+
+### Pattern for Testing Contradictions
+```python
+def validate_contradiction_handling() -> List[Dict]:
+    """Test cases for contradictory evidence."""
+    
+    contradiction_scenarios = [
+        {
+            "scenario": "Financial vs Market Sentiment",
+            "setup": "Strong financials but negative news",
+            "validation": [
+                "Acknowledges both perspectives",
+                "Weights evidence appropriately",
+                "Explains the discrepancy",
+                "Provides balanced assessment"
+            ]
+        },
+        {
+            "scenario": "Historical vs Current",
+            "setup": "Good history but current struggles",
+            "validation": [
+                "Notes temporal differences",
+                "Identifies what changed",
+                "Assesses trajectory",
+                "Risk-adjusts appropriately"
+            ]
+        }
+    ]
+    
+    return contradiction_scenarios
+```
+
+## Performance Validation
+
+### Response Time Patterns
+```python
+# Expected performance benchmarks
+PERFORMANCE_TARGETS = {
+    "simple_query": {
+        "target": 5,  # seconds
+        "includes": ["Single tool usage", "Basic retrieval"]
+    },
+    "complex_analysis": {
+        "target": 15,  # seconds
+        "includes": ["Multiple tools", "Synthesis required"]
+    },
+    "cross_domain": {
+        "target": 20,  # seconds
+        "includes": ["Multiple domains", "Complex reasoning"]
+    }
+}
+```
+
+### Quality Metrics
+```python
+def validate_response_quality(response: str) -> Dict[str, bool]:
+    """Check response meets quality standards."""
+    
+    quality_checks = {
+        "completeness": len(response) > 200,
+        "citations": "Source:" in response or "Reference:" in response,
+        "specificity": any(char.isdigit() for char in response),
+        "actionability": any(word in response.lower() 
+                           for word in ["recommend", "suggest", "should"]),
+        "professionalism": all(phrase not in response.lower() 
+                              for phrase in ["i cannot", "i apologize"])
+    }
+    
+    return quality_checks
+```
+
+## Validation Automation
+
+### Test Harness Pattern
+```python
+class ScenarioTestHarness:
+    """Automated scenario validation."""
+    
+    def run_scenario_tests(self, scenario_name: str) -> Dict:
+        """Execute full scenario validation."""
+        
+        # Load test queries
+        test_queries = self.load_test_queries(scenario_name)
+        
+        # Execute turns
+        results = {}
+        context = {}
+        
+        for turn_num, query in enumerate(test_queries, 1):
+            response = self.execute_query(query, context)
+            
+            # Validate turn
+            turn_validation = self.validate_turn(
+                turn_num, 
+                query, 
+                response, 
+                context
+            )
+            
+            results[f"turn_{turn_num}"] = turn_validation
+            context = self.update_context(context, response)
+        
+        # Overall validation
+        results["overall"] = self.validate_overall_flow(results)
+        
+        return results
+```
+
+### Continuous Validation
+```python
+# Pattern for ongoing quality assurance
+def continuous_validation_pattern():
+    """Regular validation schedule."""
+    
+    return {
+        "pre_deployment": [
+            "Full scenario run-through",
+            "Performance benchmarking",
+            "Error case handling"
+        ],
+        "post_update": [
+            "Regression testing",
+            "New feature validation",
+            "Cross-domain verification"
+        ],
+        "periodic": [
+            "Weekly smoke tests",
+            "Monthly deep validation",
+            "Quarterly performance review"
+        ]
+    }
+```
+
+## Common Validation Failures
+
+### Issue: Information Not Carried Forward
+**Pattern**: Agent forgets context from previous turns
+**Validation**: Check each turn references previous findings
+**Fix**: Ensure context preservation in conversation
+
+### Issue: Tool Under-Utilization  
+**Pattern**: Agent provides generic response without data
+**Validation**: Check tool execution logs
+**Fix**: Strengthen planning instructions
+
+### Issue: Over-Confident Conclusions
+**Pattern**: Agent makes claims without evidence
+**Validation**: Trace conclusions to source data
+**Fix**: Require explicit evidence citation
+
+## Best Practices
+
+1. **Automate Where Possible**: Use test harnesses for consistency
+2. **Test Edge Cases**: Include error scenarios and data gaps
+3. **Validate Cross-Domain**: Always test integration points
+4. **Monitor Performance**: Track response times and quality
+5. **Document Failures**: Build knowledge base of issues
+6. **Regular Reviews**: Schedule periodic validation cycles
+
+## Summary
+
+Validation ensures:
+- Multi-step reasoning works correctly
+- Cross-domain intelligence connects properly  
+- Tools are used appropriately
+- Performance meets demo requirements
+- Quality standards are maintained
+
+Focus on patterns that can be applied across scenarios, not specific test cases.# Scenario Validation Patterns - Glacier First Bank
+
+## Overview
+This rule provides patterns for validating demo scenarios, ensuring multi-step reasoning, cross-domain intelligence, and proper agent behavior. For specific scenario examples, see `demo-scenario-documentation.mdc`.
+
+## Validation Framework
+
+### Multi-Step Reasoning Validation
+```python
+# Pattern for validating reasoning chains
+def validate_multi_step_reasoning(scenario: str) -> Dict[str, bool]:
+    """Ensure agents follow logical reasoning steps."""
+    
+    validation_steps = {
+        "information_discovery": """
+            Agent should gather information before making assessments
+        """,
+        "progressive_depth": """
+            Each turn should build on previous discoveries
+        """,
+        "evidence_synthesis": """
+            Final responses should reference multiple evidence sources
+        """,
+        "logical_flow": """
+            Conclusions should follow from presented evidence
+        """
+    }
+    
+    return validation_steps
+```
+
+### Cross-Domain Intelligence Validation
+```python
+# Pattern for validating cross-domain connections
+def validate_cross_domain_intelligence() -> List[Dict]:
+    """Test cases for cross-domain discovery."""
+    
+    test_patterns = [
+        {
+            "pattern": "Shared vendor impact",
+            "query": "Analyze risks if {vendor} fails",
+            "expected_domains": ["credit", "operational", "compliance"],
+            "validation": "Should identify all affected clients"
+        },
+        {
+            "pattern": "Entity risk profile", 
+            "query": "Complete assessment of {entity}",
+            "expected_domains": ["financial", "compliance", "market"],
+            "validation": "Should synthesize multiple perspectives"
+        },
+        {
+            "pattern": "Regulatory cascade",
+            "query": "Impact of new {regulation}",
+            "expected_domains": ["compliance", "operational", "financial"],
+            "validation": "Should trace impacts across functions"
+        }
+    ]
+    
+    return test_patterns
+```
+
+## Scenario Testing Patterns
+
+### Turn-by-Turn Validation
+```python
+# Pattern for multi-turn conversation testing
+class ScenarioValidator:
+    def validate_conversation_flow(self, turns: List[Dict]) -> Dict:
+        """Validate each turn builds appropriately."""
+        
+        validations = {}
+        
+        # Turn 1: Discovery
+        validations["turn_1"] = {
+            "retrieves_relevant_data": True,
+            "uses_appropriate_tools": True,
+            "provides_initial_assessment": True
+        }
+        
+        # Turn 2: Deep dive
+        validations["turn_2"] = {
+            "references_turn_1_findings": True,
+            "adds_new_information": True,
+            "shows_deeper_analysis": True
+        }
+        
+        # Turn 3: Synthesis/Action
+        validations["turn_3"] = {
+            "synthesizes_all_findings": True,
+            "provides_recommendations": True,
+            "maintains_context": True
+        }
+        
+        return validations
+```
+
+### Tool Usage Validation
+```python
+# Pattern for validating tool orchestration
+def validate_tool_usage(agent_response: str, expected_tools: List[str]) -> Dict:
+    """Ensure agents use tools appropriately."""
+    
+    tool_checks = {
+        "tool_selection": """
+            Did agent choose the right tool for the query type?
+        """,
+        "tool_combination": """
+            For complex queries, did agent use multiple tools?
+        """,
+        "tool_efficiency": """
+            Did agent avoid unnecessary tool calls?
+        """,
+        "result_integration": """
+            Were tool results properly synthesized?
+        """
+    }
+    
+    return tool_checks
+```
+
+## Validation Test Cases
+
+### AML/KYC Scenario Patterns
+```python
+# Key validation points for AML scenarios
+AML_VALIDATION_PATTERNS = {
+    "entity_discovery": {
+        "test": "Find UBOs and corporate structure",
+        "validation": [
+            "Identifies all beneficial owners",
+            "Shows ownership percentages",
+            "Notes any PEP connections"
+        ]
+    },
+    "risk_screening": {
+        "test": "Screen against adverse media and sanctions",
+        "validation": [
+            "Searches entity AND individual UBOs",
+            "Identifies temporal relevance",
+            "Assesses risk severity properly"
+        ]
+    },
+    "evidence_synthesis": {
+        "test": "Compile findings into assessment",
+        "validation": [
+            "Reconciles any conflicts",
+            "Provides risk rating with justification",
+            "Suggests appropriate next steps"
+        ]
+    }
+}
+```
+
+### Credit Analysis Scenario Patterns
+```python
+# Key validation points for credit scenarios
+CREDIT_VALIDATION_PATTERNS = {
+    "ratio_analysis": {
+        "test": "Calculate and assess financial ratios",
+        "validation": [
+            "Computes ratios correctly",
+            "Compares against policy thresholds",
+            "Flags breaches with severity"
+        ]
+    },
+    "cohort_comparison": {
+        "test": "Compare to historical peer performance",
+        "validation": [
+            "Identifies relevant peer group",
+            "Uses appropriate time window",
+            "Provides statistical context"
+        ]
+    },
+    "document_analysis": {
+        "test": "Analyze business plans and projections",
+        "validation": [
+            "Extracts key assumptions",
+            "Assesses feasibility",
+            "Links to financial metrics"
+        ]
+    }
+}
+```
+
+## Contradiction Handling Validation
+
+### Pattern for Testing Contradictions
+```python
+def validate_contradiction_handling() -> List[Dict]:
+    """Test cases for contradictory evidence."""
+    
+    contradiction_scenarios = [
+        {
+            "scenario": "Financial vs Market Sentiment",
+            "setup": "Strong financials but negative news",
+            "validation": [
+                "Acknowledges both perspectives",
+                "Weights evidence appropriately",
+                "Explains the discrepancy",
+                "Provides balanced assessment"
+            ]
+        },
+        {
+            "scenario": "Historical vs Current",
+            "setup": "Good history but current struggles",
+            "validation": [
+                "Notes temporal differences",
+                "Identifies what changed",
+                "Assesses trajectory",
+                "Risk-adjusts appropriately"
+            ]
+        }
+    ]
+    
+    return contradiction_scenarios
+```
+
+## Performance Validation
+
+### Response Time Patterns
+```python
+# Expected performance benchmarks
+PERFORMANCE_TARGETS = {
+    "simple_query": {
+        "target": 5,  # seconds
+        "includes": ["Single tool usage", "Basic retrieval"]
+    },
+    "complex_analysis": {
+        "target": 15,  # seconds
+        "includes": ["Multiple tools", "Synthesis required"]
+    },
+    "cross_domain": {
+        "target": 20,  # seconds
+        "includes": ["Multiple domains", "Complex reasoning"]
+    }
+}
+```
+
+### Quality Metrics
+```python
+def validate_response_quality(response: str) -> Dict[str, bool]:
+    """Check response meets quality standards."""
+    
+    quality_checks = {
+        "completeness": len(response) > 200,
+        "citations": "Source:" in response or "Reference:" in response,
+        "specificity": any(char.isdigit() for char in response),
+        "actionability": any(word in response.lower() 
+                           for word in ["recommend", "suggest", "should"]),
+        "professionalism": all(phrase not in response.lower() 
+                              for phrase in ["i cannot", "i apologize"])
+    }
+    
+    return quality_checks
+```
+
+## Validation Automation
+
+### Test Harness Pattern
+```python
+class ScenarioTestHarness:
+    """Automated scenario validation."""
+    
+    def run_scenario_tests(self, scenario_name: str) -> Dict:
+        """Execute full scenario validation."""
+        
+        # Load test queries
+        test_queries = self.load_test_queries(scenario_name)
+        
+        # Execute turns
+        results = {}
+        context = {}
+        
+        for turn_num, query in enumerate(test_queries, 1):
+            response = self.execute_query(query, context)
+            
+            # Validate turn
+            turn_validation = self.validate_turn(
+                turn_num, 
+                query, 
+                response, 
+                context
+            )
+            
+            results[f"turn_{turn_num}"] = turn_validation
+            context = self.update_context(context, response)
+        
+        # Overall validation
+        results["overall"] = self.validate_overall_flow(results)
+        
+        return results
+```
+
+### Continuous Validation
+```python
+# Pattern for ongoing quality assurance
+def continuous_validation_pattern():
+    """Regular validation schedule."""
+    
+    return {
+        "pre_deployment": [
+            "Full scenario run-through",
+            "Performance benchmarking",
+            "Error case handling"
+        ],
+        "post_update": [
+            "Regression testing",
+            "New feature validation",
+            "Cross-domain verification"
+        ],
+        "periodic": [
+            "Weekly smoke tests",
+            "Monthly deep validation",
+            "Quarterly performance review"
+        ]
+    }
+```
+
+## Common Validation Failures
+
+### Issue: Information Not Carried Forward
+**Pattern**: Agent forgets context from previous turns
+**Validation**: Check each turn references previous findings
+**Fix**: Ensure context preservation in conversation
+
+### Issue: Tool Under-Utilization  
+**Pattern**: Agent provides generic response without data
+**Validation**: Check tool execution logs
+**Fix**: Strengthen planning instructions
+
+### Issue: Over-Confident Conclusions
+**Pattern**: Agent makes claims without evidence
+**Validation**: Trace conclusions to source data
+**Fix**: Require explicit evidence citation
+
+## Best Practices
+
+1. **Automate Where Possible**: Use test harnesses for consistency
+2. **Test Edge Cases**: Include error scenarios and data gaps
+3. **Validate Cross-Domain**: Always test integration points
+4. **Monitor Performance**: Track response times and quality
+5. **Document Failures**: Build knowledge base of issues
+6. **Regular Reviews**: Schedule periodic validation cycles
+
+## Summary
+
+Validation ensures:
+- Multi-step reasoning works correctly
+- Cross-domain intelligence connects properly  
+- Tools are used appropriately
+- Performance meets demo requirements
+- Quality standards are maintained
+
+Focus on patterns that can be applied across scenarios, not specific test cases.

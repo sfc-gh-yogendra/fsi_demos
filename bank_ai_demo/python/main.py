@@ -167,7 +167,7 @@ def create_pdf_generator(session: Session) -> None:
         ''').collect()
         
         session.sql(f'''
-            CREATE STAGE IF NOT EXISTS {config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.PROC_STAGE
+            CREATE STAGE IF NOT EXISTS {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.PROC_STAGE
             ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
             DIRECTORY = (ENABLE = TRUE)
             COMMENT = 'Stage for storing Python stored procedures code'
@@ -182,9 +182,9 @@ def create_pdf_generator(session: Session) -> None:
         from snowflake.snowpark.types import StringType
         
         @sproc(
-            name=f'{config.SNOWFLAKE["database"]}.AGENT_FRAMEWORK.GENERATE_PDF_REPORT', 
+            name=f'{config.SNOWFLAKE["database"]}.{config.SNOWFLAKE["ai_schema"]}.GENERATE_PDF_REPORT', 
             is_permanent=True, 
-            stage_location=f'@{config.SNOWFLAKE["database"]}.AGENT_FRAMEWORK.PROC_STAGE', 
+            stage_location=f'@{config.SNOWFLAKE["database"]}.{config.SNOWFLAKE["ai_schema"]}.PROC_STAGE', 
             replace=True, 
             packages=['snowflake-snowpark-python', 'markdown', 'weasyprint'],
             return_type=StringType(),
@@ -311,7 +311,7 @@ def create_pdf_generator(session: Session) -> None:
         # Test the procedure
         logger.info("Testing PDF generation procedure...")
         result = session.call(
-            f'{config.SNOWFLAKE["database"]}.AGENT_FRAMEWORK.GENERATE_PDF_REPORT',
+            f'{config.SNOWFLAKE["database"]}.{config.SNOWFLAKE["ai_schema"]}.GENERATE_PDF_REPORT',
             'Test PDF generation during setup',
             'ANALYSIS',
             'Setup Test Entity'

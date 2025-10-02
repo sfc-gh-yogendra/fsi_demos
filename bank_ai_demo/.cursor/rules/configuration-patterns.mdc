@@ -1,0 +1,741 @@
+---
+description: Configuration patterns and Best Practices
+alwaysApply: false
+---
+# Configuration Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for using and extending the configuration system. All actual configuration values live in `config.py` - this rule shows HOW to work with them, not WHAT they are.
+
+## Configuration Architecture
+
+### Single Source of Truth
+```
+config.py
+├── Global Settings (institution, language, currency)
+├── Environment Configuration (Snowflake connections)
+├── Content Generation (LLM settings)
+├── Phase Configuration (scenarios, requirements)
+├── Data Scale Definitions (mini, demo, full)
+├── Date Ranges (dynamically calculated)
+├── Key Entities (demo focal points)
+├── Market Themes (content generation themes)
+├── External Providers (marketplace attributions)
+└── Helper Functions (validation, retrieval)
+```
+
+## Usage Patterns
+
+### Basic Import and Access
+```python
+import config
+
+# Direct access to constants
+database = config.SNOWFLAKE['database']
+institution = config.INSTITUTION_NAME
+currency = config.CURRENCY
+
+# Using helper functions
+snowflake_config = config.get_snowflake_config(connection_name)
+scale_config = config.get_scale_config(scale or 'demo')
+scenario_config = config.get_scenario_config('aml_kyc_edd')
+```
+
+### SQL Query Patterns
+```python
+# ✅ CORRECT: Clean f-string usage
+session.sql(f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES AS
+    SELECT * FROM source_table
+""").collect()
+
+# ✅ CORRECT: LLM model with quotes
+session.sql(f"""
+    SELECT SNOWFLAKE.CORTEX.COMPLETE(
+        '{config.LLM_MODEL}',  -- Note: quotes needed for SQL string
+        prompt_text
+    ) AS generated_content
+""").collect()
+
+# ❌ WRONG: Redundant f-string
+session.sql(f"""
+    CREATE TABLE f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+""")
+
+# ❌ WRONG: Hardcoded values
+session.sql("CREATE TABLE BANK_AI_DEMO.RAW_DATA.ENTITIES")
+```
+
+### DataFrame Operations
+```python
+# ✅ CORRECT: Using config for table names
+df.write.save_as_table(
+    f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES",
+    mode="overwrite"
+)
+
+# ✅ CORRECT: Reading with config
+entities_df = session.table(
+    f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+)
+```
+
+## Extension Patterns
+
+### Adding New Configuration Sections
+```python
+# In config.py - follow the established pattern
+
+# =============================================================================
+# NEW FEATURE CONFIGURATION
+# =============================================================================
+
+NEW_FEATURE = {
+    "setting1": "value1",
+    "setting2": "value2",
+    "nested": {
+        "option1": True,
+        "option2": 100
+    }
+}
+
+# Add corresponding helper if needed
+def get_new_feature_config(feature_type: str = None) -> Dict[str, Any]:
+    """Get configuration for new feature."""
+    if feature_type and feature_type not in NEW_FEATURE:
+        raise ValueError(f"Invalid feature type: {feature_type}")
+    return NEW_FEATURE.get(feature_type, NEW_FEATURE)
+```
+
+### Adding New Scales
+```python
+# Extend SCALES dictionary in config.py
+SCALES = {
+    # ... existing scales ...
+    "full": {
+        "description": "Full production scale for stress testing",
+        "entities": 2000,
+        "entity_relationships": 5000,
+        "customers": 800,
+        "transactions": 200000,
+        "compliance_documents": 3000,
+        "loan_applications": 100,
+        "historical_loans": 6000,
+        "news_articles": 5000
+    }
+}
+```
+
+### Adding New Scenarios
+```python
+# Extend SCENARIOS dictionary in config.py
+SCENARIOS = {
+    # ... existing scenarios ...
+    "portfolio_risk": {
+        "name": "Portfolio Risk Analysis",
+        "description": "AI-powered portfolio risk assessment",
+        "required_data": ["portfolios", "positions", "market_data"],
+        "required_services": ["portfolio_search_svc"],
+        "required_views": ["portfolio_risk_sv"]
+    }
+}
+```
+
+### Adding External Providers
+```python
+# Extend EXTERNAL_DATA_PROVIDERS in config.py
+EXTERNAL_DATA_PROVIDERS["esg_data"] = {
+    "msci": {
+        "name": "MSCI ESG Ratings",
+        "attribution": "MSCI ESG Ratings via Snowflake Marketplace",
+        "data_types": ["esg_scores", "carbon_intensity", "controversy_scores"],
+        "coverage": "Global public companies",
+        "update_frequency": "monthly"
+    }
+}
+```
+
+## Validation Patterns
+
+### Configuration Validation
+```python
+# Pattern for validating configuration before use
+def validate_configuration():
+    """Validate configuration completeness and consistency."""
+    import config
+    
+    # Check required sections exist
+    required_sections = ['SNOWFLAKE', 'SCALES', 'SCENARIOS']
+    for section in required_sections:
+        if not hasattr(config, section):
+            raise ValueError(f"Missing required configuration section: {section}")
+    
+    # Validate scales have required fields
+    for scale_name, scale_config in config.SCALES.items():
+        required_fields = ['entities', 'transactions']
+        for field in required_fields:
+            if field not in scale_config:
+                raise ValueError(f"Scale '{scale_name}' missing required field: {field}")
+    
+    # Validate scenario dependencies
+    for scenario_name, scenario_config in config.SCENARIOS.items():
+        if 'required_data' not in scenario_config:
+            raise ValueError(f"Scenario '{scenario_name}' missing required_data")
+```
+
+### Environment-Specific Configuration
+```python
+# Pattern for environment-aware configuration
+def get_environment_config(env: str = None) -> Dict[str, Any]:
+    """Get environment-specific configuration."""
+    import os
+    import config
+    
+    env = env or os.getenv('ENVIRONMENT', 'development')
+    
+    if env == 'development':
+        return {
+            'scale': 'mini',
+            'debug': True,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    elif env == 'demo':
+        return {
+            'scale': 'demo',
+            'debug': False,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    elif env == 'production':
+        return {
+            'scale': 'full',
+            'debug': False,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    else:
+        raise ValueError(f"Unknown environment: {env}")
+```
+
+## Dynamic Configuration Patterns
+
+### Date Range Handling
+```python
+# Note how config.py calculates dates dynamically
+# This ensures data is always relative to current date
+
+# Using dynamic dates
+from datetime import datetime, timedelta
+
+current_date = config.DATE_RANGES['current_date']
+historical_start = config.DATE_RANGES['historical_start']
+
+# Pattern for date-based queries
+session.sql(f"""
+    SELECT * FROM transactions
+    WHERE transaction_date BETWEEN '{historical_start}' AND '{current_date}'
+""")
+```
+
+### Scale-Based Processing
+```python
+# Pattern for scale-aware processing
+def process_data(session: Session, scale: str = None):
+    """Process data based on configured scale."""
+    scale_config = config.get_scale_config(scale)
+    
+    # Adjust processing based on scale
+    if scale_config['entities'] > 1000:
+        # Use batch processing for large scales
+        batch_size = 1000
+    else:
+        # Process all at once for small scales
+        batch_size = scale_config['entities']
+    
+    logger.info(f"Processing {scale_config['entities']} entities in batches of {batch_size}")
+```
+
+## Anti-Patterns to Avoid
+
+### ❌ Hardcoding Configuration Values
+```python
+# WRONG - Don't hardcode values
+DATABASE = "BANK_AI_DEMO"  # Don't do this in your code!
+
+# CORRECT - Always use config
+database = config.SNOWFLAKE['database']
+```
+
+### ❌ Modifying Configuration at Runtime
+```python
+# WRONG - Don't modify config values
+config.SNOWFLAKE['database'] = "SOME_OTHER_DB"  # Never do this!
+
+# CORRECT - Use a copy if needed
+my_config = config.SNOWFLAKE.copy()
+my_config['database'] = "SOME_OTHER_DB"
+```
+
+### ❌ Duplicating Configuration
+```python
+# WRONG - Don't duplicate config values in other files
+# some_module.py
+INSTITUTION_NAME = "Glacier First Bank"  # Don't duplicate!
+
+# CORRECT - Import from config
+from config import INSTITUTION_NAME
+```
+
+### ❌ String Concatenation for Paths
+```python
+# WRONG - Error-prone string concatenation
+table = config.SNOWFLAKE['database'] + ".RAW_DATA.ENTITIES"
+
+# CORRECT - Use f-strings
+table = f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+```
+
+## Testing Configuration Changes
+
+### Unit Testing Pattern
+```python
+def test_new_config_section():
+    """Test new configuration section is properly structured."""
+    import config
+    
+    # Test section exists
+    assert hasattr(config, 'NEW_FEATURE')
+    
+    # Test required fields
+    assert 'setting1' in config.NEW_FEATURE
+    assert isinstance(config.NEW_FEATURE['nested'], dict)
+    
+    # Test helper function
+    feature_config = config.get_new_feature_config()
+    assert feature_config is not None
+```
+
+### Integration Testing Pattern
+```python
+def test_config_with_snowflake(session: Session):
+    """Test configuration works with Snowflake."""
+    import config
+    
+    # Test database exists
+    result = session.sql(f"SHOW DATABASES LIKE '{config.SNOWFLAKE['database']}'").collect()
+    assert len(result) > 0
+    
+    # Test warehouse exists
+    result = session.sql(f"SHOW WAREHOUSES LIKE '{config.SNOWFLAKE['compute_warehouse']}'").collect()
+    assert len(result) > 0
+```
+
+## Configuration Documentation Standards
+
+When adding new configuration:
+
+1. **Use Clear Section Headers**
+   ```python
+   # =============================================================================
+   # DESCRIPTIVE SECTION NAME
+   # =============================================================================
+   ```
+
+2. **Document the Purpose**
+   ```python
+   # Configuration for risk threshold monitoring
+   # Used by: risk_analysis.py, portfolio_monitor.py
+   ```
+
+3. **Provide Usage Examples**
+   ```python
+   RISK_THRESHOLDS = {
+       "high": 0.8,    # Triggers immediate review
+       "medium": 0.5,  # Requires enhanced monitoring
+       "low": 0.2      # Standard monitoring
+   }
+   ```
+
+4. **Include Validation Helper**
+   ```python
+   def validate_risk_threshold(threshold: float) -> bool:
+       """Validate risk threshold is within acceptable range."""
+       return 0.0 <= threshold <= 1.0
+   ```
+
+## Best Practices Summary
+
+1. **Single Source of Truth**: All configuration values in `config.py`
+2. **No Duplication**: Never copy config values to other files
+3. **Use Helpers**: Leverage provided helper functions
+4. **Validate Early**: Check configuration validity at startup
+5. **Document Changes**: Clear comments for new configuration
+6. **Test Thoroughly**: Unit and integration tests for new config
+7. **Environment Aware**: Support different environments properly
+8. **Type Safety**: Use type hints in configuration functions# Configuration Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for using and extending the configuration system. All actual configuration values live in `config.py` - this rule shows HOW to work with them, not WHAT they are.
+
+## Configuration Architecture
+
+### Single Source of Truth
+```
+config.py
+├── Global Settings (institution, language, currency)
+├── Environment Configuration (Snowflake connections)
+├── Content Generation (LLM settings)
+├── Phase Configuration (scenarios, requirements)
+├── Data Scale Definitions (mini, demo, full)
+├── Date Ranges (dynamically calculated)
+├── Key Entities (demo focal points)
+├── Market Themes (content generation themes)
+├── External Providers (marketplace attributions)
+└── Helper Functions (validation, retrieval)
+```
+
+## Usage Patterns
+
+### Basic Import and Access
+```python
+import config
+
+# Direct access to constants
+database = config.SNOWFLAKE['database']
+institution = config.INSTITUTION_NAME
+currency = config.CURRENCY
+
+# Using helper functions
+snowflake_config = config.get_snowflake_config(connection_name)
+scale_config = config.get_scale_config(scale or 'demo')
+scenario_config = config.get_scenario_config('aml_kyc_edd')
+```
+
+### SQL Query Patterns
+```python
+# ✅ CORRECT: Clean f-string usage
+session.sql(f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES AS
+    SELECT * FROM source_table
+""").collect()
+
+# ✅ CORRECT: LLM model with quotes
+session.sql(f"""
+    SELECT SNOWFLAKE.CORTEX.COMPLETE(
+        '{config.LLM_MODEL}',  -- Note: quotes needed for SQL string
+        prompt_text
+    ) AS generated_content
+""").collect()
+
+# ❌ WRONG: Redundant f-string
+session.sql(f"""
+    CREATE TABLE f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+""")
+
+# ❌ WRONG: Hardcoded values
+session.sql("CREATE TABLE BANK_AI_DEMO.RAW_DATA.ENTITIES")
+```
+
+### DataFrame Operations
+```python
+# ✅ CORRECT: Using config for table names
+df.write.save_as_table(
+    f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES",
+    mode="overwrite"
+)
+
+# ✅ CORRECT: Reading with config
+entities_df = session.table(
+    f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+)
+```
+
+## Extension Patterns
+
+### Adding New Configuration Sections
+```python
+# In config.py - follow the established pattern
+
+# =============================================================================
+# NEW FEATURE CONFIGURATION
+# =============================================================================
+
+NEW_FEATURE = {
+    "setting1": "value1",
+    "setting2": "value2",
+    "nested": {
+        "option1": True,
+        "option2": 100
+    }
+}
+
+# Add corresponding helper if needed
+def get_new_feature_config(feature_type: str = None) -> Dict[str, Any]:
+    """Get configuration for new feature."""
+    if feature_type and feature_type not in NEW_FEATURE:
+        raise ValueError(f"Invalid feature type: {feature_type}")
+    return NEW_FEATURE.get(feature_type, NEW_FEATURE)
+```
+
+### Adding New Scales
+```python
+# Extend SCALES dictionary in config.py
+SCALES = {
+    # ... existing scales ...
+    "full": {
+        "description": "Full production scale for stress testing",
+        "entities": 2000,
+        "entity_relationships": 5000,
+        "customers": 800,
+        "transactions": 200000,
+        "compliance_documents": 3000,
+        "loan_applications": 100,
+        "historical_loans": 6000,
+        "news_articles": 5000
+    }
+}
+```
+
+### Adding New Scenarios
+```python
+# Extend SCENARIOS dictionary in config.py
+SCENARIOS = {
+    # ... existing scenarios ...
+    "portfolio_risk": {
+        "name": "Portfolio Risk Analysis",
+        "description": "AI-powered portfolio risk assessment",
+        "required_data": ["portfolios", "positions", "market_data"],
+        "required_services": ["portfolio_search_svc"],
+        "required_views": ["portfolio_risk_sv"]
+    }
+}
+```
+
+### Adding External Providers
+```python
+# Extend EXTERNAL_DATA_PROVIDERS in config.py
+EXTERNAL_DATA_PROVIDERS["esg_data"] = {
+    "msci": {
+        "name": "MSCI ESG Ratings",
+        "attribution": "MSCI ESG Ratings via Snowflake Marketplace",
+        "data_types": ["esg_scores", "carbon_intensity", "controversy_scores"],
+        "coverage": "Global public companies",
+        "update_frequency": "monthly"
+    }
+}
+```
+
+## Validation Patterns
+
+### Configuration Validation
+```python
+# Pattern for validating configuration before use
+def validate_configuration():
+    """Validate configuration completeness and consistency."""
+    import config
+    
+    # Check required sections exist
+    required_sections = ['SNOWFLAKE', 'SCALES', 'SCENARIOS']
+    for section in required_sections:
+        if not hasattr(config, section):
+            raise ValueError(f"Missing required configuration section: {section}")
+    
+    # Validate scales have required fields
+    for scale_name, scale_config in config.SCALES.items():
+        required_fields = ['entities', 'transactions']
+        for field in required_fields:
+            if field not in scale_config:
+                raise ValueError(f"Scale '{scale_name}' missing required field: {field}")
+    
+    # Validate scenario dependencies
+    for scenario_name, scenario_config in config.SCENARIOS.items():
+        if 'required_data' not in scenario_config:
+            raise ValueError(f"Scenario '{scenario_name}' missing required_data")
+```
+
+### Environment-Specific Configuration
+```python
+# Pattern for environment-aware configuration
+def get_environment_config(env: str = None) -> Dict[str, Any]:
+    """Get environment-specific configuration."""
+    import os
+    import config
+    
+    env = env or os.getenv('ENVIRONMENT', 'development')
+    
+    if env == 'development':
+        return {
+            'scale': 'mini',
+            'debug': True,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    elif env == 'demo':
+        return {
+            'scale': 'demo',
+            'debug': False,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    elif env == 'production':
+        return {
+            'scale': 'full',
+            'debug': False,
+            'warehouse': config.SNOWFLAKE['compute_warehouse']
+        }
+    else:
+        raise ValueError(f"Unknown environment: {env}")
+```
+
+## Dynamic Configuration Patterns
+
+### Date Range Handling
+```python
+# Note how config.py calculates dates dynamically
+# This ensures data is always relative to current date
+
+# Using dynamic dates
+from datetime import datetime, timedelta
+
+current_date = config.DATE_RANGES['current_date']
+historical_start = config.DATE_RANGES['historical_start']
+
+# Pattern for date-based queries
+session.sql(f"""
+    SELECT * FROM transactions
+    WHERE transaction_date BETWEEN '{historical_start}' AND '{current_date}'
+""")
+```
+
+### Scale-Based Processing
+```python
+# Pattern for scale-aware processing
+def process_data(session: Session, scale: str = None):
+    """Process data based on configured scale."""
+    scale_config = config.get_scale_config(scale)
+    
+    # Adjust processing based on scale
+    if scale_config['entities'] > 1000:
+        # Use batch processing for large scales
+        batch_size = 1000
+    else:
+        # Process all at once for small scales
+        batch_size = scale_config['entities']
+    
+    logger.info(f"Processing {scale_config['entities']} entities in batches of {batch_size}")
+```
+
+## Anti-Patterns to Avoid
+
+### ❌ Hardcoding Configuration Values
+```python
+# WRONG - Don't hardcode values
+DATABASE = "BANK_AI_DEMO"  # Don't do this in your code!
+
+# CORRECT - Always use config
+database = config.SNOWFLAKE['database']
+```
+
+### ❌ Modifying Configuration at Runtime
+```python
+# WRONG - Don't modify config values
+config.SNOWFLAKE['database'] = "SOME_OTHER_DB"  # Never do this!
+
+# CORRECT - Use a copy if needed
+my_config = config.SNOWFLAKE.copy()
+my_config['database'] = "SOME_OTHER_DB"
+```
+
+### ❌ Duplicating Configuration
+```python
+# WRONG - Don't duplicate config values in other files
+# some_module.py
+INSTITUTION_NAME = "Glacier First Bank"  # Don't duplicate!
+
+# CORRECT - Import from config
+from config import INSTITUTION_NAME
+```
+
+### ❌ String Concatenation for Paths
+```python
+# WRONG - Error-prone string concatenation
+table = config.SNOWFLAKE['database'] + ".RAW_DATA.ENTITIES"
+
+# CORRECT - Use f-strings
+table = f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES"
+```
+
+## Testing Configuration Changes
+
+### Unit Testing Pattern
+```python
+def test_new_config_section():
+    """Test new configuration section is properly structured."""
+    import config
+    
+    # Test section exists
+    assert hasattr(config, 'NEW_FEATURE')
+    
+    # Test required fields
+    assert 'setting1' in config.NEW_FEATURE
+    assert isinstance(config.NEW_FEATURE['nested'], dict)
+    
+    # Test helper function
+    feature_config = config.get_new_feature_config()
+    assert feature_config is not None
+```
+
+### Integration Testing Pattern
+```python
+def test_config_with_snowflake(session: Session):
+    """Test configuration works with Snowflake."""
+    import config
+    
+    # Test database exists
+    result = session.sql(f"SHOW DATABASES LIKE '{config.SNOWFLAKE['database']}'").collect()
+    assert len(result) > 0
+    
+    # Test warehouse exists
+    result = session.sql(f"SHOW WAREHOUSES LIKE '{config.SNOWFLAKE['compute_warehouse']}'").collect()
+    assert len(result) > 0
+```
+
+## Configuration Documentation Standards
+
+When adding new configuration:
+
+1. **Use Clear Section Headers**
+   ```python
+   # =============================================================================
+   # DESCRIPTIVE SECTION NAME
+   # =============================================================================
+   ```
+
+2. **Document the Purpose**
+   ```python
+   # Configuration for risk threshold monitoring
+   # Used by: risk_analysis.py, portfolio_monitor.py
+   ```
+
+3. **Provide Usage Examples**
+   ```python
+   RISK_THRESHOLDS = {
+       "high": 0.8,    # Triggers immediate review
+       "medium": 0.5,  # Requires enhanced monitoring
+       "low": 0.2      # Standard monitoring
+   }
+   ```
+
+4. **Include Validation Helper**
+   ```python
+   def validate_risk_threshold(threshold: float) -> bool:
+       """Validate risk threshold is within acceptable range."""
+       return 0.0 <= threshold <= 1.0
+   ```
+
+## Best Practices Summary
+
+1. **Single Source of Truth**: All configuration values in `config.py`
+2. **No Duplication**: Never copy config values to other files
+3. **Use Helpers**: Leverage provided helper functions
+4. **Validate Early**: Check configuration validity at startup
+5. **Document Changes**: Clear comments for new configuration
+6. **Test Thoroughly**: Unit and integration tests for new config
+7. **Environment Aware**: Support different environments properly
+8. **Type Safety**: Use type hints in configuration functions

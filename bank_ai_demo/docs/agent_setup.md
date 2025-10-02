@@ -1,6 +1,6 @@
-# Glacier First Bank AI Intelligence Demo - Agent Setup Instructions
+# Agent Configuration Guide
 
-This document provides complete instructions for configuring the AI agents in Snowflake Intelligence for the Glacier First Bank demo.
+This document provides step-by-step instructions for configuring the AI agents in Snowflake Intelligence and validating their functionality.
 
 ## Prerequisites
 
@@ -34,13 +34,13 @@ Each agent combines multiple tools for sophisticated cross-domain analysis and m
 #### Tool 1: AML Risk Analysis
 **Tool Name**: `aml_risk_analysis`  
 **Type**: Cortex Analyst  
-**Semantic View**: `BANK_AI_DEMO.SEMANTIC_LAYER.aml_kyc_risk_sv`  
+**Semantic View**: `BANK_AI_DEMO.AI.aml_kyc_risk_sv`  
 **Description**: Analyze customer risk profiles, AML flags, KYC status, and due diligence requirements. Query for high-risk customers, overdue reviews, and suspicious flag patterns using natural language.
 
 #### Tool 2: Compliance Documents Search
 **Tool Name**: `compliance_docs_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.compliance_docs_search_svc`  
 **ID Column**: `ID`  
 **Title Column**: `TITLE`  
 **Attributes**: `ID`, `TITLE`, `CONTENT`, `ENTITY_NAME`, `DOC_TYPE`, `PUBLISH_DATE`, `RISK_SIGNAL`  
@@ -49,7 +49,7 @@ Each agent combines multiple tools for sophisticated cross-domain analysis and m
 #### Tool 3: News & Adverse Media Search
 **Tool Name**: `news_adverse_media_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.news_research_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.news_research_search_svc`  
 **ID Column**: `ID`  
 **Title Column**: `TITLE`  
 **Attributes**: `ID`, `TITLE`, `CONTENT`, `ENTITY_NAME`, `ARTICLE_TYPE`, `PUBLISH_DATE`, `SENTIMENT_SCORE`, `SOURCE`  
@@ -58,7 +58,7 @@ Each agent combines multiple tools for sophisticated cross-domain analysis and m
 #### Tool 4: Document Templates Search
 **Tool Name**: `document_templates_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.document_templates_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.document_templates_search_svc`  
 **ID Column**: `TEMPLATE_ID`  
 **Title Column**: `TEMPLATE_NAME`  
 **Attributes**: `TEMPLATE_ID`, `TEMPLATE_NAME`, `TEMPLATE_TYPE`, `SCENARIO`, `USE_CASE`, `REGULATORY_FRAMEWORK`, `REQUIRED_VARIABLES`  
@@ -68,7 +68,7 @@ Each agent combines multiple tools for sophisticated cross-domain analysis and m
 **Tool Name**: `pdf_report_generator`  
 **Type**: Custom Tool  
 **Resource Type**: Procedure  
-**Custom Tool Identifier**: `BANK_AI_DEMO.AGENT_FRAMEWORK.GENERATE_PDF_REPORT`  
+**Custom Tool Identifier**: `BANK_AI_DEMO.AI.GENERATE_PDF_REPORT`  
 **Warehouse**: `BANK_AI_DEMO_COMPUTE_WH`  
 **Parameters**:
 - `ARG1` (VARCHAR, Required): The complete analysis content formatted in markdown. Include headers (##), bullet points, tables, and key findings. This will be the main body of the PDF report.
@@ -113,6 +113,28 @@ Specific Logic:
 - Always cross-reference structured data findings with document evidence for complete analysis
 ```
 
+### Quick Validation Tests
+
+Test the AML Officer Agent with these simple queries:
+
+1. **Risk Assessment Test**:
+   ```
+   "Show me all HIGH risk customers who require EDD and have outstanding AML flags."
+   ```
+   **Expected**: Should identify high-risk customers with REQUIRES_EDD status.
+
+2. **Comprehensive EDD Test**:
+   ```
+   "Compile an EDD on Global Trade Ventures S.A.: risk profile, structure, UBOs, adverse media."
+   ```
+   **Expected**: Should discover €5M deposit, identify Marcus Weber and Elena Rossi as UBOs, and find Elena Rossi adverse media.
+
+3. **PDF Generation Test**:
+   ```
+   "Generate a PDF report for Global Trade Ventures S.A. EDD analysis."
+   ```
+   **Expected**: Should perform EDD analysis AND generate PDF with formatted response.
+
 ---
 
 ## Agent 2: Credit Analyst Agent
@@ -129,7 +151,7 @@ Specific Logic:
 #### Tool 1: Credit Policy Search
 **Tool Name**: `credit_policy_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.credit_policy_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.credit_policy_search_svc`  
 **ID Column**: `ID`  
 **Title Column**: `TITLE`  
 **Attributes**: `ID`, `TITLE`, `CONTENT`, `POLICY_SECTION`, `EFFECTIVE_DATE`  
@@ -138,7 +160,7 @@ Specific Logic:
 #### Tool 2: Loan Documents Search
 **Tool Name**: `loan_documents_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.loan_documents_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.loan_documents_search_svc`  
 **ID Column**: `ID`  
 **Title Column**: `TITLE`  
 **Attributes**: `ID`, `TITLE`, `CONTENT`, `APPLICANT_NAME`, `DOC_TYPE`, `UPLOAD_DATE`, `DOCUMENT_SECTION`  
@@ -147,7 +169,7 @@ Specific Logic:
 #### Tool 3: Document Templates Search
 **Tool Name**: `document_templates_search`  
 **Type**: Cortex Search  
-**Service**: `BANK_AI_DEMO.AGENT_FRAMEWORK.document_templates_search_svc`  
+**Service**: `BANK_AI_DEMO.AI.document_templates_search_svc`  
 **ID Column**: `TEMPLATE_ID`  
 **Title Column**: `TEMPLATE_NAME`  
 **Attributes**: `TEMPLATE_ID`, `TEMPLATE_NAME`, `TEMPLATE_TYPE`, `SCENARIO`, `USE_CASE`, `REGULATORY_FRAMEWORK`, `REQUIRED_VARIABLES`  
@@ -157,7 +179,7 @@ Specific Logic:
 **Tool Name**: `pdf_report_generator`  
 **Type**: Custom Tool  
 **Resource Type**: Procedure  
-**Custom Tool Identifier**: `BANK_AI_DEMO.AGENT_FRAMEWORK.GENERATE_PDF_REPORT`  
+**Custom Tool Identifier**: `BANK_AI_DEMO.AI.GENERATE_PDF_REPORT`  
 **Warehouse**: `BANK_AI_DEMO_COMPUTE_WH`  
 **Parameters**:
 - `REPORT_CONTENT` (VARCHAR, Required): The complete credit analysis formatted in markdown. Include financial ratios, policy compliance status, risk assessment, and recommendations. Use tables for financial metrics and bullet points for key findings.
@@ -201,77 +223,15 @@ Specific Logic:
 - Always provide specific policy references and effective dates for threshold breaches.
 ```
 
----
+### Quick Validation Tests
 
-## Policy Thresholds Reference
-
-Configure these thresholds in your agent knowledge or ensure they're available in policy documents:
-
-### Credit Risk Thresholds
-
-**Debt Service Coverage Ratio (DSCR)**:
-- Warning: < 1.25
-- Breach: < 1.10
-- Policy Reference: Mid-Market Lending Policy v3.2, Section 4.1.2
-
-**Debt-to-Equity Ratio**:
-- Warning: > 3.0
-- Breach: > 3.5
-- Policy Reference: Mid-Market Lending Policy v3.2, Section 4.1.1
-
-**Current Ratio**:
-- Warning: < 1.20
-- Breach: < 1.10
-- Policy Reference: Mid-Market Lending Policy v3.2, Section 4.1.3
-
-**Client Concentration**:
-- Warning: > 60%
-- Breach: > 70%
-- Policy Reference: Commercial Credit Risk Policy v2.1, Section 5.3.1
-
----
-
-## Setup Verification
-
-### Test AML Officer Agent
-
-1. **Risk Assessment Test**:
-   ```
-   "Show me all HIGH risk customers who require EDD and have outstanding AML flags."
-   ```
-   **Expected**: Should use Cortex Analyst to identify high-risk customers with REQUIRES_EDD status and AML flags > 0.
-
-2. **Comprehensive EDD Test**:
-   ```
-   "Compile an EDD on Global Trade Ventures S.A.: risk profile, structure, UBOs, adverse media."
-   ```
-   **Expected**: Should start with risk analysis, then find onboarding document, identify Marcus Weber and Elena Rossi as UBOs, and locate Elena Rossi adverse media from both compliance docs and news sources. Should NOT generate PDF (no explicit PDF request).
-
-3. **PDF Generation Test**:
-   ```
-   "Generate a PDF report for Global Trade Ventures S.A. EDD analysis."
-   ```
-   **Expected**: Should perform complete EDD analysis AND generate PDF with formatted response: "📄 [AML Report - Global Trade Ventures S.A.](url) - Professional aml analysis report generated successfully."
-
-4. **Adverse Media Screening Test**:
-   ```
-   "Screen for any adverse media or regulatory investigations involving Italian Transport Ministry connections."
-   ```
-   **Expected**: Should search both compliance documents and news/research for political scandals and regulatory content.
-
-5. **Document Analysis Test**:
-   ```
-   "Summarise the specific allegations in any adverse media documents related to Italian political exposure."
-   ```
-   **Expected**: Should retrieve specific documents and provide detailed summary of allegations.
-
-### Test Credit Analyst Agent
+Test the Credit Analyst Agent with these simple queries:
 
 1. **Policy Breach Analysis Test**:
    ```
    "Analyse Innovate GmbH's credit application and highlight any policy breaches or risk factors."
    ```
-   **Expected**: Should flag DSCR breach (1.15 < 1.25), D/E warning (3.2 > 3.0), and concentration breach (72% > 70%).
+   **Expected**: Should flag DSCR breach (1.15), D/E warning (3.2), and concentration breach (72%).
 
 2. **Policy Document Search Test**:
    ```
@@ -287,148 +247,15 @@ Configure these thresholds in your agent knowledge or ensure they're available i
 
 ---
 
-## Troubleshooting
+## Setup Complete
 
-### Common Issues
-
-**1. Search Services Not Working**
-- Verify search services exist: `SHOW CORTEX SEARCH SERVICES IN BANK_AI_DEMO.AGENT_FRAMEWORK;`
-- Check service status and refresh if needed
-- Ensure BANK_AI_DEMO_SEARCH_WH warehouse is running
-
-**2. No Search Results**
-- Verify demo data was loaded into document tables
-- Check table names match search service configuration
-- Test search services manually with SEARCH_PREVIEW function
-
-**3. Policy Threshold Errors**
-- Ensure credit policy documents contain exact threshold values
-- Verify policy document IDs and titles match expected format
-- Check effective dates are recent
-
-**4. Agent Response Issues**
-- Review agent instructions for typos or formatting errors
-- Ensure tool descriptions match actual service names
-- Verify warehouse permissions for agent execution
-
-### Validation Queries
-
-**Check Demo Data**:
-```sql
--- Verify key entities exist
-SELECT entity_name, country_code, esg_rating 
-FROM BANK_AI_DEMO.RAW_DATA.ENTITIES 
-WHERE entity_id IN ('GTV_SA_001', 'INN_DE_001', 'NSC_UK_001');
-
--- Verify compliance documents
-SELECT title, entity_name, doc_type, risk_signal 
-FROM BANK_AI_DEMO.RAW_DATA.COMPLIANCE_DOCUMENTS;
-
--- Verify loan application with policy breaches
-SELECT applicant_name, debt_service_coverage_ratio, debt_to_equity_ratio, 
-       single_client_concentration_pct 
-FROM BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS 
-WHERE applicant_name = 'Innovate GmbH';
-```
-
-**Test Search Services**:
-```sql
--- Test compliance search
-SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    'BANK_AI_DEMO.AGENT_FRAMEWORK.compliance_docs_search_svc',
-    '{"query": "Global Trade Ventures beneficial ownership", "limit": 2}'
-);
-
--- Test policy search
-SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-    'BANK_AI_DEMO.AGENT_FRAMEWORK.credit_policy_search_svc',
-    '{"query": "debt service coverage ratio threshold", "limit": 2}'
-);
-```
-
----
-
-## Cross-Domain Intelligence Patterns
-
-Both agents support sophisticated cross-domain analysis through shared semantic views and entity relationships:
-
-### Shared Vendor Risk Analysis
-
-**Query**: "How does Northern Supply Chain Ltd affect our overall portfolio risk?"
-
-**Expected Workflow**:
-1. Identify all clients with Northern Supply Chain relationships
-2. Cross-reference with financial exposure data
-3. Check compliance status across affected clients
-4. Synthesize portfolio concentration and contagion risk
-5. Provide mitigation recommendations
-
-### Contradictory Evidence Synthesis
-
-**Query**: "Assess Innovate GmbH considering conflicting financial and news signals"
-
-**Expected Workflow**:
-1. Analyze financial strength from loan application data
-2. Search news and research for sentiment analysis
-3. Identify specific contradictions between data sources
-4. Weigh evidence based on source reliability and recency
-5. Provide balanced assessment with uncertainty acknowledgment
-
-### Multi-Step Reasoning Documentation
-
-All agents must provide transparent reasoning trails:
-
-1. **Evidence Gathering**: List all data sources accessed
-2. **Analysis Steps**: Document analytical methodology
-3. **Synthesis Logic**: Explain how conflicting evidence was resolved
-4. **Risk Assessment**: Justify final conclusions with supporting evidence
-5. **Audit Trail**: Provide complete source attribution and timestamps
-
----
-
-## Quality Standards
-
-### Response Quality Requirements
-
-- **Professional Tone**: Use en-GB banking terminology and formal language
-- **Source Attribution**: Always cite document IDs, titles, and dates
-- **Quantitative Precision**: Include currency, time periods, and sample sizes
-- **Risk Flagging**: Use consistent severity indicators (⚠️/🚨)
-- **Audit Transparency**: Offer detailed audit summaries on request
-
-### Performance Targets
-
-- **Simple Queries**: < 5 seconds response time
-- **Complex Analysis**: < 15 seconds for multi-tool workflows
-- **Cross-Domain Intelligence**: < 20 seconds for ecosystem analysis
-- **Document Synthesis**: < 10 seconds for business plan summaries
-
-### Validation Criteria
-
-- **Accuracy**: All calculations and data references must be correct
-- **Completeness**: Address all aspects of user queries
-- **Consistency**: Maintain coherent risk assessments across domains
-- **Auditability**: Provide complete reasoning transparency
-- **Business Relevance**: Focus on actionable insights for decision-making
-
----
-
-## Support Information
-
-**Database**: BANK_AI_DEMO  
-**Compute Warehouse**: BANK_AI_DEMO_COMPUTE_WH  
-**Search Warehouse**: BANK_AI_DEMO_SEARCH_WH  
-**Connection**: IE_DEMO65_CODE_USER  
+Both agents are now configured and ready for use. Test them with the validation queries above to ensure proper functionality.
 
 **Key Demo Entities**:
-- Global Trade Ventures S.A. (Luxembourg) - AML subject with PEP connections
-- Innovate GmbH (Germany) - Credit applicant with policy breaches  
-- Northern Supply Chain Ltd (UK) - Shared vendor for cross-domain risk
+- **Global Trade Ventures S.A.** (Luxembourg) - AML subject with PEP connections
+- **Innovate GmbH** (Germany) - Credit applicant with policy breaches  
+- **Northern Supply Chain Ltd** (UK) - Shared vendor for cross-domain risk
 
-**Demo Data Scale**: ~500 entities, 2,000 documents, 50,000 transactions
-
-For technical support or questions about the demo setup, refer to the main README.md and DEPLOYMENT_GUIDE.md files.
+For technical support or deployment questions, refer to the main README.md file.
 
 ---
-
-**🎯 Ready for Demo!** Once both agents are configured, test with the provided verification queries to ensure everything is working correctly.

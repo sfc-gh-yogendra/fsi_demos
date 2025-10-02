@@ -1,0 +1,711 @@
+---
+description: Troubleshooting instructions and best practices
+alwaysApply: false
+---
+# Troubleshooting Guide - Glacier First Bank Demo
+
+## Overview
+This guide helps diagnose and resolve common issues when developing and deploying the Glacier First Bank demo.
+
+## Deployment Issues
+
+### Issue: "Database does not exist"
+**Symptoms**: Error when running any command that references BANK_AI_DEMO database
+
+**Diagnosis**:
+```sql
+-- Check if database exists
+SHOW DATABASES LIKE 'BANK_AI_DEMO';
+```
+
+**Solutions**:
+1. Run setup command first:
+   ```bash
+   python main.py setup --connection your_connection
+   ```
+2. Verify you have CREATE DATABASE privileges
+3. Check connection has access to create databases
+
+### Issue: "Table not found"
+**Symptoms**: Semantic views or search services fail with table not found errors
+
+**Common Causes**:
+- Wrong deployment order (tried to create views before tables)
+- Data generation failed or was skipped
+- Wrong database/schema in config
+
+**Diagnosis**:
+```sql
+-- List all tables in RAW_DATA schema
+SHOW TABLES IN BANK_AI_DEMO.RAW_DATA;
+
+-- Check specific table
+SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.ENTITIES;
+```
+
+**Solutions**:
+1. Follow correct deployment order:
+   ```bash
+   # 1. Setup infrastructure
+   python main.py setup --connection your_connection
+   
+   # 2. Generate structured data FIRST
+   python main.py generate-structured --scale demo
+   
+   # 3. Generate unstructured data
+   python main.py generate-unstructured --scale demo
+   
+   # 4. Create semantic views (requires tables)
+   python main.py create-semantic-views
+   
+   # 5. Create search services (requires documents)
+   python main.py create-search-services
+   ```
+
+### Issue: "Warehouse does not exist"
+**Symptoms**: Search service creation fails with warehouse error
+
+**Diagnosis**:
+```sql
+-- Check warehouses
+SHOW WAREHOUSES;
+
+-- Check specific warehouse
+SHOW WAREHOUSES LIKE 'BANK_AI_DEMO_SEARCH_WH';
+```
+
+**Solutions**:
+1. Ensure setup was run: `python main.py setup`
+2. Check warehouse names in config.py match deployment
+3. Verify CREATE WAREHOUSE privileges
+
+## Connection Issues
+
+### Issue: "Connection refused" or "Invalid connection"
+**Symptoms**: Cannot establish Snowflake session
+
+**Diagnosis**:
+```python
+# Test connection configuration
+import snowflake.connector
+try:
+    conn = snowflake.connector.connect(
+        connection_name='your_connection'
+    )
+    print("Connection successful")
+except Exception as e:
+    print(f"Connection failed: {e}")
+```
+
+**Solutions**:
+1. Verify connection name:
+   ```bash
+   # Check if CONNECTION_NAME is set
+   echo $CONNECTION_NAME
+   
+   # Or provide explicitly
+   python main.py validate --connection your_connection
+   ```
+2. Check Snowflake config file (~/.snowflake/connections.toml)
+3. Verify network connectivity to Snowflake
+4. Check authentication method (password, SSO, key-pair)
+
+### Issue: "Authentication failed"
+**Symptoms**: Connection fails with authentication error
+
+**Solutions**:
+1. For password auth: Check credentials in connections.toml
+2. For SSO: Ensure browser is available for authentication
+3. For key-pair: Verify private key path and passphrase
+4. Check account identifier format (org-account)
+
+## Data Generation Issues
+
+### Issue: "LLM generation timeout"
+**Symptoms**: Document generation hangs or times out
+
+**Diagnosis**:
+```sql
+-- Check Cortex availability
+SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3.1-70b', 'test');
+
+-- Check query history for errors
+SELECT query_text, error_message 
+FROM TABLE(information_schema.query_history())
+WHERE error_message IS NOT NULL
+ORDER BY start_time DESC
+LIMIT 10;
+```
+
+**Solutions**:
+1. Use retry logic (already implemented in patterns)
+2. Reduce batch size for generation
+3. Check Cortex service availability in your region
+4. Use mini scale for testing: `--scale mini`
+
+### Issue: "Empty tables after generation"
+**Symptoms**: Tables exist but contain no data
+
+**Diagnosis**:
+```python
+# Check generation logs
+grep "Generated" glacier_demo.log
+
+# Verify in Snowflake
+session.sql("SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.ENTITIES").collect()
+```
+
+**Solutions**:
+1. Check error logs for generation failures
+2. Verify LLM model is available
+3. Check if save_as_table succeeded
+4. Try with mini scale first
+
+## Search Service Issues
+
+### Issue: "No results from search"
+**Symptoms**: Search queries return empty results
+
+**Diagnosis**:
+```sql
+-- Check if service exists
+SHOW CORTEX SEARCH SERVICES IN BANK_AI_DEMO.AGENT_FRAMEWORK;
+
+-- Test basic search
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'compliance_docs_search_svc',
+    '{"query": "test", "limit": 1}'
+);
+
+-- Check source table
+SELECT COUNT(*) FROM BANK_AI_DEMO.CURATED_DATA.COMPLIANCE_DOCUMENTS;
+```
+
+**Solutions**:
+1. Verify documents were generated and processed
+2. Check search service created successfully
+3. Ensure content column is not empty
+4. Verify attributes match between service and query
+
+### Issue: "Search service creation fails"
+**Symptoms**: CREATE CORTEX SEARCH SERVICE errors
+
+**Common Error Messages and Solutions**:
+
+**"Missing option WAREHOUSE"**:
+```sql
+-- Add warehouse to service definition
+CREATE OR REPLACE CORTEX SEARCH SERVICE service_name
+    ON content_column
+    ATTRIBUTES attr1, attr2
+    WAREHOUSE = BANK_AI_DEMO_SEARCH_WH  -- Add this
+    TARGET_LAG = '5 minutes'
+    AS SELECT ...
+```
+
+**"Invalid identifier"**:
+- Ensure ATTRIBUTES match SELECT column names exactly
+- Check for typos in column references
+- Verify table exists and has expected columns
+
+## Semantic View Issues
+
+### Issue: "Invalid relationship definition"
+**Symptoms**: Semantic view creation fails with relationship error
+
+**Common Patterns**:
+```sql
+-- ❌ WRONG: Backwards relationship
+relationships_to_entities AS entities(ENTITY_ID) REFERENCES relationships(PRIMARY_ENTITY_ID)
+
+-- ✅ CORRECT: Foreign key references primary key
+relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
+```
+
+**Solutions**:
+1. Ensure foreign key column references primary key
+2. Check table aliases are defined in TABLES section
+3. Verify column names exist in referenced tables
+
+### Issue: "Semantic view query returns no results"
+**Symptoms**: SEMANTIC_VIEW queries return empty
+
+**Diagnosis**:
+```sql
+-- Test underlying tables directly
+SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS;
+
+-- Test simple semantic view query
+SELECT * FROM SEMANTIC_VIEW(
+    BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
+    METRICS requested_amount
+    DIMENSIONS applicant_name
+) LIMIT 5;
+```
+
+**Solutions**:
+1. Verify underlying tables have data
+2. Check relationships are correctly defined
+3. Test with simpler queries first
+4. Verify metrics use proper aggregation
+
+## Agent Configuration Issues
+
+### Issue: "Tool not found"
+**Symptoms**: Agent fails to execute with tool not found error
+
+**Solutions**:
+1. Verify tool name matches exactly (case-sensitive)
+2. Check search service or semantic view exists
+3. Ensure agent has permission to access tools
+4. Validate tool configuration in Snowsight
+
+### Issue: "Agent returns generic responses"
+**Symptoms**: Agent doesn't use tools or data properly
+
+**Solutions**:
+1. Check planning instructions are specific
+2. Verify tools are properly configured
+3. Test tools independently first
+4. Review agent logs for tool execution
+
+## Performance Issues
+
+### Issue: "Queries running slowly"
+**Symptoms**: Long response times from agents or queries
+
+**Diagnosis**:
+```sql
+-- Check query profile
+SELECT query_id, total_elapsed_time, bytes_scanned
+FROM TABLE(information_schema.query_history())
+WHERE query_text LIKE '%SEMANTIC_VIEW%'
+ORDER BY start_time DESC
+LIMIT 10;
+
+-- Check warehouse size
+SHOW WAREHOUSES LIKE 'BANK_AI_DEMO%';
+```
+
+**Solutions**:
+1. Use appropriate warehouse size
+2. Ensure statistics are up to date
+3. Check for missing indexes/clustering
+4. Use materialized views for complex aggregations
+5. Reduce data scale for demos
+
+## Debugging Workflow
+
+### 1. Check Logs
+```bash
+# Application logs
+tail -f glacier_demo.log
+
+# Search for errors
+grep ERROR glacier_demo.log
+grep WARN glacier_demo.log
+```
+
+### 2. Query History
+```sql
+-- Recent failed queries
+SELECT query_text, error_message, start_time
+FROM TABLE(information_schema.query_history())
+WHERE error_message IS NOT NULL
+  AND start_time > DATEADD('hour', -1, CURRENT_TIMESTAMP())
+ORDER BY start_time DESC;
+```
+
+### 3. Object Dependencies
+```sql
+-- Check object dependencies
+SELECT *
+FROM TABLE(GET_OBJECT_REFERENCES(
+    DATABASE_NAME => 'BANK_AI_DEMO',
+    SCHEMA_NAME => 'SEMANTIC_LAYER',
+    OBJECT_NAME => 'credit_risk_sv'
+));
+```
+
+### 4. Validation Scripts
+```bash
+# Run validation to check setup
+python main.py validate --verbose
+
+# Test specific components
+python tests/test_scenarios.py -v
+```
+
+## Prevention Best Practices
+
+1. **Always follow deployment order**
+2. **Test with mini scale first**
+3. **Check prerequisites before each step**
+4. **Use verbose logging during development**
+5. **Keep query history for debugging**
+6. **Document any environment-specific issues**
+
+## Getting Help
+
+If issues persist:
+1. Check Snowflake documentation for service-specific errors
+2. Review query history for detailed error messages
+3. Enable debug logging: `export LOG_LEVEL=DEBUG`
+4. Capture and share:
+   - Error messages
+   - Query history
+   - Object definitions
+   - Configuration settings# Troubleshooting Guide - Glacier First Bank Demo
+
+## Overview
+This guide helps diagnose and resolve common issues when developing and deploying the Glacier First Bank demo.
+
+## Deployment Issues
+
+### Issue: "Database does not exist"
+**Symptoms**: Error when running any command that references BANK_AI_DEMO database
+
+**Diagnosis**:
+```sql
+-- Check if database exists
+SHOW DATABASES LIKE 'BANK_AI_DEMO';
+```
+
+**Solutions**:
+1. Run setup command first:
+   ```bash
+   python main.py setup --connection your_connection
+   ```
+2. Verify you have CREATE DATABASE privileges
+3. Check connection has access to create databases
+
+### Issue: "Table not found"
+**Symptoms**: Semantic views or search services fail with table not found errors
+
+**Common Causes**:
+- Wrong deployment order (tried to create views before tables)
+- Data generation failed or was skipped
+- Wrong database/schema in config
+
+**Diagnosis**:
+```sql
+-- List all tables in RAW_DATA schema
+SHOW TABLES IN BANK_AI_DEMO.RAW_DATA;
+
+-- Check specific table
+SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.ENTITIES;
+```
+
+**Solutions**:
+1. Follow correct deployment order:
+   ```bash
+   # 1. Setup infrastructure
+   python main.py setup --connection your_connection
+   
+   # 2. Generate structured data FIRST
+   python main.py generate-structured --scale demo
+   
+   # 3. Generate unstructured data
+   python main.py generate-unstructured --scale demo
+   
+   # 4. Create semantic views (requires tables)
+   python main.py create-semantic-views
+   
+   # 5. Create search services (requires documents)
+   python main.py create-search-services
+   ```
+
+### Issue: "Warehouse does not exist"
+**Symptoms**: Search service creation fails with warehouse error
+
+**Diagnosis**:
+```sql
+-- Check warehouses
+SHOW WAREHOUSES;
+
+-- Check specific warehouse
+SHOW WAREHOUSES LIKE 'BANK_AI_DEMO_SEARCH_WH';
+```
+
+**Solutions**:
+1. Ensure setup was run: `python main.py setup`
+2. Check warehouse names in config.py match deployment
+3. Verify CREATE WAREHOUSE privileges
+
+## Connection Issues
+
+### Issue: "Connection refused" or "Invalid connection"
+**Symptoms**: Cannot establish Snowflake session
+
+**Diagnosis**:
+```python
+# Test connection configuration
+import snowflake.connector
+try:
+    conn = snowflake.connector.connect(
+        connection_name='your_connection'
+    )
+    print("Connection successful")
+except Exception as e:
+    print(f"Connection failed: {e}")
+```
+
+**Solutions**:
+1. Verify connection name:
+   ```bash
+   # Check if CONNECTION_NAME is set
+   echo $CONNECTION_NAME
+   
+   # Or provide explicitly
+   python main.py validate --connection your_connection
+   ```
+2. Check Snowflake config file (~/.snowflake/connections.toml)
+3. Verify network connectivity to Snowflake
+4. Check authentication method (password, SSO, key-pair)
+
+### Issue: "Authentication failed"
+**Symptoms**: Connection fails with authentication error
+
+**Solutions**:
+1. For password auth: Check credentials in connections.toml
+2. For SSO: Ensure browser is available for authentication
+3. For key-pair: Verify private key path and passphrase
+4. Check account identifier format (org-account)
+
+## Data Generation Issues
+
+### Issue: "LLM generation timeout"
+**Symptoms**: Document generation hangs or times out
+
+**Diagnosis**:
+```sql
+-- Check Cortex availability
+SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3.1-70b', 'test');
+
+-- Check query history for errors
+SELECT query_text, error_message 
+FROM TABLE(information_schema.query_history())
+WHERE error_message IS NOT NULL
+ORDER BY start_time DESC
+LIMIT 10;
+```
+
+**Solutions**:
+1. Use retry logic (already implemented in patterns)
+2. Reduce batch size for generation
+3. Check Cortex service availability in your region
+4. Use mini scale for testing: `--scale mini`
+
+### Issue: "Empty tables after generation"
+**Symptoms**: Tables exist but contain no data
+
+**Diagnosis**:
+```python
+# Check generation logs
+grep "Generated" glacier_demo.log
+
+# Verify in Snowflake
+session.sql("SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.ENTITIES").collect()
+```
+
+**Solutions**:
+1. Check error logs for generation failures
+2. Verify LLM model is available
+3. Check if save_as_table succeeded
+4. Try with mini scale first
+
+## Search Service Issues
+
+### Issue: "No results from search"
+**Symptoms**: Search queries return empty results
+
+**Diagnosis**:
+```sql
+-- Check if service exists
+SHOW CORTEX SEARCH SERVICES IN BANK_AI_DEMO.AGENT_FRAMEWORK;
+
+-- Test basic search
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'compliance_docs_search_svc',
+    '{"query": "test", "limit": 1}'
+);
+
+-- Check source table
+SELECT COUNT(*) FROM BANK_AI_DEMO.CURATED_DATA.COMPLIANCE_DOCUMENTS;
+```
+
+**Solutions**:
+1. Verify documents were generated and processed
+2. Check search service created successfully
+3. Ensure content column is not empty
+4. Verify attributes match between service and query
+
+### Issue: "Search service creation fails"
+**Symptoms**: CREATE CORTEX SEARCH SERVICE errors
+
+**Common Error Messages and Solutions**:
+
+**"Missing option WAREHOUSE"**:
+```sql
+-- Add warehouse to service definition
+CREATE OR REPLACE CORTEX SEARCH SERVICE service_name
+    ON content_column
+    ATTRIBUTES attr1, attr2
+    WAREHOUSE = BANK_AI_DEMO_SEARCH_WH  -- Add this
+    TARGET_LAG = '5 minutes'
+    AS SELECT ...
+```
+
+**"Invalid identifier"**:
+- Ensure ATTRIBUTES match SELECT column names exactly
+- Check for typos in column references
+- Verify table exists and has expected columns
+
+## Semantic View Issues
+
+### Issue: "Invalid relationship definition"
+**Symptoms**: Semantic view creation fails with relationship error
+
+**Common Patterns**:
+```sql
+-- ❌ WRONG: Backwards relationship
+relationships_to_entities AS entities(ENTITY_ID) REFERENCES relationships(PRIMARY_ENTITY_ID)
+
+-- ✅ CORRECT: Foreign key references primary key
+relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
+```
+
+**Solutions**:
+1. Ensure foreign key column references primary key
+2. Check table aliases are defined in TABLES section
+3. Verify column names exist in referenced tables
+
+### Issue: "Semantic view query returns no results"
+**Symptoms**: SEMANTIC_VIEW queries return empty
+
+**Diagnosis**:
+```sql
+-- Test underlying tables directly
+SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS;
+
+-- Test simple semantic view query
+SELECT * FROM SEMANTIC_VIEW(
+    BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
+    METRICS requested_amount
+    DIMENSIONS applicant_name
+) LIMIT 5;
+```
+
+**Solutions**:
+1. Verify underlying tables have data
+2. Check relationships are correctly defined
+3. Test with simpler queries first
+4. Verify metrics use proper aggregation
+
+## Agent Configuration Issues
+
+### Issue: "Tool not found"
+**Symptoms**: Agent fails to execute with tool not found error
+
+**Solutions**:
+1. Verify tool name matches exactly (case-sensitive)
+2. Check search service or semantic view exists
+3. Ensure agent has permission to access tools
+4. Validate tool configuration in Snowsight
+
+### Issue: "Agent returns generic responses"
+**Symptoms**: Agent doesn't use tools or data properly
+
+**Solutions**:
+1. Check planning instructions are specific
+2. Verify tools are properly configured
+3. Test tools independently first
+4. Review agent logs for tool execution
+
+## Performance Issues
+
+### Issue: "Queries running slowly"
+**Symptoms**: Long response times from agents or queries
+
+**Diagnosis**:
+```sql
+-- Check query profile
+SELECT query_id, total_elapsed_time, bytes_scanned
+FROM TABLE(information_schema.query_history())
+WHERE query_text LIKE '%SEMANTIC_VIEW%'
+ORDER BY start_time DESC
+LIMIT 10;
+
+-- Check warehouse size
+SHOW WAREHOUSES LIKE 'BANK_AI_DEMO%';
+```
+
+**Solutions**:
+1. Use appropriate warehouse size
+2. Ensure statistics are up to date
+3. Check for missing indexes/clustering
+4. Use materialized views for complex aggregations
+5. Reduce data scale for demos
+
+## Debugging Workflow
+
+### 1. Check Logs
+```bash
+# Application logs
+tail -f glacier_demo.log
+
+# Search for errors
+grep ERROR glacier_demo.log
+grep WARN glacier_demo.log
+```
+
+### 2. Query History
+```sql
+-- Recent failed queries
+SELECT query_text, error_message, start_time
+FROM TABLE(information_schema.query_history())
+WHERE error_message IS NOT NULL
+  AND start_time > DATEADD('hour', -1, CURRENT_TIMESTAMP())
+ORDER BY start_time DESC;
+```
+
+### 3. Object Dependencies
+```sql
+-- Check object dependencies
+SELECT *
+FROM TABLE(GET_OBJECT_REFERENCES(
+    DATABASE_NAME => 'BANK_AI_DEMO',
+    SCHEMA_NAME => 'SEMANTIC_LAYER',
+    OBJECT_NAME => 'credit_risk_sv'
+));
+```
+
+### 4. Validation Scripts
+```bash
+# Run validation to check setup
+python main.py validate --verbose
+
+# Test specific components
+python tests/test_scenarios.py -v
+```
+
+## Prevention Best Practices
+
+1. **Always follow deployment order**
+2. **Test with mini scale first**
+3. **Check prerequisites before each step**
+4. **Use verbose logging during development**
+5. **Keep query history for debugging**
+6. **Document any environment-specific issues**
+
+## Getting Help
+
+If issues persist:
+1. Check Snowflake documentation for service-specific errors
+2. Review query history for detailed error messages
+3. Enable debug logging: `export LOG_LEVEL=DEBUG`
+4. Capture and share:
+   - Error messages
+   - Query history
+   - Object definitions
+   - Configuration settings

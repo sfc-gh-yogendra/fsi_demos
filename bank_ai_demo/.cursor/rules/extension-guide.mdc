@@ -1,0 +1,803 @@
+---
+description: Extending the Glacier First Bank demo with new scenarios, data types, and capabilities instructions and best practices
+alwaysApply: false
+---
+# Extension Guide - Glacier First Bank Demo
+
+## Overview
+This guide provides step-by-step patterns for extending the Glacier First Bank demo with new scenarios, data types, and capabilities.
+
+## Adding New Scenarios
+
+### Step 1: Define Scenario Requirements
+```python
+# In config.py - add to SCENARIOS
+SCENARIOS["portfolio_risk"] = {
+    "name": "Portfolio Risk Analysis",
+    "description": "AI-powered portfolio risk assessment across asset classes",
+    "required_data": [
+        "portfolios",        # New table needed
+        "positions",         # New table needed  
+        "market_data"        # New table needed
+    ],
+    "required_services": [
+        "portfolio_docs_search_svc"  # New search service
+    ],
+    "required_views": [
+        "portfolio_risk_sv"  # New semantic view
+    ]
+}
+```
+
+### Step 2: Create Data Model
+```python
+# Pattern for new entity tables
+def create_portfolio_tables():
+    """Add new tables following established patterns."""
+    
+    # 1. Define in SQL files (not in code)
+    # sql/create_portfolio_tables.sql
+    
+    # 2. Add to generation order
+    GENERATION_ORDER.insert(
+        GENERATION_ORDER.index("transactions"),
+        "portfolios"  # Insert before dependent data
+    )
+    
+    # 3. Add to scale configuration
+    SCALES["demo"]["portfolios"] = 50
+    SCALES["demo"]["positions"] = 5000
+```
+
+### Step 3: Implement Data Generation
+```python
+# In generate_structured.py or new module
+def generate_portfolios(session: Session, scale: str = None) -> None:
+    """Generate portfolio data following standard patterns."""
+    import config
+    
+    scale_config = config.get_scale_config(scale)
+    portfolio_count = scale_config.get("portfolios", 50)
+    
+    # Follow established patterns
+    validate_prerequisites(session, ["entities", "customers"])
+    
+    portfolios = create_portfolio_data(portfolio_count)
+    
+    df = session.create_dataframe(portfolios)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.PORTFOLIOS",
+        mode="overwrite"
+    )
+    
+    logger.info(f"Generated {len(portfolios)} portfolios")
+```
+
+### Step 4: Create Analytics Objects
+```python
+# Pattern for new semantic view
+def create_portfolio_semantic_view():
+    """SQL pattern for semantic view - implement in SQL file."""
+    return """
+    CREATE OR REPLACE SEMANTIC VIEW portfolio_risk_sv
+    TABLES (
+        portfolios, positions, market_data
+    )
+    RELATIONSHIPS (
+        positions_to_portfolios,
+        positions_to_market_data
+    )
+    METRICS (
+        total_value, var_95, sharpe_ratio
+    )
+    DIMENSIONS (
+        portfolio_name, asset_class, currency
+    )
+    """
+```
+
+### Step 5: Configure Agent
+```python
+# Pattern for new agent - implement in Snowsight
+PORTFOLIO_AGENT = {
+    "name": "portfolio_analyst_agent",
+    "tools": [
+        "portfolio_risk_sv_analyst",
+        "portfolio_docs_search"
+    ],
+    "planning": "Use analyst for risk metrics, search for policies"
+}
+```
+
+### Step 6: Create Validation Tests
+```python
+# In tests/test_scenarios.py
+def test_portfolio_scenario():
+    """Validate portfolio scenario end-to-end."""
+    
+    # Test data generation
+    assert table_exists("PORTFOLIOS")
+    assert record_count("PORTFOLIOS") > 0
+    
+    # Test semantic view
+    test_query = """
+    SELECT * FROM SEMANTIC_VIEW(
+        portfolio_risk_sv
+        METRICS total_value
+        DIMENSIONS portfolio_name
+    ) LIMIT 5
+    """
+    assert query_returns_results(test_query)
+    
+    # Test search service
+    assert search_service_exists("portfolio_docs_search_svc")
+    assert search_returns_results("portfolio risk")
+```
+
+## Adding New Data Types
+
+### Document Types
+```python
+# Step 1: Define document type pattern
+NEW_DOCUMENT_TYPE = {
+    "table_name": "ESG_REPORTS_RAW",
+    "corpus_name": "ESG_REPORTS",
+    "linkage_level": "issuer",  # security, issuer, or global
+    "word_count_range": [1000, 2000],
+    "sections": ["summary", "metrics", "initiatives", "targets"]
+}
+
+# Step 2: Add to generation pipeline
+def generate_esg_reports(session: Session, entities: List[Dict]) -> None:
+    """Generate ESG reports following document patterns."""
+    # Follow unstructured data generation pattern
+    pass
+
+# Step 3: Create search service
+def create_esg_search_service():
+    """Pattern for search service - implement in SQL."""
+    return """
+    CREATE CORTEX SEARCH SERVICE esg_search_svc
+    ON content
+    ATTRIBUTES id, title, entity_name, publish_date
+    WAREHOUSE = {search_warehouse}
+    TARGET_LAG = '5 minutes'
+    AS SELECT ...
+    """
+```
+
+### Structured Data Types
+```python
+# Step 1: Define structure
+NEW_METRICS_TABLE = {
+    "primary_key": "METRIC_ID",
+    "foreign_keys": ["ENTITY_ID", "PERIOD_ID"],
+    "measures": ["CARBON_EMISSIONS", "WATER_USAGE", "WASTE_RECYCLED"],
+    "dimensions": ["METRIC_TYPE", "UNIT_OF_MEASURE", "REPORTING_STANDARD"]
+}
+
+# Step 2: Add to configuration
+SCALES["demo"]["esg_metrics"] = 2000
+
+# Step 3: Implement generation
+def generate_esg_metrics(session: Session, scale: str) -> None:
+    """Generate ESG metrics following patterns."""
+    # Ensure entities exist first
+    # Generate time series data
+    # Apply business rules
+    pass
+```
+
+## Adding New External Data Sources
+
+### Step 1: Define Provider
+```python
+# In config.py
+EXTERNAL_DATA_PROVIDERS["alternative_data"] = {
+    "satellite_analytics": {
+        "name": "Satellite Analytics Corp",
+        "attribution": "Satellite Analytics via Snowflake Marketplace",
+        "data_types": ["footfall_traffic", "parking_occupancy", "shipping_activity"],
+        "coverage": "Major commercial locations globally",
+        "update_frequency": "weekly",
+        "schema_pattern": "SAT_ANALYTICS_*"
+    }
+}
+```
+
+### Step 2: Create Attribution Pattern
+```python
+def create_satellite_data_tables():
+    """Pattern for external data simulation."""
+    return """
+    CREATE TABLE SAT_ANALYTICS_FOOTFALL (
+        LOCATION_ID VARCHAR(50),
+        MEASUREMENT_DATE DATE,
+        DAILY_VISITORS INTEGER,
+        CHANGE_VS_BASELINE DECIMAL(5,2),
+        DATA_SOURCE VARCHAR(100) DEFAULT 
+            'Satellite Analytics via Snowflake Marketplace'
+    )
+    """
+```
+
+### Step 3: Generate Realistic Data
+```python
+def generate_satellite_data(session: Session, entities: List[Dict]) -> None:
+    """Generate external data with proper attribution."""
+    
+    # Filter to relevant entities (e.g., retail businesses)
+    retail_entities = [e for e in entities if e['industry'] == 'Retail']
+    
+    # Generate time series with realistic patterns
+    # Include attribution in every record
+    # Follow provider's data characteristics
+    pass
+```
+
+## Adding New Capabilities
+
+### Custom Calculation Tools
+```python
+# Step 1: Define UDF/Stored Procedure
+def create_portfolio_optimizer():
+    """SQL pattern for custom tool."""
+    return """
+    CREATE OR REPLACE FUNCTION PORTFOLIO_OPTIMIZER(
+        portfolio_id VARCHAR,
+        constraints VARIANT
+    )
+    RETURNS VARIANT
+    AS $$
+        -- Optimization logic
+    $$
+    """
+
+# Step 2: Configure as agent tool
+CUSTOM_TOOL_CONFIG = {
+    "name": "portfolio_optimizer",
+    "type": "custom_function",
+    "description": "Optimizes portfolio allocation within constraints",
+    "parameters": {
+        "portfolio_id": "required",
+        "constraints": "optional"
+    }
+}
+```
+
+### Visualization Patterns
+```python
+# Pattern for data prepared for visualization
+def prepare_trend_visualization(metric: str, dimension: str) -> str:
+    """Pattern for visualization-ready queries."""
+    return f"""
+    SELECT 
+        {dimension},
+        DATE_TRUNC('month', period) as month,
+        AVG({metric}) as avg_value,
+        MIN({metric}) as min_value,
+        MAX({metric}) as max_value,
+        COUNT(*) as data_points
+    FROM aggregated_metrics
+    GROUP BY 1, 2
+    ORDER BY 2
+    """
+```
+
+## Phase Integration
+
+### Adding to Phase 2
+```python
+# Update phase configuration
+PHASE_2 = {
+    "name": "Expansion - Corporate RM & Investment Banking",
+    "scenarios": [
+        "corporate_rm",
+        "ma_analyst",
+        "portfolio_risk"  # New scenario
+    ],
+    "dependencies": ["phase_1"],
+    "new_capabilities": [
+        "Custom calculation tools",
+        "Advanced visualizations",
+        "Real-time data integration"
+    ]
+}
+```
+
+### Dependency Management
+```python
+# Pattern for phase dependencies
+def validate_phase_dependencies(target_phase: int) -> None:
+    """Ensure previous phases are complete."""
+    
+    for phase in range(1, target_phase):
+        phase_config = getattr(config, f"PHASE_{phase}")
+        
+        for scenario in phase_config["scenarios"]:
+            if not validate_scenario_complete(scenario):
+                raise ValueError(
+                    f"Phase {phase} scenario '{scenario}' must be complete "
+                    f"before starting Phase {target_phase}"
+                )
+```
+
+## Extension Checklist
+
+### Before Starting
+- [ ] Review existing patterns in codebase
+- [ ] Check for reusable components
+- [ ] Plan data model extensions
+- [ ] Consider cross-domain impacts
+
+### Implementation Steps
+- [ ] Update configuration (config.py)
+- [ ] Create data model (SQL files)
+- [ ] Implement data generation
+- [ ] Create analytics objects
+- [ ] Configure agents
+- [ ] Add tests
+- [ ] Document scenarios
+
+### Validation
+- [ ] All tests pass
+- [ ] End-to-end scenario works
+- [ ] Performance acceptable
+- [ ] Documentation complete
+- [ ] No regression in existing features
+
+## Common Extension Patterns
+
+### 1. Scenario Pattern
+```
+Config → Data → Analytics → Agent → Test → Document
+```
+
+### 2. Data Extension Pattern  
+```
+Model → Generate → Validate → Integrate → Test
+```
+
+### 3. Tool Extension Pattern
+```
+Define → Implement → Configure → Test → Document
+```
+
+### 4. Integration Pattern
+```
+Identify touchpoints → Extend interfaces → Test integration → Document
+```
+
+## Best Practices
+
+1. **Follow Existing Patterns**: Study similar features before implementing
+2. **Maintain Backward Compatibility**: Don't break existing functionality
+3. **Test Incrementally**: Validate each step before proceeding
+4. **Document as You Go**: Update documentation with implementation
+5. **Consider Scale**: Ensure extensions work at all scale levels
+6. **Plan for Phases**: Consider how extension fits in roadmap
+
+## Troubleshooting Extensions
+
+### Common Issues
+- **Circular Dependencies**: Check generation order
+- **Missing Prerequisites**: Validate required objects exist
+- **Scale Mismatches**: Ensure consistent scaling
+- **Integration Failures**: Test cross-domain queries
+
+### Debug Process
+1. Check configuration completeness
+2. Validate generation order
+3. Test components individually
+4. Check integration points
+5. Review error logs
+
+## Summary
+
+This guide provides patterns for extending the demo with:
+- New business scenarios
+- Additional data types
+- External data sources
+- Custom capabilities
+- Phase integration
+
+Follow these patterns to maintain consistency and quality as the demo grows.# Extension Guide - Glacier First Bank Demo
+
+## Overview
+This guide provides step-by-step patterns for extending the Glacier First Bank demo with new scenarios, data types, and capabilities.
+
+## Adding New Scenarios
+
+### Step 1: Define Scenario Requirements
+```python
+# In config.py - add to SCENARIOS
+SCENARIOS["portfolio_risk"] = {
+    "name": "Portfolio Risk Analysis",
+    "description": "AI-powered portfolio risk assessment across asset classes",
+    "required_data": [
+        "portfolios",        # New table needed
+        "positions",         # New table needed  
+        "market_data"        # New table needed
+    ],
+    "required_services": [
+        "portfolio_docs_search_svc"  # New search service
+    ],
+    "required_views": [
+        "portfolio_risk_sv"  # New semantic view
+    ]
+}
+```
+
+### Step 2: Create Data Model
+```python
+# Pattern for new entity tables
+def create_portfolio_tables():
+    """Add new tables following established patterns."""
+    
+    # 1. Define in SQL files (not in code)
+    # sql/create_portfolio_tables.sql
+    
+    # 2. Add to generation order
+    GENERATION_ORDER.insert(
+        GENERATION_ORDER.index("transactions"),
+        "portfolios"  # Insert before dependent data
+    )
+    
+    # 3. Add to scale configuration
+    SCALES["demo"]["portfolios"] = 50
+    SCALES["demo"]["positions"] = 5000
+```
+
+### Step 3: Implement Data Generation
+```python
+# In generate_structured.py or new module
+def generate_portfolios(session: Session, scale: str = None) -> None:
+    """Generate portfolio data following standard patterns."""
+    import config
+    
+    scale_config = config.get_scale_config(scale)
+    portfolio_count = scale_config.get("portfolios", 50)
+    
+    # Follow established patterns
+    validate_prerequisites(session, ["entities", "customers"])
+    
+    portfolios = create_portfolio_data(portfolio_count)
+    
+    df = session.create_dataframe(portfolios)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.PORTFOLIOS",
+        mode="overwrite"
+    )
+    
+    logger.info(f"Generated {len(portfolios)} portfolios")
+```
+
+### Step 4: Create Analytics Objects
+```python
+# Pattern for new semantic view
+def create_portfolio_semantic_view():
+    """SQL pattern for semantic view - implement in SQL file."""
+    return """
+    CREATE OR REPLACE SEMANTIC VIEW portfolio_risk_sv
+    TABLES (
+        portfolios, positions, market_data
+    )
+    RELATIONSHIPS (
+        positions_to_portfolios,
+        positions_to_market_data
+    )
+    METRICS (
+        total_value, var_95, sharpe_ratio
+    )
+    DIMENSIONS (
+        portfolio_name, asset_class, currency
+    )
+    """
+```
+
+### Step 5: Configure Agent
+```python
+# Pattern for new agent - implement in Snowsight
+PORTFOLIO_AGENT = {
+    "name": "portfolio_analyst_agent",
+    "tools": [
+        "portfolio_risk_sv_analyst",
+        "portfolio_docs_search"
+    ],
+    "planning": "Use analyst for risk metrics, search for policies"
+}
+```
+
+### Step 6: Create Validation Tests
+```python
+# In tests/test_scenarios.py
+def test_portfolio_scenario():
+    """Validate portfolio scenario end-to-end."""
+    
+    # Test data generation
+    assert table_exists("PORTFOLIOS")
+    assert record_count("PORTFOLIOS") > 0
+    
+    # Test semantic view
+    test_query = """
+    SELECT * FROM SEMANTIC_VIEW(
+        portfolio_risk_sv
+        METRICS total_value
+        DIMENSIONS portfolio_name
+    ) LIMIT 5
+    """
+    assert query_returns_results(test_query)
+    
+    # Test search service
+    assert search_service_exists("portfolio_docs_search_svc")
+    assert search_returns_results("portfolio risk")
+```
+
+## Adding New Data Types
+
+### Document Types
+```python
+# Step 1: Define document type pattern
+NEW_DOCUMENT_TYPE = {
+    "table_name": "ESG_REPORTS_RAW",
+    "corpus_name": "ESG_REPORTS",
+    "linkage_level": "issuer",  # security, issuer, or global
+    "word_count_range": [1000, 2000],
+    "sections": ["summary", "metrics", "initiatives", "targets"]
+}
+
+# Step 2: Add to generation pipeline
+def generate_esg_reports(session: Session, entities: List[Dict]) -> None:
+    """Generate ESG reports following document patterns."""
+    # Follow unstructured data generation pattern
+    pass
+
+# Step 3: Create search service
+def create_esg_search_service():
+    """Pattern for search service - implement in SQL."""
+    return """
+    CREATE CORTEX SEARCH SERVICE esg_search_svc
+    ON content
+    ATTRIBUTES id, title, entity_name, publish_date
+    WAREHOUSE = {search_warehouse}
+    TARGET_LAG = '5 minutes'
+    AS SELECT ...
+    """
+```
+
+### Structured Data Types
+```python
+# Step 1: Define structure
+NEW_METRICS_TABLE = {
+    "primary_key": "METRIC_ID",
+    "foreign_keys": ["ENTITY_ID", "PERIOD_ID"],
+    "measures": ["CARBON_EMISSIONS", "WATER_USAGE", "WASTE_RECYCLED"],
+    "dimensions": ["METRIC_TYPE", "UNIT_OF_MEASURE", "REPORTING_STANDARD"]
+}
+
+# Step 2: Add to configuration
+SCALES["demo"]["esg_metrics"] = 2000
+
+# Step 3: Implement generation
+def generate_esg_metrics(session: Session, scale: str) -> None:
+    """Generate ESG metrics following patterns."""
+    # Ensure entities exist first
+    # Generate time series data
+    # Apply business rules
+    pass
+```
+
+## Adding New External Data Sources
+
+### Step 1: Define Provider
+```python
+# In config.py
+EXTERNAL_DATA_PROVIDERS["alternative_data"] = {
+    "satellite_analytics": {
+        "name": "Satellite Analytics Corp",
+        "attribution": "Satellite Analytics via Snowflake Marketplace",
+        "data_types": ["footfall_traffic", "parking_occupancy", "shipping_activity"],
+        "coverage": "Major commercial locations globally",
+        "update_frequency": "weekly",
+        "schema_pattern": "SAT_ANALYTICS_*"
+    }
+}
+```
+
+### Step 2: Create Attribution Pattern
+```python
+def create_satellite_data_tables():
+    """Pattern for external data simulation."""
+    return """
+    CREATE TABLE SAT_ANALYTICS_FOOTFALL (
+        LOCATION_ID VARCHAR(50),
+        MEASUREMENT_DATE DATE,
+        DAILY_VISITORS INTEGER,
+        CHANGE_VS_BASELINE DECIMAL(5,2),
+        DATA_SOURCE VARCHAR(100) DEFAULT 
+            'Satellite Analytics via Snowflake Marketplace'
+    )
+    """
+```
+
+### Step 3: Generate Realistic Data
+```python
+def generate_satellite_data(session: Session, entities: List[Dict]) -> None:
+    """Generate external data with proper attribution."""
+    
+    # Filter to relevant entities (e.g., retail businesses)
+    retail_entities = [e for e in entities if e['industry'] == 'Retail']
+    
+    # Generate time series with realistic patterns
+    # Include attribution in every record
+    # Follow provider's data characteristics
+    pass
+```
+
+## Adding New Capabilities
+
+### Custom Calculation Tools
+```python
+# Step 1: Define UDF/Stored Procedure
+def create_portfolio_optimizer():
+    """SQL pattern for custom tool."""
+    return """
+    CREATE OR REPLACE FUNCTION PORTFOLIO_OPTIMIZER(
+        portfolio_id VARCHAR,
+        constraints VARIANT
+    )
+    RETURNS VARIANT
+    AS $$
+        -- Optimization logic
+    $$
+    """
+
+# Step 2: Configure as agent tool
+CUSTOM_TOOL_CONFIG = {
+    "name": "portfolio_optimizer",
+    "type": "custom_function",
+    "description": "Optimizes portfolio allocation within constraints",
+    "parameters": {
+        "portfolio_id": "required",
+        "constraints": "optional"
+    }
+}
+```
+
+### Visualization Patterns
+```python
+# Pattern for data prepared for visualization
+def prepare_trend_visualization(metric: str, dimension: str) -> str:
+    """Pattern for visualization-ready queries."""
+    return f"""
+    SELECT 
+        {dimension},
+        DATE_TRUNC('month', period) as month,
+        AVG({metric}) as avg_value,
+        MIN({metric}) as min_value,
+        MAX({metric}) as max_value,
+        COUNT(*) as data_points
+    FROM aggregated_metrics
+    GROUP BY 1, 2
+    ORDER BY 2
+    """
+```
+
+## Phase Integration
+
+### Adding to Phase 2
+```python
+# Update phase configuration
+PHASE_2 = {
+    "name": "Expansion - Corporate RM & Investment Banking",
+    "scenarios": [
+        "corporate_rm",
+        "ma_analyst",
+        "portfolio_risk"  # New scenario
+    ],
+    "dependencies": ["phase_1"],
+    "new_capabilities": [
+        "Custom calculation tools",
+        "Advanced visualizations",
+        "Real-time data integration"
+    ]
+}
+```
+
+### Dependency Management
+```python
+# Pattern for phase dependencies
+def validate_phase_dependencies(target_phase: int) -> None:
+    """Ensure previous phases are complete."""
+    
+    for phase in range(1, target_phase):
+        phase_config = getattr(config, f"PHASE_{phase}")
+        
+        for scenario in phase_config["scenarios"]:
+            if not validate_scenario_complete(scenario):
+                raise ValueError(
+                    f"Phase {phase} scenario '{scenario}' must be complete "
+                    f"before starting Phase {target_phase}"
+                )
+```
+
+## Extension Checklist
+
+### Before Starting
+- [ ] Review existing patterns in codebase
+- [ ] Check for reusable components
+- [ ] Plan data model extensions
+- [ ] Consider cross-domain impacts
+
+### Implementation Steps
+- [ ] Update configuration (config.py)
+- [ ] Create data model (SQL files)
+- [ ] Implement data generation
+- [ ] Create analytics objects
+- [ ] Configure agents
+- [ ] Add tests
+- [ ] Document scenarios
+
+### Validation
+- [ ] All tests pass
+- [ ] End-to-end scenario works
+- [ ] Performance acceptable
+- [ ] Documentation complete
+- [ ] No regression in existing features
+
+## Common Extension Patterns
+
+### 1. Scenario Pattern
+```
+Config → Data → Analytics → Agent → Test → Document
+```
+
+### 2. Data Extension Pattern  
+```
+Model → Generate → Validate → Integrate → Test
+```
+
+### 3. Tool Extension Pattern
+```
+Define → Implement → Configure → Test → Document
+```
+
+### 4. Integration Pattern
+```
+Identify touchpoints → Extend interfaces → Test integration → Document
+```
+
+## Best Practices
+
+1. **Follow Existing Patterns**: Study similar features before implementing
+2. **Maintain Backward Compatibility**: Don't break existing functionality
+3. **Test Incrementally**: Validate each step before proceeding
+4. **Document as You Go**: Update documentation with implementation
+5. **Consider Scale**: Ensure extensions work at all scale levels
+6. **Plan for Phases**: Consider how extension fits in roadmap
+
+## Troubleshooting Extensions
+
+### Common Issues
+- **Circular Dependencies**: Check generation order
+- **Missing Prerequisites**: Validate required objects exist
+- **Scale Mismatches**: Ensure consistent scaling
+- **Integration Failures**: Test cross-domain queries
+
+### Debug Process
+1. Check configuration completeness
+2. Validate generation order
+3. Test components individually
+4. Check integration points
+5. Review error logs
+
+## Summary
+
+This guide provides patterns for extending the demo with:
+- New business scenarios
+- Additional data types
+- External data sources
+- Custom capabilities
+- Phase integration
+
+Follow these patterns to maintain consistency and quality as the demo grows.

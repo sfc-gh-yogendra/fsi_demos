@@ -22,7 +22,8 @@ INSTITUTION_PROFILE = "pan-EU universal bank; strong Corporate & Commercial; str
 SNOWFLAKE = {
     "database": "BANK_AI_DEMO",
     "compute_warehouse": "BANK_AI_DEMO_COMPUTE_WH",
-    "search_warehouse": "BANK_AI_DEMO_SEARCH_WH"
+    "search_warehouse": "BANK_AI_DEMO_SEARCH_WH",
+    "ai_schema": "AI"  # Unified schema for all AI objects (Cortex Search, Semantic Views, Custom Tools)
 }
 
 # =============================================================================

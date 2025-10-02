@@ -166,7 +166,7 @@ def create_aml_kyc_risk_semantic_view(session: Session) -> None:
     logger.info("Creating AML/KYC risk semantic view...")
     
     session.sql(f"""
-        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.SEMANTIC_LAYER.aml_kyc_risk_sv
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.aml_kyc_risk_sv
         TABLES (
             customer_risk AS {config.SNOWFLAKE['database']}.CURATED_DATA.customer_risk_view
                 PRIMARY KEY (CUSTOMER_ID)
@@ -263,7 +263,7 @@ def create_credit_risk_semantic_view(session: Session) -> None:
     validate_required_tables(session, ['LOAN_APPLICATIONS'])
     
     session.sql(f"""
-        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.SEMANTIC_LAYER.credit_risk_sv
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.credit_risk_sv
         TABLES (
             loan_apps AS {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_APPLICATIONS
                 PRIMARY KEY (APPLICATION_ID)
@@ -357,7 +357,7 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
     validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
     
     session.sql(f"""
-        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.SEMANTIC_LAYER.cross_domain_intelligence_sv
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.cross_domain_intelligence_sv
         TABLES (
             entities AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES
                 PRIMARY KEY (ENTITY_ID)

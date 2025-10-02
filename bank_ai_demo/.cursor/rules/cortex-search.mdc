@@ -74,6 +74,70 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 - [ ] Attribute filtering works (if applicable)
 - [ ] No performance issues during search
 
+## Adding New Search Services
+
+### Integration Requirements (MANDATORY)
+When adding a new search service, you must update **3 locations** in the code:
+
+1. **Table Validation** - Add underlying table to `get_required_tables_for_search_services()`:
+   ```python
+   def get_required_tables_for_search_services(scenarios: List[str]) -> Set[str]:
+       required_tables = set()
+       # ... existing tables ...
+       required_tables.add('YOUR_NEW_TABLE')  # Add this
+       return required_tables
+   ```
+
+2. **Service Creation** - Add service creation call to `create_all_search_services()`:
+   ```python
+   def create_all_search_services(session: Session, scenarios: List[str] = None) -> None:
+       # ... existing service creation calls ...
+       create_your_new_search_service(session)  # Add this
+   ```
+
+3. **Service Validation** - Add service to expected list in `validate_search_services()`:
+   ```python
+   expected_services = [
+       'existing_search_svc',
+       'your_new_search_svc'  # Add this
+   ]
+   ```
+
+### New Service Function Pattern
+```python
+def create_your_new_search_service(session: Session) -> None:
+    """Create Cortex Search service for [description]."""
+    logger.info("Creating your new search service...")
+    
+    # Validate required table exists
+    validate_required_tables(session, ['YOUR_TABLE'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.your_new_search_svc
+            ON CONTENT_COLUMN
+            ATTRIBUTES ID, TITLE, [other_attributes]
+            WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
+            TARGET_LAG = '5 minutes'
+            AS 
+            SELECT 
+                ID,
+                TITLE,
+                CONTENT_COLUMN,
+                [other_columns]
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.YOUR_TABLE
+    """).collect()
+    
+    logger.info("Your new search service created successfully")
+```
+
+### Validation Integration Checklist
+- [ ] Table added to `get_required_tables_for_search_services()`
+- [ ] Service creation function implemented
+- [ ] Service creation called from `create_all_search_services()`
+- [ ] Service name added to `validate_search_services()` expected list
+- [ ] Underlying data generation implemented
+- [ ] Service tested with `SEARCH_PREVIEW()`
+
 ## Troubleshooting
 
 ### Common Error Messages and Solutions

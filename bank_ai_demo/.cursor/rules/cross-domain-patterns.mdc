@@ -1,0 +1,285 @@
+# Cross-Domain Intelligence Patterns - Glacier First Bank
+
+## Overview
+This rule provides patterns for implementing cross-domain intelligence that enables agents to discover and analyze risk contagion, entity relationships, and multi-step reasoning across different business domains.
+
+## Cross-Domain Intelligence Principles
+
+### 1. Shared Ecosystem Foundation
+Financial institutions operate within interconnected ecosystems where:
+- **Vendor Dependencies**: Multiple clients share common suppliers
+- **Industry Clustering**: Companies in similar sectors face correlated risks
+- **Geographic Correlation**: Entities in regions share regulatory environments
+- **Regulatory Cascade**: Policy changes affect multiple functions
+- **Temporal Evolution**: Risks propagate across time horizons
+
+### 2. Multi-Step Reasoning Framework
+```python
+# Pattern for multi-step analysis
+def multi_step_reasoning_pattern():
+    steps = [
+        "Evidence Gathering",      # Collect from multiple sources
+        "Pattern Recognition",     # Identify relationships
+        "Contradiction Synthesis", # Reconcile conflicts
+        "Risk Propagation",       # Model cascade effects
+        "Impact Assessment",      # Quantify implications
+        "Recommendation Generation" # Actionable insights
+    ]
+    return steps
+```
+
+## Implementation Patterns
+
+### Entity Relationship Discovery
+```python
+# Pattern for discovering shared dependencies
+def discover_shared_dependencies(entity_type: str = "vendor") -> str:
+    """Pattern for finding entities with multiple relationships."""
+    return """
+    WITH shared_entities AS (
+        SELECT 
+            related_entity_name,
+            COUNT(DISTINCT primary_entity_name) as client_count,
+            AVG(risk_impact_score) as avg_risk
+        FROM entity_relationships
+        WHERE relationship_type = :entity_type
+        GROUP BY related_entity_name
+        HAVING COUNT(DISTINCT primary_entity_name) > 1
+    )
+    SELECT * FROM shared_entities
+    ORDER BY client_count DESC, avg_risk DESC
+    """
+```
+
+### Risk Contagion Analysis
+```python
+# Pattern for analyzing risk propagation
+def analyze_risk_contagion(trigger_entity: str) -> Dict[str, Any]:
+    """Pattern for understanding cascade effects."""
+    
+    analysis_steps = {
+        "identify_direct_impacts": """
+            Find all entities directly connected to trigger
+        """,
+        "assess_dependency_strength": """
+            Quantify operational/financial dependency levels
+        """,
+        "model_time_propagation": """
+            - Immediate (0-30 days): Operational disruption
+            - Short-term (30-90 days): Financial impact
+            - Long-term (90+ days): Strategic implications
+        """,
+        "calculate_portfolio_exposure": """
+            Aggregate exposure across all affected relationships
+        """
+    }
+    
+    return analysis_steps
+```
+
+### Cross-Domain Query Patterns
+```python
+# Pattern for combining multiple domain insights
+def cross_domain_query_pattern() -> str:
+    """Combine AML, Credit, and Market intelligence."""
+    return """
+    -- Step 1: Get financial metrics
+    WITH financial_health AS (
+        SELECT metrics FROM credit_domain
+    ),
+    -- Step 2: Get compliance status
+    compliance_risk AS (
+        SELECT flags FROM aml_domain
+    ),
+    -- Step 3: Get market sentiment
+    market_intelligence AS (
+        SELECT sentiment FROM news_domain
+    )
+    -- Step 4: Synthesize findings
+    SELECT 
+        combine_insights(financial_health, compliance_risk, market_intelligence)
+    FROM cross_join_domains
+    """
+```
+
+## Contradiction Handling Patterns
+
+### Evidence Conflict Resolution
+```python
+# Pattern for handling contradictory signals
+class ContradictionHandler:
+    def resolve_conflicts(self, evidence: List[Dict]) -> Dict:
+        """Pattern for synthesizing conflicting evidence."""
+        
+        resolution_steps = {
+            "identify_conflicts": self._find_contradictions,
+            "weight_evidence": self._apply_reliability_weights,
+            "temporal_analysis": self._consider_timing,
+            "confidence_calculation": self._compute_confidence,
+            "synthesis": self._create_balanced_view
+        }
+        
+        # Apply weights based on source reliability
+        weights = {
+            "financial_statements": 0.9,
+            "regulatory_filings": 0.95,
+            "news_articles": 0.6,
+            "social_media": 0.3
+        }
+        
+        return resolution_steps
+```
+
+### Common Contradiction Patterns
+1. **Financial vs Sentiment**: Strong metrics but negative news
+2. **Historical vs Current**: Past success but current struggles
+3. **Internal vs External**: Company claims vs market perception
+4. **Regional vs Global**: Local strength but global weakness
+
+## Agent Orchestration Patterns
+
+### Sequential Discovery
+```python
+# Pattern for step-by-step discovery
+def sequential_discovery_pattern(query: str) -> List[str]:
+    """Build knowledge incrementally."""
+    
+    steps = [
+        "Identify key entities in query",
+        "Discover direct relationships",
+        "Find indirect connections",
+        "Assess combined impact",
+        "Generate insights"
+    ]
+    
+    return steps
+```
+
+### Parallel Analysis
+```python
+# Pattern for parallel domain analysis
+def parallel_analysis_pattern(entity: str) -> Dict:
+    """Analyze entity across domains simultaneously."""
+    
+    domains = {
+        "financial": "Analyze creditworthiness",
+        "compliance": "Check regulatory status",
+        "market": "Assess market perception",
+        "operational": "Evaluate dependencies"
+    }
+    
+    # Execute in parallel for efficiency
+    return execute_parallel(domains)
+```
+
+## Implementation Guidelines
+
+### 1. Data Model Requirements
+- Entities table with cross-references
+- Relationships table with strength/risk scores
+- Time-stamped data for temporal analysis
+- Consistent identifiers across domains
+
+### 2. Query Optimization
+```python
+# Pattern for efficient cross-domain queries
+optimization_patterns = {
+    "use_materialized_views": "For frequently accessed combinations",
+    "partition_by_date": "For time-based analysis",
+    "index_relationships": "For fast connection discovery",
+    "cache_common_queries": "For repeated patterns"
+}
+```
+
+### 3. Testing Cross-Domain Logic
+```python
+# Pattern for validation
+def test_cross_domain_intelligence():
+    test_scenarios = [
+        {
+            "name": "Vendor failure cascade",
+            "domains": ["credit", "operational"],
+            "expected": "Identify all affected clients"
+        },
+        {
+            "name": "Regulatory change impact",
+            "domains": ["compliance", "credit", "operational"],
+            "expected": "Assess multi-function impact"
+        }
+    ]
+```
+
+## Common Use Cases
+
+### 1. Vendor Risk Assessment
+- Identify all clients dependent on vendor
+- Assess financial impact of vendor failure
+- Check compliance implications
+- Model timeline of effects
+
+### 2. Portfolio Concentration
+- Find hidden connections through shared vendors
+- Identify industry clustering risks
+- Assess geographic concentration
+- Calculate aggregate exposure
+
+### 3. Regulatory Impact Analysis
+- Map regulation to affected entities
+- Assess compliance costs
+- Identify operational changes needed
+- Prioritize response actions
+
+## Anti-Patterns to Avoid
+
+### ❌ Isolated Domain Analysis
+```python
+# WRONG - Analyzing domains separately
+aml_risk = analyze_aml(entity)
+credit_risk = analyze_credit(entity)
+# Missing connections!
+
+# CORRECT - Integrated analysis
+combined_risk = analyze_cross_domain(entity)
+```
+
+### ❌ Ignoring Temporal Aspects
+```python
+# WRONG - Point-in-time only
+current_risk = assess_risk(entity, today)
+
+# CORRECT - Time-based propagation
+risk_timeline = model_risk_evolution(entity, time_horizons)
+```
+
+### ❌ Binary Risk Assessment
+```python
+# WRONG - Simple high/low
+risk = "HIGH" if score > threshold else "LOW"
+
+# CORRECT - Nuanced assessment
+risk = {
+    "immediate": score_immediate,
+    "propagation_risk": score_cascade,
+    "uncertainty": confidence_interval
+}
+```
+
+## Best Practices
+
+1. **Start Broad, Then Focus**: Begin with ecosystem view, drill into specifics
+2. **Consider Time Horizons**: Risk propagates differently over time
+3. **Weight Evidence Appropriately**: Not all sources equally reliable
+4. **Document Reasoning**: Make multi-step logic transparent
+5. **Test Edge Cases**: Validate with complex scenarios
+6. **Monitor Performance**: Cross-domain queries can be expensive
+
+## Summary
+
+Cross-domain intelligence enables:
+- Discovery of hidden risks through relationships
+- Synthesis of conflicting signals
+- Time-based risk propagation modeling
+- Comprehensive entity assessment
+- Proactive risk identification
+
+Focus on patterns and connections, not isolated analysis.

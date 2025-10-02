@@ -1,0 +1,717 @@
+---
+description: External data source data generation rules and best practices
+alwaysApply: false
+---
+# External Data Integration Patterns - Glacier First Bank
+
+## Overview
+This rule provides patterns for simulating external data sources with Snowflake Marketplace attribution, enabling realistic demo scenarios without actual marketplace subscriptions.
+
+## Marketplace Attribution Pattern
+
+### Standard Attribution Format
+```python
+# Pattern for all external data
+ATTRIBUTION_TEMPLATE = "{Provider Name} via Snowflake Marketplace"
+
+# Examples:
+# "S&P Global Market Intelligence via Snowflake Marketplace"
+# "Reuters News Feed via Snowflake Marketplace"
+# "Dow Jones Risk & Compliance via Snowflake Marketplace"
+```
+
+### Schema Naming Convention
+```python
+# Pattern: {PROVIDER_PREFIX}_{DATA_TYPE}
+SCHEMA_PATTERNS = {
+    "financial_data": "SP_GLOBAL_*",
+    "news_data": "REUTERS_*",
+    "compliance_data": "DJ_RISK_*",
+    "regulatory_data": "TR_REGULATORY_*",
+    "esg_data": "MSCI_ESG_*"
+}
+```
+
+## Provider Configuration Pattern
+
+### Adding New Provider
+```python
+# Pattern for config.py
+def add_external_provider(category: str, provider_key: str) -> Dict:
+    """Pattern for adding external data providers."""
+    return {
+        provider_key: {
+            "name": "Official Provider Name",
+            "attribution": "Official Provider Name via Snowflake Marketplace",
+            "data_types": ["type1", "type2", "type3"],
+            "coverage": "Geographic/sector coverage description",
+            "update_frequency": "real-time|daily|weekly|monthly",
+            "schema_pattern": "PROVIDER_PREFIX_*"
+        }
+    }
+```
+
+### Provider Categories
+1. **Financial Data**: Company financials, credit ratings, market data
+2. **News & Media**: Real-time news, press releases, social sentiment
+3. **Compliance Data**: Sanctions, PEP lists, adverse media
+4. **Regulatory Data**: Policy updates, regulatory changes
+5. **ESG Data**: Sustainability ratings, carbon metrics
+6. **Alternative Data**: Satellite imagery, web scraping, IoT
+
+## Data Simulation Patterns
+
+### Table Structure Pattern
+```python
+# Pattern for simulated external data tables
+def create_external_table_pattern(provider: str, data_type: str) -> str:
+    """Standard pattern for external data tables."""
+    return f"""
+    CREATE OR REPLACE TABLE {provider}_{data_type} (
+        -- Provider-specific ID
+        {provider}_ID VARCHAR(50) PRIMARY KEY,
+        
+        -- Standard fields
+        RECORD_DATE DATE NOT NULL,
+        LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+        
+        -- Data-specific fields
+        ... specific to data type ...
+        
+        -- Attribution field (ALWAYS INCLUDE)
+        DATA_SOURCE VARCHAR(200) DEFAULT '{attribution}'
+    )
+    """
+```
+
+### Data Generation Pattern
+```python
+# Pattern for generating realistic external data
+def generate_external_data(provider_config: Dict, entities: List) -> None:
+    """Generate data matching provider characteristics."""
+    
+    # 1. Apply provider-specific patterns
+    if provider_config['update_frequency'] == 'real-time':
+        timestamps = generate_streaming_timestamps()
+    else:
+        timestamps = generate_batch_timestamps()
+    
+    # 2. Match provider data quality
+    completeness = provider_config.get('data_completeness', 0.95)
+    records = apply_data_gaps(records, 1 - completeness)
+    
+    # 3. Include attribution in every record
+    for record in records:
+        record['data_source'] = provider_config['attribution']
+    
+    # 4. Apply provider-specific formats
+    records = apply_provider_formatting(records, provider_config)
+    
+    return records
+```
+
+## Common Provider Patterns
+
+### Financial Data Providers
+```python
+FINANCIAL_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "coverage": "Public companies primarily",
+        "completeness": 0.95,  # 95% data availability
+        "lag": "1-2 days for quarterly data",
+        "format": "Standardized financial metrics"
+    },
+    "typical_tables": [
+        "COMPANY_FINANCIALS",
+        "CREDIT_RATINGS", 
+        "FINANCIAL_RATIOS",
+        "PEER_COMPARISONS"
+    ],
+    "update_pattern": "Batch updates after market close"
+}
+```
+
+### News Data Providers
+```python
+NEWS_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "volume": "High - thousands per day",
+        "languages": ["en", "de", "fr", "es"],
+        "sentiment": "Pre-calculated scores",
+        "entities": "AI-extracted mentions"
+    },
+    "typical_tables": [
+        "NEWS_ARTICLES",
+        "COMPANY_MENTIONS",
+        "SENTIMENT_SCORES",
+        "TOPIC_TAGS"
+    ],
+    "update_pattern": "Streaming with 5-15 min delay"
+}
+```
+
+### Compliance Data Providers
+```python
+COMPLIANCE_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "accuracy": "99%+ for official lists",
+        "coverage": "Global sanctions and PEPs",
+        "false_positive_rate": 0.02,
+        "update_frequency": "Real-time critical updates"
+    },
+    "typical_tables": [
+        "SANCTIONS_LISTS",
+        "PEP_DATABASE",
+        "ADVERSE_MEDIA",
+        "ENTITY_ALIASES"
+    ],
+    "update_pattern": "Continuous monitoring"
+}
+```
+
+## Integration Patterns
+
+### Cross-Provider Correlation
+```python
+# Pattern for linking entities across providers
+def create_entity_mapping() -> str:
+    """Map internal entities to external identifiers."""
+    return """
+    CREATE OR REPLACE TABLE EXTERNAL_ENTITY_MAPPING (
+        INTERNAL_ENTITY_ID VARCHAR(50),
+        SP_GLOBAL_ID VARCHAR(50),
+        REUTERS_ENTITY_CODE VARCHAR(50),
+        DJ_RISK_ID VARCHAR(50),
+        MSCI_ISSUER_ID VARCHAR(50),
+        MAPPING_CONFIDENCE DECIMAL(3,2),
+        MAPPING_METHOD VARCHAR(50),  -- 'exact', 'fuzzy', 'manual'
+        FOREIGN KEY (INTERNAL_ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID)
+    )
+    """
+```
+
+### Data Quality Simulation
+```python
+# Pattern for realistic data quality
+def simulate_provider_quality(provider_type: str) -> Dict:
+    """Simulate realistic data availability and quality."""
+    
+    quality_patterns = {
+        "financial_data": {
+            "large_cap_coverage": 0.98,
+            "small_cap_coverage": 0.75,
+            "private_company_coverage": 0.30,
+            "data_lag_days": 1
+        },
+        "news_data": {
+            "major_outlets_coverage": 0.95,
+            "regional_coverage": 0.80,
+            "language_accuracy": 0.90,
+            "sentiment_accuracy": 0.85
+        },
+        "compliance_data": {
+            "sanctions_accuracy": 0.995,
+            "pep_coverage": 0.90,
+            "adverse_media_recall": 0.85,
+            "update_lag_minutes": 5
+        }
+    }
+    
+    return quality_patterns.get(provider_type, {})
+```
+
+## Agent Integration Patterns
+
+### Attribution in Responses
+```python
+# Pattern for agent response attribution
+def format_external_data_citation(data_source: str, data_date: str) -> str:
+    """Proper attribution format for agent responses."""
+    return f"Source: {data_source} (Data as of: {data_date})"
+
+# Example in agent response:
+response = f"""
+The company's debt-to-equity ratio is 2.5x as of Q2 2024.
+{format_external_data_citation(
+    "S&P Global Market Intelligence via Snowflake Marketplace",
+    "2024-06-30"
+)}
+"""
+```
+
+### Multi-Provider Synthesis
+```python
+# Pattern for combining multiple external sources
+def synthesize_external_data() -> str:
+    """Query pattern for multi-provider analysis."""
+    return """
+    WITH financial_data AS (
+        SELECT * FROM SP_GLOBAL_FINANCIALS 
+        WHERE company_id = :company_id
+    ),
+    news_sentiment AS (
+        SELECT AVG(sentiment_score) as avg_sentiment
+        FROM REUTERS_COMPANY_MENTIONS
+        WHERE company_name = :company_name
+        AND publish_date > DATEADD(day, -30, CURRENT_DATE())
+    ),
+    compliance_status AS (
+        SELECT COUNT(*) as sanction_hits
+        FROM DJ_RISK_SANCTIONS_SCREENING
+        WHERE entity_name = :entity_name
+    )
+    SELECT 
+        f.*,
+        n.avg_sentiment,
+        c.sanction_hits,
+        'Multiple sources via Snowflake Marketplace' as attribution
+    FROM financial_data f
+    CROSS JOIN news_sentiment n
+    CROSS JOIN compliance_status c
+    """
+```
+
+## Testing External Data
+
+### Validation Patterns
+```python
+def validate_external_data_simulation():
+    """Ensure external data simulation is realistic."""
+    
+    validations = [
+        {
+            "check": "Attribution present",
+            "query": "SELECT COUNT(*) FROM {table} WHERE data_source IS NULL",
+            "expected": 0
+        },
+        {
+            "check": "Realistic data gaps",
+            "query": "SELECT coverage_rate FROM data_quality_metrics",
+            "expected_range": [0.70, 0.99]
+        },
+        {
+            "check": "Temporal consistency",
+            "query": "SELECT MAX(update_lag) FROM provider_metrics",
+            "expected_max": {"real-time": 15, "daily": 1440}  # minutes
+        }
+    ]
+    
+    return validations
+```
+
+### Demo Validation
+```python
+# Ensure marketplace story is compelling
+demo_talking_points = [
+    "All external data seamlessly integrated through Snowflake Marketplace",
+    "No ETL pipelines or API management required",
+    "Automatic updates with data freshness guarantees",
+    "Unified security and governance model",
+    "Pay only for what you use"
+]
+```
+
+## Best Practices
+
+1. **Always Include Attribution**: Every external record must have data source
+2. **Match Provider Patterns**: Respect typical data quality and coverage
+3. **Realistic Timing**: Simulate appropriate update frequencies
+4. **Cross-Provider Consistency**: Same entity should match across providers
+5. **Clear Documentation**: Note this is simulation for demo purposes
+
+## Anti-Patterns to Avoid
+
+### ❌ Missing Attribution
+```python
+# WRONG - No attribution
+df.write.save_as_table("SP_GLOBAL_FINANCIALS")
+
+# CORRECT - Include attribution
+df = df.with_column("DATA_SOURCE", 
+    lit("S&P Global Market Intelligence via Snowflake Marketplace"))
+```
+
+### ❌ Unrealistic Data Quality
+```python
+# WRONG - 100% data availability
+all_companies_have_all_data()
+
+# CORRECT - Realistic gaps
+apply_coverage_pattern(data, provider_coverage_rates)
+```
+
+### ❌ Inconsistent Updates
+```python
+# WRONG - Random update times
+update_timestamp = random_datetime()
+
+# CORRECT - Provider-specific patterns
+update_timestamp = get_provider_update_schedule(provider_type)
+```
+
+## Summary
+
+This pattern guide enables realistic external data simulation:
+1. Proper marketplace attribution throughout
+2. Provider-specific data characteristics
+3. Realistic quality and coverage patterns
+4. Seamless integration with agents
+5. Compelling demo narrative about marketplace value
+
+Remember: Document patterns for simulation, not specific provider details.# External Data Integration Patterns - Glacier First Bank
+
+## Overview
+This rule provides patterns for simulating external data sources with Snowflake Marketplace attribution, enabling realistic demo scenarios without actual marketplace subscriptions.
+
+## Marketplace Attribution Pattern
+
+### Standard Attribution Format
+```python
+# Pattern for all external data
+ATTRIBUTION_TEMPLATE = "{Provider Name} via Snowflake Marketplace"
+
+# Examples:
+# "S&P Global Market Intelligence via Snowflake Marketplace"
+# "Reuters News Feed via Snowflake Marketplace"
+# "Dow Jones Risk & Compliance via Snowflake Marketplace"
+```
+
+### Schema Naming Convention
+```python
+# Pattern: {PROVIDER_PREFIX}_{DATA_TYPE}
+SCHEMA_PATTERNS = {
+    "financial_data": "SP_GLOBAL_*",
+    "news_data": "REUTERS_*",
+    "compliance_data": "DJ_RISK_*",
+    "regulatory_data": "TR_REGULATORY_*",
+    "esg_data": "MSCI_ESG_*"
+}
+```
+
+## Provider Configuration Pattern
+
+### Adding New Provider
+```python
+# Pattern for config.py
+def add_external_provider(category: str, provider_key: str) -> Dict:
+    """Pattern for adding external data providers."""
+    return {
+        provider_key: {
+            "name": "Official Provider Name",
+            "attribution": "Official Provider Name via Snowflake Marketplace",
+            "data_types": ["type1", "type2", "type3"],
+            "coverage": "Geographic/sector coverage description",
+            "update_frequency": "real-time|daily|weekly|monthly",
+            "schema_pattern": "PROVIDER_PREFIX_*"
+        }
+    }
+```
+
+### Provider Categories
+1. **Financial Data**: Company financials, credit ratings, market data
+2. **News & Media**: Real-time news, press releases, social sentiment
+3. **Compliance Data**: Sanctions, PEP lists, adverse media
+4. **Regulatory Data**: Policy updates, regulatory changes
+5. **ESG Data**: Sustainability ratings, carbon metrics
+6. **Alternative Data**: Satellite imagery, web scraping, IoT
+
+## Data Simulation Patterns
+
+### Table Structure Pattern
+```python
+# Pattern for simulated external data tables
+def create_external_table_pattern(provider: str, data_type: str) -> str:
+    """Standard pattern for external data tables."""
+    return f"""
+    CREATE OR REPLACE TABLE {provider}_{data_type} (
+        -- Provider-specific ID
+        {provider}_ID VARCHAR(50) PRIMARY KEY,
+        
+        -- Standard fields
+        RECORD_DATE DATE NOT NULL,
+        LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+        
+        -- Data-specific fields
+        ... specific to data type ...
+        
+        -- Attribution field (ALWAYS INCLUDE)
+        DATA_SOURCE VARCHAR(200) DEFAULT '{attribution}'
+    )
+    """
+```
+
+### Data Generation Pattern
+```python
+# Pattern for generating realistic external data
+def generate_external_data(provider_config: Dict, entities: List) -> None:
+    """Generate data matching provider characteristics."""
+    
+    # 1. Apply provider-specific patterns
+    if provider_config['update_frequency'] == 'real-time':
+        timestamps = generate_streaming_timestamps()
+    else:
+        timestamps = generate_batch_timestamps()
+    
+    # 2. Match provider data quality
+    completeness = provider_config.get('data_completeness', 0.95)
+    records = apply_data_gaps(records, 1 - completeness)
+    
+    # 3. Include attribution in every record
+    for record in records:
+        record['data_source'] = provider_config['attribution']
+    
+    # 4. Apply provider-specific formats
+    records = apply_provider_formatting(records, provider_config)
+    
+    return records
+```
+
+## Common Provider Patterns
+
+### Financial Data Providers
+```python
+FINANCIAL_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "coverage": "Public companies primarily",
+        "completeness": 0.95,  # 95% data availability
+        "lag": "1-2 days for quarterly data",
+        "format": "Standardized financial metrics"
+    },
+    "typical_tables": [
+        "COMPANY_FINANCIALS",
+        "CREDIT_RATINGS", 
+        "FINANCIAL_RATIOS",
+        "PEER_COMPARISONS"
+    ],
+    "update_pattern": "Batch updates after market close"
+}
+```
+
+### News Data Providers
+```python
+NEWS_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "volume": "High - thousands per day",
+        "languages": ["en", "de", "fr", "es"],
+        "sentiment": "Pre-calculated scores",
+        "entities": "AI-extracted mentions"
+    },
+    "typical_tables": [
+        "NEWS_ARTICLES",
+        "COMPANY_MENTIONS",
+        "SENTIMENT_SCORES",
+        "TOPIC_TAGS"
+    ],
+    "update_pattern": "Streaming with 5-15 min delay"
+}
+```
+
+### Compliance Data Providers
+```python
+COMPLIANCE_PROVIDER_PATTERN = {
+    "data_characteristics": {
+        "accuracy": "99%+ for official lists",
+        "coverage": "Global sanctions and PEPs",
+        "false_positive_rate": 0.02,
+        "update_frequency": "Real-time critical updates"
+    },
+    "typical_tables": [
+        "SANCTIONS_LISTS",
+        "PEP_DATABASE",
+        "ADVERSE_MEDIA",
+        "ENTITY_ALIASES"
+    ],
+    "update_pattern": "Continuous monitoring"
+}
+```
+
+## Integration Patterns
+
+### Cross-Provider Correlation
+```python
+# Pattern for linking entities across providers
+def create_entity_mapping() -> str:
+    """Map internal entities to external identifiers."""
+    return """
+    CREATE OR REPLACE TABLE EXTERNAL_ENTITY_MAPPING (
+        INTERNAL_ENTITY_ID VARCHAR(50),
+        SP_GLOBAL_ID VARCHAR(50),
+        REUTERS_ENTITY_CODE VARCHAR(50),
+        DJ_RISK_ID VARCHAR(50),
+        MSCI_ISSUER_ID VARCHAR(50),
+        MAPPING_CONFIDENCE DECIMAL(3,2),
+        MAPPING_METHOD VARCHAR(50),  -- 'exact', 'fuzzy', 'manual'
+        FOREIGN KEY (INTERNAL_ENTITY_ID) REFERENCES ENTITIES(ENTITY_ID)
+    )
+    """
+```
+
+### Data Quality Simulation
+```python
+# Pattern for realistic data quality
+def simulate_provider_quality(provider_type: str) -> Dict:
+    """Simulate realistic data availability and quality."""
+    
+    quality_patterns = {
+        "financial_data": {
+            "large_cap_coverage": 0.98,
+            "small_cap_coverage": 0.75,
+            "private_company_coverage": 0.30,
+            "data_lag_days": 1
+        },
+        "news_data": {
+            "major_outlets_coverage": 0.95,
+            "regional_coverage": 0.80,
+            "language_accuracy": 0.90,
+            "sentiment_accuracy": 0.85
+        },
+        "compliance_data": {
+            "sanctions_accuracy": 0.995,
+            "pep_coverage": 0.90,
+            "adverse_media_recall": 0.85,
+            "update_lag_minutes": 5
+        }
+    }
+    
+    return quality_patterns.get(provider_type, {})
+```
+
+## Agent Integration Patterns
+
+### Attribution in Responses
+```python
+# Pattern for agent response attribution
+def format_external_data_citation(data_source: str, data_date: str) -> str:
+    """Proper attribution format for agent responses."""
+    return f"Source: {data_source} (Data as of: {data_date})"
+
+# Example in agent response:
+response = f"""
+The company's debt-to-equity ratio is 2.5x as of Q2 2024.
+{format_external_data_citation(
+    "S&P Global Market Intelligence via Snowflake Marketplace",
+    "2024-06-30"
+)}
+"""
+```
+
+### Multi-Provider Synthesis
+```python
+# Pattern for combining multiple external sources
+def synthesize_external_data() -> str:
+    """Query pattern for multi-provider analysis."""
+    return """
+    WITH financial_data AS (
+        SELECT * FROM SP_GLOBAL_FINANCIALS 
+        WHERE company_id = :company_id
+    ),
+    news_sentiment AS (
+        SELECT AVG(sentiment_score) as avg_sentiment
+        FROM REUTERS_COMPANY_MENTIONS
+        WHERE company_name = :company_name
+        AND publish_date > DATEADD(day, -30, CURRENT_DATE())
+    ),
+    compliance_status AS (
+        SELECT COUNT(*) as sanction_hits
+        FROM DJ_RISK_SANCTIONS_SCREENING
+        WHERE entity_name = :entity_name
+    )
+    SELECT 
+        f.*,
+        n.avg_sentiment,
+        c.sanction_hits,
+        'Multiple sources via Snowflake Marketplace' as attribution
+    FROM financial_data f
+    CROSS JOIN news_sentiment n
+    CROSS JOIN compliance_status c
+    """
+```
+
+## Testing External Data
+
+### Validation Patterns
+```python
+def validate_external_data_simulation():
+    """Ensure external data simulation is realistic."""
+    
+    validations = [
+        {
+            "check": "Attribution present",
+            "query": "SELECT COUNT(*) FROM {table} WHERE data_source IS NULL",
+            "expected": 0
+        },
+        {
+            "check": "Realistic data gaps",
+            "query": "SELECT coverage_rate FROM data_quality_metrics",
+            "expected_range": [0.70, 0.99]
+        },
+        {
+            "check": "Temporal consistency",
+            "query": "SELECT MAX(update_lag) FROM provider_metrics",
+            "expected_max": {"real-time": 15, "daily": 1440}  # minutes
+        }
+    ]
+    
+    return validations
+```
+
+### Demo Validation
+```python
+# Ensure marketplace story is compelling
+demo_talking_points = [
+    "All external data seamlessly integrated through Snowflake Marketplace",
+    "No ETL pipelines or API management required",
+    "Automatic updates with data freshness guarantees",
+    "Unified security and governance model",
+    "Pay only for what you use"
+]
+```
+
+## Best Practices
+
+1. **Always Include Attribution**: Every external record must have data source
+2. **Match Provider Patterns**: Respect typical data quality and coverage
+3. **Realistic Timing**: Simulate appropriate update frequencies
+4. **Cross-Provider Consistency**: Same entity should match across providers
+5. **Clear Documentation**: Note this is simulation for demo purposes
+
+## Anti-Patterns to Avoid
+
+### ❌ Missing Attribution
+```python
+# WRONG - No attribution
+df.write.save_as_table("SP_GLOBAL_FINANCIALS")
+
+# CORRECT - Include attribution
+df = df.with_column("DATA_SOURCE", 
+    lit("S&P Global Market Intelligence via Snowflake Marketplace"))
+```
+
+### ❌ Unrealistic Data Quality
+```python
+# WRONG - 100% data availability
+all_companies_have_all_data()
+
+# CORRECT - Realistic gaps
+apply_coverage_pattern(data, provider_coverage_rates)
+```
+
+### ❌ Inconsistent Updates
+```python
+# WRONG - Random update times
+update_timestamp = random_datetime()
+
+# CORRECT - Provider-specific patterns
+update_timestamp = get_provider_update_schedule(provider_type)
+```
+
+## Summary
+
+This pattern guide enables realistic external data simulation:
+1. Proper marketplace attribution throughout
+2. Provider-specific data characteristics
+3. Realistic quality and coverage patterns
+4. Seamless integration with agents
+5. Compelling demo narrative about marketplace value
+
+Remember: Document patterns for simulation, not specific provider details.

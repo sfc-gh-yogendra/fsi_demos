@@ -1,0 +1,727 @@
+---
+description: Snowflake Intelligence Setup Instructions Patterns and Best Practices
+alwaysApply: false
+---
+# Agent Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for creating, configuring, and testing Snowflake Intelligence agents. It focuses on HOW to build agents, not specific agent configurations.
+
+## Agent Architecture Patterns
+
+### Agent Naming Convention
+```
+Pattern: {scenario}_agent
+Examples: aml_officer_agent, credit_analyst_agent, wealth_advisor_agent
+
+Display Name: User-friendly version for UI
+Example: "AML Compliance Officer", "Senior Credit Analyst"
+```
+
+### Agent Component Structure
+```yaml
+Required Components:
+  1. Unique Name: Following naming convention
+  2. Display Name: Human-readable name
+  3. Description: Clear business purpose
+  4. Tools: 1-3 tools for focused capability
+  5. Response Instructions: Output formatting rules
+  6. Planning Instructions: Tool selection logic
+```
+
+## Tool Configuration Patterns
+
+### Cortex Analyst Tool Pattern
+```python
+# Pattern for analytical tools
+def configure_analyst_tool(semantic_view: str, purpose: str) -> Dict:
+    """Configure Cortex Analyst tool."""
+    return {
+        "tool_name": f"{semantic_view}_tool",
+        "type": "Cortex Analyst",
+        "semantic_view": f"{config.SNOWFLAKE['database']}.SEMANTIC_LAYER.{semantic_view}",
+        "description": f"Analyzes {purpose} using structured data. "
+                      f"Use for quantitative questions about metrics, ratios, and cohorts.",
+        "when_to_use": "Questions requiring calculations, aggregations, or filtering"
+    }
+```
+
+### Cortex Search Tool Pattern
+```python
+# Pattern for search tools
+def configure_search_tool(search_service: str, doc_types: List[str]) -> Dict:
+    """Configure Cortex Search tool."""
+    return {
+        "tool_name": f"{search_service}_tool",
+        "type": "Cortex Search", 
+        "service": f"{config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.{search_service}",
+        "description": f"Searches {', '.join(doc_types)} documents. "
+                      f"Returns relevant excerpts with source attribution.",
+        "when_to_use": "Questions about policies, documents, or unstructured content",
+        "attributes": ["id", "title", "content", "publish_date"]  # Common pattern
+    }
+```
+
+### Custom Tool Pattern (Future)
+```python
+# Pattern for custom tools (UDFs/Stored Procedures)
+def configure_custom_tool(function_name: str, purpose: str) -> Dict:
+    """Configure custom calculation tool."""
+    return {
+        "tool_name": f"{function_name}_tool",
+        "type": "Custom Function",
+        "function": f"{config.SNOWFLAKE['database']}.TOOLS.{function_name}",
+        "description": f"Performs {purpose}. Returns structured results.",
+        "parameters": {
+            "required": ["param1", "param2"],
+            "optional": ["param3"]
+        },
+        "when_to_use": "Specific calculations not available in standard tools"
+    }
+```
+
+## Multi-Tool Orchestration Patterns
+
+### Sequential Tool Usage
+```python
+# Pattern for tools that depend on each other
+planning_instructions = """
+For comprehensive analysis:
+1. First, search for relevant documents using search_tool
+2. Extract key entities and dates from documents
+3. Then use analyst_tool to get metrics for those specific entities
+4. Combine findings into unified response
+"""
+```
+
+### Parallel Tool Usage
+```python
+# Pattern for independent tool usage
+planning_instructions = """
+When user asks for complete assessment:
+- Use search_tool for qualitative information (policies, news)
+- Use analyst_tool for quantitative metrics (ratios, trends)
+- Synthesize both perspectives in response
+Execute both tools in parallel for efficiency.
+"""
+```
+
+### Conditional Tool Selection
+```python
+# Pattern for choosing tools based on query type
+planning_instructions = """
+Tool Selection Logic:
+- If query contains: "policy", "document", "what does X say" → use search_tool
+- If query contains: "calculate", "ratio", "trend", "cohort" → use analyst_tool  
+- If query requires both context and metrics → use both tools
+- Never use tools just to use them - only when they add value
+"""
+```
+
+## Response Instruction Patterns
+
+### Standard Response Format
+```python
+response_instructions = """
+1. Professional Tone: Use {config.LANGUAGE} banking terminology
+2. Structure: Start with direct answer, then supporting details
+3. Citations: Always include source (document ID or data period)
+4. Currency: State amounts in {config.CURRENCY} with proper formatting
+5. Precision: Round percentages to 1 decimal, amounts to nearest thousand
+6. Disclaimers: End with appropriate data currency note
+"""
+```
+
+### Specialized Response Patterns
+```python
+# Pattern for risk-focused responses
+risk_response_pattern = """
+- Flag severity with icons: ⚠️ WARNING, 🚨 BREACH
+- State specific threshold violated and policy reference
+- Quantify impact in business terms
+- Suggest next actions when appropriate
+"""
+
+# Pattern for analytical responses  
+analytical_response_pattern = """
+- Lead with key finding
+- Support with 3-5 specific data points
+- Include relevant time period and cohort
+- Offer drill-down options ("Would you like to see...")
+"""
+```
+
+## Testing Agent Patterns
+
+### Basic Functionality Test
+```python
+# Pattern for testing agent configuration
+def test_agent_basic_functionality(agent_name: str) -> None:
+    """Test agent responds to basic queries."""
+    
+    test_queries = [
+        "What tools do you have available?",
+        "Can you help with {scenario_purpose}?",
+        "{simple_domain_question}"
+    ]
+    
+    for query in test_queries:
+        response = agent.query(query)
+        assert response is not None
+        assert len(response) > 50  # Meaningful response
+        assert "error" not in response.lower()
+```
+
+### Tool Usage Validation
+```python
+# Pattern for validating tool usage
+def test_agent_tool_usage(agent_name: str) -> None:
+    """Validate agent uses appropriate tools."""
+    
+    tool_test_cases = [
+        {
+            "query": "What does the credit policy say about DSCR?",
+            "expected_tool": "search_tool",
+            "validation": lambda r: "policy" in r.lower()
+        },
+        {
+            "query": "Calculate average DSCR for software companies",
+            "expected_tool": "analyst_tool", 
+            "validation": lambda r: any(char.isdigit() for char in r)
+        }
+    ]
+    
+    for test in tool_test_cases:
+        response = agent.query(test["query"])
+        # Check tool was used (implementation-specific)
+        assert test["validation"](response)
+```
+
+### Cross-Domain Testing
+```python
+# Pattern for testing multi-tool scenarios
+def test_cross_domain_query(agent_name: str) -> None:
+    """Test agent handles complex multi-tool queries."""
+    
+    complex_query = """
+    Analyze Innovate GmbH considering their latest financials 
+    and any recent news about the company
+    """
+    
+    response = agent.query(complex_query)
+    
+    # Should use both tools
+    assert "financial metrics" in response.lower()  # From analyst
+    assert "news" in response.lower() or "article" in response.lower()  # From search
+    assert len(response) > 200  # Comprehensive response
+```
+
+## Common Agent Issues and Solutions
+
+### Issue: Agent Not Using Tools
+```yaml
+Symptoms: Generic responses without data
+Causes:
+  - Planning instructions too vague
+  - Tools not properly configured
+  - Query doesn't match tool triggers
+
+Solution:
+  - Make planning instructions more specific
+  - Add explicit keywords that trigger tool usage
+  - Test tools independently first
+```
+
+### Issue: Agent Using Wrong Tool
+```yaml
+Symptoms: Search tool for calculations or analyst for documents
+Causes:
+  - Overlapping tool descriptions
+  - Ambiguous planning logic
+
+Solution:
+  - Make tool descriptions mutually exclusive
+  - Add explicit "when to use" and "when NOT to use"
+  - Provide clear examples in planning instructions
+```
+
+### Issue: Incomplete Responses
+```yaml
+Symptoms: Agent returns partial information
+Causes:
+  - Response length limits
+  - Tool timeout
+  - Missing data
+
+Solution:
+  - Check response instruction length limits
+  - Implement pagination for large results
+  - Validate underlying data completeness
+```
+
+## Adding New Agents
+
+### Step 1: Define in Configuration
+```python
+# In config.py
+SCENARIOS["new_scenario"] = {
+    "name": "New Business Scenario",
+    "description": "Purpose of this scenario",
+    "required_data": ["table1", "table2"],
+    "required_services": ["search_service1"],
+    "required_views": ["semantic_view1"]
+}
+```
+
+### Step 2: Create Agent Template
+```python
+# Pattern for new agent configuration
+NEW_AGENT_CONFIG = {
+    "name": "new_scenario_agent",
+    "display_name": "Friendly Name",
+    "description": "Helps with {specific business purpose}",
+    "tools": [
+        configure_analyst_tool("semantic_view1", "purpose"),
+        configure_search_tool("search_service1", ["doc_type"])
+    ],
+    "response_instructions": standard_response_format(),
+    "planning_instructions": create_planning_logic()
+}
+```
+
+### Step 3: Implement Validation
+```python
+# Validation queries for new agent
+VALIDATION_QUERIES = {
+    "basic": "Can you explain your capabilities?",
+    "tool1": "Query that should trigger tool 1",
+    "tool2": "Query that should trigger tool 2", 
+    "combined": "Query requiring both tools"
+}
+```
+
+### Step 4: Document Scenarios
+Follow demo scenario documentation patterns to create user-facing documentation.
+
+## Best Practices
+
+### 1. Tool Minimalism
+- Limit agents to 1-3 tools for clarity
+- Each tool should have distinct purpose
+- Avoid overlapping capabilities
+
+### 2. Clear Instructions
+- Be specific about when to use each tool
+- Include examples in planning instructions
+- Define output format explicitly
+
+### 3. Consistent Patterns
+- Follow naming conventions
+- Use standard response formats
+- Maintain similar instruction structure
+
+### 4. Thorough Testing
+- Test each tool independently
+- Validate tool selection logic
+- Test edge cases and errors
+
+### 5. Performance Awareness
+- Consider tool execution time
+- Use parallel execution when possible
+- Cache frequent queries if applicable
+
+## Agent Evolution Pattern
+
+### Phase 1: Basic Tools
+```
+- Cortex Analyst for structured queries
+- Cortex Search for document retrieval
+- Simple orchestration logic
+```
+
+### Phase 2: Advanced Tools
+```
+- Custom calculation functions
+- Multi-step reasoning chains
+- Conditional tool flows
+```
+
+### Phase 3: Sophisticated Orchestration
+```
+- Dynamic tool selection
+- Learning from usage patterns
+- Automated optimization
+```
+
+## Summary
+
+This pattern guide enables you to:
+1. Create new agents following consistent patterns
+2. Configure tools appropriately
+3. Write effective orchestration logic
+4. Test agents thoroughly
+5. Troubleshoot common issues
+6. Evolve agents as capabilities grow
+
+Remember: Document patterns, not implementations. Specific agent configurations belong in deployment documentation, not rules.# Agent Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for creating, configuring, and testing Snowflake Intelligence agents. It focuses on HOW to build agents, not specific agent configurations.
+
+## Agent Architecture Patterns
+
+### Agent Naming Convention
+```
+Pattern: {scenario}_agent
+Examples: aml_officer_agent, credit_analyst_agent, wealth_advisor_agent
+
+Display Name: User-friendly version for UI
+Example: "AML Compliance Officer", "Senior Credit Analyst"
+```
+
+### Agent Component Structure
+```yaml
+Required Components:
+  1. Unique Name: Following naming convention
+  2. Display Name: Human-readable name
+  3. Description: Clear business purpose
+  4. Tools: 1-3 tools for focused capability
+  5. Response Instructions: Output formatting rules
+  6. Planning Instructions: Tool selection logic
+```
+
+## Tool Configuration Patterns
+
+### Cortex Analyst Tool Pattern
+```python
+# Pattern for analytical tools
+def configure_analyst_tool(semantic_view: str, purpose: str) -> Dict:
+    """Configure Cortex Analyst tool."""
+    return {
+        "tool_name": f"{semantic_view}_tool",
+        "type": "Cortex Analyst",
+        "semantic_view": f"{config.SNOWFLAKE['database']}.SEMANTIC_LAYER.{semantic_view}",
+        "description": f"Analyzes {purpose} using structured data. "
+                      f"Use for quantitative questions about metrics, ratios, and cohorts.",
+        "when_to_use": "Questions requiring calculations, aggregations, or filtering"
+    }
+```
+
+### Cortex Search Tool Pattern
+```python
+# Pattern for search tools
+def configure_search_tool(search_service: str, doc_types: List[str]) -> Dict:
+    """Configure Cortex Search tool."""
+    return {
+        "tool_name": f"{search_service}_tool",
+        "type": "Cortex Search", 
+        "service": f"{config.SNOWFLAKE['database']}.AGENT_FRAMEWORK.{search_service}",
+        "description": f"Searches {', '.join(doc_types)} documents. "
+                      f"Returns relevant excerpts with source attribution.",
+        "when_to_use": "Questions about policies, documents, or unstructured content",
+        "attributes": ["id", "title", "content", "publish_date"]  # Common pattern
+    }
+```
+
+### Custom Tool Pattern (Future)
+```python
+# Pattern for custom tools (UDFs/Stored Procedures)
+def configure_custom_tool(function_name: str, purpose: str) -> Dict:
+    """Configure custom calculation tool."""
+    return {
+        "tool_name": f"{function_name}_tool",
+        "type": "Custom Function",
+        "function": f"{config.SNOWFLAKE['database']}.TOOLS.{function_name}",
+        "description": f"Performs {purpose}. Returns structured results.",
+        "parameters": {
+            "required": ["param1", "param2"],
+            "optional": ["param3"]
+        },
+        "when_to_use": "Specific calculations not available in standard tools"
+    }
+```
+
+## Multi-Tool Orchestration Patterns
+
+### Sequential Tool Usage
+```python
+# Pattern for tools that depend on each other
+planning_instructions = """
+For comprehensive analysis:
+1. First, search for relevant documents using search_tool
+2. Extract key entities and dates from documents
+3. Then use analyst_tool to get metrics for those specific entities
+4. Combine findings into unified response
+"""
+```
+
+### Parallel Tool Usage
+```python
+# Pattern for independent tool usage
+planning_instructions = """
+When user asks for complete assessment:
+- Use search_tool for qualitative information (policies, news)
+- Use analyst_tool for quantitative metrics (ratios, trends)
+- Synthesize both perspectives in response
+Execute both tools in parallel for efficiency.
+"""
+```
+
+### Conditional Tool Selection
+```python
+# Pattern for choosing tools based on query type
+planning_instructions = """
+Tool Selection Logic:
+- If query contains: "policy", "document", "what does X say" → use search_tool
+- If query contains: "calculate", "ratio", "trend", "cohort" → use analyst_tool  
+- If query requires both context and metrics → use both tools
+- Never use tools just to use them - only when they add value
+"""
+```
+
+## Response Instruction Patterns
+
+### Standard Response Format
+```python
+response_instructions = """
+1. Professional Tone: Use {config.LANGUAGE} banking terminology
+2. Structure: Start with direct answer, then supporting details
+3. Citations: Always include source (document ID or data period)
+4. Currency: State amounts in {config.CURRENCY} with proper formatting
+5. Precision: Round percentages to 1 decimal, amounts to nearest thousand
+6. Disclaimers: End with appropriate data currency note
+"""
+```
+
+### Specialized Response Patterns
+```python
+# Pattern for risk-focused responses
+risk_response_pattern = """
+- Flag severity with icons: ⚠️ WARNING, 🚨 BREACH
+- State specific threshold violated and policy reference
+- Quantify impact in business terms
+- Suggest next actions when appropriate
+"""
+
+# Pattern for analytical responses  
+analytical_response_pattern = """
+- Lead with key finding
+- Support with 3-5 specific data points
+- Include relevant time period and cohort
+- Offer drill-down options ("Would you like to see...")
+"""
+```
+
+## Testing Agent Patterns
+
+### Basic Functionality Test
+```python
+# Pattern for testing agent configuration
+def test_agent_basic_functionality(agent_name: str) -> None:
+    """Test agent responds to basic queries."""
+    
+    test_queries = [
+        "What tools do you have available?",
+        "Can you help with {scenario_purpose}?",
+        "{simple_domain_question}"
+    ]
+    
+    for query in test_queries:
+        response = agent.query(query)
+        assert response is not None
+        assert len(response) > 50  # Meaningful response
+        assert "error" not in response.lower()
+```
+
+### Tool Usage Validation
+```python
+# Pattern for validating tool usage
+def test_agent_tool_usage(agent_name: str) -> None:
+    """Validate agent uses appropriate tools."""
+    
+    tool_test_cases = [
+        {
+            "query": "What does the credit policy say about DSCR?",
+            "expected_tool": "search_tool",
+            "validation": lambda r: "policy" in r.lower()
+        },
+        {
+            "query": "Calculate average DSCR for software companies",
+            "expected_tool": "analyst_tool", 
+            "validation": lambda r: any(char.isdigit() for char in r)
+        }
+    ]
+    
+    for test in tool_test_cases:
+        response = agent.query(test["query"])
+        # Check tool was used (implementation-specific)
+        assert test["validation"](response)
+```
+
+### Cross-Domain Testing
+```python
+# Pattern for testing multi-tool scenarios
+def test_cross_domain_query(agent_name: str) -> None:
+    """Test agent handles complex multi-tool queries."""
+    
+    complex_query = """
+    Analyze Innovate GmbH considering their latest financials 
+    and any recent news about the company
+    """
+    
+    response = agent.query(complex_query)
+    
+    # Should use both tools
+    assert "financial metrics" in response.lower()  # From analyst
+    assert "news" in response.lower() or "article" in response.lower()  # From search
+    assert len(response) > 200  # Comprehensive response
+```
+
+## Common Agent Issues and Solutions
+
+### Issue: Agent Not Using Tools
+```yaml
+Symptoms: Generic responses without data
+Causes:
+  - Planning instructions too vague
+  - Tools not properly configured
+  - Query doesn't match tool triggers
+
+Solution:
+  - Make planning instructions more specific
+  - Add explicit keywords that trigger tool usage
+  - Test tools independently first
+```
+
+### Issue: Agent Using Wrong Tool
+```yaml
+Symptoms: Search tool for calculations or analyst for documents
+Causes:
+  - Overlapping tool descriptions
+  - Ambiguous planning logic
+
+Solution:
+  - Make tool descriptions mutually exclusive
+  - Add explicit "when to use" and "when NOT to use"
+  - Provide clear examples in planning instructions
+```
+
+### Issue: Incomplete Responses
+```yaml
+Symptoms: Agent returns partial information
+Causes:
+  - Response length limits
+  - Tool timeout
+  - Missing data
+
+Solution:
+  - Check response instruction length limits
+  - Implement pagination for large results
+  - Validate underlying data completeness
+```
+
+## Adding New Agents
+
+### Step 1: Define in Configuration
+```python
+# In config.py
+SCENARIOS["new_scenario"] = {
+    "name": "New Business Scenario",
+    "description": "Purpose of this scenario",
+    "required_data": ["table1", "table2"],
+    "required_services": ["search_service1"],
+    "required_views": ["semantic_view1"]
+}
+```
+
+### Step 2: Create Agent Template
+```python
+# Pattern for new agent configuration
+NEW_AGENT_CONFIG = {
+    "name": "new_scenario_agent",
+    "display_name": "Friendly Name",
+    "description": "Helps with {specific business purpose}",
+    "tools": [
+        configure_analyst_tool("semantic_view1", "purpose"),
+        configure_search_tool("search_service1", ["doc_type"])
+    ],
+    "response_instructions": standard_response_format(),
+    "planning_instructions": create_planning_logic()
+}
+```
+
+### Step 3: Implement Validation
+```python
+# Validation queries for new agent
+VALIDATION_QUERIES = {
+    "basic": "Can you explain your capabilities?",
+    "tool1": "Query that should trigger tool 1",
+    "tool2": "Query that should trigger tool 2", 
+    "combined": "Query requiring both tools"
+}
+```
+
+### Step 4: Document Scenarios
+Follow demo scenario documentation patterns to create user-facing documentation.
+
+## Best Practices
+
+### 1. Tool Minimalism
+- Limit agents to 1-3 tools for clarity
+- Each tool should have distinct purpose
+- Avoid overlapping capabilities
+
+### 2. Clear Instructions
+- Be specific about when to use each tool
+- Include examples in planning instructions
+- Define output format explicitly
+
+### 3. Consistent Patterns
+- Follow naming conventions
+- Use standard response formats
+- Maintain similar instruction structure
+
+### 4. Thorough Testing
+- Test each tool independently
+- Validate tool selection logic
+- Test edge cases and errors
+
+### 5. Performance Awareness
+- Consider tool execution time
+- Use parallel execution when possible
+- Cache frequent queries if applicable
+
+## Agent Evolution Pattern
+
+### Phase 1: Basic Tools
+```
+- Cortex Analyst for structured queries
+- Cortex Search for document retrieval
+- Simple orchestration logic
+```
+
+### Phase 2: Advanced Tools
+```
+- Custom calculation functions
+- Multi-step reasoning chains
+- Conditional tool flows
+```
+
+### Phase 3: Sophisticated Orchestration
+```
+- Dynamic tool selection
+- Learning from usage patterns
+- Automated optimization
+```
+
+## Summary
+
+This pattern guide enables you to:
+1. Create new agents following consistent patterns
+2. Configure tools appropriately
+3. Write effective orchestration logic
+4. Test agents thoroughly
+5. Troubleshoot common issues
+6. Evolve agents as capabilities grow
+
+Remember: Document patterns, not implementations. Specific agent configurations belong in deployment documentation, not rules.

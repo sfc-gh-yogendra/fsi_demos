@@ -1,0 +1,799 @@
+---
+description: Data modeling and generation Patterns and Best Practices
+alwaysApply: false
+---
+# Data Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for data modeling, generation, and quality assurance. It shows HOW to structure and generate data, not the specific schemas (which belong in SQL files).
+
+## Data Modeling Patterns
+
+### Entity Design Pattern
+```python
+# Pattern for designing entities
+def design_entity_table(entity_type: str) -> Dict[str, Any]:
+    """Standard pattern for entity tables."""
+    return {
+        "primary_key": f"{entity_type}_ID",
+        "required_fields": [
+            f"{entity_type}_ID VARCHAR(50) PRIMARY KEY",
+            f"{entity_type}_NAME VARCHAR(200) NOT NULL",
+            f"{entity_type}_TYPE VARCHAR(50)",
+            "CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()",
+            "LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()"
+        ],
+        "naming_convention": f"{ACRONYM}_{COUNTRY}_{SEQUENCE}",
+        "example": "GTV_LUX_001"  # Global Trade Ventures, Luxembourg, #001
+    }
+```
+
+### Relationship Modeling Pattern
+```python
+# Pattern for many-to-many relationships
+def create_relationship_pattern(entity1: str, entity2: str) -> str:
+    """Pattern for relationship tables."""
+    return f"""
+    CREATE TABLE {entity1}_TO_{entity2} (
+        RELATIONSHIP_ID VARCHAR(50) PRIMARY KEY,
+        {entity1}_ID VARCHAR(50) NOT NULL,
+        {entity2}_ID VARCHAR(50) NOT NULL,
+        RELATIONSHIP_TYPE VARCHAR(50) NOT NULL,
+        RELATIONSHIP_STRENGTH VARCHAR(20),  -- PRIMARY, SECONDARY, INDIRECT
+        RISK_IMPACT_SCORE DECIMAL(3,2),    -- 0.00 to 1.00
+        EFFECTIVE_DATE DATE,
+        END_DATE DATE,
+        CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+        FOREIGN KEY ({entity1}_ID) REFERENCES {entity1}S({entity1}_ID),
+        FOREIGN KEY ({entity2}_ID) REFERENCES {entity2}S({entity2}_ID)
+    )
+    """
+```
+
+### Transaction Data Pattern
+```python
+# Pattern for fact/transaction tables
+def create_transaction_pattern(transaction_type: str) -> Dict[str, List[str]]:
+    """Standard pattern for transaction tables."""
+    return {
+        "required_fields": [
+            "TRANSACTION_ID VARCHAR(50) PRIMARY KEY",
+            "TRANSACTION_DATE TIMESTAMP_NTZ NOT NULL",
+            "AMOUNT DECIMAL(18,2) NOT NULL",
+            "CURRENCY VARCHAR(3) NOT NULL",
+            "TRANSACTION_TYPE VARCHAR(50) NOT NULL"
+        ],
+        "foreign_keys": [
+            "Link to relevant dimension tables",
+            "Ensure referential integrity"
+        ],
+        "partitioning": "CLUSTER BY (TRANSACTION_DATE::DATE)",
+        "indexes": "Consider secondary indexes on high-cardinality filters"
+    }
+```
+
+## Data Generation Patterns
+
+### Structured Data Generation
+```python
+# Pattern for generating structured data
+def generate_structured_data_pattern(entity_type: str, scale: str) -> None:
+    """Standard pattern for data generation."""
+    import config
+    
+    # 1. Get scale configuration
+    scale_config = config.get_scale_config(scale)
+    target_count = scale_config.get(entity_type, 100)
+    
+    # 2. Ensure key entities are included
+    data = []
+    
+    # Always include key entities first
+    if entity_type in ['entities', 'customers']:
+        for key, entity_spec in config.KEY_ENTITIES.items():
+            data.append(transform_to_record(entity_spec))
+    
+    # 3. Generate additional records to meet scale
+    additional_needed = target_count - len(data)
+    if additional_needed > 0:
+        data.extend(generate_random_records(entity_type, additional_needed))
+    
+    # 4. Save to Snowflake
+    df = session.create_dataframe(data)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.{entity_type.upper()}",
+        mode="overwrite"
+    )
+    
+    # 5. Validate
+    actual_count = session.sql(f"SELECT COUNT(*) FROM {table_name}").collect()[0][0]
+    logger.info(f"Generated {actual_count} {entity_type} records")
+```
+
+### Unstructured Data Generation
+```python
+# Pattern for generating documents with LLM
+def generate_documents_pattern(doc_type: str, entities: List[Dict]) -> None:
+    """Pattern for document generation using Cortex Complete."""
+    import config
+    
+    # 1. Create prompts with consistent structure
+    prompts = []
+    for entity in entities:
+        prompt = f"""
+        Create a {doc_type} for {entity['name']}.
+        
+        Requirements:
+        - Professional {config.LANGUAGE} tone
+        - Institution context: {config.INSTITUTION_NAME}
+        - Include specific details about the entity
+        - Reference current market themes
+        - Length: {get_word_count_range(doc_type)} words
+        """
+        
+        prompts.append({
+            'entity_id': entity['id'],
+            'doc_type': doc_type,
+            'prompt': prompt
+        })
+    
+    # 2. Generate content in batches
+    batch_size = 100  # Adjust based on LLM capacity
+    for i in range(0, len(prompts), batch_size):
+        batch = prompts[i:i+batch_size]
+        generate_batch_with_llm(session, batch)
+    
+    # 3. Post-process and validate
+    validate_document_quality(session, doc_type)
+```
+
+### Cross-Domain Data Generation
+```python
+# Pattern for ensuring cross-domain consistency
+def generate_cross_domain_data() -> None:
+    """Ensure data consistency across domains."""
+    
+    # 1. Generate shared entities first
+    shared_entities = ['Northern Supply Chain Ltd']  # Vendor to multiple clients
+    
+    # 2. Create relationships
+    create_vendor_relationships(shared_entities)
+    
+    # 3. Generate domain-specific data with shared references
+    generate_aml_data_with_relationships()
+    generate_credit_data_with_relationships()
+    
+    # 4. Validate cross-domain integrity
+    validate_cross_references()
+```
+
+## Data Quality Patterns
+
+### Validation Pattern
+```python
+# Pattern for data validation
+def validate_data_quality(table_name: str) -> Dict[str, Any]:
+    """Comprehensive data quality validation."""
+    
+    validations = {
+        "record_count": validate_record_count(table_name),
+        "null_checks": validate_required_fields(table_name),
+        "foreign_keys": validate_relationships(table_name),
+        "business_rules": validate_business_logic(table_name),
+        "duplicates": check_duplicates(table_name)
+    }
+    
+    # Report results
+    for check, result in validations.items():
+        if not result['passed']:
+            logger.error(f"Validation failed for {table_name}.{check}: {result['message']}")
+    
+    return validations
+```
+
+### Referential Integrity Pattern
+```python
+# Pattern for ensuring referential integrity
+def validate_referential_integrity() -> None:
+    """Validate all foreign key relationships."""
+    
+    integrity_checks = [
+        {
+            "child_table": "ENTITY_RELATIONSHIPS",
+            "child_column": "PRIMARY_ENTITY_ID",
+            "parent_table": "ENTITIES",
+            "parent_column": "ENTITY_ID"
+        },
+        {
+            "child_table": "TRANSACTIONS",
+            "child_column": "CUSTOMER_ID",
+            "parent_table": "CUSTOMERS",
+            "parent_column": "CUSTOMER_ID"
+        }
+    ]
+    
+    for check in integrity_checks:
+        orphaned = session.sql(f"""
+            SELECT COUNT(*) as orphan_count
+            FROM {check['child_table']} c
+            LEFT JOIN {check['parent_table']} p
+                ON c.{check['child_column']} = p.{check['parent_column']}
+            WHERE p.{check['parent_column']} IS NULL
+        """).collect()[0]['ORPHAN_COUNT']
+        
+        if orphaned > 0:
+            raise ValueError(f"Found {orphaned} orphaned records in {check['child_table']}")
+```
+
+### Business Logic Validation
+```python
+# Pattern for validating business rules
+def validate_business_rules() -> None:
+    """Validate data follows business logic."""
+    
+    # Example: Financial ratios must be mathematically consistent
+    invalid_ratios = session.sql("""
+        SELECT COUNT(*) as invalid_count
+        FROM LOAN_APPLICATIONS
+        WHERE debt_to_equity_ratio != 
+            (total_liabilities / NULLIF(total_assets - total_liabilities, 0))
+    """).collect()[0]['INVALID_COUNT']
+    
+    # Example: Dates must be logical
+    invalid_dates = session.sql("""
+        SELECT COUNT(*) as invalid_count
+        FROM ENTITIES
+        WHERE incorporation_date > CURRENT_DATE()
+           OR incorporation_date < '1900-01-01'
+    """).collect()[0]['INVALID_COUNT']
+    
+    if invalid_ratios > 0 or invalid_dates > 0:
+        raise ValueError(f"Business rule violations found")
+```
+
+## Performance Optimization Patterns
+
+### Batch Processing Pattern
+```python
+# Pattern for efficient batch processing
+def process_large_dataset(table_name: str, operation: Callable) -> None:
+    """Process large datasets in manageable batches."""
+    
+    # Get total count
+    total_count = session.sql(f"SELECT COUNT(*) FROM {table_name}").collect()[0][0]
+    
+    batch_size = 10000  # Adjust based on operation complexity
+    offset = 0
+    
+    while offset < total_count:
+        # Process batch
+        batch_df = session.sql(f"""
+            SELECT * FROM {table_name}
+            ORDER BY 1  -- Consistent ordering
+            LIMIT {batch_size}
+            OFFSET {offset}
+        """)
+        
+        operation(batch_df)
+        
+        offset += batch_size
+        progress = min(offset, total_count)
+        logger.info(f"Processed {progress}/{total_count} records")
+```
+
+### Parallel Generation Pattern
+```python
+# Pattern for parallel data generation
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def generate_data_parallel(data_types: List[str], scale: str) -> None:
+    """Generate multiple data types in parallel."""
+    
+    def generate_wrapper(data_type: str):
+        try:
+            if data_type in ['entities', 'customers']:
+                generate_structured_data(session, data_type, scale)
+            else:
+                generate_documents(session, data_type, scale)
+            return f"Success: {data_type}"
+        except Exception as e:
+            return f"Failed: {data_type} - {str(e)}"
+    
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(generate_wrapper, dt): dt 
+            for dt in data_types
+        }
+        
+        for future in as_completed(futures):
+            result = future.result()
+            logger.info(result)
+```
+
+## Common Anti-Patterns
+
+### ❌ Generating Without Key Entities
+```python
+# WRONG - Random generation without ensuring key entities
+data = generate_random_entities(count=1000)
+
+# CORRECT - Include key entities first
+data = []
+for key_entity in config.KEY_ENTITIES.values():
+    data.append(key_entity)
+data.extend(generate_random_entities(count=1000 - len(data)))
+```
+
+### ❌ Ignoring Referential Integrity
+```python
+# WRONG - Generate child records without parent records
+generate_transactions()  # Before customers exist
+
+# CORRECT - Follow dependency order
+generate_entities()      # First
+generate_customers()     # Depends on entities
+generate_transactions()  # Depends on customers
+```
+
+### ❌ No Data Validation
+```python
+# WRONG - Generate and assume success
+generate_data()
+
+# CORRECT - Generate and validate
+generate_data()
+validation_results = validate_data_quality()
+if not all(r['passed'] for r in validation_results.values()):
+    raise ValueError("Data quality validation failed")
+```
+
+## Adding New Data Types
+
+### 1. Define Structure Pattern
+```python
+# In your generation module
+NEW_DATA_TYPE = {
+    "table_name": "NEW_DATA",
+    "primary_key": "NEW_ID",
+    "required_fields": [...],
+    "foreign_keys": [...],
+    "generation_count": {
+        "mini": 10,
+        "demo": 100,
+        "full": 1000
+    }
+}
+```
+
+### 2. Create Generation Function
+```python
+def generate_new_data_type(session: Session, scale: str) -> None:
+    """Generate new data type following standard pattern."""
+    # Follow structured data generation pattern above
+```
+
+### 3. Add Validation
+```python
+def validate_new_data_type(session: Session) -> Dict[str, bool]:
+    """Validate new data type quality."""
+    # Follow validation pattern above
+```
+
+### 4. Update Dependencies
+```python
+# Ensure generation order respects dependencies
+GENERATION_ORDER = [
+    "entities",
+    "customers", 
+    "new_data_type",  # Add in correct position
+    "transactions"
+]
+```
+
+## Best Practices Summary
+
+1. **Key Entities First**: Always include demo focal points
+2. **Respect Dependencies**: Generate parent data before children
+3. **Validate Everything**: Check counts, integrity, business rules
+4. **Batch Large Operations**: Don't process millions at once
+5. **Log Progress**: Especially for long-running operations
+6. **Test at Mini Scale**: Validate patterns before full generation
+7. **Document Patterns**: Not specific schemas
+8. **Version Control SQL**: Keep schemas in SQL files, not rules# Data Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns for data modeling, generation, and quality assurance. It shows HOW to structure and generate data, not the specific schemas (which belong in SQL files).
+
+## Data Modeling Patterns
+
+### Entity Design Pattern
+```python
+# Pattern for designing entities
+def design_entity_table(entity_type: str) -> Dict[str, Any]:
+    """Standard pattern for entity tables."""
+    return {
+        "primary_key": f"{entity_type}_ID",
+        "required_fields": [
+            f"{entity_type}_ID VARCHAR(50) PRIMARY KEY",
+            f"{entity_type}_NAME VARCHAR(200) NOT NULL",
+            f"{entity_type}_TYPE VARCHAR(50)",
+            "CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()",
+            "LAST_UPDATED TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()"
+        ],
+        "naming_convention": f"{ACRONYM}_{COUNTRY}_{SEQUENCE}",
+        "example": "GTV_LUX_001"  # Global Trade Ventures, Luxembourg, #001
+    }
+```
+
+### Relationship Modeling Pattern
+```python
+# Pattern for many-to-many relationships
+def create_relationship_pattern(entity1: str, entity2: str) -> str:
+    """Pattern for relationship tables."""
+    return f"""
+    CREATE TABLE {entity1}_TO_{entity2} (
+        RELATIONSHIP_ID VARCHAR(50) PRIMARY KEY,
+        {entity1}_ID VARCHAR(50) NOT NULL,
+        {entity2}_ID VARCHAR(50) NOT NULL,
+        RELATIONSHIP_TYPE VARCHAR(50) NOT NULL,
+        RELATIONSHIP_STRENGTH VARCHAR(20),  -- PRIMARY, SECONDARY, INDIRECT
+        RISK_IMPACT_SCORE DECIMAL(3,2),    -- 0.00 to 1.00
+        EFFECTIVE_DATE DATE,
+        END_DATE DATE,
+        CREATED_DATE TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+        FOREIGN KEY ({entity1}_ID) REFERENCES {entity1}S({entity1}_ID),
+        FOREIGN KEY ({entity2}_ID) REFERENCES {entity2}S({entity2}_ID)
+    )
+    """
+```
+
+### Transaction Data Pattern
+```python
+# Pattern for fact/transaction tables
+def create_transaction_pattern(transaction_type: str) -> Dict[str, List[str]]:
+    """Standard pattern for transaction tables."""
+    return {
+        "required_fields": [
+            "TRANSACTION_ID VARCHAR(50) PRIMARY KEY",
+            "TRANSACTION_DATE TIMESTAMP_NTZ NOT NULL",
+            "AMOUNT DECIMAL(18,2) NOT NULL",
+            "CURRENCY VARCHAR(3) NOT NULL",
+            "TRANSACTION_TYPE VARCHAR(50) NOT NULL"
+        ],
+        "foreign_keys": [
+            "Link to relevant dimension tables",
+            "Ensure referential integrity"
+        ],
+        "partitioning": "CLUSTER BY (TRANSACTION_DATE::DATE)",
+        "indexes": "Consider secondary indexes on high-cardinality filters"
+    }
+```
+
+## Data Generation Patterns
+
+### Structured Data Generation
+```python
+# Pattern for generating structured data
+def generate_structured_data_pattern(entity_type: str, scale: str) -> None:
+    """Standard pattern for data generation."""
+    import config
+    
+    # 1. Get scale configuration
+    scale_config = config.get_scale_config(scale)
+    target_count = scale_config.get(entity_type, 100)
+    
+    # 2. Ensure key entities are included
+    data = []
+    
+    # Always include key entities first
+    if entity_type in ['entities', 'customers']:
+        for key, entity_spec in config.KEY_ENTITIES.items():
+            data.append(transform_to_record(entity_spec))
+    
+    # 3. Generate additional records to meet scale
+    additional_needed = target_count - len(data)
+    if additional_needed > 0:
+        data.extend(generate_random_records(entity_type, additional_needed))
+    
+    # 4. Save to Snowflake
+    df = session.create_dataframe(data)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.{entity_type.upper()}",
+        mode="overwrite"
+    )
+    
+    # 5. Validate
+    actual_count = session.sql(f"SELECT COUNT(*) FROM {table_name}").collect()[0][0]
+    logger.info(f"Generated {actual_count} {entity_type} records")
+```
+
+### Unstructured Data Generation
+```python
+# Pattern for generating documents with LLM
+def generate_documents_pattern(doc_type: str, entities: List[Dict]) -> None:
+    """Pattern for document generation using Cortex Complete."""
+    import config
+    
+    # 1. Create prompts with consistent structure
+    prompts = []
+    for entity in entities:
+        prompt = f"""
+        Create a {doc_type} for {entity['name']}.
+        
+        Requirements:
+        - Professional {config.LANGUAGE} tone
+        - Institution context: {config.INSTITUTION_NAME}
+        - Include specific details about the entity
+        - Reference current market themes
+        - Length: {get_word_count_range(doc_type)} words
+        """
+        
+        prompts.append({
+            'entity_id': entity['id'],
+            'doc_type': doc_type,
+            'prompt': prompt
+        })
+    
+    # 2. Generate content in batches
+    batch_size = 100  # Adjust based on LLM capacity
+    for i in range(0, len(prompts), batch_size):
+        batch = prompts[i:i+batch_size]
+        generate_batch_with_llm(session, batch)
+    
+    # 3. Post-process and validate
+    validate_document_quality(session, doc_type)
+```
+
+### Cross-Domain Data Generation
+```python
+# Pattern for ensuring cross-domain consistency
+def generate_cross_domain_data() -> None:
+    """Ensure data consistency across domains."""
+    
+    # 1. Generate shared entities first
+    shared_entities = ['Northern Supply Chain Ltd']  # Vendor to multiple clients
+    
+    # 2. Create relationships
+    create_vendor_relationships(shared_entities)
+    
+    # 3. Generate domain-specific data with shared references
+    generate_aml_data_with_relationships()
+    generate_credit_data_with_relationships()
+    
+    # 4. Validate cross-domain integrity
+    validate_cross_references()
+```
+
+## Data Quality Patterns
+
+### Validation Pattern
+```python
+# Pattern for data validation
+def validate_data_quality(table_name: str) -> Dict[str, Any]:
+    """Comprehensive data quality validation."""
+    
+    validations = {
+        "record_count": validate_record_count(table_name),
+        "null_checks": validate_required_fields(table_name),
+        "foreign_keys": validate_relationships(table_name),
+        "business_rules": validate_business_logic(table_name),
+        "duplicates": check_duplicates(table_name)
+    }
+    
+    # Report results
+    for check, result in validations.items():
+        if not result['passed']:
+            logger.error(f"Validation failed for {table_name}.{check}: {result['message']}")
+    
+    return validations
+```
+
+### Referential Integrity Pattern
+```python
+# Pattern for ensuring referential integrity
+def validate_referential_integrity() -> None:
+    """Validate all foreign key relationships."""
+    
+    integrity_checks = [
+        {
+            "child_table": "ENTITY_RELATIONSHIPS",
+            "child_column": "PRIMARY_ENTITY_ID",
+            "parent_table": "ENTITIES",
+            "parent_column": "ENTITY_ID"
+        },
+        {
+            "child_table": "TRANSACTIONS",
+            "child_column": "CUSTOMER_ID",
+            "parent_table": "CUSTOMERS",
+            "parent_column": "CUSTOMER_ID"
+        }
+    ]
+    
+    for check in integrity_checks:
+        orphaned = session.sql(f"""
+            SELECT COUNT(*) as orphan_count
+            FROM {check['child_table']} c
+            LEFT JOIN {check['parent_table']} p
+                ON c.{check['child_column']} = p.{check['parent_column']}
+            WHERE p.{check['parent_column']} IS NULL
+        """).collect()[0]['ORPHAN_COUNT']
+        
+        if orphaned > 0:
+            raise ValueError(f"Found {orphaned} orphaned records in {check['child_table']}")
+```
+
+### Business Logic Validation
+```python
+# Pattern for validating business rules
+def validate_business_rules() -> None:
+    """Validate data follows business logic."""
+    
+    # Example: Financial ratios must be mathematically consistent
+    invalid_ratios = session.sql("""
+        SELECT COUNT(*) as invalid_count
+        FROM LOAN_APPLICATIONS
+        WHERE debt_to_equity_ratio != 
+            (total_liabilities / NULLIF(total_assets - total_liabilities, 0))
+    """).collect()[0]['INVALID_COUNT']
+    
+    # Example: Dates must be logical
+    invalid_dates = session.sql("""
+        SELECT COUNT(*) as invalid_count
+        FROM ENTITIES
+        WHERE incorporation_date > CURRENT_DATE()
+           OR incorporation_date < '1900-01-01'
+    """).collect()[0]['INVALID_COUNT']
+    
+    if invalid_ratios > 0 or invalid_dates > 0:
+        raise ValueError(f"Business rule violations found")
+```
+
+## Performance Optimization Patterns
+
+### Batch Processing Pattern
+```python
+# Pattern for efficient batch processing
+def process_large_dataset(table_name: str, operation: Callable) -> None:
+    """Process large datasets in manageable batches."""
+    
+    # Get total count
+    total_count = session.sql(f"SELECT COUNT(*) FROM {table_name}").collect()[0][0]
+    
+    batch_size = 10000  # Adjust based on operation complexity
+    offset = 0
+    
+    while offset < total_count:
+        # Process batch
+        batch_df = session.sql(f"""
+            SELECT * FROM {table_name}
+            ORDER BY 1  -- Consistent ordering
+            LIMIT {batch_size}
+            OFFSET {offset}
+        """)
+        
+        operation(batch_df)
+        
+        offset += batch_size
+        progress = min(offset, total_count)
+        logger.info(f"Processed {progress}/{total_count} records")
+```
+
+### Parallel Generation Pattern
+```python
+# Pattern for parallel data generation
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def generate_data_parallel(data_types: List[str], scale: str) -> None:
+    """Generate multiple data types in parallel."""
+    
+    def generate_wrapper(data_type: str):
+        try:
+            if data_type in ['entities', 'customers']:
+                generate_structured_data(session, data_type, scale)
+            else:
+                generate_documents(session, data_type, scale)
+            return f"Success: {data_type}"
+        except Exception as e:
+            return f"Failed: {data_type} - {str(e)}"
+    
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(generate_wrapper, dt): dt 
+            for dt in data_types
+        }
+        
+        for future in as_completed(futures):
+            result = future.result()
+            logger.info(result)
+```
+
+## Common Anti-Patterns
+
+### ❌ Generating Without Key Entities
+```python
+# WRONG - Random generation without ensuring key entities
+data = generate_random_entities(count=1000)
+
+# CORRECT - Include key entities first
+data = []
+for key_entity in config.KEY_ENTITIES.values():
+    data.append(key_entity)
+data.extend(generate_random_entities(count=1000 - len(data)))
+```
+
+### ❌ Ignoring Referential Integrity
+```python
+# WRONG - Generate child records without parent records
+generate_transactions()  # Before customers exist
+
+# CORRECT - Follow dependency order
+generate_entities()      # First
+generate_customers()     # Depends on entities
+generate_transactions()  # Depends on customers
+```
+
+### ❌ No Data Validation
+```python
+# WRONG - Generate and assume success
+generate_data()
+
+# CORRECT - Generate and validate
+generate_data()
+validation_results = validate_data_quality()
+if not all(r['passed'] for r in validation_results.values()):
+    raise ValueError("Data quality validation failed")
+```
+
+## Adding New Data Types
+
+### 1. Define Structure Pattern
+```python
+# In your generation module
+NEW_DATA_TYPE = {
+    "table_name": "NEW_DATA",
+    "primary_key": "NEW_ID",
+    "required_fields": [...],
+    "foreign_keys": [...],
+    "generation_count": {
+        "mini": 10,
+        "demo": 100,
+        "full": 1000
+    }
+}
+```
+
+### 2. Create Generation Function
+```python
+def generate_new_data_type(session: Session, scale: str) -> None:
+    """Generate new data type following standard pattern."""
+    # Follow structured data generation pattern above
+```
+
+### 3. Add Validation
+```python
+def validate_new_data_type(session: Session) -> Dict[str, bool]:
+    """Validate new data type quality."""
+    # Follow validation pattern above
+```
+
+### 4. Update Dependencies
+```python
+# Ensure generation order respects dependencies
+GENERATION_ORDER = [
+    "entities",
+    "customers", 
+    "new_data_type",  # Add in correct position
+    "transactions"
+]
+```
+
+## Best Practices Summary
+
+1. **Key Entities First**: Always include demo focal points
+2. **Respect Dependencies**: Generate parent data before children
+3. **Validate Everything**: Check counts, integrity, business rules
+4. **Batch Large Operations**: Don't process millions at once
+5. **Log Progress**: Especially for long-running operations
+6. **Test at Mini Scale**: Validate patterns before full generation
+7. **Document Patterns**: Not specific schemas
+8. **Version Control SQL**: Keep schemas in SQL files, not rules

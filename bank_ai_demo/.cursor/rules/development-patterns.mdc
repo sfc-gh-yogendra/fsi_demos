@@ -1,0 +1,739 @@
+---
+description: Demo development and expansion Patterns and Best Practices
+alwaysApply: false
+---
+# Development Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns and best practices for developing and extending the Glacier First Bank demo, focusing on code organization, error handling, testing, and performance optimization.
+
+## Code Organization Patterns
+
+### Directory Structure
+```
+bank_ai_demo/
+├── python/
+│   ├── config.py           # Single source of configuration
+│   ├── main.py            # CLI entry point
+│   ├── generate_*.py      # Data generation modules
+│   └── create_*.py        # Object creation modules
+├── sql/
+│   └── archive/           # Historical SQL scripts
+├── tests/
+│   └── test_*.py          # Test files mirror python/ structure
+├── docs/
+│   ├── agent_setup.md     # Agent configuration docs
+│   └── demo_scenarios.md  # Scenario documentation
+└── .cursor/rules/         # Development patterns (this directory)
+```
+
+### Module Patterns
+
+#### Data Generation Modules
+```python
+# Pattern for data generation modules
+def generate_{entity_type}(session: Session, scale: str = None) -> None:
+    """Generate {entity_type} data at specified scale."""
+    import config
+    
+    # 1. Get configuration
+    scale_config = config.get_scale_config(scale)
+    
+    # 2. Validate prerequisites
+    validate_required_tables(session, prerequisites)
+    
+    # 3. Generate data
+    data = create_{entity_type}_data(scale_config)
+    
+    # 4. Save to Snowflake
+    df = session.create_dataframe(data)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.{entity_type.upper()}",
+        mode="overwrite"
+    )
+    
+    # 5. Log results
+    logger.info(f"Generated {len(data)} {entity_type} records")
+```
+
+#### Object Creation Modules
+```python
+# Pattern for creating Snowflake objects
+def create_{object_type}(session: Session) -> None:
+    """Create {object_type} in Snowflake."""
+    import config
+    
+    # 1. Validate prerequisites
+    validate_required_objects(session, prerequisites)
+    
+    # 2. Use CREATE OR REPLACE
+    session.sql(f"""
+        CREATE OR REPLACE {object_type} {config.SNOWFLAKE['database']}.{schema}.{name}
+        ...
+    """).collect()
+    
+    # 3. Validate creation
+    validate_{object_type}_created(session, name)
+```
+
+## Error Handling Patterns
+
+### Connection Errors
+```python
+def get_snowflake_session(connection_name: str) -> Session:
+    """Create Snowflake session with proper error handling."""
+    try:
+        return Session.builder.config("connection_name", connection_name).create()
+    except Exception as e:
+        if "connection" in str(e).lower():
+            raise ValueError(
+                f"Failed to connect to Snowflake with connection '{connection_name}'. "
+                f"Please verify your connection configuration."
+            )
+        raise
+```
+
+### Data Validation Errors
+```python
+def validate_required_tables(session: Session, tables: List[str]) -> None:
+    """Validate required tables exist before proceeding."""
+    import config
+    
+    missing_tables = []
+    for table in tables:
+        try:
+            count = session.sql(
+                f"SELECT COUNT(*) FROM {config.SNOWFLAKE['database']}.RAW_DATA.{table}"
+            ).collect()[0][0]
+            if count == 0:
+                logger.warning(f"Table {table} exists but is empty")
+        except Exception:
+            missing_tables.append(table)
+    
+    if missing_tables:
+        raise RuntimeError(
+            f"Required tables missing: {', '.join(missing_tables)}. "
+            f"Run data generation first: python main.py generate-structured"
+        )
+```
+
+### LLM Generation Errors
+```python
+def generate_content_with_retry(session: Session, prompt: str, max_retries: int = 3) -> str:
+    """Generate content with exponential backoff retry."""
+    import config
+    import time
+    
+    for attempt in range(max_retries):
+        try:
+            result = session.sql(f"""
+                SELECT SNOWFLAKE.CORTEX.COMPLETE(
+                    '{config.LLM_MODEL}', 
+                    $${prompt}$$
+                )
+            """).collect()
+            
+            content = result[0][0]
+            if content and len(content) > 100:
+                return content
+                
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                logger.warning(f"Retry {attempt + 1}/{max_retries} after {wait_time}s: {str(e)}")
+                time.sleep(wait_time)
+            else:
+                raise RuntimeError(f"Failed after {max_retries} attempts: {str(e)}")
+```
+
+## Testing Patterns
+
+### Unit Test Structure
+```python
+# Pattern for testing data generation
+def test_generate_{entity_type}(mock_session):
+    """Test {entity_type} generation."""
+    # Arrange
+    scale = "mini"
+    expected_count = config.SCALES[scale]['{entity_type}']
+    
+    # Act
+    generate_{entity_type}(mock_session, scale)
+    
+    # Assert
+    assert mock_session.create_dataframe.called
+    assert len(mock_session.create_dataframe.call_args[0][0]) == expected_count
+```
+
+### Integration Test Pattern
+```python
+# Pattern for end-to-end testing
+def test_scenario_end_to_end(session: Session):
+    """Test complete scenario workflow."""
+    # 1. Generate test data at mini scale
+    for data_type in ['entities', 'transactions', 'documents']:
+        generate_function = getattr(module, f"generate_{data_type}")
+        generate_function(session, "mini")
+    
+    # 2. Create analytics objects
+    create_semantic_views(session)
+    create_search_services(session)
+    
+    # 3. Validate queries work
+    test_queries = load_test_queries("scenario_name")
+    for query in test_queries:
+        result = session.sql(query).collect()
+        assert len(result) > 0
+```
+
+## Performance Optimization Patterns
+
+### Batch Processing
+```python
+# Pattern for efficient batch processing
+def process_in_batches(items: List[Any], batch_size: int = 1000) -> None:
+    """Process large datasets in batches."""
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        process_batch(batch)
+        
+        # Log progress
+        progress = min(i + batch_size, len(items))
+        logger.info(f"Processed {progress}/{len(items)} items")
+```
+
+### Parallel Generation
+```python
+# Pattern for parallel data generation
+def generate_documents_parallel(session: Session, doc_types: List[str]) -> None:
+    """Generate multiple document types in parallel."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(generate_documents, session, doc_type): doc_type
+            for doc_type in doc_types
+        }
+        
+        for future in as_completed(futures):
+            doc_type = futures[future]
+            try:
+                future.result()
+                logger.info(f"Completed generation for {doc_type}")
+            except Exception as e:
+                logger.error(f"Failed to generate {doc_type}: {str(e)}")
+```
+
+### Query Optimization
+```python
+# Pattern for optimized Snowflake queries
+def create_materialized_view_pattern():
+    """Pattern for creating materialized views for performance."""
+    return """
+    CREATE OR REPLACE MATERIALIZED VIEW {view_name} AS
+    WITH base_data AS (
+        -- CTEs for clarity and optimization
+        SELECT /*+ PARALLEL(8) */ 
+            columns
+        FROM large_table
+        WHERE partition_column = recent_value
+    )
+    SELECT 
+        aggregations
+    FROM base_data
+    GROUP BY dimensions
+    """
+```
+
+## Logging and Monitoring Patterns
+
+### Structured Logging
+```python
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('glacier_demo.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+# Pattern for operation logging
+def log_operation(operation: str, entity_type: str, count: int):
+    """Log operations with consistent format."""
+    logger.info(f"{operation} | {entity_type} | Count: {count} | Time: {datetime.now()}")
+```
+
+### Performance Monitoring
+```python
+# Pattern for timing operations
+from functools import wraps
+import time
+
+def timed_operation(operation_name: str):
+    """Decorator to time operations."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.time()
+            try:
+                result = func(*args, **kwargs)
+                duration = time.time() - start_time
+                logger.info(f"{operation_name} completed in {duration:.2f}s")
+                return result
+            except Exception as e:
+                duration = time.time() - start_time
+                logger.error(f"{operation_name} failed after {duration:.2f}s: {str(e)}")
+                raise
+        return wrapper
+    return decorator
+
+# Usage
+@timed_operation("Data Generation")
+def generate_all_data(session: Session, scale: str):
+    # ... implementation ...
+```
+
+## Common Anti-Patterns to Avoid
+
+### ❌ Hardcoding Values
+```python
+# WRONG
+session.sql("CREATE DATABASE BANK_AI_DEMO")
+
+# CORRECT
+session.sql(f"CREATE DATABASE {config.SNOWFLAKE['database']}")
+```
+
+### ❌ Silent Failures
+```python
+# WRONG
+try:
+    risky_operation()
+except:
+    pass  # Never do this
+
+# CORRECT
+try:
+    risky_operation()
+except SpecificException as e:
+    logger.error(f"Operation failed: {str(e)}")
+    raise  # Or handle appropriately
+```
+
+### ❌ Tight Coupling
+```python
+# WRONG - Function does too much
+def create_everything():
+    generate_data()
+    create_views()
+    create_services()
+    run_tests()
+
+# CORRECT - Separate concerns
+def main():
+    if args.command == "generate":
+        generate_data()
+    elif args.command == "create-views":
+        create_views()
+    # etc.
+```
+
+## Development Workflow
+
+### Adding New Features
+1. Update configuration in `config.py`
+2. Create/modify generation functions
+3. Update object creation scripts
+4. Add tests
+5. Update documentation
+6. Run validation suite
+
+### Pre-commit Checklist
+- [ ] All tests pass
+- [ ] No hardcoded values
+- [ ] Proper error handling
+- [ ] Logging added for operations
+- [ ] Configuration documented
+- [ ] SQL uses CREATE OR REPLACE
+
+### Debugging Checklist
+- [ ] Check connection configuration
+- [ ] Verify deployment order followed
+- [ ] Check Snowflake query history
+- [ ] Review error logs
+- [ ] Validate data exists in tables
+- [ ] Test with mini scale first# Development Patterns - Glacier First Bank Demo
+
+## Overview
+This rule provides patterns and best practices for developing and extending the Glacier First Bank demo, focusing on code organization, error handling, testing, and performance optimization.
+
+## Code Organization Patterns
+
+### Directory Structure
+```
+bank_ai_demo/
+├── python/
+│   ├── config.py           # Single source of configuration
+│   ├── main.py            # CLI entry point
+│   ├── generate_*.py      # Data generation modules
+│   └── create_*.py        # Object creation modules
+├── sql/
+│   └── archive/           # Historical SQL scripts
+├── tests/
+│   └── test_*.py          # Test files mirror python/ structure
+├── docs/
+│   ├── agent_setup.md     # Agent configuration docs
+│   └── demo_scenarios.md  # Scenario documentation
+└── .cursor/rules/         # Development patterns (this directory)
+```
+
+### Module Patterns
+
+#### Data Generation Modules
+```python
+# Pattern for data generation modules
+def generate_{entity_type}(session: Session, scale: str = None) -> None:
+    """Generate {entity_type} data at specified scale."""
+    import config
+    
+    # 1. Get configuration
+    scale_config = config.get_scale_config(scale)
+    
+    # 2. Validate prerequisites
+    validate_required_tables(session, prerequisites)
+    
+    # 3. Generate data
+    data = create_{entity_type}_data(scale_config)
+    
+    # 4. Save to Snowflake
+    df = session.create_dataframe(data)
+    df.write.save_as_table(
+        f"{config.SNOWFLAKE['database']}.RAW_DATA.{entity_type.upper()}",
+        mode="overwrite"
+    )
+    
+    # 5. Log results
+    logger.info(f"Generated {len(data)} {entity_type} records")
+```
+
+#### Object Creation Modules
+```python
+# Pattern for creating Snowflake objects
+def create_{object_type}(session: Session) -> None:
+    """Create {object_type} in Snowflake."""
+    import config
+    
+    # 1. Validate prerequisites
+    validate_required_objects(session, prerequisites)
+    
+    # 2. Use CREATE OR REPLACE
+    session.sql(f"""
+        CREATE OR REPLACE {object_type} {config.SNOWFLAKE['database']}.{schema}.{name}
+        ...
+    """).collect()
+    
+    # 3. Validate creation
+    validate_{object_type}_created(session, name)
+```
+
+## Error Handling Patterns
+
+### Connection Errors
+```python
+def get_snowflake_session(connection_name: str) -> Session:
+    """Create Snowflake session with proper error handling."""
+    try:
+        return Session.builder.config("connection_name", connection_name).create()
+    except Exception as e:
+        if "connection" in str(e).lower():
+            raise ValueError(
+                f"Failed to connect to Snowflake with connection '{connection_name}'. "
+                f"Please verify your connection configuration."
+            )
+        raise
+```
+
+### Data Validation Errors
+```python
+def validate_required_tables(session: Session, tables: List[str]) -> None:
+    """Validate required tables exist before proceeding."""
+    import config
+    
+    missing_tables = []
+    for table in tables:
+        try:
+            count = session.sql(
+                f"SELECT COUNT(*) FROM {config.SNOWFLAKE['database']}.RAW_DATA.{table}"
+            ).collect()[0][0]
+            if count == 0:
+                logger.warning(f"Table {table} exists but is empty")
+        except Exception:
+            missing_tables.append(table)
+    
+    if missing_tables:
+        raise RuntimeError(
+            f"Required tables missing: {', '.join(missing_tables)}. "
+            f"Run data generation first: python main.py generate-structured"
+        )
+```
+
+### LLM Generation Errors
+```python
+def generate_content_with_retry(session: Session, prompt: str, max_retries: int = 3) -> str:
+    """Generate content with exponential backoff retry."""
+    import config
+    import time
+    
+    for attempt in range(max_retries):
+        try:
+            result = session.sql(f"""
+                SELECT SNOWFLAKE.CORTEX.COMPLETE(
+                    '{config.LLM_MODEL}', 
+                    $${prompt}$$
+                )
+            """).collect()
+            
+            content = result[0][0]
+            if content and len(content) > 100:
+                return content
+                
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                logger.warning(f"Retry {attempt + 1}/{max_retries} after {wait_time}s: {str(e)}")
+                time.sleep(wait_time)
+            else:
+                raise RuntimeError(f"Failed after {max_retries} attempts: {str(e)}")
+```
+
+## Testing Patterns
+
+### Unit Test Structure
+```python
+# Pattern for testing data generation
+def test_generate_{entity_type}(mock_session):
+    """Test {entity_type} generation."""
+    # Arrange
+    scale = "mini"
+    expected_count = config.SCALES[scale]['{entity_type}']
+    
+    # Act
+    generate_{entity_type}(mock_session, scale)
+    
+    # Assert
+    assert mock_session.create_dataframe.called
+    assert len(mock_session.create_dataframe.call_args[0][0]) == expected_count
+```
+
+### Integration Test Pattern
+```python
+# Pattern for end-to-end testing
+def test_scenario_end_to_end(session: Session):
+    """Test complete scenario workflow."""
+    # 1. Generate test data at mini scale
+    for data_type in ['entities', 'transactions', 'documents']:
+        generate_function = getattr(module, f"generate_{data_type}")
+        generate_function(session, "mini")
+    
+    # 2. Create analytics objects
+    create_semantic_views(session)
+    create_search_services(session)
+    
+    # 3. Validate queries work
+    test_queries = load_test_queries("scenario_name")
+    for query in test_queries:
+        result = session.sql(query).collect()
+        assert len(result) > 0
+```
+
+## Performance Optimization Patterns
+
+### Batch Processing
+```python
+# Pattern for efficient batch processing
+def process_in_batches(items: List[Any], batch_size: int = 1000) -> None:
+    """Process large datasets in batches."""
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        process_batch(batch)
+        
+        # Log progress
+        progress = min(i + batch_size, len(items))
+        logger.info(f"Processed {progress}/{len(items)} items")
+```
+
+### Parallel Generation
+```python
+# Pattern for parallel data generation
+def generate_documents_parallel(session: Session, doc_types: List[str]) -> None:
+    """Generate multiple document types in parallel."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(generate_documents, session, doc_type): doc_type
+            for doc_type in doc_types
+        }
+        
+        for future in as_completed(futures):
+            doc_type = futures[future]
+            try:
+                future.result()
+                logger.info(f"Completed generation for {doc_type}")
+            except Exception as e:
+                logger.error(f"Failed to generate {doc_type}: {str(e)}")
+```
+
+### Query Optimization
+```python
+# Pattern for optimized Snowflake queries
+def create_materialized_view_pattern():
+    """Pattern for creating materialized views for performance."""
+    return """
+    CREATE OR REPLACE MATERIALIZED VIEW {view_name} AS
+    WITH base_data AS (
+        -- CTEs for clarity and optimization
+        SELECT /*+ PARALLEL(8) */ 
+            columns
+        FROM large_table
+        WHERE partition_column = recent_value
+    )
+    SELECT 
+        aggregations
+    FROM base_data
+    GROUP BY dimensions
+    """
+```
+
+## Logging and Monitoring Patterns
+
+### Structured Logging
+```python
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('glacier_demo.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+# Pattern for operation logging
+def log_operation(operation: str, entity_type: str, count: int):
+    """Log operations with consistent format."""
+    logger.info(f"{operation} | {entity_type} | Count: {count} | Time: {datetime.now()}")
+```
+
+### Performance Monitoring
+```python
+# Pattern for timing operations
+from functools import wraps
+import time
+
+def timed_operation(operation_name: str):
+    """Decorator to time operations."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.time()
+            try:
+                result = func(*args, **kwargs)
+                duration = time.time() - start_time
+                logger.info(f"{operation_name} completed in {duration:.2f}s")
+                return result
+            except Exception as e:
+                duration = time.time() - start_time
+                logger.error(f"{operation_name} failed after {duration:.2f}s: {str(e)}")
+                raise
+        return wrapper
+    return decorator
+
+# Usage
+@timed_operation("Data Generation")
+def generate_all_data(session: Session, scale: str):
+    # ... implementation ...
+```
+
+## Common Anti-Patterns to Avoid
+
+### ❌ Hardcoding Values
+```python
+# WRONG
+session.sql("CREATE DATABASE BANK_AI_DEMO")
+
+# CORRECT
+session.sql(f"CREATE DATABASE {config.SNOWFLAKE['database']}")
+```
+
+### ❌ Silent Failures
+```python
+# WRONG
+try:
+    risky_operation()
+except:
+    pass  # Never do this
+
+# CORRECT
+try:
+    risky_operation()
+except SpecificException as e:
+    logger.error(f"Operation failed: {str(e)}")
+    raise  # Or handle appropriately
+```
+
+### ❌ Tight Coupling
+```python
+# WRONG - Function does too much
+def create_everything():
+    generate_data()
+    create_views()
+    create_services()
+    run_tests()
+
+# CORRECT - Separate concerns
+def main():
+    if args.command == "generate":
+        generate_data()
+    elif args.command == "create-views":
+        create_views()
+    # etc.
+```
+
+## Development Workflow
+
+### Adding New Features
+1. Update configuration in `config.py`
+2. Create/modify generation functions
+3. Update object creation scripts
+4. Add tests
+5. Update documentation
+6. Run validation suite
+
+### Pre-commit Checklist
+- [ ] All tests pass
+- [ ] No hardcoded values
+- [ ] Proper error handling
+- [ ] Logging added for operations
+- [ ] Configuration documented
+- [ ] SQL uses CREATE OR REPLACE
+
+### Debugging Checklist
+- [ ] Check connection configuration
+- [ ] Verify deployment order followed
+- [ ] Check Snowflake query history
+- [ ] Review error logs
+- [ ] Validate data exists in tables
+- [ ] Test with mini scale first

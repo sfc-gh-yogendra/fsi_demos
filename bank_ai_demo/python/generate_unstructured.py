@@ -25,6 +25,9 @@ def generate_all_unstructured_data(session: Session, scale: str = "demo", scenar
     generate_loan_documents(session, scale, scenarios)
     generate_news_and_research(session, scale, scenarios)
     
+    # Always generate document templates as they're used by agent framework
+    generate_document_templates(session, scale, scenarios)
+    
     logger.info("Unstructured data generation completed successfully")
 
 
@@ -202,6 +205,56 @@ def generate_news_and_research(session: Session, scale: str = "demo", scenarios:
         logger.info(f"Generated {doc_count} news and research documents using Cortex Complete")
     else:
         logger.warning("No prompts generated for news and research documents")
+
+
+def generate_document_templates(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
+    """Generate document templates for agent framework using Cortex Complete pipeline."""
+    logger.info("Generating document templates...")
+    
+    # Step 1: Create template prompts for different template types
+    prompts = []
+    
+    # Generate RFI templates
+    prompts.extend(_create_rfi_template_prompts())
+    
+    # Generate SAR templates
+    prompts.extend(_create_sar_template_prompts())
+    
+    # Generate credit memo templates
+    prompts.extend(_create_credit_memo_template_prompts())
+    
+    # Generate compliance report templates
+    prompts.extend(_create_compliance_report_template_prompts())
+    
+    # Step 2: Store prompts in Snowflake table
+    if prompts:
+        prompts_df = session.create_dataframe(prompts)
+        prompts_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATE_PROMPTS", mode="overwrite")
+        
+        # Step 3-5: Generate content using Cortex Complete and save final templates
+        session.sql(f"""
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES AS
+            SELECT 
+                PROMPT_ID AS TEMPLATE_ID,
+                TEMPLATE_NAME,
+                SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', PROMPT_TEXT) AS TEMPLATE_CONTENT,
+                TEMPLATE_TYPE,
+                SCENARIO,
+                USE_CASE,
+                REGULATORY_FRAMEWORK,
+                REQUIRED_VARIABLES,
+                LANGUAGE,
+                CREATED_DATE
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATE_PROMPTS
+            WHERE PROMPT_TEXT IS NOT NULL
+        """).collect()
+        
+        # Validate generated content
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES WHERE TEMPLATE_CONTENT IS NOT NULL AND LENGTH(TEMPLATE_CONTENT) > 100").collect()
+        template_count = result[0]['CNT']
+        logger.info(f"Generated {template_count} document templates using Cortex Complete")
+    else:
+        logger.warning("No prompts generated for document templates")
 
 
 # =============================================================================
@@ -489,6 +542,181 @@ Format as a professional Reuters news article with objective journalism tone and
         'SUPPLY_CHAIN_RELEVANCE': True,
         'INFLATION_RELEVANCE': False,
         'LANGUAGE': f'{config.LANGUAGE}',
+        'CREATED_DATE': datetime.now()
+    })
+    
+    return prompts
+
+
+def _create_rfi_template_prompts() -> List[Dict[str, Any]]:
+    """Create RFI (Request for Information) template prompts."""
+    prompts = []
+    
+    # RFI for PEP investigations
+    prompts.append({
+        'PROMPT_ID': 'RFI_PEP_001',
+        'TEMPLATE_NAME': 'PEP Investigation Request for Information',
+        'PROMPT_TEXT': f"""Create a professional Request for Information template for PEP (Politically Exposed Person) investigations.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} banking tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for requesting additional documentation regarding PEP status
+- Include placeholders for: {{CLIENT_NAME}}, {{ENTITY_NAME}}, {{PEP_PERSON_NAME}}, {{RELATIONSHIP_TYPE}}, {{ALLEGATIONS_SUMMARY}}
+- Request source of funds clarification
+- Specify documentation required (bank statements, declarations, etc.)
+- Include compliance deadlines
+- Professional closing with contact information
+
+The template should be ready for customization with case-specific details.""",
+        'TEMPLATE_TYPE': 'RFI',
+        'SCENARIO': 'AML',
+        'USE_CASE': 'PEP Investigation',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'CLIENT_NAME,ENTITY_NAME,PEP_PERSON_NAME,RELATIONSHIP_TYPE,ALLEGATIONS_SUMMARY',
+        'LANGUAGE': config.LANGUAGE,
+        'CREATED_DATE': datetime.now()
+    })
+    
+    # RFI for source of funds
+    prompts.append({
+        'PROMPT_ID': 'RFI_SOF_001',
+        'TEMPLATE_NAME': 'Source of Funds Request for Information',
+        'PROMPT_TEXT': f"""Create a professional Request for Information template for source of funds investigations.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} banking tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for requesting source of funds documentation
+- Include placeholders for: {{CLIENT_NAME}}, {{ENTITY_NAME}}, {{AMOUNT}}, {{TRANSACTION_DATE}}, {{TRANSACTION_DETAILS}}
+- Request specific documentation (contracts, invoices, etc.)
+- Include compliance deadlines
+- Professional closing
+
+The template should be ready for customization with transaction-specific details.""",
+        'TEMPLATE_TYPE': 'RFI',
+        'SCENARIO': 'AML',
+        'USE_CASE': 'Source of Funds',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'CLIENT_NAME,ENTITY_NAME,AMOUNT,TRANSACTION_DATE,TRANSACTION_DETAILS',
+        'LANGUAGE': config.LANGUAGE,
+        'CREATED_DATE': datetime.now()
+    })
+    
+    return prompts
+
+
+def _create_sar_template_prompts() -> List[Dict[str, Any]]:
+    """Create SAR (Suspicious Activity Report) template prompts."""
+    prompts = []
+    
+    prompts.append({
+        'PROMPT_ID': 'SAR_001',
+        'TEMPLATE_NAME': 'Suspicious Activity Report Template',
+        'PROMPT_TEXT': f"""Create a professional Suspicious Activity Report template.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} compliance tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for reporting suspicious activities to authorities
+- Include placeholders for: {{CLIENT_NAME}}, {{ENTITY_NAME}}, {{SUSPICIOUS_ACTIVITY}}, {{TIMEFRAME}}, {{AMOUNTS}}, {{INVESTIGATION_SUMMARY}}
+- Include all required regulatory sections
+- Professional format suitable for submission to financial intelligence unit
+
+The template should be ready for customization with case-specific investigation details.""",
+        'TEMPLATE_TYPE': 'SAR',
+        'SCENARIO': 'AML',
+        'USE_CASE': 'Suspicious Activity Reporting',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'CLIENT_NAME,ENTITY_NAME,SUSPICIOUS_ACTIVITY,TIMEFRAME,AMOUNTS,INVESTIGATION_SUMMARY',
+        'LANGUAGE': config.LANGUAGE,
+        'CREATED_DATE': datetime.now()
+    })
+    
+    return prompts
+
+
+def _create_credit_memo_template_prompts() -> List[Dict[str, Any]]:
+    """Create credit memo template prompts."""
+    prompts = []
+    
+    # Credit approval memo
+    prompts.append({
+        'PROMPT_ID': 'CREDIT_MEMO_APPROVAL_001',
+        'TEMPLATE_NAME': 'Credit Approval Memorandum',
+        'PROMPT_TEXT': f"""Create a professional credit approval memorandum template.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} banking tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for credit approval recommendations
+- Include placeholders for: {{APPLICANT_NAME}}, {{REQUESTED_AMOUNT}}, {{CURRENCY}}, {{FINANCIAL_SUMMARY}}, {{RISK_ASSESSMENT}}, {{RECOMMENDATION}}
+- Include financial ratio analysis section
+- Include risk mitigation measures
+- Professional format for credit committee
+
+The template should be ready for customization with application-specific details.""",
+        'TEMPLATE_TYPE': 'Credit Memo',
+        'SCENARIO': 'CREDIT',
+        'USE_CASE': 'Credit Approval',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'APPLICANT_NAME,REQUESTED_AMOUNT,CURRENCY,FINANCIAL_SUMMARY,RISK_ASSESSMENT,RECOMMENDATION',
+        'LANGUAGE': config.LANGUAGE,
+        'CREATED_DATE': datetime.now()
+    })
+    
+    # Credit decline letter
+    prompts.append({
+        'PROMPT_ID': 'CREDIT_DECLINE_001',
+        'TEMPLATE_NAME': 'Credit Application Decline Letter',
+        'PROMPT_TEXT': f"""Create a professional credit application decline letter template.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} banking tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for declining credit applications
+- Include placeholders for: {{APPLICANT_NAME}}, {{APPLICATION_DATE}}, {{DECLINE_REASONS}}, {{NEXT_STEPS}}
+- Professional but empathetic tone
+- Include information about appeal process
+- Professional closing
+
+The template should be ready for customization with application-specific details.""",
+        'TEMPLATE_TYPE': 'Decline Letter',
+        'SCENARIO': 'CREDIT',
+        'USE_CASE': 'Credit Decline',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'APPLICANT_NAME,APPLICATION_DATE,DECLINE_REASONS,NEXT_STEPS',
+        'LANGUAGE': config.LANGUAGE,
+        'CREATED_DATE': datetime.now()
+    })
+    
+    return prompts
+
+
+def _create_compliance_report_template_prompts() -> List[Dict[str, Any]]:
+    """Create compliance report template prompts."""
+    prompts = []
+    
+    prompts.append({
+        'PROMPT_ID': 'COMPLIANCE_REPORT_001',
+        'TEMPLATE_NAME': 'Enhanced Due Diligence Report',
+        'PROMPT_TEXT': f"""Create a professional Enhanced Due Diligence report template.
+
+REQUIREMENTS:
+- Professional {config.LANGUAGE} compliance tone following {config.REGULATORY_FRAMEWORK} guidelines
+- Institution: {config.INSTITUTION_NAME}
+- Template for EDD investigation reports
+- Include placeholders for: {{CLIENT_NAME}}, {{ENTITY_NAME}}, {{INVESTIGATION_PERIOD}}, {{FINDINGS_SUMMARY}}, {{RISK_RATING}}, {{RECOMMENDATIONS}}
+- Include sections for: Entity background, UBO analysis, Adverse media findings, Risk assessment, Recommendations
+- Professional format suitable for risk committee presentation
+
+The template should be ready for customization with investigation-specific findings.""",
+        'TEMPLATE_TYPE': 'Compliance Report',
+        'SCENARIO': 'AML',
+        'USE_CASE': 'EDD Report',
+        'REGULATORY_FRAMEWORK': config.REGULATORY_FRAMEWORK,
+        'REQUIRED_VARIABLES': 'CLIENT_NAME,ENTITY_NAME,INVESTIGATION_PERIOD,FINDINGS_SUMMARY,RISK_RATING,RECOMMENDATIONS',
+        'LANGUAGE': config.LANGUAGE,
         'CREATED_DATE': datetime.now()
     })
     

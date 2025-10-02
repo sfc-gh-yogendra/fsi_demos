@@ -39,8 +39,7 @@ def create_database_structure(session: Session) -> None:
         schemas = [
             ('RAW_DATA', 'Raw data tables for entities, transactions, documents'),
             ('CURATED_DATA', 'Curated and processed data for analytics'),
-            ('SEMANTIC_LAYER', 'Semantic views for Cortex Analyst'),
-            ('AGENT_FRAMEWORK', 'Cortex Search services and agent configurations')
+            (config.SNOWFLAKE['ai_schema'], 'Unified AI schema for Cortex Search services, Semantic Views, and Custom Tools')
         ]
         
         for schema_name, comment in schemas:

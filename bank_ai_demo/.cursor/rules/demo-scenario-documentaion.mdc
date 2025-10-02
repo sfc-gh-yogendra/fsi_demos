@@ -2,18 +2,19 @@
 description: Demo Scenario Documentation Instructions Patterns and Best Practices
 alwaysApply: false
 ---
-# Demo Scenario Documentation Instructions Standards
+# Demo Scenario Documentation Standards
 
-Complete guide for documenting demo scenarios following the established structure and format.
+Streamlined guide for documenting demo scenarios with focus on clear business context and logical flow.
 
 ## Overview
 
-Demo scenarios must follow a standardized structure that provides clear business context, structured demo flows, and compelling wrap-ups. This format ensures professional presentations with consistent messaging and technical differentiation.
+Demo scenarios focus on realistic business workflows with logical data discovery flow. The €5M deposit example shows how information should be revealed in early steps before being referenced in later steps.
 
-**Required Structure for All Scenarios:**
-1. **Business Context Setup** - Persona, challenge, and value proposition
-2. **Demo Flow** - Scene setting and structured steps with talking points
-3. **Scenario Wrap-up** - Business impact and technical differentiators
+**Key Principles:**
+1. **Data Discovery Logic** - Information must be discovered before it can be referenced
+2. **PDF Generation Control** - Only generate PDFs when explicitly requested
+3. **Realistic Business Flow** - Each step builds naturally on previous discoveries
+4. **Clear Expected Responses** - Include specific data points that will be discovered
 
 ## Scenario Documentation Template
 
@@ -250,28 +251,22 @@ Ensure all expected flagging behaviors are reflected in corresponding agent inst
 
 When creating or updating demo scenarios:
 
-- [ ] **Business Context Setup** includes all three required elements
-- [ ] **Persona** has full name and title at Glacier First Bank
-- [ ] **Business Challenge** describes specific pain points and inefficiencies
-- [ ] **Value Proposition** clearly articulates AI solution benefits
-- [ ] **Scene Setting** provides realistic business context and urgency
-- [ ] **User Inputs** use natural business language with specific examples
-- [ ] **Expected Responses** specify exact formats and flagging requirements
-- [ ] **Talking Points** focus on business value and presenter guidance
-- [ ] **Key Features** highlight specific Snowflake capabilities
-- [ ] **Business Impact Summary** includes quantified benefits
-- [ ] **Technical Differentiators** emphasize unique Snowflake advantages
-- [ ] **Agent Alignment** ensures expected behaviors match agent instructions
-- [ ] **UK English** used consistently throughout
-- [ ] **Professional Tone** maintained for executive audiences
+- [ ] **Data Discovery Flow** - Information discovered before being referenced in later steps
+- [ ] **PDF Generation Logic** - Only triggered when explicitly requested (not for "Compile EDD")
+- [ ] **Realistic Expected Responses** - Include specific data points the agent will find
+- [ ] **Logical Step Progression** - Each step builds on previous discoveries
+- [ ] **Agent Tool Alignment** - Expected responses match actual agent capabilities
+- [ ] **Business Language** - Natural queries, not technical commands
+- [ ] **Professional Tone** - Executive-appropriate language throughout
+- [ ] **UK English** - Consistent British spelling and terminology
 
 ## Summary
 
-This rule ensures all demo scenarios follow professional standards with consistent structure, realistic content, and compelling business narratives. Follow these guidelines when creating new scenarios or updating existing ones to maintain quality and effectiveness.
+This rule ensures demo scenarios follow logical data discovery patterns and realistic business workflows.
 
 **Key Principles:**
-- **Business First**: Always lead with business value and outcomes
-- **Realistic Content**: Use authentic scenarios and professional language
-- **Technical Accuracy**: Ensure alignment with actual agent capabilities
-- **Presenter Support**: Provide clear talking points and feature highlights
-- **Executive Appeal**: Structure content for senior business audiences
+- **Data Discovery Logic**: Information revealed before being referenced
+- **Conditional PDF Generation**: Only when explicitly requested by user
+- **Business-Realistic Flow**: Natural progression from discovery to action
+- **Agent Alignment**: Expected responses match actual tool capabilities
+- **Professional Language**: Executive-appropriate business terminology
