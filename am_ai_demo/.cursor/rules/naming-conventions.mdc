@@ -146,10 +146,10 @@ def validate_{component}_data_quality(session: Session):
 
 ### Configuration Constants
 ```python
-# Use CAPS for configuration constants
-DATABASE_NAME = 'SAM_DEMO'
-YEARS_OF_HISTORY = 5
-USE_REAL_ASSETS_CSV = True
+# Use structured objects for configuration
+DATABASE = {'name': 'SAM_DEMO', 'schemas': {...}}
+WAREHOUSES = {'execution': {...}, 'cortex_search': {...}}
+SECURITIES = {'counts': {...}, 'real_assets_view': 'V_REAL_ASSETS'}
 
 # Group related settings
 DOCUMENT_TYPES = {

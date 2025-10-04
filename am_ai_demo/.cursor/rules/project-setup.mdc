@@ -20,68 +20,89 @@ Project structure, configuration management, and setup procedures for the SAM AI
 │   ├── agent-config.mdc       # Agent configuration guide
 │   ├── cortex-search.mdc      # Cortex Search creation guide
 │   ├── data-generation.mdc    # Enhanced data generation patterns
-│   ├── data_model_migration_plan.mdc # Migration plan documentation
 │   ├── project-setup.mdc      # Project setup and configuration
 │   ├── semantic-views.mdc     # Semantic view creation guide
+│   ├── unstructured-data-generation.mdc # Document generation patterns
 │   └── [other rules...]       # Additional development rules
-├── docs/                       # Documentation (auto-generated)
-│   ├── agents_setup.md        # Agent configuration instructions
-│   ├── data_model.md          # Data model documentation
-│   ├── demo_scenarios.md      # Demo conversation scripts
-│   └── runbooks.md            # Operational procedures
-├── python/                     # Python implementation
-│   ├── config.py              # Configuration constants (CAPS naming)
-│   ├── main.py                # CLI orchestrator
+├── content_library/            # Pre-generated content templates (50+ templates)
+│   ├── _rules/                # Template configuration (placeholders, bounds, providers)
+│   ├── security/              # Security-level document templates
+│   ├── issuer/                # Issuer-level document templates
+│   ├── portfolio/             # Portfolio-level document templates
+│   ├── global/                # Global document templates
+│   └── regulatory/            # Regulatory document templates
+├── docs/                      # Documentation
+│   ├── agents_setup.md       # Agent configuration instructions
+│   ├── data_model.md         # Data model documentation
+│   ├── demo_scenarios.md     # Demo conversation scripts
+│   └── runbooks.md           # Operational procedures
+├── python/                    # Python implementation
+│   ├── config.py             # Configuration constants (CAPS naming)
+│   ├── main.py               # CLI orchestrator
 │   ├── generate_structured.py # Enhanced structured data generation (SecurityID model)
-│   ├── generate_unstructured.py # Unstructured content generation (SecurityID integration)
-│   ├── build_ai.py            # AI components (semantic views, search services)
+│   ├── generate_unstructured.py # Template-based document generation
+│   ├── hydration_engine.py   # Template hydration engine
+│   ├── build_ai.py           # AI components (semantic views, search services)
 │   └── extract_real_assets.py # Real asset data extraction and view creation
-├── data/                      # Real asset data storage (optional)
-│   └── real_assets.csv        # Optional CSV export from SEC Filings dataset
 ├── research/                  # Research documents and analysis
-│   └── [research files...]    # Industry research and model documentation
-└── README.md                  # Quick setup guide
+│   └── [research files...]   # Industry research and model documentation
+├── .gitignore                # Git ignore patterns
+└── README.md                 # Quick setup guide
 ```
 
 ## Configuration Management
 
 ### Primary Configuration: `python/config.py`
-All configuration uses CAPS constants following workspace standards:
+All configuration uses structured objects following clean architecture principles:
 
 ```python
-# Connection and execution
+# Core settings
 DEFAULT_CONNECTION_NAME = 'sfseeurope-mstellwall-aws-us-west3'
 RNG_SEED = 42
-
-# Data generation parameters
 YEARS_OF_HISTORY = 5
-MODEL_NAME = 'llama3.1-70b'
 
-# Enhanced data model settings
-USE_TRANSACTION_BASED_MODEL = True
-GENERATE_CORPORATE_HIERARCHIES = True
-ISSUER_HIERARCHY_DEPTH = 2
-
-# Transaction generation settings
-SYNTHETIC_TRANSACTION_MONTHS = 12
-TRANSACTION_TYPES = ['BUY', 'SELL', 'DIVIDEND', 'CORPORATE_ACTION']
-AVERAGE_MONTHLY_TRANSACTIONS_PER_SECURITY = 2.5
-
-# Provider configuration
-PROVIDERS = ['NSD', 'PLM']  # NorthStar Data, PolarMetrics
-PROVIDER_MIX = {'NSD': 0.5, 'PLM': 0.5}
-
-# Real asset integration (view-based)
-USE_REAL_ASSETS_CSV = True  # Still required for real-only mode
-REAL_ASSETS_VIEW = 'V_REAL_ASSETS'  # View in RAW schema
-# Market data: Synthetic generation for all securities
-
-# Enhanced real asset to issuer mapping
-REAL_ASSET_ISSUER_MAPPING = {
-    'AAPL': {'legal_name': 'Apple Inc.', 'country': 'US', 'sector': 'Information Technology'},
-    'MSFT': {'legal_name': 'Microsoft Corporation', 'country': 'US', 'sector': 'Information Technology'},
-    # ... additional mappings for corporate hierarchy support
+# Database configuration
+DATABASE = {
+    'name': 'SAM_DEMO',
+    'schemas': {'raw': 'RAW', 'curated': 'CURATED', 'ai': 'AI'}
 }
+
+# Warehouse configuration  
+WAREHOUSES = {
+    'execution': {
+        'name': 'SAM_DEMO_EXECUTION_WH',
+        'size': 'MEDIUM'
+    },
+    'cortex_search': {
+        'name': 'SAM_DEMO_CORTEX_WH',
+        'size': 'MEDIUM',
+        'target_lag': '5 minutes'
+    }
+}
+
+# Data model configuration
+DATA_MODEL = {
+    'use_transaction_based': True,
+    'generate_corporate_hierarchies': True,
+    'issuer_hierarchy_depth': 2,
+    'transaction_months': 12,
+    'transaction_types': ['BUY', 'SELL', 'DIVIDEND', 'CORPORATE_ACTION'],
+    'avg_monthly_transactions_per_security': 2.5,
+    'portfolio_code_prefix': 'SAM'
+}
+
+# Securities configuration
+SECURITIES = {
+    'counts': {'equities': 10000, 'bonds': 3000, 'etfs': 1000},
+    'real_assets_view': 'V_REAL_ASSETS',
+    'sec_filings_database': 'SEC_FILINGS',
+    'sec_filings_schema': 'CYBERSYN'
+}
+
+# Usage examples:
+# config.DATABASE['name'] instead of config.DATABASE_NAME
+# config.WAREHOUSES['execution']['name'] instead of config.EXECUTION_WAREHOUSE
+# config.get_securities_count(test_mode=True) for dynamic calculations
 ```
 
 ### Connection Management
@@ -90,9 +111,9 @@ REAL_ASSET_ISSUER_MAPPING = {
 - Default connection: `sfseeurope-mstellwall-aws-us-west3`
 
 ### Warehouse Management
-- **Execution Warehouse**: `SAM_DEMO_EXECUTION_WH` (for data generation and code execution)
-- **Cortex Search Warehouse**: `SAM_DEMO_CORTEX_WH` (dedicated for Cortex Search services)
-- **Size**: `MEDIUM` for both warehouses (configurable in config.py)
+- **Execution Warehouse**: Accessed via `config.WAREHOUSES['execution']['name']`
+- **Cortex Search Warehouse**: Accessed via `config.WAREHOUSES['cortex_search']['name']`
+- **Size**: Configured in `config.WAREHOUSES[warehouse]['size']`
 - **Auto-Management**: Both warehouses auto-suspend after 60 seconds, auto-resume when needed
 
 ## CLI Interface

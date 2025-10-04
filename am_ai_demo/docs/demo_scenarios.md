@@ -28,10 +28,10 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Risk & Compliance Officer
 **Agent: ESG Guardian**
-- ESG Risk Monitoring & Policy Compliance ❌ **NOT IMPLEMENTED**
+- ESG Risk Monitoring & Policy Compliance ✅ **IMPLEMENTED**
 
 **Agent: Compliance Advisor**
-- Mandate Monitoring & Breach Detection ❌ **NOT IMPLEMENTED**
+- Mandate Monitoring & Breach Detection ✅ **IMPLEMENTED**
 
 ---
 

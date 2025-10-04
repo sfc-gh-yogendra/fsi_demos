@@ -5,6 +5,7 @@
 # Used for: Database connections, Snowpark DataFrames, Cortex functions, pandas integration
 # The [pandas] extra ensures compatible pandas version is installed automatically
 snowflake-snowpark-python[pandas]>=1.11.0
+pyyaml>=6.0
 
 # PDF processing capabilities (optional - for PDF template analysis)
 # Used for: Extracting text and structure from PDF documents to create enhanced templates

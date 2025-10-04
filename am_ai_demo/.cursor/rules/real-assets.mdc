@@ -49,10 +49,10 @@ create_real_assets_view(session)
 
 # Use the view directly in SQL queries - no Pandas DataFrames needed
 session.sql(f"""
-    CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY AS
+    CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.DIM_SECURITY AS
     WITH security_data AS (
         SELECT ra.PRIMARY_TICKER, ra.TOP_LEVEL_OPENFIGI_ID, ra.SECURITY_NAME
-        FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS ra
+        FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['raw']}.V_REAL_ASSETS ra
         WHERE ra.PRIMARY_TICKER IS NOT NULL
     )
     SELECT * FROM security_data
@@ -190,14 +190,14 @@ def build_real_asset_function(session: Session):
     
     # Build dimension table using direct SQL query on the view
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.TARGET_TABLE AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.TARGET_TABLE AS
         WITH processed_data AS (
             SELECT 
                 COALESCE(ISSUER_NAME, SECURITY_NAME) as LegalName,
                 COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
                 COALESCE(INDUSTRY_SECTOR, 'Diversified') as GICS_Sector,
                 CIK
-            FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS
+            FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['raw']}.V_REAL_ASSETS
             WHERE COALESCE(ISSUER_NAME, SECURITY_NAME) IS NOT NULL
                 AND COALESCE(ISSUER_NAME, SECURITY_NAME) != 'Unknown'
         )
@@ -212,7 +212,7 @@ def build_real_asset_function(session: Session):
     """).collect()
     
     # Get count for reporting
-    count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.TARGET_TABLE").collect()[0]['CNT']
+    count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.TARGET_TABLE").collect()[0]['CNT']
     print(f"✅ Created {count:,} records from real asset data")
 ```
 
@@ -257,19 +257,19 @@ def build_real_asset_function(session: Session):
     
     # Step 2: Use direct SQL queries on the view
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.TARGET_TABLE AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.TARGET_TABLE AS
         SELECT 
             -- Direct selection from view with transformations
             COALESCE(ISSUER_NAME, SECURITY_NAME) as ProcessedName,
             CIK,
             PRIMARY_TICKER,
             TOP_LEVEL_OPENFIGI_ID
-        FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS
+        FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['raw']}.V_REAL_ASSETS
         WHERE PRIMARY_TICKER IS NOT NULL
     """).collect()
     
     # Step 3: Report results
-    count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.TARGET_TABLE").collect()[0]['CNT']
+    count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.TARGET_TABLE").collect()[0]['CNT']
     print(f"✅ Created {count:,} records from real asset data")
 ```
 

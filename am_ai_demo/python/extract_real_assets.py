@@ -22,7 +22,7 @@ def verify_real_assets_view_exists(session: Session) -> bool:
     """
     try:
         # Check if view exists by trying to query it
-        session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS LIMIT 1").collect()
+        session.sql(f"SELECT 1 FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['RAW'.lower()]}.V_REAL_ASSETS LIMIT 1").collect()
         return True
     except Exception as e:
         raise Exception(f"V_REAL_ASSETS view not found. It should have been created during foundation build. Error: {e}")
@@ -43,22 +43,22 @@ def verify_sec_filings_access(session: Session) -> bool:
         databases = session.sql("SHOW DATABASES").collect()
         db_names = [row['name'] for row in databases]
         
-        if config.SEC_FILINGS_DATABASE not in db_names:
-            raise Exception(f"SEC Filings database '{config.SEC_FILINGS_DATABASE}' not found. "
+        if config.SECURITIES['sec_filings_database'] not in db_names:
+            raise Exception(f"SEC Filings database '{config.SECURITIES['sec_filings_database']}' not found. "
                           f"Please ensure you have access to the SEC Filings dataset.")
         
         # Check if schema exists
-        schemas = session.sql(f"SHOW SCHEMAS IN {config.SEC_FILINGS_DATABASE}").collect()
+        schemas = session.sql(f"SHOW SCHEMAS IN {config.SECURITIES['sec_filings_database']}").collect()
         schema_names = [row['name'] for row in schemas]
         
-        if config.SEC_FILINGS_SCHEMA not in schema_names:
-            raise Exception(f"Schema '{config.SEC_FILINGS_SCHEMA}' not found in {config.SEC_FILINGS_DATABASE}. "
+        if config.SECURITIES['sec_filings_schema'] not in schema_names:
+            raise Exception(f"Schema '{config.SECURITIES['sec_filings_schema']}' not found in {config.SECURITIES['sec_filings_database']}. "
                           f"Please verify your SEC Filings dataset access.")
         
         # Verify we can access a key table
-        session.sql(f"SELECT 1 FROM {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}.COMPANY_INDEX LIMIT 1").collect()
+        session.sql(f"SELECT 1 FROM {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_INDEX LIMIT 1").collect()
         
-        print(f"✅ Verified access to {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}")
+        print(f"✅ Verified access to {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}")
         return True
         
     except Exception as e:
@@ -84,7 +84,7 @@ def create_real_assets_view(session: Session) -> bool:
     
     # The same SQL query as CSV extraction, but as a view
     view_sql = f"""
-    CREATE OR REPLACE VIEW {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS AS
+    CREATE OR REPLACE VIEW {config.DATABASE['name']}.{config.DATABASE['schemas']['RAW'.lower()]}.V_REAL_ASSETS AS
     WITH Enriched_Securities AS (
         -- This CTE joins the main security index with geography, company characteristics, and aggregated exchange codes.
         SELECT
@@ -104,14 +104,14 @@ def create_real_assets_view(session: Session) -> bool:
             -- Use SIC Description as a proxy for industry, as GICS is not in this base dataset
             MAX(CASE WHEN char.RELATIONSHIP_TYPE = 'sic_description' THEN char.VALUE END) AS INDUSTRY_SECTOR
         FROM
-            {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}.OPENFIGI_SECURITY_INDEX AS osi
+            {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.OPENFIGI_SECURITY_INDEX AS osi
         LEFT JOIN
-            {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}.COMPANY_SECURITY_RELATIONSHIPS AS rship 
+            {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_SECURITY_RELATIONSHIPS AS rship 
                 ON osi.TOP_LEVEL_OPENFIGI_ID = rship.SECURITY_ID AND osi.TOP_LEVEL_OPENFIGI_ID_TYPE = rship.security_id_type
         LEFT JOIN
-            {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}.COMPANY_INDEX AS ci ON rship.COMPANY_ID = ci.COMPANY_ID
+            {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_INDEX AS ci ON rship.COMPANY_ID = ci.COMPANY_ID
         LEFT JOIN
-            {config.SEC_FILINGS_DATABASE}.{config.SEC_FILINGS_SCHEMA}.COMPANY_CHARACTERISTICS AS char ON rship.COMPANY_ID = char.COMPANY_ID
+            {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_CHARACTERISTICS AS char ON rship.COMPANY_ID = char.COMPANY_ID
         WHERE
             NOT (ARRAY_CONTAINS('CEDEAR'::variant, osi.SECURITY_TYPE) 
                 OR ARRAY_CONTAINS('PRIV PLACEMENT'::variant, osi.SECURITY_TYPE)
@@ -218,7 +218,7 @@ def create_real_assets_view(session: Session) -> bool:
             COUNT(DISTINCT ASSET_CATEGORY) as asset_categories,
             COUNT(DISTINCT MARKET_REGION) as market_regions,
             COUNT(CIK) as assets_with_cik
-        FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS
+        FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['RAW'.lower()]}.V_REAL_ASSETS
         """).collect()[0]
         
         print(f"✅ Created view V_REAL_ASSETS with {stats['TOTAL_ASSETS']:,} assets")

@@ -59,21 +59,21 @@ def create_semantic_views(session: Session, scenarios: List[str] = None):
     try:
         # Create proper semantic view with correct syntax patterns
         session.sql(f"""
-CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
 	TABLES (
-		HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR
+		HOLDINGS AS {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR
 			PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID) 
 			WITH SYNONYMS=('positions','investments','allocations','holdings') 
 			COMMENT='Daily portfolio holdings and positions. Each portfolio holding has multiple rows. When no time period is provided always get the latest value by date.',
-		PORTFOLIOS AS {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+		PORTFOLIOS AS {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
 			PRIMARY KEY (PORTFOLIOID) 
 			WITH SYNONYMS=('funds','strategies','mandates','portfolios') 
 			COMMENT='Investment portfolios and fund information',
-		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
 			PRIMARY KEY (SECURITYID) 
 			WITH SYNONYMS=('companies','stocks','bonds','instruments','securities') 
 			COMMENT='Master security reference data',
-		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+		ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
 			PRIMARY KEY (ISSUERID) 
 			WITH SYNONYMS=('issuers','entities','corporates') 
 			COMMENT='Issuer and corporate hierarchy data'
@@ -169,29 +169,29 @@ def create_research_semantic_view(session: Session):
     
     # First check if the fundamentals tables exist
     try:
-        session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS LIMIT 1").collect()
-        session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_ESTIMATES LIMIT 1").collect()
+        session.sql(f"SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_FUNDAMENTALS LIMIT 1").collect()
+        session.sql(f"SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_ESTIMATES LIMIT 1").collect()
     except:
         print("⚠️  Fundamentals tables not found, skipping research view creation")
         return
     
     # Create the research-focused semantic view
     session.sql(f"""
-CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_RESEARCH_VIEW
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_RESEARCH_VIEW
 	TABLES (
-		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
 			PRIMARY KEY (SECURITYID) 
 			WITH SYNONYMS=('companies','stocks','equities','securities') 
 			COMMENT='Security master data',
-		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+		ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
 			PRIMARY KEY (ISSUERID) 
 			WITH SYNONYMS=('issuers','entities','corporates') 
 			COMMENT='Issuer and corporate data',
-		FUNDAMENTALS AS {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS
+		FUNDAMENTALS AS {config.DATABASE['name']}.CURATED.FACT_FUNDAMENTALS
 			PRIMARY KEY (SECURITY_ID, REPORTING_DATE, METRIC_NAME)
 			WITH SYNONYMS=('financials','earnings','results','fundamentals')
 			COMMENT='Company financial fundamentals',
-		ESTIMATES AS {config.DATABASE_NAME}.CURATED.FACT_ESTIMATES
+		ESTIMATES AS {config.DATABASE['name']}.CURATED.FACT_ESTIMATES
 			PRIMARY KEY (SECURITY_ID, ESTIMATE_DATE, FISCAL_PERIOD, METRIC_NAME) 
 			WITH SYNONYMS=('forecasts','estimates','guidance','consensus') 
 			COMMENT='Analyst estimates and guidance'
@@ -253,7 +253,7 @@ def create_quantitative_semantic_view(session: Session):
     missing_tables = []
     for table in quant_tables:
         try:
-            session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.{table} LIMIT 1").collect()
+            session.sql(f"SELECT 1 FROM {config.DATABASE['name']}.CURATED.{table} LIMIT 1").collect()
         except:
             missing_tables.append(table)
     
@@ -263,41 +263,41 @@ def create_quantitative_semantic_view(session: Session):
     
     # Create the quantitative analysis semantic view
     session.sql(f"""
-CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_QUANT_VIEW
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_QUANT_VIEW
 	TABLES (
-		HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR
+		HOLDINGS AS {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR
 			PRIMARY KEY (HoldingDate, PORTFOLIOID, SECURITYID) 
 			WITH SYNONYMS=('quant_positions','factor_holdings','quantitative_holdings','quant_allocations') 
 			COMMENT='Portfolio holdings for factor analysis',
-		PORTFOLIOS AS {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+		PORTFOLIOS AS {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
 			PRIMARY KEY (PORTFOLIOID) 
 			WITH SYNONYMS=('quant_funds','factor_strategies','quantitative_mandates','quant_portfolios') 
 			COMMENT='Portfolio information',
-		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
 			PRIMARY KEY (SECURITYID) 
 			WITH SYNONYMS=('factor_companies','quant_stocks','quantitative_instruments','factor_securities') 
 			COMMENT='Security reference data',
-		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+		ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
 			PRIMARY KEY (ISSUERID) 
 			WITH SYNONYMS=('factor_issuers','quantitative_entities','quant_corporates') 
 			COMMENT='Issuer data',
-		FACTOR_EXPOSURES AS {config.DATABASE_NAME}.CURATED.FACT_FACTOR_EXPOSURES
+		FACTOR_EXPOSURES AS {config.DATABASE['name']}.CURATED.FACT_FACTOR_EXPOSURES
 			PRIMARY KEY (SECURITYID, EXPOSURE_DATE, FACTOR_NAME)
 			WITH SYNONYMS=('factors','loadings','exposures','factor_data')
 			COMMENT='Factor exposures and loadings',
-		FUNDAMENTALS AS {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS
+		FUNDAMENTALS AS {config.DATABASE['name']}.CURATED.FACT_FUNDAMENTALS
 			PRIMARY KEY (SECURITY_ID, REPORTING_DATE, METRIC_NAME)
 			WITH SYNONYMS=('financials','earnings','fundamentals','metrics')
 			COMMENT='Financial fundamentals data',
-		ESTIMATES AS {config.DATABASE_NAME}.CURATED.FACT_ESTIMATES
+		ESTIMATES AS {config.DATABASE['name']}.CURATED.FACT_ESTIMATES
 			PRIMARY KEY (SECURITY_ID, ESTIMATE_DATE, FISCAL_PERIOD, METRIC_NAME)
 			WITH SYNONYMS=('forecasts','estimates','consensus','guidance')
 			COMMENT='Analyst estimates and guidance',
-		MARKET_DATA AS {config.DATABASE_NAME}.CURATED.FACT_MARKETDATA_TIMESERIES
+		MARKET_DATA AS {config.DATABASE['name']}.CURATED.FACT_MARKETDATA_TIMESERIES
 			PRIMARY KEY (PriceDate, SECURITYID)
 			WITH SYNONYMS=('prices','returns','market_data','performance')
 			COMMENT='Market data and returns',
-		BENCHMARK_HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_BENCHMARK_HOLDINGS
+		BENCHMARK_HOLDINGS AS {config.DATABASE['name']}.CURATED.FACT_BENCHMARK_HOLDINGS
 			PRIMARY KEY (HOLDING_DATE, BENCHMARKID, SECURITYID)
 			WITH SYNONYMS=('benchmark_positions','index_holdings','benchmark_weights')
 			COMMENT='Benchmark constituent holdings and weights'
@@ -385,22 +385,22 @@ def create_search_services(session: Session, scenarios: List[str]):
     # Create search service for each required document type
     for doc_type in required_doc_types:
         if doc_type in config.DOCUMENT_TYPES:
-            corpus_table = f"{config.DATABASE_NAME}.CURATED.{config.DOCUMENT_TYPES[doc_type]['corpus_name']}"
+            corpus_table = f"{config.DATABASE['name']}.CURATED.{config.DOCUMENT_TYPES[doc_type]['corpus_name']}"
             service_name = config.DOCUMENT_TYPES[doc_type]['search_service']
             
             try:
-                # Use dedicated Cortex Search warehouse
-                from config import CORTEX_SEARCH_WAREHOUSE, CORTEX_SEARCH_TARGET_LAG
-                search_warehouse = CORTEX_SEARCH_WAREHOUSE
+                # Use dedicated Cortex Search warehouse from structured config
+                search_warehouse = config.WAREHOUSES['cortex_search']['name']
+                target_lag = config.WAREHOUSES['cortex_search']['target_lag']
                 
                 # Create enhanced Cortex Search service with SecurityID and IssuerID attributes
                 # Using configurable TARGET_LAG for demo environments to see changes quickly
                 session.sql(f"""
-                    CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.{service_name}
+                    CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE['name']}.AI.{service_name}
                         ON DOCUMENT_TEXT
                         ATTRIBUTES DOCUMENT_TITLE, SecurityID, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
                         WAREHOUSE = {search_warehouse}
-                        TARGET_LAG = '{CORTEX_SEARCH_TARGET_LAG}'
+                        TARGET_LAG = '{target_lag}'
                         AS 
                         SELECT 
                             DOCUMENT_ID,
@@ -430,7 +430,7 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
             # Test semantic view using proper SEMANTIC_VIEW() function with correct metric names
             test_query = f"""
                 SELECT * FROM SEMANTIC_VIEW(
-                    {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
+                    {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
                     METRICS TOTAL_MARKET_VALUE
                     DIMENSIONS PORTFOLIONAME
                 )
@@ -440,13 +440,13 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
             print(f"✅ Semantic view query test passed: {len(result)} results")
             
             # Test DESCRIBE SEMANTIC VIEW
-            describe_result = session.sql(f"DESCRIBE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW").collect()
+            describe_result = session.sql(f"DESCRIBE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW").collect()
             print(f"✅ Semantic view structure validated: {len(describe_result)} components")
             
             # Test with multiple metrics and dimensions
             advanced_test = f"""
                 SELECT * FROM SEMANTIC_VIEW(
-                    {config.DATABASE_NAME}.AI.SAM_ANALYST_VIEW
+                    {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
                     METRICS TOTAL_MARKET_VALUE, HOLDING_COUNT
                     DIMENSIONS DESCRIPTION, GICS_SECTOR
                 )
@@ -464,7 +464,8 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
         print("🔍 Testing search services...")
         try:
             # Get list of search services using correct SHOW command
-            ai_objects = session.sql(f'SHOW CORTEX SEARCH SERVICES IN {config.DATABASE_NAME}.AI').collect()
+            database_name = config.DATABASE['name']
+            ai_objects = session.sql(f'SHOW CORTEX SEARCH SERVICES IN {database_name}.AI').collect()
             
             print(f"Found {len(ai_objects)} search services to test")
             
@@ -474,7 +475,7 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
                 try:
                     test_result = session.sql(f"""
                         SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
-                            '{config.DATABASE_NAME}.AI.{service_name}',
+                            '{config.DATABASE['name']}.AI.{service_name}',
                             '{{"query": "technology investment", "limit": 2}}'
                         ) 
                     """).collect()
@@ -506,48 +507,48 @@ def create_implementation_semantic_view(session: Session):
     
     for table in required_tables:
         try:
-            session.sql(f"SELECT 1 FROM {config.DATABASE_NAME}.CURATED.{table} LIMIT 1").collect()
+            session.sql(f"SELECT 1 FROM {config.DATABASE['name']}.CURATED.{table} LIMIT 1").collect()
         except:
             print(f"⚠️  Implementation table {table} not found, skipping implementation view creation")
             return
     
     # Create the implementation-focused semantic view
     session.sql(f"""
-CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_IMPLEMENTATION_VIEW
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_IMPLEMENTATION_VIEW
 	TABLES (
-		HOLDINGS AS {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR
+		HOLDINGS AS {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR
 			PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID) 
 			WITH SYNONYMS=('positions','investments','allocations','holdings') 
 			COMMENT='Current portfolio holdings for implementation planning',
-		PORTFOLIOS AS {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+		PORTFOLIOS AS {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
 			PRIMARY KEY (PORTFOLIOID) 
 			WITH SYNONYMS=('funds','strategies','mandates','portfolios') 
 			COMMENT='Portfolio information',
-		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
 			PRIMARY KEY (SECURITYID) 
 			WITH SYNONYMS=('companies','stocks','instruments','securities') 
 			COMMENT='Security reference data',
-		TRANSACTION_COSTS AS {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION_COSTS
+		TRANSACTION_COSTS AS {config.DATABASE['name']}.CURATED.FACT_TRANSACTION_COSTS
 			PRIMARY KEY (SECURITYID, COST_DATE)
 			WITH SYNONYMS=('trading_costs','execution_costs','cost_data','transaction_costs')
 			COMMENT='Transaction costs and market microstructure data',
-		PORTFOLIO_LIQUIDITY AS {config.DATABASE_NAME}.CURATED.FACT_PORTFOLIO_LIQUIDITY
+		PORTFOLIO_LIQUIDITY AS {config.DATABASE['name']}.CURATED.FACT_PORTFOLIO_LIQUIDITY
 			PRIMARY KEY (PORTFOLIOID, LIQUIDITY_DATE)
 			WITH SYNONYMS=('liquidity_info','liquidity','cash_position','liquidity_data')
 			COMMENT='Portfolio cash and liquidity information',
-		RISK_LIMITS AS {config.DATABASE_NAME}.CURATED.FACT_RISK_LIMITS
+		RISK_LIMITS AS {config.DATABASE['name']}.CURATED.FACT_RISK_LIMITS
 			PRIMARY KEY (PORTFOLIOID, LIMITS_DATE)
 			WITH SYNONYMS=('risk_budget','limits','constraints','risk_limits')
 			COMMENT='Risk limits and budget utilization',
-		TRADING_CALENDAR AS {config.DATABASE_NAME}.CURATED.FACT_TRADING_CALENDAR
+		TRADING_CALENDAR AS {config.DATABASE['name']}.CURATED.FACT_TRADING_CALENDAR
 			PRIMARY KEY (SECURITYID, EVENT_DATE)
 			WITH SYNONYMS=('calendar','events','blackouts','earnings_dates','trading_calendar')
 			COMMENT='Trading calendar with blackout periods and events',
-		CLIENT_MANDATES AS {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES
+		CLIENT_MANDATES AS {config.DATABASE['name']}.CURATED.DIM_CLIENT_MANDATES
 			PRIMARY KEY (PORTFOLIOID)
 			WITH SYNONYMS=('client_constraints','approvals','client_rules','client_mandates')
 			COMMENT='Client mandate requirements and approval thresholds',
-		TAX_IMPLICATIONS AS {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS
+		TAX_IMPLICATIONS AS {config.DATABASE['name']}.CURATED.FACT_TAX_IMPLICATIONS
 			PRIMARY KEY (PORTFOLIOID, SECURITYID, TAX_DATE)
 			WITH SYNONYMS=('tax_data','tax_records','gains_losses','tax_implications')
 			COMMENT='Tax implications and cost basis data'
@@ -619,24 +620,24 @@ def create_sec_filings_semantic_view(session: Session):
     
     # Check if SEC filings table exists
     try:
-        session.sql(f"SELECT COUNT(*) FROM {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS LIMIT 1").collect()
+        session.sql(f"SELECT COUNT(*) FROM {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS LIMIT 1").collect()
     except Exception as e:
         print(f"⚠️  FACT_SEC_FILINGS table not found: {e}")
         print("   SEC filings semantic view creation skipped")
         return
     
     session.sql(f"""
-CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.SAM_SEC_FILINGS_VIEW
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIEW
 	TABLES (
-		SEC_FILINGS AS {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS
+		SEC_FILINGS AS {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS
 			PRIMARY KEY (FILINGID) 
 			WITH SYNONYMS=('sec_filings','filings','financial_statements','sec_data') 
 			COMMENT='SEC filing financial data with comprehensive metrics across Income Statement, Balance Sheet, and Cash Flow',
-		SECURITIES AS {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
 			PRIMARY KEY (SECURITYID) 
 			WITH SYNONYMS=('companies','stocks','bonds','instruments','securities') 
 			COMMENT='Master security reference data',
-		ISSUERS AS {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+		ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
 			PRIMARY KEY (ISSUERID) 
 			WITH SYNONYMS=('issuers','entities','corporates') 
 			COMMENT='Issuer and corporate hierarchy data'

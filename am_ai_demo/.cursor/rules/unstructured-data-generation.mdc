@@ -4,551 +4,173 @@ alwaysApply: true
 
 # SAM Demo - Unstructured Data Generation Rules
 
-Complete patterns and standards for generating realistic unstructured documents across all document types in the SAM demo. This is the **single source of truth** for document generation patterns.
+Complete patterns and standards for generating realistic unstructured documents across all document types in the SAM demo using **template-based generation**. This is the **single source of truth** for document generation patterns.
 
 ## Overview
 
-This guide provides standardized patterns for generating 7 document types that support the SAM demo scenarios, ensuring consistency, realism, and proper integration with the SecurityID-based data model.
+This guide provides standardized patterns for generating 19 document types that support the SAM demo scenarios using the hydration engine with pre-authored templates, ensuring consistency, realism, and proper integration with the SecurityID-based data model.
+
+**Generation Approach**: **Template-Based Hydration Only**
+- All documents generated from 50+ curated markdown templates in `content_library/`
+- No LLM generation during builds (deterministic, fast, high-quality)
+- Templates use YAML front matter + placeholder hydration
+- Entity prioritization aligned with portfolio holdings
 
 **Document Categories:**
-- **Security-Level**: broker_research, earnings_transcripts, press_releases
+- **Security-Level**: broker_research, earnings_transcripts, press_releases, internal_research, investment_memo
 - **Issuer-Level**: ngo_reports, engagement_notes  
-- **Global**: policy_docs, sales_templates, philosophy_docs
+- **Portfolio-Level**: ips (Investment Policy Statements), portfolio_review
+- **Global**: policy_docs, sales_templates, philosophy_docs, compliance_manual, risk_framework, market_data
+- **Regulatory**: form_adv, form_crs, regulatory_updates
 
 **Key Principles:**
-- **Realistic Content**: Industry-appropriate language and structure
+- **Template-Based**: All content from curated templates (no LLM calls)
+- **Deterministic**: Same RNG_SEED produces identical output
+- **Entity Alignment**: Documents generated for companies that appear in portfolio holdings
+- **Realistic Content**: Industry-appropriate language and structure from curated templates
 - **Proper Linkage**: SecurityID/IssuerID integration for search and analytics
-- **Consistent Quality**: Standardized word counts and formatting
+- **Consistent Quality**: Standardized word counts and formatting via templates
 - **Demo Alignment**: Content supports specific agent scenarios
 
 ## Document Type Specifications
 
-### Security-Level Documents (Linked to Securities)
+**Implementation**: See `python/generate_unstructured.py` and `python/hydration_engine.py`
+**Templates**: See `content_library/` for 50+ curated markdown templates
 
-#### **1. Broker Research Reports**
-```yaml
-Document Type: broker_research
-Table: BROKER_RESEARCH_RAW → BROKER_RESEARCH_CORPUS
-Search Service: SAM_BROKER_RESEARCH
-Word Count: 700-1,200 words
-Applies To: All equity securities
-Linkage: SecurityID + IssuerID
-```
+### Document Categories and Linkage
 
-**Content Pattern:**
-```
-Title: [Company Name] ([TICKER]) - [Rating] - [Price Target]
-Structure:
-- Executive Summary (100-150 words)
-- Investment Thesis (200-300 words) 
-- Financial Analysis (200-300 words)
-- Risks and Catalysts (150-200 words)
-- Valuation and Rating (100-150 words)
+| Document Type | Linkage | Word Count | Table/Service |
+|---------------|---------|------------|---------------|
+| **Security-Level** ||||
+| broker_research | SecurityID + IssuerID | 700-1,200 | BROKER_RESEARCH_CORPUS / SAM_BROKER_RESEARCH |
+| earnings_transcripts | SecurityID + IssuerID | 6,000-10,000 | EARNINGS_TRANSCRIPTS_CORPUS / SAM_EARNINGS_TRANSCRIPTS |
+| press_releases | SecurityID + IssuerID | 250-400 | PRESS_RELEASES_CORPUS / SAM_PRESS_RELEASES |
+| **Issuer-Level** ||||
+| ngo_reports | IssuerID only | 400-800 | NGO_REPORTS_CORPUS / SAM_NGO_REPORTS |
+| engagement_notes | IssuerID only | 150-300 | ENGAGEMENT_NOTES_CORPUS / SAM_ENGAGEMENT_NOTES |
+| **Global** ||||
+| policy_docs | None | 800-1,500 | POLICY_DOCS_CORPUS / SAM_POLICY_DOCS |
+| sales_templates | None | 800-1,500 | SALES_TEMPLATES_CORPUS / SAM_SALES_TEMPLATES |
+| philosophy_docs | None | 800-1,500 | PHILOSOPHY_DOCS_CORPUS / SAM_PHILOSOPHY_DOCS |
 
-Key Elements:
-- Buy/Hold/Sell recommendation
-- 12-month price target
-- Sector-specific analysis
-- ESG considerations (when relevant)
-- Quarterly earnings context
-```
+### Template-Based Generation Approach
 
-**Prompt Template:**
-```
-Create a professional equity research report for {COMPANY_NAME} ({TICKER}) in the {GICS_SECTOR} sector.
-
-Requirements:
-- Professional investment research tone
-- Include buy/hold/sell recommendation with rationale
-- 12-month price target with valuation methodology
-- Sector-specific competitive analysis
-- ESG factors relevant to the industry
-- Reference recent quarterly performance
-- Target length: 700-1200 words
-- Use UK English spelling and financial terminology
-```
-
-#### **2. Earnings Transcripts**
-```yaml
-Document Type: earnings_transcripts
-Table: EARNINGS_TRANSCRIPTS_RAW → EARNINGS_TRANSCRIPTS_CORPUS
-Search Service: SAM_EARNINGS_TRANSCRIPTS
-Word Count: 6,000-10,000 words
-Applies To: All equity securities
-Linkage: SecurityID + IssuerID
-```
-
-**Content Pattern:**
-```
-Title: [Company Name] Q[X] [YYYY] Earnings Call Transcript
-Structure:
-- Operator Introduction (200-300 words)
-- CEO Prepared Remarks (1,500-2,000 words)
-- CFO Financial Review (1,000-1,500 words)
-- Q&A Session (3,000-5,000 words)
-- Closing Remarks (200-300 words)
-
-Key Elements:
-- Quarterly financial results
-- Forward guidance
-- Strategic initiatives
-- Market conditions commentary
-- Analyst questions and management responses
-```
-
-**Prompt Template:**
-```
-Create a realistic quarterly earnings call transcript for {COMPANY_NAME} ({TICKER}).
-
-Requirements:
-- Formal earnings call structure with CEO/CFO remarks and Q&A
-- Specific financial metrics and guidance
-- Industry-relevant strategic initiatives
-- Realistic analyst questions covering key investor concerns
-- Professional corporate communication tone
-- Target length: 6000-10000 words
-- Include forward-looking statements disclaimer
-```
-
-#### **3. Press Releases**
-```yaml
-Document Type: press_releases
-Table: PRESS_RELEASES_RAW → PRESS_RELEASES_CORPUS
-Search Service: SAM_PRESS_RELEASES
-Word Count: 250-400 words
-Applies To: All equity securities
-Linkage: SecurityID + IssuerID
-```
-
-**Content Pattern:**
-```
-Title: [Company Name] [Announces/Reports/Launches] [News Item]
-Structure:
-- Headline and dateline (1 line)
-- Lead paragraph with key facts (50-75 words)
-- Supporting details (100-150 words)
-- Executive quote (50-75 words)
-- Company boilerplate (50-75 words)
-
-Key Elements:
-- Corporate announcements
-- Product launches
-- Partnership agreements
-- Financial milestones
-- Executive quotes
-```
-
-### Issuer-Level Documents (Linked to Issuers)
-
-#### **4. NGO Reports**
-```yaml
-Document Type: ngo_reports
-Table: NGO_REPORTS_RAW → NGO_REPORTS_CORPUS
-Search Service: SAM_NGO_REPORTS
-Word Count: 400-800 words
-Applies To: Issuers (companies)
-Linkage: IssuerID only
-```
-
-**Content Pattern:**
-```
-Title: [NGO Name] Report: [Company Name] [ESG Issue]
-Structure:
-- Executive Summary (100-150 words)
-- Issue Background (150-200 words)
-- Company Assessment (200-300 words)
-- Recommendations (100-150 words)
-
-Key Elements:
-- Environmental, social, or governance concerns
-- Factual assessment of company practices
-- Severity ratings (Low/Medium/High)
-- Actionable recommendations
-- NGO credibility and methodology
-```
-
-#### **5. Engagement Notes**
-```yaml
-Document Type: engagement_notes
-Table: ENGAGEMENT_NOTES_RAW → ENGAGEMENT_NOTES_CORPUS
-Search Service: SAM_ENGAGEMENT_NOTES
-Word Count: 150-300 words
-Applies To: Issuers (companies)
-Linkage: IssuerID only
-```
-
-**Content Pattern:**
-```
-Title: Engagement Note: [Company Name] - [Topic] - [Date]
-Structure:
-- Meeting Overview (50-75 words)
-- Key Discussion Points (75-125 words)
-- Outcomes and Next Steps (50-75 words)
-
-Key Elements:
-- ESG engagement activities
-- Stewardship conversations
-- Proxy voting rationale
-- Follow-up actions
-- Internal assessment notes
-```
-
-### Global Documents (No Linkage)
-
-#### **6. Policy Documents**
-```yaml
-Document Type: policy_docs
-Table: POLICY_DOCS_RAW → POLICY_DOCS_CORPUS
-Search Service: SAM_POLICY_DOCS
-Word Count: 800-1,500 words
-Applies To: Global (no specific linkage)
-Linkage: None (global documents)
-```
-
-**Content Pattern:**
-```
-Title: [Policy Area] Policy - [Specific Topic]
-Structure:
-- Policy Statement (200-300 words)
-- Scope and Application (200-300 words)
-- Implementation Guidelines (300-500 words)
-- Monitoring and Review (200-300 words)
-
-Key Elements:
-- ESG investment policies
-- Risk management frameworks
-- Compliance procedures
-- Exclusion criteria
-- Monitoring processes
-```
-
-#### **7. Sales Templates**
-```yaml
-Document Type: sales_templates
-Table: SALES_TEMPLATES_RAW → SALES_TEMPLATES_CORPUS
-Search Service: SAM_SALES_TEMPLATES
-Word Count: 800-1,500 words
-Applies To: Global (no specific linkage)
-Linkage: None (global documents)
-```
-
-**Content Pattern:**
-```
-Title: [Template Type] - [Use Case]
-Structure:
-- Template Overview (200-300 words)
-- Key Messages (300-500 words)
-- Supporting Data Points (200-400 words)
-- Customization Guidelines (200-300 words)
-
-Key Elements:
-- Client presentation materials
-- Investment strategy explanations
-- Performance attribution templates
-- Risk disclosure language
-- Compliance-approved messaging
-```
-
-#### **8. Philosophy Documents**
-```yaml
-Document Type: philosophy_docs
-Table: PHILOSOPHY_DOCS_RAW → PHILOSOPHY_DOCS_CORPUS
-Search Service: SAM_PHILOSOPHY_DOCS
-Word Count: 800-1,500 words
-Applies To: Global (no specific linkage)
-Linkage: None (global documents)
-```
-
-**Content Pattern:**
-```
-Title: [Investment Philosophy] - [Strategy Area]
-Structure:
-- Philosophy Statement (200-300 words)
-- Investment Approach (300-500 words)
-- Risk Management (200-300 words)
-- Performance Expectations (200-300 words)
-
-Key Elements:
-- Investment beliefs and principles
-- Strategy methodologies
-- Risk-return expectations
-- ESG integration approach
-- Long-term value creation
-```
+**Key Principles:**
+- All documents generated from curated markdown templates in `content_library/`
+- No LLM generation during builds (deterministic, fast, high-quality)
+- Templates use YAML front matter + placeholder hydration
+- Entity prioritization aligned with portfolio holdings
 
 ## Implementation Patterns
 
-### 1. Prompt Generation Pattern
+### 1. Template-Based Hydration
+**Implementation**: See `python/hydration_engine.py`
+
+**Process**:
+1. Load templates from `content_library/`
+2. Hydrate with real security/issuer data
+3. Create corpus tables for Cortex Search
+
+**No full code needed - reference implementation files**
+
+### 2. Entity Selection Pattern (Aligned with Portfolio Holdings)
+
+**CRITICAL**: Never hardcode FIGI values in SQL. Use config helper functions.
+
 ```python
-def generate_{document_type}_prompts(session: Session, entities: List[dict], test_mode: bool = False):
-    """Generate prompts for {document_type} documents."""
+def get_entities_for_doc_type(session: Session, doc_type: str, test_mode: bool = False):
+    """Get entities prioritized to match portfolio holdings."""
     
-    prompts = []
-    target_count = config.TEST_UNSTRUCTURED_COUNTS['{document_type}'] if test_mode else config.UNSTRUCTURED_COUNTS['{document_type}']
-    
-    for entity in entities[:target_count]:
-        # Extract entity-specific context
-        context = extract_entity_context(entity, '{document_type}')
-        
-        # Generate document-specific prompt
-        prompt = create_document_prompt(context, '{document_type}')
-        
-        prompts.append({
-            'prompt_id': str(uuid.uuid4()),
-            'document_type': '{document_type}',
-            'entity_id': entity.get('SecurityID') or entity.get('IssuerID'),
-            'entity_type': determine_entity_type('{document_type}'),
-            'prompt_text': prompt,
-            'word_count_target': random.randint(*config.DOCUMENT_TYPES['{document_type}']['word_count_range']),
-            'created_date': datetime.now()
-        })
-    
-    return prompts
+    if linkage_level == 'security':
+        # ✅ CORRECT: Use config.get_demo_company_priority_sql() - no hardcoding
+        securities = session.sql(f"""
+            SELECT s.SecurityID as id
+            FROM SAM_DEMO.CURATED.DIM_SECURITY s
+            JOIN SAM_DEMO.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            WHERE s.AssetClass = 'Equity'
+            ORDER BY 
+                -- Prioritize demo companies using config-driven priority (no hardcoding!)
+                CASE 
+                    {config.get_demo_company_priority_sql()}
+                    -- Other major US stocks
+                    WHEN s.Ticker IN {config.safe_sql_tuple(config.get_major_us_stocks('tier1'))} 
+                         AND i.CountryOfIncorporation = 'US' THEN 5
+                    ELSE 6
+                END
+            LIMIT {coverage_count}
+        """).collect()
+        return [{'id': s['ID']} for s in securities]
 ```
 
-### 2. Content Generation Pattern
+**❌ WRONG APPROACH (OLD CODE):**
 ```python
-def generate_{document_type}_content(session: Session):
-    """Generate content for {document_type} using Cortex Complete."""
-    
-    session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.RAW.{config.DOCUMENT_TYPES['{document_type}']['table_name']} AS
-        SELECT 
-            prompt_id as DOCUMENT_ID,
-            SNOWFLAKE.CORTEX.COMPLETE(
-                '{config.MODEL_NAME}',
-                prompt_text
-            ) as DOCUMENT_TEXT,
-            entity_id,
-            entity_type,
-            word_count_target,
-            created_date as GENERATED_DATE
-        FROM {config.DATABASE_NAME}.RAW.GENERATION_PROMPTS
-        WHERE document_type = '{document_type}'
-    """).collect()
+# NEVER hardcode FIGI values like this:
+CASE 
+    WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- ❌ Hardcoded!
+    WHEN s.FIGI = 'BBG001S5PXG8' THEN 2  -- ❌ Hardcoded!
+    WHEN s.FIGI IN ('BBG001S5TD05', 'BBG001S5TZJ6') THEN 4  -- ❌ Hardcoded list!
+    ELSE 5
+END
 ```
 
-### 3. Corpus Creation Pattern
-```python
-def create_{document_type}_corpus(session: Session):
-    """Create normalized corpus table for {document_type}."""
-    
-    linkage_config = config.DOCUMENT_TYPES['{document_type}']
-    
-    if linkage_config['linkage_level'] == 'security':
-        # Security-level linkage
-        linkage_columns = "SecurityID, IssuerID"
-        linkage_join = "entity_id as SecurityID, s.IssuerID"
-        join_clause = "LEFT JOIN SAM_DEMO.CURATED.DIM_SECURITY s ON entity_id = s.SecurityID"
-    elif linkage_config['linkage_level'] == 'issuer':
-        # Issuer-level linkage
-        linkage_columns = "IssuerID"
-        linkage_join = "entity_id as IssuerID"
-        join_clause = ""
-    else:
-        # Global documents (no linkage)
-        linkage_columns = ""
-        linkage_join = "NULL as SecurityID, NULL as IssuerID"
-        join_clause = ""
-    
-    session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.{linkage_config['corpus_name']} AS
-        SELECT 
-            DOCUMENT_ID,
-            REGEXP_REPLACE(SPLIT_PART(DOCUMENT_TEXT, '\\n', 1), '[^a-zA-Z0-9\\s\\-\\(\\)\\:]', '') as DOCUMENT_TITLE,
-            '{document_type.upper()}' as DOCUMENT_TYPE,
-            {linkage_join},
-            GENERATED_DATE as PUBLISH_DATE,
-            'en' as LANGUAGE,
-            DOCUMENT_TEXT
-        FROM {config.DATABASE_NAME}.RAW.{linkage_config['table_name']} raw
-        {join_clause}
-        WHERE DOCUMENT_TEXT IS NOT NULL 
-        AND LENGTH(DOCUMENT_TEXT) > 100
-    """).collect()
+**Key Principles:**
+- Use `config.get_demo_company_priority_sql()` for dynamic priority CASE statements
+- Use `config.safe_sql_tuple()` for safe IN clause generation (handles empty lists)
+- Leverage data model columns: `AssetClass`, `CountryOfIncorporation` instead of regex patterns
+- All company selection driven by `config.DEMO_COMPANIES` dictionary
 ```
+
+### 3. Corpus Creation
+**Implementation**: See `python/generate_unstructured.py`
+
+**Key Pattern:**
+- Transform RAW tables → CURATED corpus tables
+- Add proper linkage (SecurityID/IssuerID based on document type)
+- Extract clean titles from first line
+- Standardized columns: DOCUMENT_ID, DOCUMENT_TITLE, DOCUMENT_TYPE, SecurityID, IssuerID, PUBLISH_DATE, LANGUAGE, DOCUMENT_TEXT
 
 ## Quality Standards
 
-### Content Quality Requirements
-- **Realistic Language**: Industry-appropriate terminology and tone
-- **Factual Consistency**: Align with company/sector characteristics
-- **Proper Structure**: Follow document type formatting standards
-- **Word Count Compliance**: Stay within specified ranges
-- **UK English**: Consistent spelling and terminology
+**Implementation**: See validation functions in `python/generate_unstructured.py`
 
-### Technical Requirements
-- **Unique IDs**: UUID-based document identifiers
-- **Proper Linkage**: Correct SecurityID/IssuerID associations
-- **Clean Titles**: Extract meaningful titles from content
-- **Date Consistency**: Realistic publication dates
-- **Language Tagging**: Consistent 'en' language designation
+**Key Requirements:**
+- Realistic industry language and UK English
+- Word counts within specified ranges
+- Proper SecurityID/IssuerID linkage
+- Clean titles and consistent formatting
 
-### Validation Patterns
-```python
-def validate_{document_type}_quality(session: Session):
-    """Validate quality of generated {document_type} documents."""
-    
-    # Check document count
-    count_check = session.sql(f"""
-        SELECT COUNT(*) as doc_count 
-        FROM {config.DATABASE_NAME}.CURATED.{config.DOCUMENT_TYPES['{document_type}']['corpus_name']}
-    """).collect()[0]['DOC_COUNT']
-    
-    # Check word count distribution
-    word_count_check = session.sql(f"""
-        SELECT 
-            AVG(LENGTH(DOCUMENT_TEXT) - LENGTH(REPLACE(DOCUMENT_TEXT, ' ', '')) + 1) as avg_words,
-            MIN(LENGTH(DOCUMENT_TEXT) - LENGTH(REPLACE(DOCUMENT_TEXT, ' ', '')) + 1) as min_words,
-            MAX(LENGTH(DOCUMENT_TEXT) - LENGTH(REPLACE(DOCUMENT_TEXT, ' ', '')) + 1) as max_words
-        FROM {config.DATABASE_NAME}.CURATED.{config.DOCUMENT_TYPES['{document_type}']['corpus_name']}
-    """).collect()[0]
-    
-    # Check linkage integrity
-    if config.DOCUMENT_TYPES['{document_type}']['linkage_level'] != 'global':
-        linkage_check = session.sql(f"""
-            SELECT COUNT(*) as unlinked_docs
-            FROM {config.DATABASE_NAME}.CURATED.{config.DOCUMENT_TYPES['{document_type}']['corpus_name']}
-            WHERE {get_linkage_column('{document_type}')} IS NULL
-        """).collect()[0]['UNLINKED_DOCS']
-        
-        assert linkage_check == 0, f"Found {linkage_check} unlinked documents"
-    
-    print(f"✅ {document_type} quality validation passed: {count_check} documents")
-```
+## Agent-Document Alignment
 
-## Document Type Usage by Agent
+**Configuration**: See `config.py` - `SCENARIO_DATA_REQUIREMENTS`
 
-### Agent-Document Mapping
-```python
-# From config.py - SCENARIO_DATA_REQUIREMENTS
-AGENT_DOCUMENT_USAGE = {
-    'portfolio_copilot': ['broker_research', 'earnings_transcripts', 'press_releases'],
-    'research_copilot': ['broker_research', 'earnings_transcripts'],
-    'thematic_macro_advisor': ['broker_research', 'press_releases'],
-    'esg_guardian': ['ngo_reports', 'engagement_notes', 'policy_docs'],
-    'sales_advisor': ['sales_templates', 'philosophy_docs', 'policy_docs'],
-    'quant_analyst': ['broker_research', 'earnings_transcripts'],
-    'compliance_advisor': ['policy_docs', 'engagement_notes']
-}
-```
+**Key Mappings:**
+- portfolio_copilot → broker_research, earnings_transcripts, press_releases
+- esg_guardian → ngo_reports, engagement_notes, policy_docs
+- sales_advisor → sales_templates, philosophy_docs, policy_docs
 
-### Content Alignment Requirements
-- **Portfolio Copilot**: Research must align with portfolio holdings (major stocks prioritized)
-- **ESG Guardian**: NGO reports must cover portfolio companies with ESG issues
-- **Sales Advisor**: Templates must reflect actual investment strategies and policies
-- **Research Copilot**: Comprehensive coverage across sectors and geographies
-- **Compliance Advisor**: Policies must address real regulatory requirements
+**Critical Principle**: Content must align with portfolio holdings for demo coherence
 
-## Error Handling and Fallbacks
+## Demo Coherence
 
-### Generation Failures
-```python
-def handle_generation_failure(document_type: str, entity_id: str, error: Exception):
-    """Handle document generation failures gracefully."""
-    
-    print(f"⚠️ Failed to generate {document_type} for entity {entity_id}: {error}")
-    
-    # Log failure for analysis
-    log_generation_failure(document_type, entity_id, str(error))
-    
-    # Continue with remaining documents (don't fail entire batch)
-    return None
-```
+**Critical Challenge**: Multi-step demo flows need predictable company coverage
 
-### Content Quality Issues
-```python
-def validate_generated_content(content: str, document_type: str) -> bool:
-    """Validate generated content meets quality standards."""
-    
-    if not content or len(content.strip()) < 100:
-        return False
-    
-    word_count = len(content.split())
-    min_words, max_words = config.DOCUMENT_TYPES[document_type]['word_count_range']
-    
-    if word_count < min_words * 0.8 or word_count > max_words * 1.2:
-        return False
-    
-    # Check for common generation issues
-    if content.count('I cannot') > 0 or content.count('I apologize') > 0:
-        return False
-    
-    return True
-```
+**Solution Approach**:
+1. Prioritize demo companies from `config.DEMO_COMPANIES` in entity selection
+2. Ensure templates cover key themes for demo scenarios
+3. Test complete flows after document regeneration
+4. Make queries specific (not broad searches)
 
-## Demo Coherence Requirements
+**Example**: Research Copilot needs Microsoft in "AI and cloud computing" searches
+- Solution: Prioritize Microsoft for broker research generation
+- Use specific query phrases that match template content
 
-### Critical Challenge: Predictable Demo Flows
-Demo scenarios require specific companies to appear in search results for logical flow progression. Random document generation can break demo coherence when Step 2 references companies not mentioned in Step 1.
+## Performance
 
-### Solution: Enhanced Prompt Generation for Demo Companies
-```python
-# Demo coherence enhancement pattern
-def generate_broker_research_prompt(security: dict, report_num: int) -> dict:
-    # Identify key demo companies
-    demo_tech_companies = ['MSFT', 'AAPL', 'NVDA', 'AMZN', 'GOOGL', 'META']
-    is_demo_tech_company = security['TICKER'] in demo_tech_companies
-    
-    # Standard prompt generation...
-    prompt_text = f"""Standard research report prompt..."""
-    
-    # Add theme-specific guidance for demo companies
-    if is_demo_tech_company:
-        prompt_text += f"""
-        CRITICAL FOR DEMO COHERENCE: This report should emphasize {security['COMPANY_NAME']}'s role in technology sector opportunities, including themes such as:
-        - AI and machine learning innovation
-        - Cloud computing and digital transformation
-        - Technology infrastructure and platforms
-        
-        Ensure the report discusses how {security['COMPANY_NAME']} is positioned within broader "technology sector opportunities" and mention this specific phrase in your analysis."""
-```
-
-### Demo Coherence Best Practices
-1. **Identify Demo Dependencies**: Map which companies must appear in which scenario steps
-2. **Theme Enforcement**: Add specific theme guidance for key demo companies
-3. **Phrase Inclusion**: Ensure critical search phrases appear in generated content
-4. **Query Refinement**: Make demo queries more specific to increase hit probability
-5. **Validation Testing**: Test complete demo flows after document regeneration
-
-### Example: Research Copilot Demo Fix
-**Problem**: Step 1 "technology sector opportunities" didn't return Microsoft research, breaking Step 2 flow
-**Solution**: 
-- Enhanced Microsoft research prompts to include "technology sector opportunities" phrase
-- Refined Step 1 query to "AI and cloud computing opportunities in technology companies"
-- Result: Guaranteed Microsoft appears in Step 1 results for coherent Step 2 follow-up
-
-### Implementation Pattern for New Scenarios
-```python
-# 1. Identify demo company dependencies
-SCENARIO_DEMO_COMPANIES = {
-    'research_copilot': ['MSFT', 'AAPL', 'NVDA'],  # Must appear in tech research
-    'esg_guardian': ['XOM', 'BP', 'TSLA'],         # Must appear in ESG reports
-    'portfolio_copilot': ['AAPL', 'MSFT', 'NVDA'] # Must be in portfolio holdings
-}
-
-# 2. Add theme-specific enhancements
-def enhance_prompt_for_demo_coherence(prompt_text: str, security: dict, scenario: str):
-    if scenario == 'research_copilot' and security['TICKER'] in ['MSFT', 'AAPL', 'NVDA']:
-        prompt_text += "CRITICAL: Include 'technology sector opportunities' phrase..."
-    elif scenario == 'esg_guardian' and security['TICKER'] in ['XOM', 'BP']:
-        prompt_text += "CRITICAL: Include ESG controversy themes..."
-    return prompt_text
-```
-
-## Performance Optimization
-
-### Batch Processing
-- **Prompt Generation**: Process entities in batches of 100
-- **Content Generation**: Use SQL-based Cortex Complete for efficiency
-- **Corpus Creation**: Single SQL operation per document type
-- **Validation**: Batch validation queries
-
-### Memory Management
-- **Avoid Large DataFrames**: Use SQL-first approach
-- **Stream Processing**: Process document types sequentially
-- **Cleanup**: Drop temporary tables after processing
-- **Error Recovery**: Continue processing on individual failures
+**Key Principles:**
+- SQL-first approach (no large DataFrames)
+- Process document types sequentially
+- Batch entity selection queries
+- Continue on individual failures (don't stop entire batch)
 
 ## Summary
 

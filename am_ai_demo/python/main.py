@@ -28,7 +28,8 @@ from config import (
     DEFAULT_CONNECTION_NAME, 
     AVAILABLE_SCENARIOS,
     SCENARIO_DATA_REQUIREMENTS,
-    DATABASE_NAME
+    DATABASE,
+    WAREHOUSES
 )
 
 def parse_arguments() -> argparse.Namespace:
@@ -103,6 +104,7 @@ def create_snowpark_session(connection_name: str):
         return session
         
     except ImportError:
+        print(f"❌ Connection failed: {str(e)}")
         print("❌ Error: snowflake-snowpark-python not installed")
         print("Install with: pip install -r requirements.txt")
         sys.exit(1)
@@ -116,34 +118,41 @@ def create_snowpark_session(connection_name: str):
 
 def create_demo_warehouses(session):
     """Create dedicated warehouses for demo execution and Cortex Search services."""
-    from config import EXECUTION_WAREHOUSE, CORTEX_SEARCH_WAREHOUSE, WAREHOUSE_SIZE
-    
     try:
         print("🏗️ Creating demo warehouses...")
         
+        # Get warehouse configs from structured config
+        execution_wh = WAREHOUSES['execution']['name']
+        execution_size = WAREHOUSES['execution']['size']
+        execution_comment = WAREHOUSES['execution']['comment']
+        
+        cortex_wh = WAREHOUSES['cortex_search']['name']
+        cortex_size = WAREHOUSES['cortex_search']['size']
+        cortex_comment = WAREHOUSES['cortex_search']['comment']
+        
         # Create execution warehouse for data generation and code execution
         session.sql(f"""
-            CREATE OR REPLACE WAREHOUSE {EXECUTION_WAREHOUSE}
-            WITH WAREHOUSE_SIZE = {WAREHOUSE_SIZE}
+            CREATE OR REPLACE WAREHOUSE {execution_wh}
+            WITH WAREHOUSE_SIZE = {execution_size}
             AUTO_SUSPEND = 60
             AUTO_RESUME = TRUE
-            COMMENT = 'Warehouse for SAM demo data generation and execution'
+            COMMENT = '{execution_comment}'
         """).collect()
-        print(f"✅ Created execution warehouse: {EXECUTION_WAREHOUSE}")
+        print(f"✅ Created execution warehouse: {execution_wh}")
         
         # Create Cortex Search warehouse for search services
         session.sql(f"""
-            CREATE OR REPLACE WAREHOUSE {CORTEX_SEARCH_WAREHOUSE}
-            WITH WAREHOUSE_SIZE = {WAREHOUSE_SIZE}
+            CREATE OR REPLACE WAREHOUSE {cortex_wh}
+            WITH WAREHOUSE_SIZE = {cortex_size}
             AUTO_SUSPEND = 60
             AUTO_RESUME = TRUE
-            COMMENT = 'Warehouse for SAM demo Cortex Search services'
+            COMMENT = '{cortex_comment}'
         """).collect()
-        print(f"✅ Created Cortex Search warehouse: {CORTEX_SEARCH_WAREHOUSE}")
+        print(f"✅ Created Cortex Search warehouse: {cortex_wh}")
         
         # Set session to use execution warehouse by default
-        session.use_warehouse(EXECUTION_WAREHOUSE)
-        print(f"✅ Session configured to use: {EXECUTION_WAREHOUSE}")
+        session.use_warehouse(execution_wh)
+        print(f"✅ Session configured to use: {execution_wh}")
         
     except Exception as e:
         print(f"⚠️ Warning: Failed to create warehouses: {e}")
@@ -208,7 +217,7 @@ def main():
             
             # Validate that structured data exists (unstructured depends on it)
             try:
-                session.sql(f"SELECT COUNT(*) FROM {DATABASE_NAME}.CURATED.DIM_SECURITY LIMIT 1").collect()
+                session.sql(f"SELECT COUNT(*) FROM {DATABASE['name']}.CURATED.DIM_SECURITY LIMIT 1").collect()
             except Exception as e:
                 print("❌ Unstructured data generation requires structured data to exist first.")
                 print("💡 Run with --scope structured first, or use --scope data to build both together.")
@@ -234,7 +243,7 @@ def main():
         print("🎉 SAM Demo Environment Build Complete!")
         print(f"⏰ Build completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"⌛ Total duration: {duration}")
-        print(f"📍 Database: {DATABASE_NAME}")
+        print(f"📍 Database: {DATABASE['name']}")
         print(f"🎭 Scenarios: {', '.join(validated_scenarios)}")
         print()
         print("Next steps:")

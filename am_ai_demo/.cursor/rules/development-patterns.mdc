@@ -47,8 +47,11 @@ CREATE OR REPLACE TABLE {DATABASE_NAME}.CURATED.FACT_{EVENT_NAME} (
 def build_{table_name}(session: Session, test_mode: bool = False):
     """Build {description} table using efficient SQL generation."""
     
+    # CRITICAL: Extract config values before using in f-strings to avoid nested bracket issues
+    database_name = config.DATABASE['name']
+    
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.{TABLE_NAME} AS
+        CREATE OR REPLACE TABLE {database_name}.CURATED.{TABLE_NAME} AS
         WITH base_data AS (
             SELECT 
                 -- Base selection from existing tables
@@ -67,6 +70,32 @@ def build_{table_name}(session: Session, test_mode: bool = False):
     print(f"✅ Created {table_name} with {specific_characteristics}")
 ```
 
+### SQL Generation Best Practices
+
+**CRITICAL RULES:**
+1. **Never hardcode config values in SQL** - Use `config.get_demo_company_priority_sql()` and other helper functions
+2. **Use data model columns** - Leverage `AssetClass`, `CountryOfIncorporation` instead of regex patterns
+3. **Safe tuple generation** - Always use `config.safe_sql_tuple()` for IN clauses (handles empty lists)
+4. **Extract config values** - Get dictionary values before f-string to avoid nested bracket syntax errors
+
+```python
+# ✅ CORRECT: Config-driven SQL with helper functions
+CASE 
+    {config.get_demo_company_priority_sql()}  -- Dynamic CASE from config
+    WHEN s.Ticker IN {config.safe_sql_tuple(config.get_major_us_stocks('tier1'))} THEN 5
+    WHEN i.CountryOfIncorporation = 'US' AND s.AssetClass = 'Equity' THEN 6
+    ELSE 7
+END
+
+# ❌ WRONG: Hardcoded values and unsafe tuple generation
+CASE 
+    WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- ❌ Hardcoded!
+    WHEN s.Ticker IN {tuple(['MSFT', 'AAPL'])} THEN 5  -- ❌ Unsafe for empty lists!
+    WHEN s.Ticker RLIKE '^[A-Z]{1,5}$' THEN 6  -- ❌ Use AssetClass instead!
+    ELSE 7
+END
+```
+
 ## Adding New Semantic Views
 
 ### Semantic View Creation Pattern
@@ -75,9 +104,9 @@ def create_{view_name}_semantic_view(session: Session):
     """Create semantic view for {specific_use_case}."""
     
     semantic_view_sql = f"""
-        CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE_NAME}.AI.{VIEW_NAME} (
+        CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.{VIEW_NAME} (
             TABLES (
-                {table_alias} AS {config.DATABASE_NAME}.CURATED.{TABLE_NAME}
+                {table_alias} AS {config.DATABASE['name']}.CURATED.{TABLE_NAME}
                     PRIMARY KEY ({primary_key_columns})
                     WITH SYNONYMS=('{synonym1}','{synonym2}')
                     COMMENT='{table_description}'
@@ -110,7 +139,7 @@ def validate_{view_name}_semantic_view(session: Session):
     # Test basic functionality
     test_result = session.sql(f"""
         SELECT * FROM SEMANTIC_VIEW(
-            {config.DATABASE_NAME}.AI.{VIEW_NAME}
+            {config.DATABASE['name']}.AI.{VIEW_NAME}
             METRICS {primary_metric}
             DIMENSIONS {primary_dimension}
         ) LIMIT 5
@@ -130,10 +159,10 @@ def create_{service_name}_search_service(session: Session):
     """Create Cortex Search service for {document_type}."""
     
     service_sql = f"""
-        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE_NAME}.AI.SAM_{SERVICE_NAME}
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE['name']}.AI.SAM_{SERVICE_NAME}
             ON DOCUMENT_TEXT
             ATTRIBUTES DOCUMENT_TITLE, SecurityID, IssuerID, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
-            WAREHOUSE = {config.CORTEX_SEARCH_WAREHOUSE}
+            WAREHOUSE = {config.WAREHOUSES['cortex_search']['name']}
             TARGET_LAG = '5 minutes'
             AS 
             SELECT 
@@ -145,7 +174,7 @@ def create_{service_name}_search_service(session: Session):
                 DOCUMENT_TYPE,
                 PUBLISH_DATE,
                 LANGUAGE
-            FROM {config.DATABASE_NAME}.CURATED.{CORPUS_TABLE_NAME}
+            FROM {config.DATABASE['name']}.CURATED.{CORPUS_TABLE_NAME}
     """
     
     session.sql(service_sql).collect()
@@ -172,7 +201,7 @@ def create_{document_type}_corpus(session: Session, documents: List[dict]):
     
     corpus_df = session.create_dataframe(corpus_data)
     corpus_df.write.mode("overwrite").save_as_table(
-        f"{config.DATABASE_NAME}.CURATED.{DOCUMENT_TYPE}_CORPUS"
+        f"{config.DATABASE['name']}.CURATED.{DOCUMENT_TYPE}_CORPUS"
     )
     
     print(f"✅ Created corpus table: {DOCUMENT_TYPE}_CORPUS")

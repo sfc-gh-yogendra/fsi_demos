@@ -1,8 +1,7 @@
 # Snowcrest Asset Management (SAM) AI Demo - 100% Real Assets
 
-A comprehensive demonstration of Snowflake Intelligence capabilities for asset management customers, featuring 14,000+ authentic securities from OpenFIGI, realistic multi-asset portfolios, AI-powered analytics, and intelligent agents.
+A comprehensive demonstration of Snowflake Intelligence for asset management customers, covering Protfolio Managers, Research Analysts, Quantitative Analysts, Client Relationship Managers, and Risk & Compliance Officers.
 
-**Please be aware that everything is not 100% tested and the focus has been to make sure there is data that support the demo scenarios, meaning having data supporting the flow described in docs/demo_scenarios.md`. Also check the status in the  Available Demo Scenarios section, if something has the NOT IMPLEMENTED status then it means there is no data genrated or objects created for supporting that scenario.**
 
 ## Quick Start
 
@@ -13,9 +12,11 @@ A comprehensive demonstration of Snowflake Intelligence capabilities for asset m
 - Navigate to the project directory: `cd am_ai_demo`
 
 #### **Snowflake Account**
-- Make sure you have cross-region inference enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference, at minimum you need to have AWS_EU enabled byt ANY_REGIONS is prefered.
-- Snowflake Intelligence enabled: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence
-- Access to "SEC Filings", https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings?search=SEC%20fillings, product from Snowflake Marketplace
+- Cross-region inference enabled: [Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cross-region-inference)
+  - Minimum: `AWS_EU` enabled
+  - Recommended: `ANY_REGIONS`
+- Snowflake Intelligence enabled: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
+- SEC Filings dataset: [Snowflake Marketplace](https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings)
 
 #### **Python Environment**
 - Python 3.10+
@@ -49,18 +50,67 @@ python python/main.py --connection-name my_demo_connection --scope data
 
 ## Next Steps After Build
 
-1. **Configure Agents**: Follow standardized format in `docs/agents_setup.md`
-2. **Test Scenarios**: Use 'portfolio' terminology from `docs/demo_scenarios.md`  
-3. **Validate Data**: Execute quality checks from `docs/runbooks.md`
-4. **Demo Preparation**: All 7 scenarios ready with enhanced issuer-level capabilities
+### 1. Validate Build Success
 
-### Quick Agent Test
+Check that all components were created successfully:
+
+```sql
+-- Verify core semantic views
+DESCRIBE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW;
+
+-- Test semantic view functionality  
+SELECT * FROM SEMANTIC_VIEW(
+    SAM_DEMO.AI.SAM_ANALYST_VIEW
+    METRICS TOTAL_MARKET_VALUE
+    DIMENSIONS PORTFOLIONAME
+) LIMIT 5;
+
+-- Test search services
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+    'SAM_DEMO.AI.SAM_BROKER_RESEARCH',
+    '{"query": "technology investment", "limit": 2}'
+);
+
+-- Verify data volumes
+SELECT 'Securities' as table_name, COUNT(*) as record_count FROM SAM_DEMO.CURATED.DIM_SECURITY
+UNION ALL SELECT 'Issuers', COUNT(*) FROM SAM_DEMO.CURATED.DIM_ISSUER
+UNION ALL SELECT 'Holdings', COUNT(*) FROM SAM_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
+UNION ALL SELECT 'Market Data', COUNT(*) FROM SAM_DEMO.CURATED.FACT_MARKETDATA_TIMESERIES
+UNION ALL SELECT 'Documents', COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS;
+```
+
+**Expected Results**:
+- Securities: ~14,000 (or ~1,400 in test mode)
+- Issuers: ~14,800 (includes synthetic issuers for complete coverage)
+- Holdings: ~27,000 positions
+- Market Data: ~4M+ records
+- Documents: ~2,800+ documents
+
+### 2. Configure Agents
+
+Follow the detailed instructions in `docs/agents_setup.md` to configure agents in Snowflake Intelligence:
+
+1. Navigate to Snowflake Intelligence in Snowsight
+2. Create new agent (e.g., `portfolio_copilot`)
+3. Add tools (Cortex Analyst + Cortex Search)
+4. Configure planning and response instructions
+
+### 3. Test Agent
+
+Quick validation query:
 ```
 "What are my top 10 holdings by market value in the SAM Global Thematic Growth portfolio?"
 ```
-**Expected**: Clean list with enhanced issuer information and stable SecurityID linkage
 
-**Note**: All commands now require the `--connection-name` parameter to specify which connection from `~/.snowflake/connections.toml` to use.
+**Expected Response**: 
+- Table with Ticker, Company Name, Weight %, Market Value
+- Concentration warnings for positions >6.5%
+- Total exposure percentage
+- Clean data with no duplicates
+
+### 4. Run Demo Scenarios
+
+Use the complete demo scripts in `docs/demo_scenarios.md` for professional demonstrations.
 
 ## Demo Overview
 
@@ -85,12 +135,20 @@ python python/main.py --connection-name my_demo_connection --scope data
 | **Client Reporting** | `sales_advisor` | **✅ IMPLEMENTED** | Performance reports, template formatting, philosophy integration |
 | **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, time-series analysis, factor evolution trends |
 
-- **✅ ALL SCENARIOS IMPLEMENTED**: Complete demo suite ready for use
+- **✅ ALL 7 SCENARIOS FULLY IMPLEMENTED**: Complete demo environment with ESG, compliance, and comprehensive analytics capabilities
 
-**To Build All Scenarios**:
+**To Build Specific Scenarios**:
 ```bash
-# Build all implemented scenarios (includes ESG Guardian & Compliance Advisor)
-python main.py --connection-name [your-connection] --scenarios all --test-mode
+# Build ESG & Compliance scenarios (NGO reports, engagement notes, policy docs)
+python python/main.py --connection-name [your-connection] --scenarios esg_guardian
+
+# Note: Compliance Advisor shares all components with ESG Guardian (no separate build needed)
+
+# Build all implemented scenarios
+python python/main.py --connection-name [your-connection] --scenarios all
+
+# Test mode for faster development
+python python/main.py --connection-name [your-connection] --scenarios esg_guardian --test-mode
 ```
 
 ## Configuration Defaults
@@ -98,7 +156,6 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 | Setting | Default Value | Description |
 |---------|---------------|-------------|
 | **Connection** | Required via `--connection-name` | Must specify connection from ~/.snowflake/connections.toml |
-| **Model** | `llama3.1-70b` | LLM for content generation |
 | **History** | 5 years | Historical data range |
 | **Securities** | 14,000 real securities (1,400 test mode) | 100% authentic from OpenFIGI dataset |
 | **Issuers** | 3,303 real companies | Corporate hierarchies and relationships |
@@ -115,21 +172,29 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 
 ```
 /
+├── .cursor/rules/              # Cursor AI development rules (internal)
+├── content_library/            # Pre-generated content templates (50+ templates)
+│   ├── _rules/                 # Template configuration (placeholders, bounds, providers)
+│   ├── security/               # Security-level documents (broker research, earnings, etc.)
+│   ├── issuer/                 # Issuer-level documents (NGO reports, engagement notes)
+│   ├── portfolio/              # Portfolio-level documents (IPS, reviews)
+│   ├── global/                 # Global documents (policies, templates, market data)
+│   └── regulatory/             # Regulatory documents (Form ADV, CRS, updates)
 ├── docs/                       # Documentation
 │   ├── agents_setup.md         # Agent configuration instructions
-│   ├── demo_scenarios.md       # Complete demo scripts
+│   ├── demo_scenarios.md       # Complete demo scripts and flows
 │   ├── data_model.md           # Schema and data documentation
-│   └── runbooks.md             # Setup and execution procedures
+│   └── document_specs_*.md     # Detailed document specifications by category
 ├── python/                     # Python implementation
-│   ├── config.py               # Configuration constants
+│   ├── config.py               # Configuration constants (CAPS naming)
 │   ├── main.py                 # CLI orchestrator
-│   ├── generate_structured.py  # Structured data generation
-│   ├── generate_unstructured.py # Unstructured content generation
-│   ├── build_ai.py             # AI components (semantic views, search)
-│   └── extract_real_assets.py  # Real asset view creation
-├── data/                       # Optional data storage directory
-├── generic_rules/              # Development patterns and rules
+│   ├── generate_structured.py # Structured data generation (100% real assets)
+│   ├── generate_unstructured.py # Unstructured content generation (template-based)
+│   ├── hydration_engine.py    # Template hydration engine
+│   ├── build_ai.py            # AI components (semantic views, search services)
+│   └── extract_real_assets.py # Real asset view creation from SEC Filings
 ├── research/                   # Background research and analysis
+├── .gitignore                  # Git ignore patterns (logs, cache, backups)
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 ```
@@ -167,6 +232,8 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 - **Semantic Views**: Multi-table analytics with issuer hierarchy support + implementation planning
 - **Search Services**: Enhanced with SecurityID/IssuerID attributes for stable document linkage
 - **Intelligent Agents**: 7 role-specific agents with professional portfolio management capabilities
+- **Content Generation**: Deterministic template-based generation (50+ curated templates, no LLM dependencies)
+- **ESG & Compliance**: Full document corpus supporting ESG monitoring, mandate compliance, and regulatory tracking
 - **Implementation Planning**: Trading costs, liquidity analysis, risk budgets, and execution planning
 - **Dedicated Warehouses**: `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH`
 - **Industry-Standard Architecture**: Complete professional asset management data model
@@ -181,25 +248,132 @@ python main.py --connection-name [your-connection] --scenarios all --test-mode
 - Fixed income guardrails (75% IG minimum, duration tolerance)
 - ESG requirements (BBB minimum rating, controversy exclusions)
 
+## Content Generation Approach
+
+The demo uses **template-based content generation** via the hydration engine for all document types:
+
+### Template-Based Generation (Hydration Engine)
+- **50+ Curated Templates**: Professional markdown templates with YAML front matter
+- **Complete Coverage**: All document types (broker research, earnings transcripts, NGO reports, policies, etc.)
+- **Smart Placeholders**: Context-aware replacement with entity data, dates, and metrics
+- **Deterministic Output**: Consistent results with same RNG_SEED for reproducible demos
+- **Fast Builds**: Near-instant generation using template hydration
+- **No LLM Dependencies**: Build-time generation requires no Cortex Complete calls
+- **High Quality**: Manually curated templates ensure professional, realistic content
+
 ## Troubleshooting
 
-### Common Issues
-- **Connection fails**: Verify `~/.snowflake/connections.toml` configuration
-- **Module not found**: Run `pip install -r requirements.txt` to install dependencies  
-- **Permission denied**: Check Snowflake account has Cortex features enabled
-- **Build fails**: Check warehouse has sufficient compute resources
-- **Enhanced data model**: Uses SecurityID-based architecture with transaction audit trails
-- **Agent terminology**: Agents now understand both 'fund' and 'portfolio' queries
-- **Real assets missing**: Ensure access to SEC Filings dataset - view is created automatically
+### Build Issues
+
+**Connection Error**
+```bash
+Error: Could not connect to Snowflake
+```
+- **Solution**: Verify `~/.snowflake/connections.toml` is configured correctly
+- Check connection name matches the one specified in `--connection-name`
+- Test connection manually: `snowsql -c your_connection_name`
+
+**Module Not Found**
+```bash
+ModuleNotFoundError: No module named 'snowflake.snowpark'
+```
+- **Solution**: Install dependencies: `pip install -r requirements.txt`
+
+**SEC Filings Access Error**
+```bash
+Error: SEC_FILINGS database not found
+```
+- **Solution**: Install SEC Filings dataset from [Snowflake Marketplace](https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings)
+- Verify access: `SELECT COUNT(*) FROM SEC_FILINGS.CYBERSYN.COMPANY_INDEX;`
+
+**Warehouse Not Active**
+```bash
+Error: No active warehouse selected
+```
+- **Solution**: Ensure warehouse specified in connection profile exists and is running
+- Recommend MEDIUM or larger for full builds
+- Build will auto-create `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH` if needed
+
+### Data Quality Issues
+
+**Duplicate Companies in Holdings**
+- This should be resolved with the enhanced issuer linkage
+- Verify distinct issuers: `SELECT COUNT(DISTINCT IssuerID) FROM SAM_DEMO.CURATED.DIM_ISSUER;`
+- Check for commercial metals co: Should appear only once
+
+**Missing Bond Data**
+- Bonds with maturity before 2020 are automatically filtered out
+- Check bond counts: `SELECT COUNT(*) FROM SAM_DEMO.CURATED.DIM_SECURITY WHERE AssetClass = 'Corporate Bond';`
+- Verify parsed coupon rates: Not all should be 5.0%
+
+**Low Issuer Linkage**
+- Expected: ~100% of securities linked to issuers
+- Check: `SELECT match_method, COUNT(*) FROM SAM_DEMO.CURATED.DIM_SECURITY GROUP BY match_method;`
+- Should see: CIK matches (~10K), SECURITY_NAME matches (~2.5K), SYNTHETIC matches (~1.5K)
+
+### Agent Configuration Issues
+
+**Agent Not Responding**
+- Verify agent has access to semantic views and search services
+- Test individual tools before configuring agent
+- Check tool configurations match exact service names: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
+
+**Search Returns No Results**
+- Verify corpus tables have content: `SELECT COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS;`
+- Check search service exists: `SHOW CORTEX SEARCH SERVICES IN SAM_DEMO.AI;`
+- Test search directly with SQL before using in agent
+
+**Semantic View Query Fails**
+- Verify view syntax: `DESCRIBE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW;`
+- Check all referenced tables exist in CURATED schema
+- Test simple query first: `SELECT * FROM SEMANTIC_VIEW(...) LIMIT 5;`
+
+### Performance Issues
+
+**Build Takes Too Long**
+- **Solution**: Use test mode for development: `--test-mode`
+- Reduces securities from 14,000 to 1,400 (10x faster)
+- Use larger warehouse (LARGE instead of MEDIUM)
+
+**Agent Response Slow**
+- Check warehouse size for Cortex Search
+- Verify search service refresh is complete: `SHOW CORTEX SEARCH SERVICES;`
+- Consider using dedicated warehouse for agent queries
 
 ### Support Resources
-- **Setup Instructions**: Complete documentation in `docs/` directory
-- **Agent Configuration**: See `docs/agents_setup.md` for detailed agent setup
-- **Demo Scripts**: Ready-to-use conversation flows in `docs/demo_scenarios.md`
-- **Troubleshooting**: Validation procedures in `docs/runbooks.md`
+
+- **Agent Configuration**: Complete setup in `docs/agents_setup.md`
+- **Demo Scripts**: Ready-to-use flows in `docs/demo_scenarios.md`
+- **Data Model**: Schema documentation in `docs/data_model.md`
 
 ## Real Asset Data
 
-The demo uses 14,000+ authentic financial instruments from the SEC Filings dataset (OpenFIGI). This provides maximum realism and authenticity for customer demonstrations with 100% real Bloomberg identifiers.
+The demo uses **14,000+ authentic financial instruments** from the SEC Filings dataset (OpenFIGI), providing maximum realism and authenticity for customer demonstrations:
 
-**Usage**: Real assets are automatically loaded via the `V_REAL_ASSETS` view created from the SEC Filings dataset during the build process. No manual data extraction or CSV files needed.
+- **100% Real Securities**: All tickers and Bloomberg FIGI identifiers are authentic
+- **3,303 Real Issuers**: Complete corporate hierarchies and relationships
+- **Global Coverage**: Proper geographic distribution across US, Europe, and APAC/EM
+- **Asset Classes**: Equities (10,000), Corporate Bonds (3,000), ETFs (1,000)
+- **Automatic Loading**: `V_REAL_ASSETS` view created automatically from SEC Filings dataset
+- **No Manual Steps**: No CSV files or data extraction required
+
+## Architecture Highlights
+
+### Data Model Excellence
+- **Immutable SecurityID**: Ensures corporate action resilience and temporal integrity
+- **Transaction-Based Holdings**: Complete audit trail from transaction log to positions
+- **Issuer Hierarchies**: Support for parent company and corporate structure analysis
+- **Industry Standard**: Dimension/fact architecture following asset management best practices
+
+### AI Component Integration
+- **7 Semantic Views**: Multi-table analytics with comprehensive business logic
+- **10+ Search Services**: Document search with SecurityID/IssuerID linkage
+- **7 Intelligent Agents**: Role-specific agents with professional capabilities
+- **Template Library**: 50+ curated templates for consistent, high-quality content
+
+### Performance Optimization
+- **Dedicated Warehouses**: Separate compute for execution and Cortex Search
+- **Test Mode**: 10% data volumes (1,400 securities) for rapid development iteration
+- **Fast Builds**: Template-based generation (no LLM calls) for near-instant document creation
+- **Reproducible Results**: Deterministic outputs using RNG_SEED configuration
+- **No External Dependencies**: All content generated from local templates

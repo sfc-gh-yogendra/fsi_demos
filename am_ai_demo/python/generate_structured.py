@@ -49,11 +49,11 @@ def build_all(session: Session, scenarios: List[str], test_mode: bool = False):
 def create_database_structure(session: Session):
     """Create database and schema structure."""
     try:
-        session.sql(f"CREATE OR REPLACE DATABASE {config.DATABASE_NAME}").collect()
-        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE_NAME}.RAW").collect()
-        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE_NAME}.CURATED").collect()
-        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE_NAME}.AI").collect()
-        print(f"✅ Database structure created: {config.DATABASE_NAME}")
+        session.sql(f"CREATE OR REPLACE DATABASE {config.DATABASE['name']}").collect()
+        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.RAW").collect()
+        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.CURATED").collect()
+        session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.AI").collect()
+        print(f"✅ Database structure created: {config.DATABASE['name']}")
     except Exception as e:
         print(f"❌ Failed to create database structure: {e}")
         raise
@@ -95,6 +95,9 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     print("💰 Building SEC filings and fundamentals...")
     build_sec_filings_and_fundamentals(session)
     
+    print("📊 Building fundamentals and estimates...")
+    build_fundamentals_and_estimates(session)
+    
     print("🌱 Building ESG scores...")
     build_esg_scores(session)
     
@@ -126,54 +129,84 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
 
 
 def build_dim_issuer(session: Session, test_mode: bool = False):
-    """Build issuer dimension directly from V_REAL_ASSETS view using SQL."""
+    """Build issuer dimension from COMPANY_INDEX with proper deduplication."""
     
-    print("✅ Building issuer dimension from real asset data")
+    print("✅ Building issuer dimension from SEC Filings COMPANY_INDEX")
     
-    # Verify V_REAL_ASSETS view exists (should have been created during foundation build)
+    # Verify SEC Filings access (view depends on it)
     try:
-        from extract_real_assets import verify_real_assets_view_exists
-        verify_real_assets_view_exists(session)
+        from extract_real_assets import verify_sec_filings_access
+        verify_sec_filings_access(session)
     except Exception as e:
         print(f"❌ Error: {e}")
         raise
     
-    # Build issuer dimension using direct SQL query on the view
+    # Build issuer dimension using COMPANY_INDEX as the authoritative source
+    # This ensures one row per company, avoiding duplicates from multiple securities
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_ISSUER AS
-        WITH distinct_issuers AS (
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.DIM_ISSUER AS
+        WITH company_data AS (
+            -- Start with distinct companies from COMPANY_INDEX
             SELECT DISTINCT
-                COALESCE(ISSUER_NAME, SECURITY_NAME) as LegalName,
-                COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
-                COALESCE(INDUSTRY_SECTOR, 'Diversified') as GICS_Sector,
-                CIK
-            FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS
-            WHERE COALESCE(ISSUER_NAME, SECURITY_NAME) IS NOT NULL
-                AND COALESCE(ISSUER_NAME, SECURITY_NAME) != 'Unknown'
+                ci.COMPANY_NAME,
+                ci.CIK,
+                ci.PRIMARY_TICKER,
+                ci.LEI,  -- LEI array from COMPANY_INDEX
+                -- Get country from company characteristics
+                MAX(CASE WHEN cc.RELATIONSHIP_TYPE = 'business_address_country' THEN cc.VALUE END) as COUNTRY_OF_DOMICILE,
+                -- Get industry from SIC description (prefer this over NULL values)
+                MAX(CASE WHEN cc.RELATIONSHIP_TYPE = 'sic_description' THEN cc.VALUE END) as INDUSTRY_SECTOR
+            FROM {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_INDEX ci
+            LEFT JOIN {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_CHARACTERISTICS cc
+                ON ci.COMPANY_ID = cc.COMPANY_ID
+            WHERE ci.COMPANY_NAME IS NOT NULL
+                AND ci.COMPANY_NAME != 'Unknown'
+                -- Only include companies that have securities in our V_REAL_ASSETS view
+                AND EXISTS (
+                    SELECT 1 
+                    FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['RAW'.lower()]}.V_REAL_ASSETS ra
+                    WHERE ra.CIK = ci.CIK
+                )
+            GROUP BY ci.COMPANY_NAME, ci.CIK, ci.PRIMARY_TICKER, ci.LEI
         )
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY LegalName) as IssuerID,
+            ROW_NUMBER() OVER (ORDER BY COMPANY_NAME) as IssuerID,
             NULL as UltimateParentIssuerID,
-            SUBSTR(TRIM(LegalName), 1, 255) as LegalName,
-            'LEI' || LPAD(ABS(HASH(LegalName)) % 1000000, 6, '0') as LEI,
-            CountryOfIncorporation,
-            GICS_Sector,
+            SUBSTR(TRIM(COMPANY_NAME), 1, 255) as LegalName,
+            COALESCE(LEI[0]::VARCHAR, 'LEI' || LPAD(ABS(HASH(COMPANY_NAME)) % 1000000, 6, '0')) as LEI,
+            COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
+            COALESCE(INDUSTRY_SECTOR, 'Diversified') as GICS_Sector,
             CIK
-        FROM distinct_issuers
-        ORDER BY LegalName
+        FROM company_data
+        WHERE COMPANY_NAME IS NOT NULL
+        ORDER BY COMPANY_NAME
     """).collect()
     
     # Get count for reporting
-    issuer_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.DIM_ISSUER").collect()[0]['CNT']
-    print(f"✅ Created {issuer_count:,} issuers from real asset data")
+    issuer_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER").collect()[0]['CNT']
+    print(f"✅ Created {issuer_count:,} distinct issuers from COMPANY_INDEX")
+    
+    # Report on data quality
+    quality_stats = session.sql(f"""
+        SELECT 
+            COUNT(*) as total_issuers,
+            COUNT(CASE WHEN CIK IS NOT NULL THEN 1 END) as issuers_with_cik,
+            COUNT(CASE WHEN GICS_Sector != 'Diversified' THEN 1 END) as issuers_with_industry,
+            COUNT(CASE WHEN LEI NOT LIKE 'LEI%' OR LENGTH(LEI) > 20 THEN 1 END) as issuers_with_real_lei
+        FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER
+    """).collect()[0]
+    
+    print(f"   📊 With CIK: {quality_stats['ISSUERS_WITH_CIK']:,}")
+    print(f"   📊 With Industry: {quality_stats['ISSUERS_WITH_INDUSTRY']:,}")
+    print(f"   📊 With Real LEI: {quality_stats['ISSUERS_WITH_REAL_LEI']:,}")
 
 
 
 def build_dim_security(session: Session, test_mode: bool = False):
-    """Build securities directly from V_REAL_ASSETS view using SQL."""
+    """Build securities from V_REAL_ASSETS view with proper issuer linkage via CIK."""
     
     # Use test mode counts if specified (for reporting only)
-    securities_count = config.TEST_SECURITIES_COUNT if test_mode else config.SECURITIES_COUNT
+    securities_count = config.get_securities_count(test_mode)
     
     print("✅ Building securities from real asset data")
     
@@ -185,21 +218,35 @@ def build_dim_security(session: Session, test_mode: bool = False):
         print(f"❌ Error: {e}")
         raise
     
-    # Build security dimension using direct SQL query on the view and issuer table
+    # Build security dimension using multi-strategy issuer linkage
+    # Strategy 1: CIK matching (most accurate)
+    # Strategy 2: SECURITY_NAME matching via COMPANY_SECURITY_RELATIONSHIPS
+    # Strategy 3: Create synthetic issuer for remaining securities
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY AS
-        WITH security_data AS (
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.DIM_SECURITY AS
+        WITH parsed_securities AS (
+            -- Parse bond ticker information (rate and maturity date)
+            -- Examples: "DDD 5.5 12/15/16", "AAPL 2.3 05/11/22", "ONEM 3 06/15/25", "F 3.5 12/20/22 NOTZ"
             SELECT 
                 ra.TOP_LEVEL_OPENFIGI_ID,
                 ra.PRIMARY_TICKER,
                 ra.SECURITY_NAME,
                 ra.ASSET_CATEGORY,
                 ra.COUNTRY_OF_DOMICILE,
-                ra.ISSUER_NAME,
-                i.IssuerID
-            FROM {config.DATABASE_NAME}.{config.SCHEMAS['RAW']}.V_REAL_ASSETS ra
-            LEFT JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i
-                ON COALESCE(ra.ISSUER_NAME, ra.SECURITY_NAME) = i.LegalName
+                ra.CIK,
+                -- Parse coupon rate from ticker (2nd space-separated token)
+                -- "EXPE 5.95 08/15/20" -> SPLIT_PART 2 = "5.95"
+                TRY_TO_DECIMAL(
+                    SPLIT_PART(ra.PRIMARY_TICKER, ' ', 2),
+                    10, 4
+                ) as parsed_coupon_rate,
+                -- Parse maturity date from ticker (3rd space-separated token in MM/DD/YY format)
+                -- "EXPE 5.95 08/15/20" -> SPLIT_PART 3 = "08/15/20"
+                TRY_TO_DATE(
+                    SPLIT_PART(ra.PRIMARY_TICKER, ' ', 3),
+                    'MM/DD/YY'
+                ) as parsed_maturity_date
+            FROM {config.DATABASE['name']}.{config.DATABASE['schemas']['RAW'.lower()]}.V_REAL_ASSETS ra
             WHERE ra.PRIMARY_TICKER IS NOT NULL
                 AND ra.TOP_LEVEL_OPENFIGI_ID IS NOT NULL
                 AND (
@@ -208,6 +255,127 @@ def build_dim_security(session: Session, test_mode: bool = False):
                     -- Equity and ETF have shorter tickers
                     (ra.ASSET_CATEGORY IN ('Equity', 'ETF') AND LENGTH(ra.PRIMARY_TICKER) <= 15)
                 )
+        ),
+        filtered_securities AS (
+            -- Filter out bonds that matured before our historical data period
+            SELECT 
+                ps.TOP_LEVEL_OPENFIGI_ID,
+                ps.PRIMARY_TICKER,
+                ps.SECURITY_NAME,
+                ps.ASSET_CATEGORY,
+                ps.COUNTRY_OF_DOMICILE,
+                ps.CIK,
+                ps.parsed_coupon_rate,
+                ps.parsed_maturity_date
+            FROM parsed_securities ps
+            WHERE (
+                -- Keep all non-bonds
+                ps.ASSET_CATEGORY != 'Corporate Bond'
+                OR
+                -- For bonds, only keep those that mature after our data start date
+                (ps.ASSET_CATEGORY = 'Corporate Bond' AND (
+                    ps.parsed_maturity_date IS NULL OR  -- Keep if we can't parse date
+                    ps.parsed_maturity_date >= DATE('2020-01-01')  -- Filter out pre-2020 maturities
+                ))
+            )
+        ),
+        issuer_matches_via_cik AS (
+            -- Strategy 1: Match via CIK (most accurate, ~15K securities)
+            SELECT 
+                fs.TOP_LEVEL_OPENFIGI_ID,
+                i.IssuerID,
+                'CIK' as match_method
+            FROM filtered_securities fs
+            INNER JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i
+                ON fs.CIK = i.CIK
+        ),
+        company_cik_mapping AS (
+            -- Map COMPANY_ID to CIK for name-based matching
+            SELECT DISTINCT
+                ci.COMPANY_ID,
+                ci.CIK
+            FROM {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_INDEX ci
+            WHERE ci.CIK IS NOT NULL
+        ),
+        issuer_matches_via_name AS (
+            -- Strategy 2: Match via SECURITY_NAME for securities without CIK (~3.7K additional)
+            SELECT DISTINCT
+                fs.TOP_LEVEL_OPENFIGI_ID,
+                i.IssuerID,
+                'SECURITY_NAME' as match_method
+            FROM filtered_securities fs
+            LEFT JOIN issuer_matches_via_cik cik_match
+                ON fs.TOP_LEVEL_OPENFIGI_ID = cik_match.TOP_LEVEL_OPENFIGI_ID
+            INNER JOIN {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.COMPANY_SECURITY_RELATIONSHIPS csr
+                ON fs.SECURITY_NAME = csr.SECURITY_NAME
+            INNER JOIN company_cik_mapping ccm
+                ON csr.COMPANY_ID = ccm.COMPANY_ID
+            INNER JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i
+                ON ccm.CIK = i.CIK
+            WHERE cik_match.TOP_LEVEL_OPENFIGI_ID IS NULL  -- Only unmatched securities
+        ),
+        all_issuer_matches AS (
+            -- Combine both matching strategies
+            SELECT * FROM issuer_matches_via_cik
+            UNION ALL
+            SELECT * FROM issuer_matches_via_name
+        ),
+        unmatched_securities AS (
+            -- Find securities that still have no issuer match
+            SELECT DISTINCT
+                fs.SECURITY_NAME,
+                fs.COUNTRY_OF_DOMICILE
+            FROM filtered_securities fs
+            LEFT JOIN all_issuer_matches im
+                ON fs.TOP_LEVEL_OPENFIGI_ID = im.TOP_LEVEL_OPENFIGI_ID
+            WHERE im.IssuerID IS NULL
+        ),
+        synthetic_issuers AS (
+            -- Strategy 3: Create synthetic issuers from SECURITY_NAME for remaining unmatched securities
+            -- Assign IssuerIDs starting after the max existing IssuerID to avoid conflicts
+            SELECT 
+                us.SECURITY_NAME,
+                (SELECT MAX(IssuerID) FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER) + ROW_NUMBER() OVER (ORDER BY us.SECURITY_NAME) as IssuerID,
+                us.COUNTRY_OF_DOMICILE,
+                'SYNTHETIC_FROM_SECURITY' as match_method
+            FROM unmatched_securities us
+        ),
+        issuer_matches_via_synthetic AS (
+            -- Strategy 3: Match via synthetic issuers created from SECURITY_NAME
+            SELECT 
+                fs.TOP_LEVEL_OPENFIGI_ID,
+                si.IssuerID,
+                'SYNTHETIC_FROM_SECURITY' as match_method
+            FROM filtered_securities fs
+            LEFT JOIN all_issuer_matches im
+                ON fs.TOP_LEVEL_OPENFIGI_ID = im.TOP_LEVEL_OPENFIGI_ID
+            INNER JOIN synthetic_issuers si
+                ON fs.SECURITY_NAME = si.SECURITY_NAME
+            WHERE im.IssuerID IS NULL  -- Only unmatched securities
+        ),
+        all_issuer_matches_with_synthetic AS (
+            -- Combine all three matching strategies
+            SELECT * FROM issuer_matches_via_cik
+            UNION ALL
+            SELECT * FROM issuer_matches_via_name
+            UNION ALL
+            SELECT * FROM issuer_matches_via_synthetic
+        ),
+        security_data AS (
+            -- Join securities with matched issuers (including synthetic)
+            SELECT 
+                fs.TOP_LEVEL_OPENFIGI_ID,
+                fs.PRIMARY_TICKER,
+                fs.SECURITY_NAME,
+                fs.ASSET_CATEGORY,
+                fs.COUNTRY_OF_DOMICILE,
+                fs.parsed_coupon_rate,
+                fs.parsed_maturity_date,
+                COALESCE(im.IssuerID, 1) as IssuerID,  -- Fallback to IssuerID=1 only if all strategies fail
+                im.match_method
+            FROM filtered_securities fs
+            LEFT JOIN all_issuer_matches_with_synthetic im
+                ON fs.TOP_LEVEL_OPENFIGI_ID = im.TOP_LEVEL_OPENFIGI_ID
         )
         SELECT 
             ROW_NUMBER() OVER (ORDER BY ASSET_CATEGORY, PRIMARY_TICKER) as SecurityID,
@@ -224,25 +392,56 @@ def build_dim_security(session: Session, test_mode: bool = False):
             END as SecurityType,
             COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfRisk,
             DATE('2010-01-01') as IssueDate,
+            -- Use parsed maturity date for bonds, or default to 2030
             CASE 
-                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN DATE('2030-01-01')
+                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN COALESCE(parsed_maturity_date, DATE('2030-01-01'))
                 ELSE NULL
             END as MaturityDate,
+            -- Use parsed coupon rate for bonds, or default to 5.0
             CASE 
-                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN 5.0
+                WHEN ASSET_CATEGORY = 'Corporate Bond' THEN COALESCE(parsed_coupon_rate, 5.0)
                 ELSE NULL
             END as CouponRate,
             CURRENT_TIMESTAMP() as RecordStartDate,
             NULL as RecordEndDate,
-            TRUE as IsActive
+            TRUE as IsActive,
+            match_method  -- Track which matching strategy was used for reporting
         FROM security_data
         ORDER BY SecurityID
+    """).collect()
+    
+    # Insert synthetic issuers into DIM_ISSUER table for securities that needed synthetic matching
+    # This ensures referential integrity and enables proper issuer-level analysis
+    session.sql(f"""
+        INSERT INTO {config.DATABASE['name']}.CURATED.DIM_ISSUER (
+            IssuerID,
+            UltimateParentIssuerID,
+            LegalName,
+            LEI,
+            CountryOfIncorporation,
+            GICS_Sector,
+            CIK
+        )
+        SELECT DISTINCT
+            s.IssuerID,
+            NULL as UltimateParentIssuerID,
+            s.Description as LegalName,
+            'SYNTHETIC' || LPAD(s.IssuerID, 10, '0') as LEI,
+            s.CountryOfRisk as CountryOfIncorporation,
+            'Diversified' as GICS_Sector,
+            NULL as CIK
+        FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+        WHERE s.match_method = 'SYNTHETIC_FROM_SECURITY'
+            AND NOT EXISTS (
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER i
+                WHERE i.IssuerID = s.IssuerID
+            )
     """).collect()
     
     # Get and report counts
     count_by_class = session.sql(f"""
         SELECT AssetClass, COUNT(*) as cnt 
-        FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY 
+        FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY 
         GROUP BY AssetClass
         ORDER BY AssetClass
     """).collect()
@@ -252,43 +451,74 @@ def build_dim_security(session: Session, test_mode: bool = False):
     
     for row in count_by_class:
         print(f"   📊 {row['ASSETCLASS']}: {row['CNT']:,} securities")
+    
+    # Validate issuer linkage quality with detailed breakdown
+    linkage_stats = session.sql(f"""
+        SELECT 
+            COUNT(DISTINCT IssuerID) as distinct_issuers_linked,
+            COUNT(CASE WHEN IssuerID = 1 THEN 1 END) as securities_without_issuer,
+            SUM(CASE WHEN match_method = 'CIK' THEN 1 ELSE 0 END) as matched_via_cik,
+            SUM(CASE WHEN match_method = 'SECURITY_NAME' THEN 1 ELSE 0 END) as matched_via_name,
+            SUM(CASE WHEN match_method = 'SYNTHETIC_FROM_SECURITY' THEN 1 ELSE 0 END) as matched_via_synthetic,
+            SUM(CASE WHEN match_method IS NULL THEN 1 ELSE 0 END) as unmatched
+        FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY
+    """).collect()[0]
+    
+    print(f"   📊 Issuer linkage results:")
+    print(f"      • Matched via CIK: {linkage_stats['MATCHED_VIA_CIK']:,} securities")
+    print(f"      • Matched via SECURITY_NAME: {linkage_stats['MATCHED_VIA_NAME']:,} securities")
+    print(f"      • Matched via synthetic issuer: {linkage_stats['MATCHED_VIA_SYNTHETIC']:,} securities")
+    print(f"      • Unmatched (using default): {linkage_stats['UNMATCHED']:,} securities")
+    print(f"   📊 Linked to {linkage_stats['DISTINCT_ISSUERS_LINKED']:,} distinct issuers")
+    
+    total_matched = linkage_stats['MATCHED_VIA_CIK'] + linkage_stats['MATCHED_VIA_NAME'] + linkage_stats['MATCHED_VIA_SYNTHETIC']
+    pct_matched = 100.0 * total_matched / total_securities
+    print(f"   ✅ {pct_matched:.1f}% of securities have issuer linkage")
+    
+    if linkage_stats['UNMATCHED'] > 0:
+        pct_unmatched = 100.0 * linkage_stats['UNMATCHED'] / total_securities
+        print(f"   ℹ️  {pct_unmatched:.1f}% securities without issuer match (edge cases only)")
+    
+    # Report on bond parsing success
+    bond_stats = session.sql(f"""
+        SELECT 
+            COUNT(*) as total_bonds,
+            COUNT(CASE WHEN CouponRate != 5.0 THEN 1 END) as bonds_with_parsed_rate,
+            COUNT(CASE WHEN MaturityDate != DATE('2030-01-01') THEN 1 END) as bonds_with_parsed_maturity,
+            MIN(MaturityDate) as earliest_maturity,
+            MAX(MaturityDate) as latest_maturity
+        FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY
+        WHERE AssetClass = 'Corporate Bond'
+    """).collect()
+    
+    if bond_stats and bond_stats[0]['TOTAL_BONDS'] > 0:
+        print(f"   📊 Bond parsing results:")
+        print(f"      • Bonds with parsed coupon rate: {bond_stats[0]['BONDS_WITH_PARSED_RATE']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
+        print(f"      • Bonds with parsed maturity: {bond_stats[0]['BONDS_WITH_PARSED_MATURITY']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
+        print(f"      • Maturity range: {bond_stats[0]['EARLIEST_MATURITY']} to {bond_stats[0]['LATEST_MATURITY']}")
 
 
 def build_dim_portfolio(session: Session):
-    """Build portfolio dimension from configuration with proper strategy classification."""
+    """Build portfolio dimension from unified PORTFOLIOS configuration."""
     
     portfolio_data = []
-    for i, portfolio in enumerate(config.PORTFOLIO_LINEUP):
-        # Assign realistic investment strategies based on portfolio names
-        portfolio_name = portfolio['name']
-        if 'Multi-Asset' in portfolio_name:
-            strategy = 'Multi-Asset'
-        elif 'Value' in portfolio_name:
-            strategy = 'Value'
-        elif any(growth_term in portfolio_name for growth_term in ['Technology', 'AI', 'Innovation', 'Tech Disruptors']):
-            strategy = 'Growth'
-        elif any(theme_term in portfolio_name for theme_term in ['ESG', 'Renewable', 'Climate']):
-            strategy = 'ESG'
-        elif 'Core' in portfolio_name:
-            strategy = 'Core'
-        elif 'Balanced' in portfolio_name or 'Income' in portfolio_name:
-            strategy = 'Income'
-        else:
-            strategy = 'Equity'
+    for i, (portfolio_name, portfolio_config) in enumerate(config.PORTFOLIOS.items()):
+        # Use strategy from config, with intelligent fallback
+        strategy = portfolio_config.get('strategy', 'Equity')
             
         portfolio_data.append({
             'PortfolioID': i + 1,
-            'PortfolioCode': f"SAM_{i+1:02d}",
+            'PortfolioCode': f"{config.DATA_MODEL['portfolio_code_prefix']}_{i+1:02d}",
             'PortfolioName': portfolio_name,
             'Strategy': strategy,
-            'BaseCurrency': 'USD',
-            'InceptionDate': datetime(2019, 1, 1).date()
+            'BaseCurrency': portfolio_config.get('base_currency', 'USD'),
+            'InceptionDate': datetime.strptime(portfolio_config.get('inception_date', '2019-01-01'), '%Y-%m-%d').date()
         })
     
     portfolios_df = session.create_dataframe(portfolio_data)
-    portfolios_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO")
+    portfolios_df.write.mode("overwrite").save_as_table(f"{config.DATABASE['name']}.CURATED.DIM_PORTFOLIO")
     
-    print(f"✅ Created {len(portfolio_data)} portfolios")
+    print(f"✅ Created {len(portfolio_data)} portfolios from unified config")
 
 def build_dim_benchmark(session: Session):
     """Build benchmark dimension."""
@@ -302,7 +532,7 @@ def build_dim_benchmark(session: Session):
         })
     
     benchmarks_df = session.create_dataframe(benchmark_data)
-    benchmarks_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.CURATED.DIM_BENCHMARK")
+    benchmarks_df.write.mode("overwrite").save_as_table(f"{config.DATABASE['name']}.CURATED.DIM_BENCHMARK")
     
     print(f"✅ Created {len(benchmark_data)} benchmarks")
 
@@ -311,7 +541,7 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
     
     # Verify DIM_SECURITY table has FIGI column before proceeding
     try:
-        columns = session.sql(f"DESCRIBE TABLE {config.DATABASE_NAME}.CURATED.DIM_SECURITY").collect()
+        columns = session.sql(f"DESCRIBE TABLE {config.DATABASE['name']}.CURATED.DIM_SECURITY").collect()
         column_names = [col['name'] for col in columns]
         if 'FIGI' not in column_names:
             raise Exception(f"DIM_SECURITY table missing FIGI column. Available columns: {column_names}")
@@ -323,76 +553,103 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
     # Generate transactions for the last 12 months that build up to current positions
     print("💱 Generating synthetic transaction history...")
     
+    # Get SQL mapping for demo portfolios (eliminates hardcoded company references)
+    demo_sql_mapping = config.build_demo_portfolios_sql_mapping()
+    
     # This is a simplified version - in a real implementation, we'd generate
     # realistic transaction patterns that result in the desired end positions
     session.sql(f"""
         -- Generate synthetic transaction history that builds to realistic portfolio positions
         -- This creates a complete audit trail of BUY transactions over the past 12 months
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION AS
-        WITH major_us_securities AS (
-            -- Step 1: Prioritize major US stocks for demo coherence and research coverage alignment
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_TRANSACTION AS
+        WITH all_us_securities AS (
+            -- Step 1a: Identify all equity securities with priority rankings
             -- Creates a priority ranking system to ensure portfolios hold recognizable securities
             SELECT 
                 s.SecurityID,
+                s.IssuerID,
                 s.Ticker,
                 s.FIGI,
                 CASE 
-                    -- Priority 1: Demo scenario companies (OpenFIGI-based for precise identification)
-                    WHEN s.FIGI IN ('BBG001S5N8V8', 'BBG001S5PXG8', 'BBG00HW4CSH5', 'BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 1  -- Exact demo companies via OpenFIGI
-                    -- Priority 2: Other major US stocks with guaranteed research coverage
-                    WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL') 
-                         AND i.CountryOfIncorporation = 'US' THEN 2  -- Other major US companies
-                    -- Priority 3: Clean US ticker symbols (1-5 characters, letters only)
-                    WHEN s.Ticker RLIKE '^[A-Z]{{1,5}}$' AND LENGTH(s.Ticker) <= 5 THEN 3
-                    -- Priority 4: All other securities (bonds, international, complex tickers)
-                    ELSE 4
-                END as priority
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+                    -- Priority 1-4: Demo companies with their configured priorities from config.DEMO_COMPANIES
+                    {config.get_demo_company_priority_sql()}
+                    -- Priority 5: Other major US stocks from config.MAJOR_US_STOCKS
+                    WHEN s.Ticker IN {config.safe_sql_tuple(config.get_major_us_stocks('tier1'))} 
+                         AND i.CountryOfIncorporation = 'US' THEN 5
+                    -- Priority 6: All other US equities (using data model columns)
+                    WHEN i.CountryOfIncorporation = 'US' AND s.AssetClass = 'Equity' THEN 6
+                    -- Priority 7: Non-US equities
+                    WHEN s.AssetClass = 'Equity' THEN 7
+                    -- Priority 8: All other asset types
+                    ELSE 8
+                END as priority,
+                -- Rank securities within each issuer to select only one per issuer
+                ROW_NUMBER() OVER (PARTITION BY s.IssuerID ORDER BY 
+                    CASE 
+                        -- Prioritize demo companies using config priorities
+                        {config.get_demo_company_priority_sql()}
+                        -- Then prefer Equity over other asset classes
+                        WHEN s.AssetClass = 'Equity' THEN 10
+                        -- Then other asset types
+                        ELSE 20
+                    END,
+                    LENGTH(s.Ticker),  -- Prefer shorter tickers (common stock over ADRs)
+                    s.SecurityID  -- Deterministic tiebreaker
+                ) as issuer_rank
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'  -- Focus on equities for transaction generation
         ),
+        major_us_securities AS (
+            -- Step 1b: Select only one security per issuer to avoid duplicates like "Commercial Metals Co" appearing twice
+            SELECT 
+                SecurityID,
+                Ticker,
+                FIGI,
+                priority
+            FROM all_us_securities
+            WHERE issuer_rank = 1  -- Only the primary security for each issuer
+        ),
         portfolio_securities AS (
-            -- Step 2: Assign securities to portfolios with specific logic for Technology & Infrastructure
+            -- Step 2: Assign securities to portfolios with demo-specific logic from config.PORTFOLIOS
             SELECT 
                 p.PortfolioID,
                 p.PortfolioName,
                 s.SecurityID,
                 s.Ticker,
                 s.priority,
-                -- Special prioritization for Technology & Infrastructure portfolio
+                -- Special prioritization for demo portfolios (fully driven by config.PORTFOLIOS)
                 CASE 
-                    WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
+                    WHEN p.PortfolioName IN {config.safe_sql_tuple(config.get_demo_portfolio_names())} THEN
                         CASE 
-                            -- Guarantee top 3 positions for demo scenario (OpenFIGI-based)
-                            WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- Apple Inc.
-                            WHEN s.FIGI = 'BBG001S5PXG8' THEN 2  -- Commercial Metals Co
-                            WHEN s.FIGI = 'BBG00HW4CSH5' THEN 3  -- Ribbon Communications Inc.
-                            -- Other demo companies
-                            WHEN s.FIGI IN ('BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 4  -- MSFT, NVDA, GOOGL
-                            -- Other tech/infrastructure companies
-                            WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 5
-                            ELSE 999  -- Exclude non-tech companies from this portfolio
+                            -- Guaranteed top holdings (order from config)
+                            {demo_sql_mapping['guaranteed_case_when_sql']}
+                            -- Additional demo holdings
+                            WHEN s.FIGI IN {demo_sql_mapping['additional_figis']} THEN {demo_sql_mapping['additional_priority']}
+                            -- Filler stocks (from config.MAJOR_US_STOCKS)
+                            WHEN s.Ticker IN {config.safe_sql_tuple(config.get_major_us_stocks('all'))} THEN {demo_sql_mapping['additional_priority'] + 1}
+                            ELSE 999  -- Exclude non-demo companies from demo portfolios
                         END
-                    ELSE s.priority  -- Use normal priority for other portfolios
+                    ELSE s.priority  -- Use normal priority for non-demo portfolios
                 END as portfolio_priority,
                 -- Random ordering within priority groups for portfolio diversification
                 ROW_NUMBER() OVER (PARTITION BY p.PortfolioID ORDER BY 
                     CASE 
-                        WHEN p.PortfolioName = 'SAM Technology & Infrastructure' THEN
+                        WHEN p.PortfolioName IN {config.safe_sql_tuple(config.get_demo_portfolio_names())} THEN
                             CASE 
-                                -- Use OpenFIGI IDs for precise ordering (matches portfolio_priority logic)
-                                WHEN s.FIGI = 'BBG001S5N8V8' THEN 1  -- Apple Inc.
-                                WHEN s.FIGI = 'BBG001S5PXG8' THEN 2  -- Commercial Metals Co
-                                WHEN s.FIGI = 'BBG00HW4CSH5' THEN 3  -- Ribbon Communications Inc.
-                                WHEN s.FIGI IN ('BBG001S5TD05', 'BBG001S5TZJ6', 'BBG009S39JY5') THEN 4  -- MSFT, NVDA, GOOGL
-                                WHEN s.Ticker IN ('AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL', 'CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL') THEN 5
+                                -- Use OpenFIGI IDs for precise ordering (from config.PORTFOLIOS)
+                                {demo_sql_mapping['guaranteed_case_when_sql']}
+                                -- Additional holdings
+                                WHEN s.FIGI IN {demo_sql_mapping['additional_figis']} THEN {demo_sql_mapping['additional_priority']}
+                                -- Filler stocks
+                                WHEN s.Ticker IN {config.safe_sql_tuple(config.get_major_us_stocks('all'))} THEN {demo_sql_mapping['additional_priority'] + 1}
                                 ELSE 999
                             END
                         ELSE s.priority
                     END, 
                     RANDOM()
                 ) as rn
-            FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p
+            FROM {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO p
             CROSS JOIN major_us_securities s
         ),
         selected_holdings AS (
@@ -401,11 +658,11 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             FROM portfolio_securities
             WHERE rn <= 45  -- Typical large-cap equity portfolio size
             AND (
-                -- For Technology & Infrastructure portfolio, only include tech/infrastructure companies
-                (PortfolioName = 'SAM Technology & Infrastructure' AND portfolio_priority < 999)
+                -- For demo portfolios, only include securities with valid priorities (from config.PORTFOLIOS)
+                (PortfolioName IN {config.safe_sql_tuple(config.get_demo_portfolio_names())} AND portfolio_priority < 999)
                 OR 
-                -- For all other portfolios, use normal selection
-                (PortfolioName != 'SAM Technology & Infrastructure')
+                -- For non-demo portfolios, use normal selection
+                (PortfolioName NOT IN {config.safe_sql_tuple(config.get_demo_portfolio_names())})
             )
         ),
         business_days AS (
@@ -413,8 +670,8 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             -- Creates complete set of Monday-Friday trading days
             SELECT generated_date as trade_date
             FROM (
-                SELECT DATEADD(day, seq4(), DATEADD(month, -{config.SYNTHETIC_TRANSACTION_MONTHS}, CURRENT_DATE())) as generated_date
-                FROM TABLE(GENERATOR(rowcount => {365 * config.SYNTHETIC_TRANSACTION_MONTHS // 12}))
+                SELECT DATEADD(day, seq4(), DATEADD(month, -{config.DATA_MODEL['transaction_months']}, CURRENT_DATE())) as generated_date
+                FROM TABLE(GENERATOR(rowcount => {365 * config.DATA_MODEL['transaction_months'] // 12}))
             )
             WHERE DAYOFWEEK(generated_date) BETWEEN 1 AND 5
         ),
@@ -442,7 +699,7 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             SELECT 
                 p.PortfolioID,
                 ti.trade_date
-            FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p
+            FROM {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO p
             CROSS JOIN trading_intensity ti
             WHERE ti.portfolio_trade_probability > 0
             AND (HASH(p.PortfolioID, ti.trade_date) % 100) < (ti.portfolio_trade_probability * 100)
@@ -461,15 +718,15 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             -- Transaction attributes
             'BUY' as TransactionType,  -- Simplified: mostly buys to build positions over time
             DATEADD(day, 2, ptd.trade_date) as SettleDate,  -- Standard T+2 settlement cycle
-            -- Strategic position sizing: larger positions for demo scenario companies
+            -- Strategic position sizing: larger positions for demo portfolio top holdings (fully from config.PORTFOLIOS)
             CASE 
                 WHEN EXISTS (
-                    SELECT 1 FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s 
-                    JOIN {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO p ON sh.PortfolioID = p.PortfolioID
+                    SELECT 1 FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s 
+                    JOIN {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO p ON sh.PortfolioID = p.PortfolioID
                     WHERE s.SecurityID = sh.SecurityID 
-                    AND p.PortfolioName = 'SAM Technology & Infrastructure'
-                    AND s.FIGI IN ('BBG001S5N8V8', 'BBG001S5PXG8', 'BBG00HW4CSH5')  -- Exact demo companies via OpenFIGI
-                ) THEN UNIFORM(50000, 100000, RANDOM())  -- Much larger positions for top 3
+                    AND p.PortfolioName IN {config.safe_sql_tuple(config.get_demo_portfolio_names())}  -- Any demo portfolio from config
+                    AND s.FIGI IN {demo_sql_mapping['large_position_figis']}  -- Holdings marked as 'large' in config.PORTFOLIOS
+                ) THEN UNIFORM(50000, 100000, RANDOM())  -- Large positions as specified in config
                 ELSE UNIFORM(100, 10000, RANDOM())  -- Normal positions for others
             END as Quantity,
             -- Realistic stock prices ($50-$500 range)
@@ -498,7 +755,7 @@ def build_fact_position_daily_abor(session: Session):
     session.sql(f"""
         -- Build ABOR (Accounting Book of Record) positions from transaction history
         -- This creates monthly position snapshots by aggregating transaction data
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR AS
         WITH monthly_dates AS (
             -- Step 1: Generate month-end dates for position snapshots over 5 years of history
             -- Uses LAST_DAY to ensure consistent month-end reporting dates
@@ -515,7 +772,7 @@ def build_fact_position_daily_abor(session: Session):
                 SUM(CASE WHEN TransactionType = 'BUY' THEN Quantity ELSE -Quantity END) as TotalQuantity,
                 -- Average transaction price for cost basis calculation
                 AVG(Price) as AvgPrice
-            FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION
+            FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION
             GROUP BY PortfolioID, SecurityID
             HAVING TotalQuantity > 0  -- Only include positions with positive holdings
         ),
@@ -571,7 +828,7 @@ def build_marketdata_synthetic(session: Session):
     session.sql(f"""
         -- Generate synthetic market data (OHLCV) for all securities over 5 years
         -- Creates realistic price movements and trading volumes for demo purposes
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_MARKETDATA_TIMESERIES AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_MARKETDATA_TIMESERIES AS
         WITH business_dates AS (
             -- Step 1: Generate business days (Monday-Friday) over 5 years of history
             -- Excludes weekends to match real market trading calendar
@@ -584,9 +841,9 @@ def build_marketdata_synthetic(session: Session):
             SELECT DISTINCT 
                 s.SecurityID,
                 s.AssetClass
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             WHERE EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -654,17 +911,17 @@ def build_fundamentals_and_estimates(session: Session):
     session.sql(f"""
         -- Generate synthetic fundamental data (revenue, earnings, ratios) for equity securities
         -- Creates quarterly financial metrics with sector-appropriate ranges for 5 years
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_FUNDAMENTALS AS
         WITH equity_securities AS (
             SELECT 
                 s.SecurityID as SECURITY_ID,
                 s.Ticker,
                 i.GICS_Sector
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -709,7 +966,7 @@ def build_fundamentals_and_estimates(session: Session):
     session.sql(f"""
         -- Generate synthetic analyst estimates and guidance based on fundamental data
         -- Creates forward-looking revenue and earnings estimates with realistic consensus ranges
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_ESTIMATES AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_ESTIMATES AS
         WITH estimate_base AS (
             SELECT 
                 f.SECURITY_ID,
@@ -719,7 +976,7 @@ def build_fundamentals_and_estimates(session: Session):
                     ELSE 'Q' || (QUARTER(f.REPORTING_DATE) + 1) || ' ' || YEAR(f.REPORTING_DATE)
                 END as FISCAL_PERIOD,
                 f.METRIC_VALUE
-            FROM {config.DATABASE_NAME}.CURATED.FACT_FUNDAMENTALS f
+            FROM {config.DATABASE['name']}.CURATED.FACT_FUNDAMENTALS f
             WHERE f.METRIC_NAME IN ('Total Revenue', 'EPS')
         )
         SELECT 
@@ -742,7 +999,7 @@ def build_sec_filings_and_fundamentals(session: Session):
     # First, create the FACT_SEC_FILINGS table structure
     print("🏗️  Creating FACT_SEC_FILINGS table structure...")
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS (
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS (
             FilingID BIGINT IDENTITY(1,1) PRIMARY KEY,
             SecurityID BIGINT NOT NULL,
             IssuerID BIGINT NOT NULL,
@@ -777,7 +1034,7 @@ def build_sec_filings_and_fundamentals(session: Session):
         
         # Load SEC filing data using our enhanced view approach
         session.sql(f"""
-            INSERT INTO {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS 
+            INSERT INTO {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS 
             SELECT 
                 ROW_NUMBER() OVER (ORDER BY s.SecurityID, sri.FISCAL_YEAR, sri.FISCAL_PERIOD, sra.TAG) as FilingID,
                 s.SecurityID,
@@ -805,8 +1062,8 @@ def build_sec_filings_and_fundamentals(session: Session):
                 sra.STATEMENT,
                 'SEC_FILINGS_CYBERSYN' as DataSource,
                 CURRENT_TIMESTAMP() as LoadTimestamp
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES sra ON i.CIK = sra.CIK
             JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_INDEX sri ON sra.ADSH = sri.ADSH AND sra.CIK = sri.CIK
             WHERE sri.FISCAL_YEAR >= YEAR(CURRENT_DATE) - {config.YEARS_OF_HISTORY}
@@ -833,7 +1090,7 @@ def build_sec_filings_and_fundamentals(session: Session):
         """).collect()
         
         # Get count of loaded records
-        sec_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE_NAME}.CURATED.FACT_SEC_FILINGS").collect()[0]['CNT']
+        sec_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS").collect()[0]['CNT']
         print(f"✅ Loaded {sec_count:,} SEC filing records from real data")
         
     except Exception as e:
@@ -851,18 +1108,18 @@ def build_esg_scores(session: Session):
     session.sql(f"""
         -- Generate synthetic ESG scores with sector-specific characteristics and regional variations
         -- Creates Environmental, Social, Governance scores (0-100) with realistic distributions
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_ESG_SCORES AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_ESG_SCORES AS
         WITH equity_securities AS (
             SELECT 
                 s.SecurityID,
                 s.Ticker,
                 i.GICS_Sector,
                 i.CountryOfIncorporation
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -933,18 +1190,18 @@ def build_factor_exposures(session: Session):
     session.sql(f"""
         -- Generate synthetic factor exposures (Value, Growth, Quality, etc.) for equity securities
         -- Creates factor loadings with sector-specific characteristics and realistic correlations
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_FACTOR_EXPOSURES AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_FACTOR_EXPOSURES AS
         WITH equity_securities AS (
             SELECT 
                 s.SecurityID,
                 s.Ticker,
                 i.GICS_Sector,
                 i.CountryOfIncorporation
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -1018,23 +1275,23 @@ def build_benchmark_holdings(session: Session):
     session.sql(f"""
         -- Generate synthetic benchmark holdings for major indices (S&P 500, MSCI ACWI, Nasdaq 100)
         -- Creates realistic index compositions with market-cap weighted allocations
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_BENCHMARK_HOLDINGS AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_BENCHMARK_HOLDINGS AS
         WITH equity_securities AS (
             SELECT 
                 s.SecurityID,
                 s.Ticker,
                 i.GICS_Sector,
                 i.CountryOfIncorporation
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
         benchmarks AS (
-            SELECT BenchmarkID, BenchmarkName FROM {config.DATABASE_NAME}.CURATED.DIM_BENCHMARK
+            SELECT BenchmarkID, BenchmarkName FROM {config.DATABASE['name']}.CURATED.DIM_BENCHMARK
         ),
         monthly_dates AS (
             SELECT LAST_DAY(DATEADD(month, seq4(), DATEADD(year, -{config.YEARS_OF_HISTORY}, CURRENT_DATE()))) as HOLDING_DATE
@@ -1097,18 +1354,18 @@ def build_transaction_cost_data(session: Session):
     """Build transaction cost and market microstructure data for realistic execution planning."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION_COSTS AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_TRANSACTION_COSTS AS
         WITH equity_securities AS (
             SELECT 
                 s.SecurityID,
                 s.Ticker,
                 i.GICS_Sector,
                 i.CountryOfIncorporation
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE_NAME}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
+            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -1155,9 +1412,9 @@ def build_liquidity_data(session: Session):
     """Build liquidity and cash flow data for portfolio implementation planning."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_PORTFOLIO_LIQUIDITY AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_PORTFOLIO_LIQUIDITY AS
         WITH portfolios AS (
-            SELECT PortfolioID, PortfolioName FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+            SELECT PortfolioID, PortfolioName FROM {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
         ),
         monthly_dates AS (
             SELECT DATEADD(month, seq4(), DATEADD(month, -12, CURRENT_DATE())) as LIQUIDITY_DATE
@@ -1192,9 +1449,9 @@ def build_risk_budget_data(session: Session):
     """Build risk budget and limits data for professional risk management."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_RISK_LIMITS AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_RISK_LIMITS AS
         WITH portfolios AS (
-            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
         )
         SELECT 
             p.PortfolioID,
@@ -1209,8 +1466,8 @@ def build_risk_budget_data(session: Session):
             UNIFORM(2.5, 4.8, RANDOM()) as CURRENT_TRACKING_ERROR_PCT,
             -- Maximum single position concentration
             CASE 
-                WHEN p.PortfolioName LIKE '%Technology%' THEN 0.065  -- 6.5%
-                ELSE 0.07  -- 7%
+                WHEN p.PortfolioName LIKE '%Technology%' THEN {config.COMPLIANCE_RULES['concentration']['tech_portfolio_max']}
+                ELSE {config.COMPLIANCE_RULES['concentration']['max_single_issuer']}
             END as MAX_SINGLE_POSITION_PCT,
             -- Maximum sector concentration
             CASE 
@@ -1231,13 +1488,13 @@ def build_trading_calendar_data(session: Session):
     """Build trading calendar with blackout periods and market events."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TRADING_CALENDAR AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_TRADING_CALENDAR AS
         WITH securities AS (
             SELECT s.SecurityID, s.Ticker 
-            FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY s
+            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             WHERE s.AssetClass = 'Equity'
             AND EXISTS (
-                SELECT 1 FROM {config.DATABASE_NAME}.CURATED.FACT_TRANSACTION t 
+                SELECT 1 FROM {config.DATABASE['name']}.CURATED.FACT_TRANSACTION t 
                 WHERE t.SecurityID = s.SecurityID
             )
         ),
@@ -1278,9 +1535,9 @@ def build_client_mandate_data(session: Session):
     """Build client mandate and approval requirements data."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.DIM_CLIENT_MANDATES AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.DIM_CLIENT_MANDATES AS
         WITH portfolios AS (
-            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE_NAME}.CURATED.DIM_PORTFOLIO
+            SELECT PortfolioID, PortfolioName, Strategy FROM {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
         )
         SELECT 
             p.PortfolioID,
@@ -1323,15 +1580,15 @@ def build_tax_implications_data(session: Session):
     """Build tax implications and cost basis data for tax-efficient execution."""
     
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.DATABASE_NAME}.CURATED.FACT_TAX_IMPLICATIONS AS
+        CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_TAX_IMPLICATIONS AS
         WITH portfolio_holdings AS (
             SELECT DISTINCT 
                 h.PortfolioID,
                 h.SecurityID,
                 h.MarketValue_Base,
                 h.PortfolioWeight
-            FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR h
-            WHERE h.HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR)
+            FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR h
+            WHERE h.HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR)
         )
         SELECT 
             ph.PortfolioID,
@@ -1378,8 +1635,8 @@ def validate_data_quality(session: Session):
             PortfolioID,
             SUM(PortfolioWeight) as TotalWeight,
             ABS(SUM(PortfolioWeight) - 1.0) as WeightDeviation
-        FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR 
-        WHERE HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE_NAME}.CURATED.FACT_POSITION_DAILY_ABOR)
+        FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR 
+        WHERE HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR)
         GROUP BY PortfolioID
         HAVING ABS(SUM(PortfolioWeight) - 1.0) > 0.001
     """).collect()
@@ -1395,7 +1652,7 @@ def validate_data_quality(session: Session):
             COUNT(*) as total_securities,
             COUNT(CASE WHEN Ticker IS NOT NULL AND LENGTH(Ticker) > 0 THEN 1 END) as securities_with_ticker,
             COUNT(CASE WHEN FIGI IS NOT NULL AND LENGTH(FIGI) > 0 THEN 1 END) as securities_with_figi
-        FROM {config.DATABASE_NAME}.CURATED.DIM_SECURITY
+        FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY
     """).collect()
     
     if security_check:
