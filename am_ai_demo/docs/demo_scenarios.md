@@ -9,6 +9,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 ### Portfolio Manager
 **Agent: Portfolio Copilot**
 - Portfolio Insights & Benchmarking ✅ **IMPLEMENTED**
+- Real-Time Event Impact & Second-Order Risk Verification ✅ **IMPLEMENTED**
 
 **Agent: Thematic Macro Advisor**  
 - Investment Theme Analysis ✅ **IMPLEMENTED**
@@ -39,7 +40,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Portfolio Copilot - Portfolio Insights & Benchmarking
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Anna, Senior Portfolio Manager at Snowcrest Asset Management  
 **Business Challenge**: Portfolio managers need instant access to portfolio analytics, holdings information, and supporting research to make informed investment decisions. Traditional systems require multiple tools, manual data gathering, and time-consuming analysis that delays critical investment decisions.  
@@ -48,11 +49,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `portfolio_copilot`  
 **Data Available**: 10 portfolios, 5,000 securities, 2,800 research documents
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Anna is preparing for her weekly portfolio review meeting and needs to quickly assess her Technology & Infrastructure portfolio performance, understand current holdings, and identify any emerging risks that require attention.
 
-#### Step 1: Top Holdings Overview
+##### Step 1: Top Holdings Overview
 **User Input**: 
 ```
 "What are my top 10 holdings by market value in the SAM Technology & Infrastructure portfolio?"
@@ -73,7 +74,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Business rule integration (6.5% concentration threshold)
 - Natural language to SQL conversion
 
-#### Step 2: Latest Research for Top Holdings  
+##### Step 2: Latest Research for Top Holdings  
 **User Input**: 
 ```
 "Based on those top holdings you just showed me, what is the latest broker research saying about our three largest positions?"
@@ -98,7 +99,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - SecurityID-based linkage between holdings and research
 - Automatic citation and source attribution
 
-#### Step 3: Sector Risk Assessment
+##### Step 3: Sector Risk Assessment
 **User Input**: 
 ```
 "Looking at those top holdings and their research, what's our sector concentration risk in this portfolio, especially for the companies with the largest positions?"
@@ -121,7 +122,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Sector-level concentration assessment linked to specific holdings
 - Integrated benchmark comparison with position-level context
 
-#### Step 4: Integrated Risk & Action Plan
+##### Step 4: Integrated Risk & Action Plan
 **User Input**: 
 ```
 "Based on our concentration analysis and research findings, which of our largest positions need attention and what actions should we consider?"
@@ -144,7 +145,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Integration of position size, sector risk, and research sentiment
 - Actionable recommendations with clear prioritization and rationale
 
-#### Step 5: Portfolio Management Decision
+##### Step 5: Portfolio Management Decision
 **User Input**: 
 ```
 "Based on our complete analysis from Steps 1-4, provide me with a specific implementation plan including exact position sizes, timelines, and dollar amounts for the portfolio actions we should take."
@@ -191,7 +192,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Specific Action Planning**: Exact dollar amounts, percentages, and timelines
 - **Professional Investment Management**: Industry-standard decision framework with comprehensive risk management
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Time Savings**: Reduced portfolio analysis time from hours to minutes
@@ -205,10 +206,166 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **AI-Powered Search**: Intelligent document search with automatic relevance ranking and summarization
 - **Multi-modal Analysis**: Seamless combination of structured portfolio data with unstructured research content
 
+---
+
+### Portfolio Copilot - Real-Time Event Impact & Second-Order Risk Verification
+
+#### Business Context Setup
+
+**Persona**: Anna, Senior Portfolio Manager at Snowcrest Asset Management  
+**Business Challenge**: Portfolio managers need to rapidly assess portfolio exposure when external events occur, including both direct regional/sector exposure and indirect supply chain dependencies. Traditional risk systems can't model multi-hop supply chain relationships or quantify second-order impacts, leaving managers blind to cascading risks.  
+**Value Proposition**: AI-powered event risk verification that combines macro event intelligence, direct portfolio exposure analysis, and sophisticated supply chain dependency mapping to quantify both immediate and indirect portfolio impacts in real-time.
+
+**Agent**: `portfolio_copilot`  
+**Data Available**: 10 portfolios, supply chain relationships (150+ dependencies), macro events corpus, press releases
+
+#### Demo Flow
+
+**Scene Setting**: Anna receives an external market alert about a major earthquake in Taiwan affecting semiconductor production. She needs to immediately understand her portfolio's exposure - both direct holdings in affected companies and indirect exposure through supply chain dependencies.
+
+##### Step 1: Event Verification
+**User Input**: 
+```
+"I just received an alert about a major earthquake in Taiwan affecting semiconductor production. Can you verify this event and tell me what sectors are affected?"
+```
+
+**Expected Response**:
+- Event confirmation from macro events database:
+  * Event Type: Natural Disaster
+  * Region: Taiwan (TW)
+  * Severity: Critical
+  * Event Date: [Current date]
+- Affected sectors identified:
+  * Information Technology (primary impact)
+  * Consumer Discretionary (secondary impact via automotive)
+- Brief impact description:
+  * TSMC facilities affected (40-50% of global advanced chip capacity)
+  * Expected production halt: 2-4 weeks
+  * Recovery timeline: 6-8 weeks for full supply chain normalization
+
+**Talking Points**:
+- AI verifies external alerts using structured macro event database
+- Extracts precise event characteristics (type, region, severity, sectors)
+- Provides authoritative event context for risk assessment
+
+**Key Features Highlighted**: 
+- Macro event intelligence repository
+- Structured event data with standardized attributes
+- Event verification before portfolio impact analysis
+
+##### Step 2: Direct Portfolio Exposure
+**User Input**: 
+```
+"What is my direct exposure to Taiwan-based semiconductor companies across all portfolios?"
+```
+
+**Expected Response**:
+- Table showing direct Taiwan semiconductor exposure by portfolio:
+  * Portfolio Name | Taiwan Semiconductor Exposure (USD) | % of Portfolio | Key Holdings (TSM, etc.)
+  * Flag portfolios with >2% exposure to Taiwan semiconductor sector
+- Total Taiwan semiconductor exposure across all portfolios
+- Specific companies held:
+  * Taiwan Semiconductor Manufacturing (TSM) - if held
+  * ASE Technology Holding, ChipMOS Technologies, Himax Technologies, etc.
+- Regional exposure breakdown: Taiwan % of total portfolio
+
+**Talking Points**:
+- Immediate quantification of direct regional exposure
+- Portfolio-level impact assessment
+- Specific holdings identified for monitoring
+
+**Key Features Highlighted**: 
+- Multi-dimensional filtering (country + sector)
+- Cross-portfolio exposure aggregation
+- Automatic threshold-based flagging
+
+##### Step 3: Second-Order Supply Chain Exposure
+**User Input**: 
+```
+"What is my indirect exposure through supply chain dependencies? Show me which US companies in my portfolio depend on Taiwan semiconductor suppliers."
+```
+
+**Expected Response**:
+- Multi-hop supply chain analysis with decay factors:
+  * **First-Order Dependencies** (Direct customers of Taiwan semis):
+    - NVIDIA: 25% revenue dependency on TSM (High) → Portfolio exposure: [weight]%
+    - AMD: 18% revenue dependency on TSM (High) → Portfolio exposure: [weight]%
+    - Apple: 30% revenue dependency on TSM (High) → Portfolio exposure: [weight]%
+  * **Second-Order Dependencies** (50% decay applied):
+    - General Motors: 8% chip dependency on NVIDIA (Medium) → Effective exposure: 4% post-decay
+    - Ford: 6% chip dependency on NVIDIA (Medium) → Effective exposure: 3% post-decay
+- Summary table:
+  * Company | Relationship Type | Dependency % | Post-Decay Exposure | Portfolio Weight | Risk Rating
+- Total indirect exposure calculation (weighted by portfolio holdings)
+- Flag High dependency relationships (≥20% post-decay)
+
+**Talking Points**:
+- **Multi-Hop Analysis**: AI traverses supply chain graph to identify indirect dependencies
+- **Decay Factors**: 50% decay per hop reflects diminishing impact through supply chain
+- **Criticality Assessment**: Automatic flagging of high-dependency relationships
+- **Portfolio Weighting**: Second-order exposure weighted by actual portfolio holdings
+
+**Key Features Highlighted**: 
+- Supply chain graph traversal with configurable depth
+- Decay factor application for realistic impact modeling
+- Upstream (cost) and downstream (revenue) relationship analysis
+- Portfolio-weighted exposure calculation
+
+##### Step 4: Corroborating Evidence & Next Steps
+**User Input**: 
+```
+"Do we have any recent press releases or company statements from NVIDIA or AMD about their Taiwan supply chain?"
+```
+
+**Expected Response**:
+- Press release search results:
+  * NVIDIA - "Q4 2024 Earnings Call: Taiwan Fab Partnership Update" (Jan 2024)
+    - Confirms TSMC as primary manufacturing partner
+    - Mentions geographic diversification plans (2025 timeline)
+  * AMD - "Supply Chain Update" (Dec 2023)
+    - TSMC accounts for majority of advanced node production
+    - Alternative sourcing being explored but limited near-term options
+- Synthesis and recommendations:
+  * **Direct Exposure**: [X]% total exposure to Taiwan IT sector
+  * **Indirect Exposure**: [Y]% effective exposure through supply chain (post-decay)
+  * **Total Risk**: [X+Y]% combined exposure to Taiwan semiconductor disruption
+  * **Recommended Actions**:
+    1. Monitor: Track TSMC facility restoration updates
+    2. Engage: Contact NVIDIA/AMD investor relations for supply impact guidance
+    3. Assess: Review positions for potential trim if exposure exceeds risk budget
+    4. Hedge: Consider short-term hedging strategies if event extends beyond 4 weeks
+
+**Talking Points**:
+- **Document Corroboration**: AI finds supporting evidence from corporate communications
+- **Comprehensive Risk View**: Direct + indirect exposure quantified
+- **Actionable Recommendations**: Specific next steps based on total exposure
+- **Risk Management Framework**: Monitoring, engagement, and hedging strategies
+
+**Key Features Highlighted**: 
+- Multi-source intelligence synthesis (portfolio data + supply chain + press releases)
+- Total risk calculation combining direct and indirect exposures
+- Professional risk management framework with specific actions
+- Timeline-based response recommendations
+
+#### Scenario Wrap-up
+
+**Business Impact Summary**:
+- **Rapid Event Response**: Assess portfolio impact within minutes vs hours/days with traditional systems
+- **Hidden Risk Discovery**: Quantify indirect supply chain exposures that traditional systems miss
+- **Comprehensive Risk View**: Combine direct holdings with multi-hop supply chain dependencies
+- **Actionable Intelligence**: Specific recommendations with timelines and thresholds
+
+**Technical Differentiators**:
+- **Graph Database Analytics**: Multi-hop supply chain traversal with decay factors and criticality scoring
+- **Event Intelligence Repository**: Structured macro event database with standardized attributes
+- **Real-Time Risk Quantification**: Instant calculation of portfolio-weighted supply chain exposures
+- **Multi-Modal Intelligence**: Seamless integration of event data, portfolio holdings, supply chain graphs, and corporate communications
+
+---
 
 ### Thematic Macro Advisor - Investment Theme Analysis
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Anna, Portfolio Manager (Thematic Focus) at Snowcrest Asset Management  
 **Business Challenge**: Portfolio managers need to identify and validate investment opportunities across macro trends by combining quantitative portfolio analysis with thematic research. Traditional approaches struggle to connect portfolio positioning with emerging themes and market trends effectively.  
@@ -217,11 +374,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `thematic_macro_advisor`  
 **Data Available**: Portfolio holdings data + 100 broker reports, 75 press releases, 75 earnings transcripts
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Anna is developing the quarterly thematic investment strategy and needs to assess current portfolio positioning against emerging macro trends, identify new thematic opportunities, and optimize portfolio allocation for maximum theme exposure.
 
-#### Step 1: Current Thematic Positioning
+##### Step 1: Current Thematic Positioning
 **User Input**: 
 ```
 "Analyze our current exposure to AI and technology themes across portfolios"
@@ -243,7 +400,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Sector and theme-based portfolio analytics
 - Benchmark comparison and relative positioning
 
-#### Step 2: Thematic Research Discovery  
+##### Step 2: Thematic Research Discovery  
 **User Input**: 
 ```
 "Based on our current AI and technology exposure from Step 1, what are the emerging thematic investment opportunities that could enhance our positioning?"
@@ -266,7 +423,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Strategic Enhancement**: Identifies themes that extend and complement existing exposures
 - **Gap-Based Opportunity Identification**: Focuses on themes where portfolio could be enhanced
 
-#### Step 3: Strategic Positioning Analysis
+##### Step 3: Strategic Positioning Analysis
 **User Input**: 
 ```
 "From the emerging themes identified in Step 2, pick the most promising one and analyze how we should position our portfolios, considering our current AI/tech exposure from Step 1"
@@ -290,7 +447,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Contextual Theme Selection**: Chooses optimal theme based on portfolio positioning and research strength
 - **Integrated Investment Strategy**: Develops positioning that enhances rather than conflicts with existing exposures
 
-#### Step 4: Integrated Investment Strategy
+##### Step 4: Integrated Investment Strategy
 **User Input**: 
 ```
 "Based on our AI/tech positioning from Step 1 and the [selected theme from Step 3], create an integrated investment strategy that optimizes our thematic exposure across portfolios"
@@ -314,7 +471,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Cross-Portfolio Optimization**: Develops theme allocation strategy across all portfolios
 - **Implementation Framework**: Provides actionable roadmap for thematic investment strategy
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Strategic Positioning**: Enhanced ability to position portfolios for emerging macro trends
@@ -334,7 +491,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Research Copilot - Document Research & Analysis
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: David, Research Analyst at Snowcrest Asset Management  
 **Business Challenge**: Research analysts need to combine quantitative financial analysis with qualitative research synthesis across multiple sources (financial data, broker research, earnings calls, press releases) to build comprehensive investment cases. Manual analysis requires hours of data gathering, financial modeling, and document review, often missing critical connections between financial performance and strategic narratives.  
@@ -343,11 +500,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `research_copilot`  
 **Data Available**: Financial fundamentals & estimates for 14,000+ securities + 100 broker reports, 75 earnings transcripts, 75 press releases
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: David is preparing a thematic research report on technology sector opportunities and needs to quickly synthesize insights from multiple document sources to identify emerging trends and validate investment themes.
 
-#### Step 1: Multi-Source Research Synthesis
+##### Step 1: Multi-Source Research Synthesis
 **User Input**: 
 ```
 "What is the latest research saying about AI and cloud computing opportunities in technology companies?"
@@ -369,7 +526,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Intelligent document synthesis and summarization
 - Automatic source attribution and citation
 
-#### Step 2: Deep-Dive Company Analysis
+##### Step 2: Deep-Dive Company Analysis
 **User Input**: 
 ```
 "From those companies mentioned in the AI and cloud research, pick the one with the strongest themes and give me a detailed analysis of their recent performance and strategic positioning"
@@ -394,7 +551,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Theme-Based Analysis**: Deep-dive specifically addresses themes identified in previous step
 - **Integrated Validation**: Financial performance data supports or challenges qualitative research themes
 
-#### Step 3: Competitive Intelligence Gathering
+##### Step 3: Competitive Intelligence Gathering
 **User Input**: 
 ```
 "How does [the company from Step 2]'s AI strategy compare to what other technology companies mentioned in Step 1 are doing?"
@@ -417,7 +574,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Theme-Based Comparison**: Competitive analysis specifically addresses AI/cloud themes from Step 1
 - **Investment Decision Support**: Provides comparative context needed for investment decisions
 
-#### Step 4: Investment Thesis Validation
+##### Step 4: Investment Thesis Validation
 **User Input**: 
 ```
 "Based on our analysis of [Step 2 company] and its competitive position, compare what management is saying about AI growth prospects versus what analysts are forecasting for this investment opportunity"
@@ -440,7 +597,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Investment Thesis Validation**: Tests the strength of the complete investment case built through previous steps
 - **Decision Support**: Provides final consensus analysis needed for investment decisions
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Research Efficiency**: Reduced comprehensive company analysis time from days to minutes
@@ -457,7 +614,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Research Copilot - Earnings Intelligence Extensions
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Sarah, Senior Research Analyst at Snowcrest Asset Management  
 **Business Challenge**: Research analysts need to rapidly analyze quarterly earnings releases, integrate financial data with management commentary, and identify sentiment shifts that could signal investment opportunities or risks. Traditional earnings analysis requires hours of manual transcription, data extraction, and cross-referencing across multiple documents, often missing subtle but critical sentiment changes.  
@@ -466,11 +623,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `research_copilot`  
 **Data Available**: SEC filings for 14,000+ securities, earnings transcripts, press releases, financial fundamentals
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Sarah is analyzing the latest quarterly earnings for a major technology holding and needs to quickly assess the financial performance, understand management sentiment, and identify any shifts in forward guidance that could impact the investment thesis.
 
-#### Step 1: Integrated Earnings Analysis
+##### Step 1: Integrated Earnings Analysis
 **User Input**: 
 ```
 "Give me a comprehensive analysis of Microsoft's latest quarterly earnings, including reported financial metrics versus consensus estimates and key management commentary from the earnings call."
@@ -493,7 +650,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Multi-document synthesis combining quantitative and qualitative analysis
 - Real-time financial analysis with management commentary context
 
-#### Step 2: Sentiment Analysis and Red Flags
+##### Step 2: Sentiment Analysis and Red Flags
 **User Input**: 
 ```
 "Compare the sentiment between Microsoft's prepared remarks and the Q&A session. Are there any concerning shifts or defensive language that could indicate management uncertainty?"
@@ -516,7 +673,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Comparative analysis across different sections of earnings calls
 - Predictive insights from management tone and language patterns
 
-#### Step 3: Strategic Commentary Evolution
+##### Step 3: Strategic Commentary Evolution
 **User Input**: 
 ```
 "How has Microsoft's commentary on cloud computing and AI strategy evolved over the past three quarters? Are there any shifts in their strategic messaging or capital allocation priorities?"
@@ -539,7 +696,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Cross-document intelligence linking financial data with strategic commentary
 - Historical context providing deeper investment insights
 
-#### Step 4: Investment Committee Summary
+##### Step 4: Investment Committee Summary
 **User Input**: 
 ```
 "Draft a concise investment committee memo summarizing Microsoft's earnings results, highlighting the key financial metrics, sentiment analysis findings, and any strategic shifts that impact our investment thesis."
@@ -563,7 +720,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Professional formatting suitable for investment committee review
 - Complete audit trail with source citations for compliance and verification
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Speed Enhancement**: Earnings analysis reduced from hours to minutes, enabling faster decision-making
@@ -583,7 +740,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Quant Analyst - Factor Analysis & Performance Attribution
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Dr. James Chen, Quantitative Analyst at Snowcrest Asset Management  
 **Business Challenge**: Quantitative analysts need advanced factor analysis, performance attribution, and systematic strategy development tools to identify patterns, screen securities, and develop data-driven investment approaches. Traditional quant tools are siloed and don't integrate fundamental research insights with quantitative analysis.  
@@ -592,11 +749,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `quant_analyst`  
 **Data Available**: Enhanced factor exposures (7 factors × 5 years × monthly), fundamentals data, 1,200 broker reports, 800 earnings transcripts
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Dr. Chen is developing a new systematic strategy focused on quality and momentum factors. He needs to screen securities, analyze factor exposures, backtest strategies, and validate findings with fundamental research to present a comprehensive investment case.
 
-#### Step 1: Factor Screening
+##### Step 1: Factor Screening
 **User Input**: 
 ```
 "Screen for stocks with improving momentum and quality factors over the last 6 months."
@@ -624,7 +781,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Time-Series Factor Analysis**: Monthly factor exposures over 5 years enabling trend identification
 - **Comprehensive Factor Coverage**: Complete factor universe (Market, Size, Value, Growth, Momentum, Quality, Volatility)
 
-#### Step 2: Factor Comparison Analysis
+##### Step 2: Factor Comparison Analysis
 **User Input**: 
 ```
 "For the stocks with improving momentum and quality factors, compare their factor loadings against our current Value strategy and Growth strategy portfolios."
@@ -647,7 +804,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Portfolio Integration Analysis**: Assessment of how screened securities fit with existing factor exposures
 - **Style Impact Evaluation**: Understanding factor changes from incorporating screened securities
 
-#### Step 3: Factor Evolution Analysis
+##### Step 3: Factor Evolution Analysis
 **User Input**: 
 ```
 "Analyze the factor exposure trends of our momentum and quality securities over the last 3 years and show how their factor characteristics have evolved."
@@ -670,7 +827,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Factor Persistence Studies**: Understanding factor stability and consistency over time periods
 - **Statistical Validation**: Rigorous analysis of factor improvement trends with significance testing
 
-#### Step 4: Fundamental Context Integration
+##### Step 4: Fundamental Context Integration
 **User Input**: 
 ```
 "For the securities with the strongest factor evolution trends, what fundamental themes and research support their improving factor characteristics?"
@@ -693,7 +850,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Conversational Synthesis**: Fundamental analysis that validates and explains the quantitative findings developed in conversation
 - **Comprehensive Investment Process**: Complete systematic investment approach combining factor analysis, backtesting, and fundamental research
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Speed & Efficiency**: Instant factor screening and analysis eliminating traditional data exploration delays (seconds vs minutes)
@@ -713,7 +870,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Sales Advisor - Client Reporting & Template Formatting
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: James Mitchell, Client Relationship Manager at Snowcrest Asset Management  
 **Business Challenge**: Client relationship managers need to produce professional, compliant, and compelling client reports that integrate performance data with approved messaging templates and investment philosophy. Traditional processes require manual data gathering, template formatting, compliance review, and brand alignment, consuming significant time and introducing formatting inconsistencies.  
@@ -722,11 +879,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `sales_advisor`  
 **Data Available**: Portfolio performance data, sales report templates, investment philosophy documents, compliance policies, brand messaging guidelines
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: James needs to prepare a monthly client report for a key institutional client with their SAM Technology & Infrastructure portfolio, ensuring professional presentation with proper compliance language and brand messaging.
 
-#### Step 1: Portfolio Performance Foundation
+##### Step 1: Portfolio Performance Foundation
 **User Input**: 
 ```
 "Generate a client report for the SAM Technology & Infrastructure portfolio showing quarterly performance, top holdings, and sector allocation"
@@ -750,7 +907,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Automated Formatting**: AI structures complex portfolio data for client presentation
 - **Risk Management**: Automatic concentration warning and risk disclosure
 
-#### Step 2: Template Integration and Professional Formatting
+##### Step 2: Template Integration and Professional Formatting
 **User Input**: 
 ```
 "Format this into a professional monthly client report using our approved template structure with proper sections and branding"
@@ -775,7 +932,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Automated Formatting**: AI applies professional structure and branding consistently
 - **Template Intelligence**: Smart adaptation of content to template requirements
 
-#### Step 3: Investment Philosophy and Brand Integration
+##### Step 3: Investment Philosophy and Brand Integration
 **User Input**: 
 ```
 "Integrate our ESG investment philosophy and technology innovation messaging to align the report with SAM's strategic positioning"
@@ -799,7 +956,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Natural Integration**: AI weaves philosophy into performance narrative without appearing promotional
 - **Strategic Messaging**: Consistent reinforcement of SAM's competitive differentiators
 
-#### Step 4: Compliance Review and Final Document
+##### Step 4: Compliance Review and Final Document
 **User Input**: 
 ```
 "Complete the compliance review by adding all required regulatory disclosures, risk warnings, and fiduciary language for final client delivery"
@@ -823,7 +980,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Compliance Automation**: AI automatically includes all required disclosures and warnings
 - **Professional Standards**: Ensures client communications meet institutional investment standards
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Productivity Gains**: Client report generation reduced from hours to minutes, enabling more client interaction time
@@ -843,7 +1000,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### ESG Guardian - ESG Risk Monitoring & Policy Compliance
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Sofia, ESG & Risk Officer at Snowcrest Asset Management  
 **Business Challenge**: ESG officers need proactive monitoring of sustainability risks, policy compliance, and engagement tracking to maintain ESG leadership and avoid reputational damage. Manual monitoring of ESG controversies across hundreds of portfolio companies is time-consuming and risks missing critical issues.  
@@ -852,11 +1009,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `esg_guardian`  
 **Data Available**: 500 NGO reports, 150 engagement notes, 8 policy documents
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Sofia has received alerts about potential ESG issues affecting portfolio companies and needs to quickly assess the situation, review engagement history, check policy compliance, and prepare a comprehensive report for the ESG committee.
 
-#### Step 1: Proactive Controversy Scanning
+##### Step 1: Proactive Controversy Scanning
 **User Input**: 
 ```
 "Scan for any new ESG controversies affecting our portfolio companies in the last 30 days."
@@ -877,7 +1034,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Portfolio exposure analysis for risk quantification
 - Multi-source NGO report analysis and synthesis
 
-#### Step 2: Internal Context Retrieval
+##### Step 2: Internal Context Retrieval
 **User Input**: 
 ```
 "For the companies flagged in Step 1, do we have any engagement history with these companies regarding the specific ESG issues identified?"
@@ -899,7 +1056,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Issue-Specific Intelligence**: Historical context directly relevant to current controversies
 - **Strategic Planning Support**: Identifies engagement gaps based on current risk assessment
 
-#### Step 3: Policy Compliance Assessment
+##### Step 3: Policy Compliance Assessment
 **User Input**: 
 ```
 "What does our ESG policy say about the specific issues identified in Step 1, and what's our total exposure to each of the flagged companies?"
@@ -922,7 +1079,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Multi-Company Risk Aggregation**: Total exposure analysis for all Step 1 flagged companies
 - **Integrated Compliance Assessment**: Policy requirements viewed alongside engagement history
 
-#### Step 4: Committee Reporting
+##### Step 4: Committee Reporting
 **User Input**: 
 ```
 "Draft a comprehensive ESG committee summary covering all the companies and issues we've analyzed in Steps 1-3."
@@ -946,7 +1103,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Executive Reporting**: Complete ESG governance report ready for committee decision-making
 - **Comprehensive Documentation**: Full audit trail of ESG risk assessment and recommended actions
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Risk Mitigation**: Proactive identification and management of ESG controversies
@@ -962,7 +1119,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 
 ### Compliance Advisor - Mandate Monitoring & Breach Detection
 
-### Business Context Setup
+#### Business Context Setup
 
 **Persona**: Michael, Compliance Officer at Snowcrest Asset Management  
 **Business Challenge**: Compliance officers need automated monitoring of investment mandates, breach detection, and policy adherence to ensure regulatory compliance and fiduciary responsibility. Manual compliance monitoring across multiple portfolios is error-prone and time-consuming, risking regulatory violations and client mandate breaches.  
@@ -971,11 +1128,11 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent**: `compliance_advisor`  
 **Data Available**: 8 policy documents, 150 engagement logs, portfolio holdings
 
-### Demo Flow
+#### Demo Flow
 
 **Scene Setting**: Michael is conducting his daily compliance review and needs to check for any mandate breaches, investigate specific concentration limits, plan remediation actions, and prepare documentation for audit purposes.
 
-#### Step 1: Compliance Breach Detection
+##### Step 1: Compliance Breach Detection
 **User Input**: 
 ```
 "Check all portfolios for active compliance breaches as of today."
@@ -996,7 +1153,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - Real-time portfolio analysis against mandate requirements
 - Risk prioritization with severity assessment
 
-#### Step 2: Rule Documentation
+##### Step 2: Rule Documentation
 **User Input**: 
 ```
 "For the specific breaches identified in Step 1, show me the exact policy clauses and concentration limits that are being violated"
@@ -1019,7 +1176,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Violation-Specific Intelligence**: Exact clauses and limits for each identified compliance issue
 - **Severity Classification**: Understanding of breach vs warning thresholds for prioritization
 
-#### Step 3: Remediation Planning
+##### Step 3: Remediation Planning
 **User Input**: 
 ```
 "For each breach identified in Steps 1-2, what are our remediation options and what's the priority order for addressing these violations?"
@@ -1043,7 +1200,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Priority-Based Sequencing**: Remediation order based on severity assessment from Step 2
 - **Market Impact Optimization**: Remediation plans that minimize trading costs and market disruption
 
-#### Step 4: Audit Trail Documentation
+##### Step 4: Audit Trail Documentation
 **User Input**: 
 ```
 "Generate a comprehensive compliance incident report covering all breaches identified in Steps 1-3 with our complete remediation plan"
@@ -1067,7 +1224,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Regulatory Compliance Reporting**: Audit-ready documentation with complete compliance workflow
 - **Comprehensive Audit Trail**: Full record of compliance assessment and response for regulatory review
 
-### Scenario Wrap-up
+#### Scenario Wrap-up
 
 **Business Impact Summary**:
 - **Regulatory Compliance**: Automated monitoring ensures continuous compliance with all mandates

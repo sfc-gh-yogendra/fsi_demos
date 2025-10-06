@@ -167,7 +167,7 @@ def select_template(templates: List[Dict[str, Any]], context: Dict[str, Any]) ->
     doc_type = context.get('_doc_type', 'unknown')
     
     # Sector-aware routing: try to match template sector_tags to entity sector
-    entity_sector = context.get('GICS_SECTOR', '')
+    entity_sector = context.get('SIC_DESCRIPTION', '')
     
     # Filter templates matching entity sector
     sector_matched = [
@@ -243,7 +243,7 @@ def build_security_context(session: Session, security_id: int, doc_type: str) ->
             ds.AssetClass,
             di.IssuerID,
             di.LegalName as ISSUER_NAME,
-            di.GICS_Sector,
+            di.SIC_DESCRIPTION,
             di.CountryOfIncorporation
         FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY ds
         JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER di ON ds.IssuerID = di.IssuerID
@@ -262,7 +262,7 @@ def build_security_context(session: Session, security_id: int, doc_type: str) ->
         'ISSUER_ID': sec['ISSUERID'],
         'COMPANY_NAME': sec['COMPANY_NAME'],
         'TICKER': sec['TICKER'],
-        'GICS_SECTOR': sec['GICS_SECTOR'],
+        'SIC_DESCRIPTION': sec['SIC_DESCRIPTION'],
         'ISSUER_NAME': sec['ISSUER_NAME'],
         'ASSET_CLASS': sec['ASSETCLASS']
     }
@@ -346,7 +346,7 @@ def build_issuer_context(session: Session, issuer_id: int, doc_type: str) -> Dic
         SELECT 
             di.IssuerID,
             di.LegalName as ISSUER_NAME,
-            di.GICS_Sector,
+            di.SIC_DESCRIPTION,
             di.CountryOfIncorporation,
             ds.Ticker
         FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER di
@@ -365,7 +365,7 @@ def build_issuer_context(session: Session, issuer_id: int, doc_type: str) -> Dic
         'ISSUER_ID': iss['ISSUERID'],
         'ISSUER_NAME': iss['ISSUER_NAME'],
         'TICKER': iss['TICKER'] or 'N/A',
-        'GICS_SECTOR': iss['GICS_SECTOR']
+        'SIC_DESCRIPTION': iss['SIC_DESCRIPTION']
     }
     
     # Add dates
@@ -477,6 +477,11 @@ def generate_dates_for_doc_type(doc_type: str) -> Dict[str, str]:
     elif doc_type == 'market_data':
         # Daily report
         dates['REPORT_DATE'] = current_date.strftime('%A, %d %B %Y')
+    
+    elif doc_type in ['sales_templates', 'philosophy_docs', 'policy_docs']:
+        # Template documents - use current date as template creation/update date
+        dates['TEMPLATE_DATE'] = current_date.strftime('%d %B %Y')
+        dates['PUBLISH_DATE'] = current_date.strftime('%d %B %Y')
     
     else:
         # Default publish date
@@ -718,7 +723,7 @@ def generate_tier1_numerics(context: Dict[str, Any], doc_type: str) -> Dict[str,
     """
     numerics = {}
     entity_id = context.get('SECURITY_ID') or context.get('PORTFOLIO_ID') or 0
-    sector = context.get('GICS_SECTOR', 'Information Technology')
+    sector = context.get('SIC_DESCRIPTION', 'Information Technology')
     
     # Load numeric bounds from config (simplified - would load from YAML file in production)
     bounds = get_numeric_bounds_for_doc_type(doc_type, sector)
@@ -1152,14 +1157,14 @@ def query_tier2_portfolio_metrics(session: Session, portfolio_id: int) -> Dict[s
         # Query sector allocation
         sectors = session.sql(f"""
             SELECT 
-                i.GICS_Sector as SECTOR,
+                i.SIC_DESCRIPTION as SECTOR,
                 SUM(p.PortfolioWeight) * 100 as WEIGHT_PCT
             FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR p
             JOIN {config.DATABASE['name']}.CURATED.DIM_SECURITY s ON p.SecurityID = s.SecurityID
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE p.PortfolioID = {portfolio_id}
             AND p.HoldingDate = (SELECT MAX(HoldingDate) FROM {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR)
-            GROUP BY i.GICS_Sector
+            GROUP BY i.SIC_DESCRIPTION
             ORDER BY WEIGHT_PCT DESC
         """).collect()
         
@@ -1379,7 +1384,7 @@ def write_to_raw_table(session: Session, doc_type: str, documents: List[Dict[str
             row['IssuerID'] = ctx.get('ISSUER_ID')
             row['TICKER'] = ctx.get('TICKER')
             row['COMPANY_NAME'] = ctx.get('COMPANY_NAME')
-            row['GICS_SECTOR'] = ctx.get('GICS_SECTOR')
+            row['SIC_DESCRIPTION'] = ctx.get('SIC_DESCRIPTION')
         
         elif linkage_level == 'issuer':
             row['SecurityID'] = None

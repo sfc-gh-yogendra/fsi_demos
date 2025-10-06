@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -34,7 +34,7 @@ Analyst: {{ANALYST_NAME}} | {{PUBLISH_DATE}}
 
 ## Executive Summary
 
-We rate {{COMPANY_NAME}} as **{{RATING}}** with a price target of ${{PRICE_TARGET_USD}}, reflecting the company's strong brand equity, innovative product pipeline, and execution capabilities within the {{GICS_SECTOR}} sector. Revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% and EBIT margins of {{EBIT_MARGIN_PCT}}% demonstrate the company's ability to drive both top-line expansion and profitability improvement in a competitive consumer marketplace.
+We rate {{COMPANY_NAME}} as **{{RATING}}** with a price target of ${{PRICE_TARGET_USD}}, reflecting the company's strong brand equity, innovative product pipeline, and execution capabilities within the {{SIC_DESCRIPTION}} sector. Revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% and EBIT margins of {{EBIT_MARGIN_PCT}}% demonstrate the company's ability to drive both top-line expansion and profitability improvement in a competitive consumer marketplace.
 
 ## Investment Highlights
 
@@ -56,7 +56,7 @@ Product category expansion into adjacent segments leverages existing brand equit
 
 ## Risk Factors
 
-**Consumer Discretionary Cyclicality**: The {{GICS_SECTOR}} sector inherently carries macroeconomic sensitivity, with consumer spending on discretionary items vulnerable to economic downturns. Recession or significant consumer confidence deterioration could materially impact demand for the company's products.
+**Consumer Discretionary Cyclicality**: The {{SIC_DESCRIPTION}} sector inherently carries macroeconomic sensitivity, with consumer spending on discretionary items vulnerable to economic downturns. Recession or significant consumer confidence deterioration could materially impact demand for the company's products.
 
 **Competitive Intensity**: The consumer sector remains highly competitive with both established brands and emerging direct-to-consumer challengers. Market share battles, promotional intensity, and pricing pressure represent ongoing risks to revenue and margin assumptions.
 
@@ -68,11 +68,11 @@ Product category expansion into adjacent segments leverages existing brand equit
 
 Our ${{PRICE_TARGET_USD}} price target reflects a sum-of-the-parts valuation combining DCF analysis for core operations with premium multiples for high-growth digital and international businesses. The blended approach yields fair value supporting our price target and **{{RATING}}** recommendation.
 
-On a relative basis, {{COMPANY_NAME}} trades at {{PE_RATIO}}x forward earnings, representing a modest premium to {{GICS_SECTOR}} sector peers. This valuation reflects the company's superior growth profile, stronger brand position, and higher-quality business model. We view current levels as attractive given the multi-year growth opportunity and margin expansion potential.
+On a relative basis, {{COMPANY_NAME}} trades at {{PE_RATIO}}x forward earnings, representing a modest premium to {{SIC_DESCRIPTION}} sector peers. This valuation reflects the company's superior growth profile, stronger brand position, and higher-quality business model. We view current levels as attractive given the multi-year growth opportunity and margin expansion potential.
 
 ## Conclusion
 
-{{COMPANY_NAME}} represents a high-quality investment within the {{GICS_SECTOR}} sector. The company's brand strength, digital transformation progress, and operational excellence support our **{{RATING}}** rating. We recommend investors utilise market volatility to build positions in this well-managed consumer franchise with attractive long-term prospects.
+{{COMPANY_NAME}} represents a high-quality investment within the {{SIC_DESCRIPTION}} sector. The company's brand strength, digital transformation progress, and operational excellence support our **{{RATING}}** rating. We recommend investors utilise market volatility to build positions in this well-managed consumer franchise with attractive long-term prospects.
 
 ---
 

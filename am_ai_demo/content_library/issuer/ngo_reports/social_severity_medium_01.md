@@ -13,7 +13,7 @@ placeholders:
     - PUBLISH_DATE
     - SEVERITY_LEVEL
   optional:
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
 ---
 
 # {{NGO_NAME}} Assessment: Labour Practices at {{ISSUER_NAME}}
@@ -36,7 +36,7 @@ Our findings identify gaps between the company's stated commitments to fair labo
 
 ## Background and Context
 
-The {{GICS_SECTOR}} industry faces ongoing scrutiny regarding supply chain labour conditions, particularly in manufacturing operations outsourced to regions with less stringent labour protections. Industry leaders have adopted comprehensive supplier codes of conduct, third-party audit programmes, and remediation protocols to address labour rights risks systematically.
+The {{SIC_DESCRIPTION}} industry faces ongoing scrutiny regarding supply chain labour conditions, particularly in manufacturing operations outsourced to regions with less stringent labour protections. Industry leaders have adopted comprehensive supplier codes of conduct, third-party audit programmes, and remediation protocols to address labour rights risks systematically.
 
 International frameworks including the UN Guiding Principles on Business and Human Rights and ILO Core Conventions establish clear expectations for corporate responsibility in labour practices. Leading companies in the sector demonstrate that strong labour standards and operational efficiency are compatible objectives.
 
@@ -56,7 +56,7 @@ International frameworks including the UN Guiding Principles on Business and Hum
 
 ## Comparison to Industry Peers
 
-Leading companies in the {{GICS_SECTOR}} sector have implemented comprehensive supply chain labour programmes including:
+Leading companies in the {{SIC_DESCRIPTION}} sector have implemented comprehensive supply chain labour programmes including:
 - Third-party social audits with published aggregate results
 - Worker voice hotlines and grievance mechanisms
 - Living wage commitments with measurable progress

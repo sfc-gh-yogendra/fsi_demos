@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -37,7 +37,7 @@ Analyst: {{ANALYST_NAME}} | {{PUBLISH_DATE}}
 
 ## Executive Summary
 
-We rate {{COMPANY_NAME}} as **{{RATING}}**, supported by the company's strong positioning within the {{GICS_SECTOR}} sector, robust pipeline of innovative therapies, and consistent financial performance. With revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% and EBIT margins of {{EBIT_MARGIN_PCT}}%, the company demonstrates both growth and profitability. Our ${{PRICE_TARGET_USD}} price target reflects confidence in the company's ability to deliver sustainable value creation through product innovation and market expansion.
+We rate {{COMPANY_NAME}} as **{{RATING}}**, supported by the company's strong positioning within the {{SIC_DESCRIPTION}} sector, robust pipeline of innovative therapies, and consistent financial performance. With revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% and EBIT margins of {{EBIT_MARGIN_PCT}}%, the company demonstrates both growth and profitability. Our ${{PRICE_TARGET_USD}} price target reflects confidence in the company's ability to deliver sustainable value creation through product innovation and market expansion.
 
 ## Investment Highlights
 
@@ -55,7 +55,7 @@ Strategic collaborations and licensing agreements enhance the pipeline without p
 
 ## Risk Assessment
 
-**Regulatory and Clinical Risk**: The {{GICS_SECTOR}} sector inherently carries regulatory and clinical development risks. Adverse outcomes in ongoing clinical trials or regulatory delays could negatively impact revenue forecasts and pipeline value. Patent expirations on key products represent a material risk, potentially exposing significant revenue to generic competition.
+**Regulatory and Clinical Risk**: The {{SIC_DESCRIPTION}} sector inherently carries regulatory and clinical development risks. Adverse outcomes in ongoing clinical trials or regulatory delays could negatively impact revenue forecasts and pipeline value. Patent expirations on key products represent a material risk, potentially exposing significant revenue to generic competition.
 
 **Pricing Pressure**: Healthcare cost containment efforts by governments and payers create ongoing pricing headwinds. Whilst the company's products demonstrate strong clinical value propositions, reimbursement negotiations and formulary access remain challenging. Any adverse pricing or coverage decisions could materially impact profitability.
 
@@ -69,7 +69,7 @@ On a relative basis, {{COMPANY_NAME}} trades at {{PE_RATIO}}x forward earnings, 
 
 ## Conclusion and Recommendation
 
-{{COMPANY_NAME}} represents a compelling investment opportunity within the {{GICS_SECTOR}} sector. The combination of innovation-driven growth, strong market positions, and disciplined financial management supports our **{{RATING}}** rating. We recommend investors accumulate positions for long-term appreciation potential, viewing the company as a high-quality core healthcare holding.
+{{COMPANY_NAME}} represents a compelling investment opportunity within the {{SIC_DESCRIPTION}} sector. The combination of innovation-driven growth, strong market positions, and disciplined financial management supports our **{{RATING}}** rating. We recommend investors accumulate positions for long-term appreciation potential, viewing the company as a high-quality core healthcare holding.
 
 The favourable risk-reward profile, supported by visible catalysts and defensive business characteristics, makes {{TICKER}} an attractive investment at current valuation levels. Our ${{PRICE_TARGET_USD}} price target offers meaningful upside whilst the company's market-leading position and financial strength provide downside protection.
 

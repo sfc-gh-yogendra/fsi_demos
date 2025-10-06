@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
   optional:
     - QUARTERLY_REVENUE_BILLIONS
@@ -18,7 +18,7 @@ placeholders:
 
 # {{COMPANY_NAME}} Announces Strong Quarterly Results Driven by Cloud and AI Growth
 
-**{{CITY}}, {{PUBLISH_DATE}}** — {{COMPANY_NAME}} ({{TICKER}}), a leading {{GICS_SECTOR}} company, today announced financial results for its fiscal quarter ended {{QUARTER_END_DATE}}, reporting revenue of ${{QUARTERLY_REVENUE_BILLIONS}} billion, representing {{YOY_GROWTH_PCT}}% growth year-over-year, and diluted earnings per share of ${{QUARTERLY_EPS}}.
+**{{CITY}}, {{PUBLISH_DATE}}** — {{COMPANY_NAME}} ({{TICKER}}), a leading {{SIC_DESCRIPTION}} company, today announced financial results for its fiscal quarter ended {{QUARTER_END_DATE}}, reporting revenue of ${{QUARTERLY_REVENUE_BILLIONS}} billion, representing {{YOY_GROWTH_PCT}}% growth year-over-year, and diluted earnings per share of ${{QUARTERLY_EPS}}.
 
 ## Financial Highlights
 
@@ -43,7 +43,7 @@ For the coming quarter, {{COMPANY_NAME}} expects revenue between ${{GUIDANCE_LOW
 
 ## About {{COMPANY_NAME}}
 
-{{COMPANY_NAME}} is a leading {{GICS_SECTOR}} company providing cloud computing platforms, enterprise software, and digital services to customers worldwide. The company is committed to innovation, customer success, and sustainable business practices.
+{{COMPANY_NAME}} is a leading {{SIC_DESCRIPTION}} company providing cloud computing platforms, enterprise software, and digital services to customers worldwide. The company is committed to innovation, customer success, and sustainable business practices.
 
 ## Forward-Looking Statements
 

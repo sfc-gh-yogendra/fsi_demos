@@ -15,11 +15,11 @@ security_context:
     type: "string"
     required_for: ["broker_research", "internal_research", "investment_memo", "earnings_transcripts", "press_releases"]
   
-  GICS_SECTOR:
-    description: "GICS sector from DIM_ISSUER.GICS_Sector"
-    source: "DIM_ISSUER.GICS_Sector"
+  SIC_DESCRIPTION:
+    description: "SIC industry description from DIM_ISSUER.SIC_DESCRIPTION"
+    source: "DIM_ISSUER.SIC_DESCRIPTION"
     type: "string"
-    required_for: ["broker_research", "internal_research", "investment_memo", "earnings_transcripts", "press_releases"]
+    required_for: ["broker_research", "internal_research", "investment_memo", "earnings_transcripts", "press_releases", "ngo_reports", "engagement_notes"]
   
   ISSUER_NAME:
     description: "Legal issuer name from DIM_ISSUER.LegalName"

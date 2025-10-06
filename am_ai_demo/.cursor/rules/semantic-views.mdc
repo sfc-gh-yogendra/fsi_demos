@@ -10,6 +10,94 @@ Complete step-by-step guide for creating and testing SEMANTIC VIEWs for Cortex A
 - @data-generation.mdc - For underlying data tables
 - @troubleshooting.mdc - For semantic view troubleshooting
 
+## 🔴 CRITICAL SYNTAX RULE - READ THIS FIRST 🔴
+
+### The #1 Rule That You Must Never Forget
+
+```
+SEMANTIC_NAME  AS  DATABASE_COLUMN
+     ↑         ↑         ↑
+   What      Always   Actual column
+   users      this     from table
+   say      direction  (from DESCRIBE)
+```
+
+**Before writing ANY dimension or metric:**
+1. Run `DESCRIBE TABLE` to get exact column names
+2. Decide what semantic name users will say
+3. Write: `TABLE.SemanticName AS ACTUAL_COLUMN_NAME`
+4. NOT: `TABLE.ACTUAL_COLUMN_NAME AS SemanticName` ← THIS IS WRONG
+
+**Quick Check:** If you see `AS LEGALNAME`, `AS SIC_DESCRIPTION`, `AS COSTSHARE` → ✅ CORRECT
+**Quick Check:** If you see `LEGALNAME AS`, `SIC_DESCRIPTION AS`, `COSTSHARE AS` → ❌ WRONG (unless in TABLES section)
+
+### Workflow for Creating Dimensions/Metrics
+
+**Step 1:** Get actual column names
+```sql
+DESCRIBE TABLE SAM_DEMO.CURATED.DIM_ISSUER;
+-- Result: ISSUERID, LEGALNAME, SIC_DESCRIPTION, COUNTRYOFINCORPORATION
+```
+
+**Step 2:** For each column, decide semantic name
+- `LEGALNAME` → Users will call it: `CompanyName` 
+- `SIC_DESCRIPTION` → Users will call it: `CompanyIndustry`
+- `COUNTRYOFINCORPORATION` → Users will call it: `CompanyCountry`
+
+**Step 3:** Write dimension with pattern: `SemanticName AS DatabaseColumn`
+```sql
+COMPANY_ISSUERS.CompanyName AS LEGALNAME
+COMPANY_ISSUERS.CompanyIndustry AS SIC_DESCRIPTION  
+COMPANY_ISSUERS.CompanyCountry AS COUNTRYOFINCORPORATION
+```
+
+**Step 4:** Verify direction by reading it as: "Call it {Semantic}, it's really {Database}"
+- ✅ "Call it CompanyName, it's really LEGALNAME" 
+- ✅ "Call it CompanyIndustry, it's really SIC_DESCRIPTION"
+
+### 🔴 CRITICAL: Querying Semantic Views 🔴
+
+**When using `SELECT * FROM SEMANTIC_VIEW()`, you MUST use the SEMANTIC NAME (the name BEFORE AS):**
+
+```sql
+-- In semantic view definition:
+PORTFOLIOS.PORTFOLIONAME AS PortfolioName
+SECURITIES.DESCRIPTION AS Description
+ISSUERS.Industry AS SIC_DESCRIPTION
+
+-- ✅ CORRECT query (use semantic names BEFORE AS):
+SELECT * FROM SEMANTIC_VIEW(
+    SAM_DEMO.AI.SAM_ANALYST_VIEW
+    METRICS TOTAL_MARKET_VALUE
+    DIMENSIONS PORTFOLIONAME, DESCRIPTION, Industry
+)
+
+-- ❌ WRONG query (using database column names AFTER AS):
+SELECT * FROM SEMANTIC_VIEW(
+    SAM_DEMO.AI.SAM_ANALYST_VIEW
+    METRICS TOTAL_MARKET_VALUE
+    DIMENSIONS PortfolioName, Description, SIC_DESCRIPTION  -- These won't work!
+)
+```
+
+**Key Rule:** 
+- **Definition**: `SemanticName AS DatabaseColumn` → Semantic name goes to Cortex Analyst
+- **Query**: Use `SemanticName` (the name BEFORE AS), NOT `DatabaseColumn` (the name AFTER AS)
+
+**Example:**
+```sql
+-- Definition:
+ISSUERS.Industry AS SIC_DESCRIPTION
+
+-- Query uses "Industry" (BEFORE AS):
+DIMENSIONS Industry  ✅
+
+-- NOT "SIC_DESCRIPTION" (AFTER AS):
+DIMENSIONS SIC_DESCRIPTION  ❌
+```
+
+---
+
 ## Overview
 
 Semantic views are required for Cortex Analyst to understand your data model. This guide provides the exact syntax patterns, validation procedures, and troubleshooting steps needed to create working semantic views.
@@ -74,7 +162,7 @@ planned_synonyms = {
     'PORTFOLIONAME': ['fund_name', 'strategy_name', 'portfolio_name'],
     'DESCRIPTION': ['company', 'security_name', 'description'], 
     'LEGALNAME': ['issuer_name', 'legal_name', 'company_name'],  # Note: company_name only here
-    'GICS_SECTOR': ['sector', 'industry_sector', 'gics_sector'],
+    'SIC_DESCRIPTION': ['industry','sector','industry_type','sic_industry','business_type','industry_description','industry_classification'],
     'TOTAL_MARKET_VALUE': ['exposure', 'aum', 'market_value']
 }
 validate_synonym_uniqueness(planned_synonyms)
@@ -92,7 +180,76 @@ validate_synonym_uniqueness(planned_synonyms)
 ## Step 2: Semantic View Creation
 
 ### 2.1 Correct Syntax Format (CRITICAL)
-Follow these exact patterns for ALL sections:
+
+## 🚨 MOST IMPORTANT RULE: Semantic Name BEFORE Database Column 🚨
+
+The pattern is **ALWAYS**:
+```
+<table_alias>.<SEMANTIC_NAME> AS <DATABASE_COLUMN_NAME>
+```
+
+**The semantic name (what users will say) comes FIRST, the actual database column name comes AFTER the AS.**
+
+### Visual Pattern Guide
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ DIMENSIONS Pattern:                                              │
+│                                                                   │
+│ TABLE_ALIAS . SemanticName  AS  ACTUAL_COLUMN_FROM_DATABASE     │
+│    ↑            ↑            ↑            ↑                      │
+│    │            │            │            │                      │
+│  Table      What users   Direction   Real column                │
+│  alias      will say     indicator   from table                 │
+│                                                                   │
+│ METRICS Pattern:                                                 │
+│                                                                   │
+│ TABLE_ALIAS . MetricName  AS  AGG_FUNCTION(COLUMN_NAME)        │
+│    ↑            ↑          ↑            ↑                       │
+│    │            │          │            │                       │
+│  Table      What users Direction  SQL aggregation               │
+│  alias      will say   indicator  with real column              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Real-World Examples (From Actual Tables)
+
+If `DIM_ISSUER` has columns: `ISSUERID`, `LEGALNAME`, `SIC_DESCRIPTION`, `COUNTRYOFINCORPORATION`
+
+```sql
+-- ✅ ✅ ✅ CORRECT - Semantic name FIRST, database column AFTER AS
+COMPANY_ISSUERS.CompanyName AS LEGALNAME
+COMPANY_ISSUERS.CompanyIndustry AS SIC_DESCRIPTION  
+COMPANY_ISSUERS.CompanyCountry AS COUNTRYOFINCORPORATION
+
+-- ❌ ❌ ❌ WRONG - Database column first (WILL CAUSE "invalid identifier" ERROR)
+COMPANY_ISSUERS.LEGALNAME AS CompanyName
+COMPANY_ISSUERS.SIC_DESCRIPTION AS CompanyIndustry
+COMPANY_ISSUERS.COUNTRYOFINCORPORATION AS CompanyCountry
+```
+
+If `DIM_SUPPLY_CHAIN_RELATIONSHIPS` has columns: `RELATIONSHIPID`, `COMPANY_ISSUERID`, `RELATIONSHIPTYPE`, `COSTSHARE`
+
+```sql
+-- ✅ ✅ ✅ CORRECT - Semantic name FIRST, database column AFTER AS  
+SUPPLY_CHAIN.RelationshipType AS RELATIONSHIPTYPE
+SUPPLY_CHAIN.CompanyIssuerID AS COMPANY_ISSUERID
+SUPPLY_CHAIN.UPSTREAM_EXPOSURE AS SUM(COSTSHARE)
+
+-- ❌ ❌ ❌ WRONG - Database column first
+SUPPLY_CHAIN.RELATIONSHIPTYPE AS RelationshipType
+SUPPLY_CHAIN.COMPANY_ISSUERID AS CompanyIssuerID
+SUPPLY_CHAIN.UPSTREAM_EXPOSURE AS SUM(CostShare)
+```
+
+### Memory Aid
+
+Think of it as: **"Call it X, it's really Y"**
+- `CompanyName AS LEGALNAME` = "Call it CompanyName, it's really LEGALNAME in the database"
+- `CompanyIndustry AS SIC_DESCRIPTION` = "Call it CompanyIndustry, it's really SIC_DESCRIPTION in the database"
+- `RelationshipType AS RELATIONSHIPTYPE` = "Call it RelationshipType, it's really RELATIONSHIPTYPE in the database"
+
+### Complete Syntax Patterns
 
 **TABLES Section:**
 ```sql
@@ -112,7 +269,7 @@ Follow these exact patterns for ALL sections:
 <table_alias>.<semantic_dimension_name> AS <database_column_name> WITH SYNONYMS=('synonym1','synonym2') COMMENT='Description'
 ```
 
-**CRITICAL**: `<database_column_name>` must be the EXACT column name from the physical table (case-sensitive).
+**CRITICAL**: `<database_column_name>` must be the EXACT column name from the physical table (case-sensitive). Get it from `DESCRIBE TABLE`.
 
 **SYNONYM UNIQUENESS RULE (MANDATORY):**
 Each synonym can only be used ONCE across ALL dimensions and metrics in a semantic view. Duplicate synonyms will cause compilation errors.
@@ -121,6 +278,8 @@ Each synonym can only be used ONCE across ALL dimensions and metrics in a semant
 ```sql
 <table_alias>.<metric_name> AS <aggregation_function> WITH SYNONYMS=('synonym1','synonym2') COMMENT='Description'
 ```
+
+**CRITICAL**: In metrics, the aggregation function must reference actual column names from the table, not semantic names.
 
 ### CRITICAL SYNTAX RULES (Must Follow)
 ```sql
@@ -202,9 +361,9 @@ CREATE OR REPLACE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('instrument_type','security_type','asset_class') COMMENT='Asset class: Equity, Corporate Bond, ETF',
 		
 		-- Issuer dimensions (for enhanced analysis)
-		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('issuer_name','legal_name','company_name') COMMENT='Legal issuer name',
-		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('sector','industry_sector','gics_sector') COMMENT='GICS Level 1 sector classification',
-		ISSUERS.COUNTRYOFINCORPORATION AS CountryOfIncorporation WITH SYNONYMS=('domicile','country_of_risk','country') COMMENT='Country of incorporation',
+		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('issuer_name','legal_name','company_name') COMMENT='Legal issuer name',
+		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','industry_type','sic_industry','business_type','industry_description','industry_classification') COMMENT='SIC industry classification with granular descriptions (e.g., Semiconductors and related devices, Computer programming services, Motor vehicles and car bodies). Use this for industry-level filtering and analysis.',
+		ISSUERS.CountryOfIncorporation AS COUNTRYOFINCORPORATION WITH SYNONYMS=('domicile','country_of_risk','country') COMMENT='Country of incorporation',
 		
 		-- Time dimensions
 		HOLDINGS.HOLDINGDATE AS HoldingDate WITH SYNONYMS=('position_date','as_of_date','date') COMMENT='Holdings as-of date'

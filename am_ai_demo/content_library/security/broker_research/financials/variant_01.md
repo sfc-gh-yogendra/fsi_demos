@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -30,7 +30,7 @@ disclosure:
 
 # {{COMPANY_NAME}} ({{TICKER}}) — Financial Services Analysis
 
-**{{BROKER_NAME}} | {{GICS_SECTOR}} Coverage**  
+**{{BROKER_NAME}} | {{SIC_DESCRIPTION}} Coverage**  
 Lead Analyst: {{ANALYST_NAME}} | {{PUBLISH_DATE}}
 
 **Investment Rating**: **{{RATING}}**  
@@ -38,11 +38,11 @@ Lead Analyst: {{ANALYST_NAME}} | {{PUBLISH_DATE}}
 
 ## Executive Summary
 
-We initiate coverage of {{COMPANY_NAME}} with a **{{RATING}}** rating and price target of ${{PRICE_TARGET_USD}}. As a well-established {{GICS_SECTOR}} institution, the company demonstrates solid fundamentals with return on equity of {{ROE_PCT}}% and consistent profitability through market cycles. The bank's diversified business model, strong capital position, and prudent risk management support our constructive investment view.
+We initiate coverage of {{COMPANY_NAME}} with a **{{RATING}}** rating and price target of ${{PRICE_TARGET_USD}}. As a well-established {{SIC_DESCRIPTION}} institution, the company demonstrates solid fundamentals with return on equity of {{ROE_PCT}}% and consistent profitability through market cycles. The bank's diversified business model, strong capital position, and prudent risk management support our constructive investment view.
 
 ## Business Model and Competitive Position
 
-{{COMPANY_NAME}} operates a diversified {{GICS_SECTOR}} franchise with meaningful market share across retail banking, commercial lending, and wealth management services. The company's broad geographic footprint and multi-channel distribution strategy provide resilience and growth optionality. Digital transformation initiatives are modernising the customer experience whilst improving operational efficiency.
+{{COMPANY_NAME}} operates a diversified {{SIC_DESCRIPTION}} franchise with meaningful market share across retail banking, commercial lending, and wealth management services. The company's broad geographic footprint and multi-channel distribution strategy provide resilience and growth optionality. Digital transformation initiatives are modernising the customer experience whilst improving operational efficiency.
 
 The bank's deposit franchise represents a key competitive advantage, providing a stable and low-cost funding base that supports net interest margin expansion in rising rate environments. Customer relationships across retail and commercial segments create opportunities for cross-selling additional products and services, enhancing revenue per customer and improving returns on relationship investments.
 
@@ -78,7 +78,7 @@ We believe current valuation levels present favourable risk-reward, supporting o
 
 ## Investment Conclusion
 
-{{COMPANY_NAME}} offers an attractive combination of yield, growth, and financial strength within the {{GICS_SECTOR}} sector. The company's diversified business model, strong capital position, and experienced management team provide confidence in sustainable value creation. Our **{{RATING}}** rating reflects conviction in the investment thesis and favourable outlook for the financial services sector.
+{{COMPANY_NAME}} offers an attractive combination of yield, growth, and financial strength within the {{SIC_DESCRIPTION}} sector. The company's diversified business model, strong capital position, and experienced management team provide confidence in sustainable value creation. Our **{{RATING}}** rating reflects conviction in the investment thesis and favourable outlook for the financial services sector.
 
 ---
 

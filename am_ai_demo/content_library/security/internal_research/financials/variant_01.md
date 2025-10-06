@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - TARGET_PRICE_USD
@@ -31,7 +31,7 @@ disclosure:
 **Classification**: Internal Use Only — Snowcrest Asset Management  
 **Analyst**: {{ANALYST_NAME}}, Financials Sector Team  
 **Date**: {{PUBLISH_DATE}}  
-**Sector**: {{GICS_SECTOR}}
+**Sector**: {{SIC_DESCRIPTION}}
 
 ---
 

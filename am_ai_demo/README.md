@@ -127,7 +127,7 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 
 | Scenario | Agent | Status | Key Capabilities |
 |----------|-------|--------|------------------|
-| **Portfolio Insights** | `portfolio_copilot` | **✅ IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets |
+| **Portfolio Insights** | `portfolio_copilot` | **✅ IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets, **supply chain risk verification** |
 | **Research Intelligence** | `research_copilot` | **✅ IMPLEMENTED** | Document research and analysis across broker reports and earnings |
 | **Thematic Analysis** | `thematic_macro_advisor` | **✅ IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
 | **ESG Monitoring** | `esg_guardian` | **✅ IMPLEMENTED** | Controversy scanning, policy compliance, engagement tracking |
@@ -135,7 +135,7 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 | **Client Reporting** | `sales_advisor` | **✅ IMPLEMENTED** | Performance reports, template formatting, philosophy integration |
 | **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, time-series analysis, factor evolution trends |
 
-- **✅ ALL 7 SCENARIOS FULLY IMPLEMENTED**: Complete demo environment with ESG, compliance, and comprehensive analytics capabilities
+- **🆕 ENHANCED**: Portfolio Copilot now includes **real-time event impact analysis** with supply chain risk verification (multi-hop dependency tracking)
 
 **To Build Specific Scenarios**:
 ```bash
@@ -210,8 +210,10 @@ python python/main.py --connection-name [your-connection] --scenarios esg_guardi
 - **Immutable SecurityID**: Corporate action resilience and temporal integrity
 - **Transaction-Based Holdings**: ABOR positions built from canonical transaction log
 - **Issuer Hierarchies**: Corporate structure and parent company analysis
+- **Supply Chain Relationships**: Issuer-level supplier/customer dependencies with cost/revenue share percentages
 - **Enhanced Document Integration**: Stable SecurityID/IssuerID linkage
 - **Real Data Integration**: Authentic market data with synthetic fallback
+- **Macro Events Corpus**: Real-time market-moving event documentation
 
 ### Data Providers (Simulated)
 - **NorthStar Data (NSD)**: ESG ratings, equity factors, estimates, MSCI ACWI benchmark
@@ -227,14 +229,16 @@ python python/main.py --connection-name [your-connection] --scenarios esg_guardi
 - **Temporal Consistency**: Earnings dates align with transcripts, quarterly reporting cycles
 - **Complex Analytics**: Bond mathematics, ESG ratings, factor exposures, compliance monitoring
 - **Global Coverage**: Proper geographic distribution (55% US, 30% EU, 15% APAC/EM)
+- **Supply Chain Graph**: Issuer-level dependencies with multi-hop traversal and decay factors
 
 ### 🤖 **Enhanced AI Components**
-- **Semantic Views**: Multi-table analytics with issuer hierarchy support + implementation planning
-- **Search Services**: Enhanced with SecurityID/IssuerID attributes for stable document linkage
+- **Semantic Views**: Multi-table analytics with issuer hierarchy support + implementation planning + supply chain risk analysis
+- **Search Services**: Enhanced with SecurityID/IssuerID attributes for stable document linkage + macro events corpus
 - **Intelligent Agents**: 7 role-specific agents with professional portfolio management capabilities
 - **Content Generation**: Deterministic template-based generation (50+ curated templates, no LLM dependencies)
 - **ESG & Compliance**: Full document corpus supporting ESG monitoring, mandate compliance, and regulatory tracking
 - **Implementation Planning**: Trading costs, liquidity analysis, risk budgets, and execution planning
+- **Real-Time Risk Assessment**: Event-driven workflows with direct and indirect exposure analysis via supply chain dependencies
 - **Dedicated Warehouses**: `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH`
 - **Industry-Standard Architecture**: Complete professional asset management data model
 
@@ -366,9 +370,9 @@ The demo uses **14,000+ authentic financial instruments** from the SEC Filings d
 - **Industry Standard**: Dimension/fact architecture following asset management best practices
 
 ### AI Component Integration
-- **7 Semantic Views**: Multi-table analytics with comprehensive business logic
-- **10+ Search Services**: Document search with SecurityID/IssuerID linkage
-- **7 Intelligent Agents**: Role-specific agents with professional capabilities
+- **8 Semantic Views**: Multi-table analytics with comprehensive business logic (including supply chain risk analysis)
+- **11+ Search Services**: Document search with SecurityID/IssuerID linkage (including macro events corpus)
+- **7 Intelligent Agents**: Role-specific agents with professional capabilities (enhanced with real-time risk assessment)
 - **Template Library**: 50+ curated templates for consistent, high-quality content
 
 ### Performance Optimization

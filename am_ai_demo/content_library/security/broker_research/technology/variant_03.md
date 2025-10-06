@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -32,7 +32,7 @@ disclosure:
 
 **Investment Rating**: {{RATING}}  
 **12-Month Price Target**: ${{PRICE_TARGET_USD}}  
-**Sector**: {{GICS_SECTOR}}
+**Sector**: {{SIC_DESCRIPTION}}
 
 ## Overview and Recommendation
 

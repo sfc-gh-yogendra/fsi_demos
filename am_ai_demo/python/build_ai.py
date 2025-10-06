@@ -42,6 +42,15 @@ def build_all(session: Session, scenarios: List[str], build_semantic: bool = Tru
             print("🛑 STOPPING BUILD - Cannot continue without required search services")
             raise
     
+    # Create custom tools (PDF generation)
+    print("📄 Creating custom tools...")
+    try:
+        create_pdf_report_stage(session)
+        create_simple_pdf_tool(session)
+    except Exception as e:
+        print(f"❌ Warning: Custom tool creation failed: {e}")
+        print("   Continuing build - custom tools are optional for basic functionality")
+    
     # Validate components
     print("✅ Validating AI components...")
     try:
@@ -94,9 +103,9 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('instrument_type','security_type','asset_class') COMMENT='Asset class: Equity, Corporate Bond, ETF',
 		
 		-- Issuer dimensions (for enhanced analysis)
-		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('issuer_name','legal_name','company_name') COMMENT='Legal issuer name',
-		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('sector','industry_sector','gics_sector') COMMENT='GICS Level 1 sector classification',
-		ISSUERS.COUNTRYOFINCORPORATION AS CountryOfIncorporation WITH SYNONYMS=('domicile','country_of_risk','country') COMMENT='Country of incorporation',
+		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('issuer_name','legal_name','company_name') COMMENT='Legal issuer name',
+		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','industry_type','sic_industry','business_type','industry_description','industry_classification') COMMENT='SIC industry classification with granular descriptions (e.g., Semiconductors and related devices, Computer programming services, Motor vehicles and car bodies). Use this for industry-level filtering and analysis.',
+		ISSUERS.CountryOfIncorporation AS COUNTRYOFINCORPORATION WITH SYNONYMS=('domicile','country_of_risk','country') COMMENT='Country of incorporation using 2-letter ISO codes (e.g., TW for Taiwan, US for United States, GB for United Kingdom)',
 		
 		-- Time dimensions
 		HOLDINGS.HOLDINGDATE AS HoldingDate WITH SYNONYMS=('position_date','as_of_date','date') COMMENT='Holdings as-of date'
@@ -114,9 +123,24 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
 		HOLDINGS.ISSUER_EXPOSURE AS SUM(MarketValue_Base) WITH SYNONYMS=('issuer_total','issuer_value','issuer_exposure') COMMENT='Total exposure to issuer across all securities',
 		
 		-- Concentration metrics
-		HOLDINGS.MAX_POSITION_WEIGHT AS MAX(PortfolioWeight) WITH SYNONYMS=('largest_position','max_weight','concentration') COMMENT='Largest single position weight'
+		HOLDINGS.MAX_POSITION_WEIGHT AS MAX(PortfolioWeight) WITH SYNONYMS=('largest_position','max_weight','concentration') COMMENT='Largest single position weight',
+		
+		-- Mandate compliance metrics (for Scenario 3.2)
+		HOLDINGS.AI_GROWTH_SCORE AS AVG(CASE 
+			WHEN SECURITIES.Ticker IN ('NVDA', 'MSFT', 'GOOGL', 'META', 'AMZN', 'AAPL') THEN 
+				CASE SECURITIES.Ticker
+					WHEN 'NVDA' THEN 92
+					WHEN 'MSFT' THEN 89
+					WHEN 'GOOGL' THEN 85
+					WHEN 'META' THEN 82
+					WHEN 'AMZN' THEN 88
+					WHEN 'AAPL' THEN 87
+					ELSE 75
+				END
+			ELSE 75
+		END) WITH SYNONYMS=('ai_score','innovation_score','ai_growth','ai_potential','technology_score') COMMENT='Proprietary AI Growth Score (0-100) measuring AI/ML innovation potential and market positioning. Higher scores indicate stronger AI capabilities, patent portfolios, and growth potential in artificial intelligence.'
 	)
-	COMMENT='Multi-asset semantic view for portfolio analytics with issuer hierarchy support';
+	COMMENT='Multi-asset semantic view for portfolio analytics with issuer hierarchy support and mandate compliance metrics';
         """).collect()
         
         print("   ✅ Created semantic view: SAM_ANALYST_VIEW")
@@ -163,6 +187,16 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
         print(f"❌ CRITICAL FAILURE: Could not create SEC filings semantic view: {e}")
         print("   This is required for comprehensive financial analysis")
         raise Exception(f"Failed to create SEC filings semantic view: {e}")
+    
+    # Create supply chain semantic view for risk verification
+    if scenarios and 'portfolio_copilot' in scenarios:
+        try:
+            print("🔗 Creating supply chain semantic view for risk verification...")
+            create_supply_chain_semantic_view(session)
+        except Exception as e:
+            print(f"❌ CRITICAL FAILURE: Could not create supply chain semantic view: {e}")
+            print("   This is required for risk verification scenario")
+            raise Exception(f"Failed to create supply chain semantic view: {e}")
 
 def create_research_semantic_view(session: Session):
     """Create semantic view for research with fundamentals and estimates data."""
@@ -208,9 +242,9 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_RESEARCH_VIEW
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('type','security_type','asset_class') COMMENT='Asset class',
 		
 		-- Issuer dimensions
-		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('issuer','legal_name','entity_name') COMMENT='Legal entity name',
-		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('sector','industry_sector','gics') COMMENT='GICS sector',
-		ISSUERS.COUNTRYOFINCORPORATION AS CountryOfIncorporation WITH SYNONYMS=('domicile','country','headquarters') COMMENT='Country of incorporation',
+		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('issuer','legal_name','entity_name') COMMENT='Legal entity name',
+		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','industry_type','sic_industry','business_type','industry_description') COMMENT='SIC industry classification with granular descriptions (e.g., Semiconductors and related devices, Computer programming services). Use for industry-level filtering.',
+		ISSUERS.CountryOfIncorporation AS COUNTRYOFINCORPORATION WITH SYNONYMS=('domicile','country','headquarters') COMMENT='Country of incorporation using 2-letter ISO codes (e.g., TW for Taiwan, US for United States, GB for United Kingdom)',
 		
 		-- Fundamentals dimensions
 		FUNDAMENTALS.REPORTING_DATE AS REPORTING_DATE WITH SYNONYMS=('report_date','earnings_date','date') COMMENT='Financial reporting date',
@@ -323,9 +357,9 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_QUANT_VIEW
 		SECURITIES.ASSETCLASS AS AssetClass WITH SYNONYMS=('quant_type','factor_security_type','quantitative_asset_class') COMMENT='Asset class',
 		
 		-- Issuer dimensions
-		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('factor_issuer','quant_legal_name','quantitative_entity_name') COMMENT='Legal entity name',
-		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('factor_sector','quant_industry_sector','quantitative_gics') COMMENT='GICS sector',
-		ISSUERS.COUNTRYOFINCORPORATION AS CountryOfIncorporation WITH SYNONYMS=('factor_domicile','quant_country','quantitative_headquarters') COMMENT='Country of incorporation',
+		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('factor_issuer','quant_legal_name','quantitative_entity_name') COMMENT='Legal entity name',
+		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','factor_sector','quant_industry','business_type','industry_classification') COMMENT='SIC industry classification with granular descriptions. Use for industry-level factor analysis and screening.',
+		ISSUERS.CountryOfIncorporation AS COUNTRYOFINCORPORATION WITH SYNONYMS=('factor_domicile','quant_country','quantitative_headquarters') COMMENT='Country of incorporation using 2-letter ISO codes (e.g., TW for Taiwan, US for United States, GB for United Kingdom)',
 		
 		-- Factor dimensions
 		FACTOR_EXPOSURES.FactorName AS FACTOR_NAME WITH SYNONYMS=('factor','factor_type','loading_type') COMMENT='Factor name (Value, Growth, Quality, etc.)',
@@ -420,6 +454,177 @@ def create_search_services(session: Session, scenarios: List[str]):
                 print(f"❌ CRITICAL FAILURE: Failed to create search service {service_name}: {e}")
                 print(f"   This search service is required for scenarios using {doc_type}")
                 raise Exception(f"Failed to create required search service {service_name}: {e}")
+    
+    # Create search service for report templates (used by mandate compliance scenario)
+    if 'portfolio_copilot' in scenarios or 'mandate_compliance' in scenarios:
+        try:
+            search_warehouse = config.WAREHOUSES['cortex_search']['name']
+            target_lag = config.WAREHOUSES['cortex_search']['target_lag']
+            corpus_table = f"{config.DATABASE['name']}.CURATED.REPORT_TEMPLATES_CORPUS"
+            
+            session.sql(f"""
+                CREATE OR REPLACE CORTEX SEARCH SERVICE {config.DATABASE['name']}.AI.SAM_REPORT_TEMPLATES
+                    ON DOCUMENT_TEXT
+                    ATTRIBUTES DOCUMENT_TITLE, DOCUMENT_TYPE, PUBLISH_DATE, LANGUAGE
+                    WAREHOUSE = {search_warehouse}
+                    TARGET_LAG = '{target_lag}'
+                    AS 
+                    SELECT 
+                        DOCUMENT_ID,
+                        DOCUMENT_TITLE,
+                        DOCUMENT_TEXT,
+                        DOCUMENT_TYPE,
+                        PUBLISH_DATE,
+                        LANGUAGE
+                    FROM {corpus_table}
+            """).collect()
+            
+            print(f"   ✅ Created search service: SAM_REPORT_TEMPLATES")
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to create report templates search service: {e}")
+            print(f"   Continuing - this service is optional for basic functionality")
+
+# =============================================================================
+# CUSTOM TOOLS (PDF Generation)
+# =============================================================================
+
+def create_pdf_report_stage(session: Session):
+    """Create Snowflake stage for storing generated PDF reports."""
+    database_name = config.DATABASE['name']
+    
+    session.sql(f"""
+        CREATE STAGE IF NOT EXISTS {database_name}.CURATED.SAM_REPORTS_STAGE
+            ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+            DIRECTORY = (ENABLE = TRUE)
+            COMMENT = 'Stage for storing generated investment committee and compliance PDF reports'
+    """).collect()
+    
+    print("✅ Created stage: SAM_REPORTS_STAGE for PDF document storage")
+
+def create_simple_pdf_tool(session: Session):
+    """Create simplified PDF generation tool that accepts markdown content."""
+    database_name = config.DATABASE['name']
+    
+    pdf_generator_sql = f"""
+CREATE OR REPLACE PROCEDURE {database_name}.AI.GENERATE_INVESTMENT_COMMITTEE_PDF(
+    markdown_content VARCHAR,
+    portfolio_name VARCHAR,
+    security_ticker VARCHAR
+)
+RETURNS VARCHAR
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.11'
+PACKAGES = ('snowflake-snowpark-python','markdown','weasyprint')
+HANDLER = 'generate_pdf'
+AS
+$$
+from snowflake.snowpark import Session
+from datetime import datetime
+import re
+import markdown
+import tempfile
+import os
+
+def generate_pdf(session: Session, markdown_content: str, portfolio_name: str, security_ticker: str):
+    \"\"\"
+    Generate PDF report from markdown content provided by the agent.
+    
+    Args:
+        session: Snowpark session
+        markdown_content: Complete markdown document from agent analysis
+        portfolio_name: Portfolio name for filename
+        security_ticker: Security ticker for filename
+        
+    Returns:
+        String with download link to generated PDF
+    \"\"\"
+    # Generate filename
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    safe_portfolio = re.sub(r'[^a-zA-Z0-9_]', '_', portfolio_name)[:20]
+    safe_ticker = re.sub(r'[^a-zA-Z0-9_]', '_', security_ticker)[:10]
+    pdf_filename = f'mandate_compliance_{{safe_portfolio}}_{{safe_ticker}}_{{timestamp}}.pdf'
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Convert markdown to HTML
+        html_body = markdown.markdown(markdown_content, extensions=['tables', 'fenced_code'])
+        
+        # Professional CSS styling for investment reports
+        css_style = \"\"\"
+            @page {{ size: A4; margin: 2cm; }}
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #2C3E50; }}
+            h1 {{ color: #1F4E79; border-bottom: 3px solid #1F4E79; padding-bottom: 10px; }}
+            h2 {{ color: #2E75B6; border-left: 4px solid #2E75B6; padding-left: 15px; }}
+            h3 {{ color: #3F7CAC; }}
+            table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+            th {{ background-color: #1F4E79; color: white; padding: 12px; font-weight: bold; }}
+            td {{ padding: 10px; border-bottom: 1px solid #ddd; }}
+            tr:nth-child(even) {{ background-color: #F8F9FA; }}
+            .alert-box {{ background-color: #F8D7DA; border: 1px solid #F5C6CB; padding: 15px; margin: 20px 0; }}
+            .recommendation {{ background-color: #D4EDDA; border: 1px solid #C3E6CB; padding: 15px; margin: 20px 0; }}
+        \"\"\"
+        
+        # Snowcrest Asset Management header
+        sam_header = \"\"\"
+        <div style="text-align: center; background: linear-gradient(135deg, #1F4E79, #2E75B6); color: white; padding: 20px; margin-bottom: 30px; border-radius: 10px;">
+            <h1 style="margin: 0; font-size: 28px; color: white; border: none;">🏔️ SNOWCREST ASSET MANAGEMENT</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Investment Committee Decision Documentation</p>
+        </div>
+        \"\"\"
+        
+        # Professional footer
+        footer = f\"\"\"
+        <div class="footer" style="margin-top: 30px; padding-top: 15px; border-top: 2px solid #1F4E79; font-size: 12px; color: #666;">
+            <p><strong>Report Generated:</strong> {{datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')}}</p>
+            <p><strong>Generated By:</strong> Snowflake Intelligence - Portfolio Co-Pilot</p>
+            <p><em>This report demonstrates AI-powered investment decision making with Snowflake Intelligence</em></p>
+        </div>
+        \"\"\"
+        
+        # Complete HTML document
+        html_content = f\"\"\"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Snowcrest Asset Management - Investment Committee Report</title>
+            <style>{{css_style}}</style>
+        </head>
+        <body>
+            {{sam_header}}
+            {{html_body}}
+            {{footer}}
+        </body>
+        </html>
+        \"\"\"
+        
+        # Create HTML file
+        html_path = os.path.join(tmpdir, 'report.html')
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        # Convert HTML to PDF
+        import weasyprint
+        pdf_path = os.path.join(tmpdir, pdf_filename)
+        weasyprint.HTML(filename=html_path).write_pdf(pdf_path)
+        
+        # Upload to stage
+        stage_path = '@SAM_DEMO.CURATED.SAM_REPORTS_STAGE'
+        session.file.put(pdf_path, stage_path, overwrite=True, auto_compress=False)
+        
+        # Generate presigned URL for download
+        presigned_url = session.sql(
+            f"SELECT GET_PRESIGNED_URL('{{stage_path}}', '{{pdf_filename}}') AS url"
+        ).collect()[0]['URL']
+        
+        # Format response with clickable link
+        report_display_name = f"Investment Committee Decision - {{portfolio_name}} - {{security_ticker}}"
+        return f"[{{report_display_name}}]({{presigned_url}}) - Professional mandate compliance report generated successfully. The document includes full analysis, data sources, and conversational audit trail for investment committee review."
+$$;
+    """
+    
+    session.sql(pdf_generator_sql).collect()
+    print("✅ Created custom tool: GENERATE_INVESTMENT_COMMITTEE_PDF (simplified markdown input)")
 
 def validate_components(session: Session, semantic_built: bool, search_built: bool):
     """Validate that AI components are working correctly."""
@@ -427,7 +632,7 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
     if semantic_built:
         print("🔍 Testing semantic view...")
         try:
-            # Test semantic view using proper SEMANTIC_VIEW() function with correct metric names
+            # Test semantic view using proper SEMANTIC_VIEW() function with correct semantic names
             test_query = f"""
                 SELECT * FROM SEMANTIC_VIEW(
                     {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
@@ -443,12 +648,12 @@ def validate_components(session: Session, semantic_built: bool, search_built: bo
             describe_result = session.sql(f"DESCRIBE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW").collect()
             print(f"✅ Semantic view structure validated: {len(describe_result)} components")
             
-            # Test with multiple metrics and dimensions
+            # Test with multiple metrics and dimensions (using semantic names BEFORE AS)
             advanced_test = f"""
                 SELECT * FROM SEMANTIC_VIEW(
                     {config.DATABASE['name']}.AI.SAM_ANALYST_VIEW
                     METRICS TOTAL_MARKET_VALUE, HOLDING_COUNT
-                    DIMENSIONS DESCRIPTION, GICS_SECTOR
+                    DIMENSIONS DESCRIPTION, Industry
                 )
                 LIMIT 10
             """
@@ -648,9 +853,9 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIE
 	)
 	DIMENSIONS (
 		-- Company dimensions
-		ISSUERS.LEGALNAME AS LegalName WITH SYNONYMS=('company','issuer_name','legal_name') COMMENT='Company legal name',
-		SECURITIES.TICKER AS Ticker WITH SYNONYMS=('symbol','ticker_symbol') COMMENT='Stock ticker symbol',
-		ISSUERS.GICS_SECTOR AS GICS_Sector WITH SYNONYMS=('industry','sector','gics_sector') COMMENT='Industry sector',
+		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('company','issuer_name','legal_name') COMMENT='Company legal name',
+		SECURITIES.Ticker AS TICKER WITH SYNONYMS=('symbol','ticker_symbol') COMMENT='Stock ticker symbol',
+		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','industry_type','business_type','industry_classification') COMMENT='SIC industry classification with granular descriptions. Use for industry-level financial analysis.',
 		
 		-- SEC Filing specific dimensions
 		SEC_FILINGS.CIK AS CIK WITH SYNONYMS=('cik','sec_cik','company_cik') COMMENT='SEC Central Index Key',
@@ -703,3 +908,94 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIE
     """).collect()
     
     print("✅ Created semantic view: SAM_SEC_FILINGS_VIEW")
+
+def create_supply_chain_semantic_view(session: Session):
+    """Create semantic view for supply chain risk analysis."""
+    
+    # Check if supply chain relationships table exists
+    try:
+        session.sql(f"SELECT COUNT(*) FROM {config.DATABASE['name']}.CURATED.DIM_SUPPLY_CHAIN_RELATIONSHIPS LIMIT 1").collect()
+    except Exception as e:
+        print(f"⚠️  DIM_SUPPLY_CHAIN_RELATIONSHIPS table not found: {e}")
+        print("   Supply chain semantic view creation skipped")
+        return
+    
+    session.sql(f"""
+CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SUPPLY_CHAIN_VIEW
+	TABLES (
+		SUPPLY_CHAIN AS {config.DATABASE['name']}.CURATED.DIM_SUPPLY_CHAIN_RELATIONSHIPS
+			PRIMARY KEY (RELATIONSHIPID) 
+			WITH SYNONYMS=('supply_chain','dependencies','relationships','supplier_customer') 
+			COMMENT='Supply chain relationships between issuers for risk analysis',
+		COMPANY_ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
+			PRIMARY KEY (ISSUERID) 
+			WITH SYNONYMS=('companies','company_issuers','primary_entities') 
+			COMMENT='Company issuer information',
+		COUNTERPARTY_ISSUERS AS {config.DATABASE['name']}.CURATED.DIM_ISSUER
+			PRIMARY KEY (ISSUERID) 
+			WITH SYNONYMS=('counterparties','suppliers','customers','trading_partners') 
+			COMMENT='Counterparty issuer information',
+		SECURITIES AS {config.DATABASE['name']}.CURATED.DIM_SECURITY
+			PRIMARY KEY (SECURITYID) 
+			WITH SYNONYMS=('securities','stocks') 
+			COMMENT='Security master data',
+		HOLDINGS AS {config.DATABASE['name']}.CURATED.FACT_POSITION_DAILY_ABOR
+			PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID) 
+			WITH SYNONYMS=('positions','holdings','portfolio_holdings') 
+			COMMENT='Portfolio holdings for exposure calculation',
+		PORTFOLIOS AS {config.DATABASE['name']}.CURATED.DIM_PORTFOLIO
+			PRIMARY KEY (PORTFOLIOID) 
+			WITH SYNONYMS=('portfolios','funds') 
+			COMMENT='Portfolio information'
+	)
+	RELATIONSHIPS (
+		SUPPLY_CHAIN_TO_COMPANY AS SUPPLY_CHAIN(COMPANY_ISSUERID) REFERENCES COMPANY_ISSUERS(ISSUERID),
+		SUPPLY_CHAIN_TO_COUNTERPARTY AS SUPPLY_CHAIN(COUNTERPARTY_ISSUERID) REFERENCES COUNTERPARTY_ISSUERS(ISSUERID),
+		SECURITIES_TO_COMPANY AS SECURITIES(ISSUERID) REFERENCES COMPANY_ISSUERS(ISSUERID),
+		HOLDINGS_TO_SECURITIES AS HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+		HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID)
+	)
+	DIMENSIONS (
+		-- Company dimensions (US companies in portfolio)
+		COMPANY_ISSUERS.CompanyName AS LEGALNAME WITH SYNONYMS=('company','company_name','us_company','portfolio_company','customer_company') COMMENT='US company legal name (the company with portfolio holdings)',
+		COMPANY_ISSUERS.CompanyIndustry AS SIC_DESCRIPTION WITH SYNONYMS=('company_industry','customer_industry','us_industry') COMMENT='US company SIC industry classification',
+		COMPANY_ISSUERS.CompanyCountry AS COUNTRYOFINCORPORATION WITH SYNONYMS=('company_country','customer_country') COMMENT='US company country of incorporation using 2-letter ISO codes (e.g., US for United States)',
+		
+		-- Counterparty dimensions (Taiwan suppliers)
+		COUNTERPARTY_ISSUERS.CounterpartyName AS LEGALNAME WITH SYNONYMS=('counterparty','supplier','supplier_name','taiwan_supplier','supplier_company') COMMENT='Supplier/counterparty legal name (e.g., Taiwan semiconductor suppliers like TSMC)',
+		COUNTERPARTY_ISSUERS.CounterpartyIndustry AS SIC_DESCRIPTION WITH SYNONYMS=('counterparty_industry','supplier_industry','taiwan_industry','semiconductor_industry') COMMENT='Supplier SIC industry classification (e.g., Semiconductors and related devices)',
+		COUNTERPARTY_ISSUERS.CounterpartyCountry AS COUNTRYOFINCORPORATION WITH SYNONYMS=('counterparty_country','supplier_country','taiwan') COMMENT='Supplier country of incorporation using 2-letter ISO codes (use TW for Taiwan, not Taiwan)',
+		
+		-- Relationship dimensions
+		SUPPLY_CHAIN.RelationshipType AS RELATIONSHIPTYPE WITH SYNONYMS=('relationship','relationship_type','supplier_or_customer','dependency_type') COMMENT='Relationship type: Supplier (for upstream dependencies) or Customer (for downstream)',
+		SUPPLY_CHAIN.CriticalityTier AS CRITICALITYTIER WITH SYNONYMS=('criticality','importance','tier','priority') COMMENT='Criticality tier indicating importance: Low, Medium, High, Critical',
+		
+		-- Portfolio dimensions
+		PORTFOLIOS.PortfolioName AS PORTFOLIONAME WITH SYNONYMS=('portfolio','fund','portfolio_name') COMMENT='Portfolio name for exposure calculation',
+		
+		-- Time dimensions
+		HOLDINGS.HoldingDate AS HOLDINGDATE WITH SYNONYMS=('date','position_date','as_of_date') COMMENT='Holdings date for current positions'
+	)
+	METRICS (
+		-- Relationship strength metrics (CostShare and RevenueShare are decimal values 0.0-1.0)
+		SUPPLY_CHAIN.UPSTREAM_EXPOSURE AS SUM(COSTSHARE) WITH SYNONYMS=('upstream','cost_share','supplier_dependency','supplier_exposure') COMMENT='Upstream exposure as cost share from suppliers (0.0-1.0, represents percentage of costs from this supplier)',
+		SUPPLY_CHAIN.DOWNSTREAM_EXPOSURE AS SUM(REVENUESHARE) WITH SYNONYMS=('downstream','revenue_share','customer_dependency','customer_exposure') COMMENT='Downstream exposure as revenue share to customers (0.0-1.0, represents percentage of revenue to this customer)',
+		SUPPLY_CHAIN.MAX_DEPENDENCY AS MAX(GREATEST(COALESCE(COSTSHARE, 0), COALESCE(REVENUESHARE, 0))) WITH SYNONYMS=('max_dependency','largest_dependency','peak_exposure','max_share') COMMENT='Maximum single dependency (largest of cost or revenue share)',
+		SUPPLY_CHAIN.AVG_DEPENDENCY AS AVG(GREATEST(COALESCE(COSTSHARE, 0), COALESCE(REVENUESHARE, 0))) WITH SYNONYMS=('avg_dependency','average_dependency','typical_exposure') COMMENT='Average dependency strength across relationships',
+		
+		-- Portfolio exposure metrics (for second-order risk calculation)
+		HOLDINGS.DIRECT_EXPOSURE AS SUM(MARKETVALUE_BASE) WITH SYNONYMS=('direct_exposure','direct_position','position_value','market_value') COMMENT='Direct portfolio exposure to US companies in base currency (USD)',
+		HOLDINGS.PORTFOLIO_WEIGHT_PCT AS SUM(PORTFOLIOWEIGHT) * 100 WITH SYNONYMS=('weight','portfolio_weight','allocation_percent','weight_percent') COMMENT='Portfolio weight as percentage (0-100)',
+		
+		-- Relationship counts (for analysis)
+		SUPPLY_CHAIN.RELATIONSHIP_COUNT AS COUNT(RELATIONSHIPID) WITH SYNONYMS=('relationship_count','dependency_count','connection_count','supplier_count','customer_count') COMMENT='Count of supply chain relationships (can filter by RelationshipType for suppliers vs customers)',
+		SUPPLY_CHAIN.DISTINCT_COMPANIES AS COUNT(DISTINCT COMPANY_ISSUERID) WITH SYNONYMS=('company_count','us_company_count','affected_companies') COMMENT='Count of distinct US companies with dependencies',
+		SUPPLY_CHAIN.DISTINCT_SUPPLIERS AS COUNT(DISTINCT COUNTERPARTY_ISSUERID) WITH SYNONYMS=('supplier_count','unique_suppliers','taiwan_supplier_count') COMMENT='Count of distinct suppliers/counterparties',
+		
+		-- Source confidence and data quality
+		SUPPLY_CHAIN.AVG_CONFIDENCE AS AVG(SOURCECONFIDENCE) WITH SYNONYMS=('confidence','average_confidence','data_quality','reliability') COMMENT='Average source confidence score (0-100, higher is better)'
+	)
+	COMMENT='Supply chain semantic view for multi-hop dependency and second-order risk analysis';
+    """).collect()
+    
+    print("✅ Created semantic view: SAM_SUPPLY_CHAIN_VIEW")

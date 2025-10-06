@@ -176,7 +176,7 @@ PRESS_RELEASES_CORPUS      -- 35 corporate press releases with SecurityID linkag
 - `PORTFOLIO_WEIGHT_PCT`: Portfolio weight as percentage
 
 **Key Dimensions**:
-- `PORTFOLIONAME`, `DESCRIPTION`, `TICKER`, `LEGALNAME`, `GICS_SECTOR`
+- `PORTFOLIONAME`, `DESCRIPTION`, `TICKER`, `LEGALNAME`, `SIC_DESCRIPTION`
 
 ### Enhanced Search Services
 - `SAM_BROKER_RESEARCH`: Search analyst reports with SecurityID/IssuerID attributes

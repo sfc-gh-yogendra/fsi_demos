@@ -83,6 +83,9 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     print("📊 Building benchmark dimension...")
     build_dim_benchmark(session)
     
+    print("🔗 Building supply chain relationships...")
+    build_dim_supply_chain_relationships(session, test_mode)
+    
     print("💱 Building transaction log...")
     build_fact_transaction(session, test_mode)
     
@@ -175,7 +178,7 @@ def build_dim_issuer(session: Session, test_mode: bool = False):
             SUBSTR(TRIM(COMPANY_NAME), 1, 255) as LegalName,
             COALESCE(LEI[0]::VARCHAR, 'LEI' || LPAD(ABS(HASH(COMPANY_NAME)) % 1000000, 6, '0')) as LEI,
             COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
-            COALESCE(INDUSTRY_SECTOR, 'Diversified') as GICS_Sector,
+            COALESCE(INDUSTRY_SECTOR, 'Diversified') as SIC_DESCRIPTION,
             CIK
         FROM company_data
         WHERE COMPANY_NAME IS NOT NULL
@@ -191,7 +194,7 @@ def build_dim_issuer(session: Session, test_mode: bool = False):
         SELECT 
             COUNT(*) as total_issuers,
             COUNT(CASE WHEN CIK IS NOT NULL THEN 1 END) as issuers_with_cik,
-            COUNT(CASE WHEN GICS_Sector != 'Diversified' THEN 1 END) as issuers_with_industry,
+            COUNT(CASE WHEN SIC_DESCRIPTION != 'Diversified' THEN 1 END) as issuers_with_industry,
             COUNT(CASE WHEN LEI NOT LIKE 'LEI%' OR LENGTH(LEI) > 20 THEN 1 END) as issuers_with_real_lei
         FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER
     """).collect()[0]
@@ -419,7 +422,7 @@ def build_dim_security(session: Session, test_mode: bool = False):
             LegalName,
             LEI,
             CountryOfIncorporation,
-            GICS_Sector,
+            SIC_DESCRIPTION,
             CIK
         )
         SELECT DISTINCT
@@ -428,7 +431,7 @@ def build_dim_security(session: Session, test_mode: bool = False):
             s.Description as LegalName,
             'SYNTHETIC' || LPAD(s.IssuerID, 10, '0') as LEI,
             s.CountryOfRisk as CountryOfIncorporation,
-            'Diversified' as GICS_Sector,
+            'Diversified' as SIC_DESCRIPTION,
             NULL as CIK
         FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
         WHERE s.match_method = 'SYNTHETIC_FROM_SECURITY'
@@ -535,6 +538,176 @@ def build_dim_benchmark(session: Session):
     benchmarks_df.write.mode("overwrite").save_as_table(f"{config.DATABASE['name']}.CURATED.DIM_BENCHMARK")
     
     print(f"✅ Created {len(benchmark_data)} benchmarks")
+
+def build_dim_supply_chain_relationships(session: Session, test_mode: bool = False):
+    """
+    Build supply chain relationships dimension table.
+    Models issuer-level supply chain dependencies for second-order risk analysis.
+    
+    Scenario-first generation:
+    - Core demo relationships: Taiwan semiconductor → US tech → automotive
+    - Industry-specific relationship densities
+    - Symmetric relationship handling (supplier/customer pairs)
+    """
+    
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    print("🔗 Building supply chain relationships...")
+    
+    # Step 1: Create the table structure (without foreign key constraints for simplicity)
+    # Foreign key constraints removed to avoid data type mismatches with ROW_NUMBER-generated IssuerIDs
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.DIM_SUPPLY_CHAIN_RELATIONSHIPS (
+            RelationshipID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            Company_IssuerID NUMBER NOT NULL,
+            Counterparty_IssuerID NUMBER NOT NULL,
+            RelationshipType VARCHAR(50),
+            CostShare DECIMAL(7,4),
+            RevenueShare DECIMAL(7,4),
+            CriticalityTier VARCHAR(20),
+            SourceConfidence DECIMAL(5,2),
+            StartDate DATE,
+            EndDate DATE,
+            Notes VARCHAR(500)
+        )
+    """).collect()
+    
+    # Step 2: Get issuer IDs for demo companies
+    issuer_map = {}
+    for ticker, company_info in config.SUPPLY_CHAIN_DEMO_COMPANIES.items():
+        try:
+            # Try with both ticker and FIGI first
+            result = session.sql(f"""
+                SELECT i.IssuerID, i.LegalName
+                FROM {database_name}.CURATED.DIM_ISSUER i
+                JOIN {database_name}.CURATED.DIM_SECURITY s ON i.IssuerID = s.IssuerID
+                WHERE s.Ticker = '{ticker}' AND s.FIGI = '{company_info['openfigi_id']}'
+                LIMIT 1
+            """).collect()
+            
+            # If not found, try with just ticker (for non-US companies like TSM)
+            if not result:
+                result = session.sql(f"""
+                    SELECT i.IssuerID, i.LegalName
+                    FROM {database_name}.CURATED.DIM_ISSUER i
+                    JOIN {database_name}.CURATED.DIM_SECURITY s ON i.IssuerID = s.IssuerID
+                    WHERE s.Ticker = '{ticker}'
+                    LIMIT 1
+                """).collect()
+            
+            if result:
+                issuer_map[ticker] = result[0]['ISSUERID']
+                print(f"   Found issuer for {ticker}: {result[0]['LEGALNAME']}")
+            else:
+                print(f"   ⚠️  Could not find issuer for {ticker}")
+        except Exception as e:
+            print(f"   ⚠️  Error looking up {ticker}: {e}")
+    
+    # Step 3: Create demo relationships from config
+    relationships = []
+    relationship_id = 1
+    
+    if not issuer_map:
+        print(f"   ⚠️  No demo companies found in DIM_ISSUER")
+        print(f"   Available tickers in database:")
+        available_tickers = session.sql(f"""
+            SELECT DISTINCT s.Ticker 
+            FROM {database_name}.CURATED.DIM_SECURITY s
+            WHERE s.Ticker IN ('TSM', 'NVDA', 'AMD', 'AAPL', 'GM', 'F')
+            ORDER BY s.Ticker
+        """).collect()
+        for row in available_tickers:
+            print(f"      - {row['TICKER']}")
+    
+    for company_ticker, counterparty_ticker, rel_type, share, criticality in config.SUPPLY_CHAIN_DEMO_RELATIONSHIPS:
+        if company_ticker in issuer_map and counterparty_ticker in issuer_map:
+            # Create supplier relationship
+            if rel_type == 'Customer':
+                # Company is supplier, counterparty is customer
+                relationships.append({
+                    'RelationshipID': relationship_id,
+                    'Company_IssuerID': issuer_map[company_ticker],
+                    'Counterparty_IssuerID': issuer_map[counterparty_ticker],
+                    'RelationshipType': 'Supplier',  # Company supplies to counterparty
+                    'CostShare': None,
+                    'RevenueShare': share,  # Share of company's revenue from this customer
+                    'CriticalityTier': criticality,
+                    'SourceConfidence': 85.0,
+                    'StartDate': date(2020, 1, 1),
+                    'EndDate': None,
+                    'Notes': f'Demo relationship: {company_ticker} supplies to {counterparty_ticker}'
+                })
+                relationship_id += 1
+                
+                # Create symmetric customer relationship
+                relationships.append({
+                    'RelationshipID': relationship_id,
+                    'Company_IssuerID': issuer_map[counterparty_ticker],
+                    'Counterparty_IssuerID': issuer_map[company_ticker],
+                    'RelationshipType': 'Customer',  # Counterparty is customer of company
+                    'CostShare': share,  # Share of counterparty's costs from this supplier
+                    'RevenueShare': None,
+                    'CriticalityTier': criticality,
+                    'SourceConfidence': 85.0,
+                    'StartDate': date(2020, 1, 1),
+                    'EndDate': None,
+                    'Notes': f'Demo relationship: {counterparty_ticker} sources from {company_ticker}'
+                })
+                relationship_id += 1
+    
+    # Step 4: Add industry-based relationships for realism
+    # Get additional issuers by sector
+    sectors_with_density = {
+        'Information Technology': config.SUPPLY_CHAIN_RELATIONSHIP_STRENGTHS['semiconductors'],
+        'Consumer Discretionary': config.SUPPLY_CHAIN_RELATIONSHIP_STRENGTHS['automotive'],
+        'Industrials': config.SUPPLY_CHAIN_RELATIONSHIP_STRENGTHS['default']
+    }
+    
+    for sector, density in sectors_with_density.items():
+        # Get random issuers from this sector (excluding demo companies)
+        sector_issuers = session.sql(f"""
+            SELECT DISTINCT i.IssuerID, i.LegalName
+            FROM {database_name}.CURATED.DIM_ISSUER i
+            WHERE i.SIC_DESCRIPTION = '{sector}'
+            AND i.IssuerID NOT IN ({','.join(str(id) for id in issuer_map.values())})
+            ORDER BY RANDOM()
+            LIMIT {5 if test_mode else 15}
+        """).collect()
+        
+        # Create relationships between sector companies
+        for i in range(len(sector_issuers) - 1):
+            if random.random() < 0.3:  # 30% chance of relationship
+                min_share, max_share = density['critical_suppliers_share']
+                share = round(random.uniform(min_share, max_share), 4)
+                criticality = 'High' if share > 0.15 else 'Medium' if share > 0.08 else 'Low'
+                
+                relationships.append({
+                    'RelationshipID': relationship_id,
+                    'Company_IssuerID': sector_issuers[i]['ISSUERID'],
+                    'Counterparty_IssuerID': sector_issuers[i+1]['ISSUERID'],
+                    'RelationshipType': 'Supplier',
+                    'CostShare': None,
+                    'RevenueShare': share,
+                    'CriticalityTier': criticality,
+                    'SourceConfidence': round(random.uniform(70, 90), 2),
+                    'StartDate': date(2020, 1, 1),
+                    'EndDate': None,
+                    'Notes': f'Industry relationship within {sector}'
+                })
+                relationship_id += 1
+    
+    # Step 5: Insert relationships
+    if relationships:
+        relationships_df = session.create_dataframe(relationships)
+        relationships_df.write.mode("overwrite").save_as_table(
+            f"{database_name}.CURATED.DIM_SUPPLY_CHAIN_RELATIONSHIPS"
+        )
+        print(f"✅ Created {len(relationships)} supply chain relationships")
+        print(f"   - {len([r for r in relationships if 'Demo' in r.get('Notes', '')])} demo relationships")
+        print(f"   - {len([r for r in relationships if 'Industry' in r.get('Notes', '')])} industry relationships")
+    else:
+        print("⚠️  No supply chain relationships created")
 
 def build_fact_transaction(session: Session, test_mode: bool = False):
     """Generate synthetic transaction history."""
@@ -916,7 +1089,7 @@ def build_fundamentals_and_estimates(session: Session):
             SELECT 
                 s.SecurityID as SECURITY_ID,
                 s.Ticker,
-                i.GICS_Sector
+                i.SIC_DESCRIPTION
             FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
             WHERE s.AssetClass = 'Equity'
@@ -939,13 +1112,13 @@ def build_fundamentals_and_estimates(session: Session):
                 q.FISCAL_QUARTER,
                 -- Base financial metrics scaled by sector
                 CASE 
-                    WHEN es.GICS_SECTOR = 'Information Technology' THEN UNIFORM(1000000000, 100000000000, RANDOM())
-                    WHEN es.GICS_SECTOR = 'Health Care' THEN UNIFORM(5000000000, 50000000000, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(1000000000, 100000000000, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Health Care' THEN UNIFORM(5000000000, 50000000000, RANDOM())
                     ELSE UNIFORM(500000000, 20000000000, RANDOM())
                 END as BASE_REVENUE,
                 CASE 
-                    WHEN es.GICS_SECTOR = 'Information Technology' THEN UNIFORM(0.15, 0.35, RANDOM())
-                    WHEN es.GICS_SECTOR = 'Health Care' THEN UNIFORM(0.20, 0.40, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(0.15, 0.35, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Health Care' THEN UNIFORM(0.20, 0.40, RANDOM())
                     ELSE UNIFORM(0.05, 0.25, RANDOM())
                 END as NET_MARGIN
             FROM equity_securities es
@@ -1113,7 +1286,7 @@ def build_esg_scores(session: Session):
             SELECT 
                 s.SecurityID,
                 s.Ticker,
-                i.GICS_Sector,
+                i.SIC_DESCRIPTION,
                 i.CountryOfIncorporation
             FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
@@ -1133,9 +1306,9 @@ def build_esg_scores(session: Session):
                 sd.SCORE_DATE,
                 -- Environmental score (sector-specific)
                 CASE 
-                    WHEN es.GICS_Sector = 'Utilities' THEN UNIFORM(20, 60, RANDOM())
-                    WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(15, 50, RANDOM())
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(60, 95, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Utilities' THEN UNIFORM(20, 60, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Energy' THEN UNIFORM(15, 50, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(60, 95, RANDOM())
                     ELSE UNIFORM(40, 80, RANDOM())
                 END as E_SCORE,
                 -- Social score (region-specific bias)
@@ -1195,7 +1368,7 @@ def build_factor_exposures(session: Session):
             SELECT 
                 s.SecurityID,
                 s.Ticker,
-                i.GICS_Sector,
+                i.SIC_DESCRIPTION,
                 i.CountryOfIncorporation
             FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
@@ -1215,38 +1388,38 @@ def build_factor_exposures(session: Session):
                 md.EXPOSURE_DATE,
                 -- Market beta (sector-specific)
                 CASE 
-                    WHEN es.GICS_Sector = 'Utilities' THEN UNIFORM(0.4, 0.8, RANDOM())
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.9, 1.4, RANDOM())
-                    WHEN es.GICS_Sector = 'Health Care' THEN UNIFORM(0.6, 1.1, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Utilities' THEN UNIFORM(0.4, 0.8, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(0.9, 1.4, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Health Care' THEN UNIFORM(0.6, 1.1, RANDOM())
                     ELSE UNIFORM(0.7, 1.2, RANDOM())
                 END as MARKET_BETA,
                 -- Size factor (small vs large cap)
                 UNIFORM(-0.5, 0.8, RANDOM()) as SIZE_FACTOR,
                 -- Value factor (sector-specific)
                 CASE 
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(-0.3, 0.2, RANDOM())
-                    WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(0.1, 0.6, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(-0.3, 0.2, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Energy' THEN UNIFORM(0.1, 0.6, RANDOM())
                     ELSE UNIFORM(-0.2, 0.4, RANDOM())
                 END as VALUE_FACTOR,
                 -- Momentum factor
                 UNIFORM(-0.4, 0.4, RANDOM()) as MOMENTUM_FACTOR,
                 -- Growth factor (inverse of value factor for most tech stocks)
                 CASE 
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.3, 0.8, RANDOM())
-                    WHEN es.GICS_Sector = 'Health Care' THEN UNIFORM(0.1, 0.6, RANDOM())
-                    WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(-0.4, 0.1, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(0.3, 0.8, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Health Care' THEN UNIFORM(0.1, 0.6, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Energy' THEN UNIFORM(-0.4, 0.1, RANDOM())
                     ELSE UNIFORM(-0.3, 0.4, RANDOM())
                 END as GROWTH_FACTOR,
                 -- Quality factor
                 CASE 
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.2, 0.7, RANDOM())
-                    WHEN es.GICS_Sector = 'Health Care' THEN UNIFORM(0.1, 0.5, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(0.2, 0.7, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Health Care' THEN UNIFORM(0.1, 0.5, RANDOM())
                     ELSE UNIFORM(-0.2, 0.3, RANDOM())
                 END as QUALITY_FACTOR,
                 -- Volatility factor
                 CASE 
-                    WHEN es.GICS_Sector = 'Utilities' THEN UNIFORM(-0.3, 0.1, RANDOM())
-                    WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(-0.1, 0.4, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Utilities' THEN UNIFORM(-0.3, 0.1, RANDOM())
+                    WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(-0.1, 0.4, RANDOM())
                     ELSE UNIFORM(-0.2, 0.2, RANDOM())
                 END as VOLATILITY_FACTOR
             FROM equity_securities es
@@ -1280,7 +1453,7 @@ def build_benchmark_holdings(session: Session):
             SELECT 
                 s.SecurityID,
                 s.Ticker,
-                i.GICS_Sector,
+                i.SIC_DESCRIPTION,
                 i.CountryOfIncorporation
             FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
@@ -1303,7 +1476,7 @@ def build_benchmark_holdings(session: Session):
                 b.BenchmarkName,
                 es.SecurityID,
                 es.TICKER,
-                es.GICS_Sector,
+                es.SIC_DESCRIPTION,
                 es.CountryOfIncorporation,
                 md.HOLDING_DATE,
                 -- Weight logic based on benchmark type
@@ -1314,7 +1487,7 @@ def build_benchmark_holdings(session: Session):
                             WHEN es.CountryOfIncorporation = 'US' THEN UNIFORM(0.001, 0.05, RANDOM())
                             ELSE UNIFORM(0.0001, 0.01, RANDOM())
                         END
-                    WHEN b.BenchmarkName = 'Nasdaq 100' AND es.GICS_Sector = 'Information Technology' THEN UNIFORM(0.005, 0.12, RANDOM())
+                    WHEN b.BenchmarkName = 'Nasdaq 100' AND es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(0.005, 0.12, RANDOM())
                     ELSE NULL
                 END as RAW_WEIGHT,
                 ROW_NUMBER() OVER (PARTITION BY b.BenchmarkID, md.HOLDING_DATE ORDER BY RANDOM()) as rn
@@ -1359,7 +1532,7 @@ def build_transaction_cost_data(session: Session):
             SELECT 
                 s.SecurityID,
                 s.Ticker,
-                i.GICS_Sector,
+                i.SIC_DESCRIPTION,
                 i.CountryOfIncorporation
             FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
             JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
@@ -1379,19 +1552,19 @@ def build_transaction_cost_data(session: Session):
             bd.COST_DATE,
             -- Bid-ask spread (bps) - varies by market cap and sector
             CASE 
-                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(3, 8, RANDOM())
-                WHEN es.GICS_Sector = 'Utilities' THEN UNIFORM(5, 12, RANDOM())
-                WHEN es.GICS_Sector = 'Energy' THEN UNIFORM(4, 10, RANDOM())
+                WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(3, 8, RANDOM())
+                WHEN es.SIC_DESCRIPTION = 'Utilities' THEN UNIFORM(5, 12, RANDOM())
+                WHEN es.SIC_DESCRIPTION = 'Energy' THEN UNIFORM(4, 10, RANDOM())
                 ELSE UNIFORM(4, 9, RANDOM())
             END as BID_ASK_SPREAD_BPS,
             -- Average daily volume (shares in millions)
             CASE 
-                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(2.0, 15.0, RANDOM())
+                WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(2.0, 15.0, RANDOM())
                 ELSE UNIFORM(0.5, 8.0, RANDOM())
             END as AVG_DAILY_VOLUME_M,
             -- Market impact per $1M traded (bps)
             CASE 
-                WHEN es.GICS_Sector = 'Information Technology' THEN UNIFORM(2, 6, RANDOM())
+                WHEN es.SIC_DESCRIPTION = 'Information Technology' THEN UNIFORM(2, 6, RANDOM())
                 ELSE UNIFORM(3, 8, RANDOM())
             END as MARKET_IMPACT_BPS_PER_1M,
             -- Commission rate (bps)
@@ -1620,9 +1793,232 @@ def build_tax_implications_data(session: Session):
     
     print("✅ Created tax implications and cost basis data")
 
+# =============================================================================
+# MANDATE COMPLIANCE DATA (Scenario 3.2)
+# =============================================================================
+
+def build_fact_compliance_alerts(session: Session):
+    """
+    Create FACT_COMPLIANCE_ALERTS table for tracking mandate breaches and warnings.
+    Generates alerts for ESG downgrades, concentration breaches, and other compliance issues.
+    """
+    database_name = config.DATABASE['name']
+    
+    # Create the table
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_COMPLIANCE_ALERTS (
+            AlertID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            AlertDate DATE NOT NULL,
+            PortfolioID BIGINT NOT NULL,
+            SecurityID BIGINT NOT NULL,
+            AlertType VARCHAR(50) NOT NULL,           -- 'ESG_DOWNGRADE', 'CONCENTRATION_BREACH', etc.
+            AlertSeverity VARCHAR(20) NOT NULL,       -- 'WARNING', 'BREACH'
+            OriginalValue VARCHAR(50),                -- e.g., 'A' (ESG grade before downgrade)
+            CurrentValue VARCHAR(50),                 -- e.g., 'BBB' (current ESG grade)
+            RequiresAction BOOLEAN NOT NULL,
+            ActionDeadline DATE,                      -- Deadline for remediation (typically 30 days)
+            AlertDescription TEXT,
+            ResolvedDate DATE,                        -- When alert was resolved (NULL if active)
+            ResolvedBy VARCHAR(100),                  -- PM who resolved
+            ResolutionNotes TEXT,
+            FOREIGN KEY (PortfolioID) REFERENCES {database_name}.CURATED.DIM_PORTFOLIO(PortfolioID),
+            FOREIGN KEY (SecurityID) REFERENCES {database_name}.CURATED.DIM_SECURITY(SecurityID)
+        )
+    """).collect()
+    
+    print("✅ Created FACT_COMPLIANCE_ALERTS table")
+
+def build_fact_pre_screened_replacements(session: Session):
+    """
+    Create FACT_PRE_SCREENED_REPLACEMENTS table for pre-qualified replacement securities.
+    Maintains a universe of securities that meet mandate requirements for quick replacement.
+    """
+    database_name = config.DATABASE['name']
+    
+    # Create the table
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_PRE_SCREENED_REPLACEMENTS (
+            ReplacementID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            PortfolioID BIGINT NOT NULL,              -- Which portfolio/mandate
+            SecurityID BIGINT NOT NULL,               -- Candidate security
+            ScreenDate DATE NOT NULL,                 -- When pre-screened
+            IsEligible BOOLEAN NOT NULL,              -- Passes basic criteria
+            ReplacementRank INTEGER,                  -- Priority ranking (1=best, lower is better)
+            -- Key criteria for mandate compliance
+            ESG_Grade VARCHAR(10),                    -- Current ESG letter grade
+            AI_Growth_Score DECIMAL(18,4),            -- Proprietary AI/innovation score (0-100)
+            MarketCap_B_USD DECIMAL(18,4),            -- Market cap in billions
+            LiquidityScore INTEGER,                   -- Liquidity rating (1-10, 10=highest)
+            -- Audit trail
+            EligibilityReason TEXT,                   -- Why this candidate qualifies
+            ScreeningCriteria TEXT,                   -- Criteria applied during screening
+            LastUpdated TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+            FOREIGN KEY (PortfolioID) REFERENCES {database_name}.CURATED.DIM_PORTFOLIO(PortfolioID),
+            FOREIGN KEY (SecurityID) REFERENCES {database_name}.CURATED.DIM_SECURITY(SecurityID)
+        )
+    """).collect()
+    
+    print("✅ Created FACT_PRE_SCREENED_REPLACEMENTS table")
+
+# Note: Report templates are now generated via unstructured data hydration engine
+# following @unstructured-data-generation.mdc patterns. The template files are in
+# content_library/global/report_templates/ and processed by hydration_engine.py
+
+def generate_demo_compliance_alert(session: Session):
+    """
+    Generate the demo compliance alert for META downgrade in SAM AI & Digital Innovation portfolio.
+    Uses configuration from config.SCENARIO_3_2_MANDATE_COMPLIANCE.
+    """
+    database_name = config.DATABASE['name']
+    scenario_config = config.SCENARIO_3_2_MANDATE_COMPLIANCE
+    non_compliant = scenario_config['non_compliant_holding']
+    
+    # Get the portfolio ID
+    portfolio_name = scenario_config['portfolio']
+    portfolio_id_result = session.sql(f"""
+        SELECT PortfolioID 
+        FROM {database_name}.CURATED.DIM_PORTFOLIO 
+        WHERE PortfolioName = '{portfolio_name}'
+    """).collect()
+    
+    if not portfolio_id_result:
+        print(f"⚠️  Portfolio '{portfolio_name}' not found - skipping demo alert")
+        return
+    
+    portfolio_id = portfolio_id_result[0]['PORTFOLIOID']
+    
+    # Get the security ID for META
+    security_id_result = session.sql(f"""
+        SELECT SecurityID 
+        FROM {database_name}.CURATED.DIM_SECURITY 
+        WHERE FIGI = '{non_compliant['openfigi_id']}'
+        OR Ticker = '{non_compliant['ticker']}'
+        LIMIT 1
+    """).collect()
+    
+    if not security_id_result:
+        print(f"⚠️  Security {non_compliant['ticker']} not found - skipping demo alert")
+        return
+    
+    security_id = security_id_result[0]['SECURITYID']
+    
+    # Generate the alert
+    from datetime import datetime, timedelta
+    alert_date = datetime.now().date()
+    action_deadline = alert_date + timedelta(days=non_compliant['action_deadline_days'])
+    
+    session.sql(f"""
+        INSERT INTO {database_name}.CURATED.FACT_COMPLIANCE_ALERTS (
+            AlertDate, PortfolioID, SecurityID, AlertType, AlertSeverity,
+            OriginalValue, CurrentValue, RequiresAction, ActionDeadline, AlertDescription
+        )
+        VALUES (
+            '{alert_date}',
+            {portfolio_id},
+            {security_id},
+            '{non_compliant['issue']}',
+            'BREACH',
+            '{non_compliant['original_esg_grade']}',
+            '{non_compliant['downgraded_esg_grade']}',
+            TRUE,
+            '{action_deadline}',
+            '{non_compliant['reason']}'
+        )
+    """).collect()
+    
+    print(f"✅ Generated demo compliance alert: {non_compliant['ticker']} ESG downgrade from {non_compliant['original_esg_grade']} to {non_compliant['downgraded_esg_grade']}")
+
+def generate_demo_pre_screened_replacements(session: Session):
+    """
+    Generate pre-screened replacement candidates for the demo scenario.
+    Uses configuration from config.SCENARIO_3_2_MANDATE_COMPLIANCE.
+    """
+    database_name = config.DATABASE['name']
+    scenario_config = config.SCENARIO_3_2_MANDATE_COMPLIANCE
+    
+    # Get the portfolio ID
+    portfolio_name = scenario_config['portfolio']
+    portfolio_id_result = session.sql(f"""
+        SELECT PortfolioID 
+        FROM {database_name}.CURATED.DIM_PORTFOLIO 
+        WHERE PortfolioName = '{portfolio_name}'
+    """).collect()
+    
+    if not portfolio_id_result:
+        print(f"⚠️  Portfolio '{portfolio_name}' not found - skipping pre-screened replacements")
+        return
+    
+    portfolio_id = portfolio_id_result[0]['PORTFOLIOID']
+    
+    # Insert each pre-screened replacement
+    from datetime import datetime
+    screen_date = datetime.now().date()
+    
+    for replacement in scenario_config['pre_screened_replacements']:
+        # Get the security ID
+        security_id_result = session.sql(f"""
+            SELECT SecurityID 
+            FROM {database_name}.CURATED.DIM_SECURITY 
+            WHERE FIGI = '{replacement['openfigi_id']}'
+            OR Ticker = '{replacement['ticker']}'
+            LIMIT 1
+        """).collect()
+        
+        if not security_id_result:
+            print(f"⚠️  Security {replacement['ticker']} not found - skipping")
+            continue
+        
+        security_id = security_id_result[0]['SECURITYID']
+        
+        # Insert the pre-screened replacement
+        session.sql(f"""
+            INSERT INTO {database_name}.CURATED.FACT_PRE_SCREENED_REPLACEMENTS (
+                PortfolioID, SecurityID, ScreenDate, IsEligible, ReplacementRank,
+                ESG_Grade, AI_Growth_Score, MarketCap_B_USD, LiquidityScore,
+                EligibilityReason, ScreeningCriteria
+            )
+            VALUES (
+                {portfolio_id},
+                {security_id},
+                '{screen_date}',
+                TRUE,
+                {replacement['rank']},
+                '{replacement['esg_grade']}',
+                {replacement['ai_growth_score']},
+                {replacement['market_cap_b']},
+                {replacement['liquidity_score']},
+                '{replacement['rationale']}',
+                'AI Growth Score >= {scenario_config['mandate_requirements']['ai_growth_threshold']}, ESG Grade >= {scenario_config['mandate_requirements']['min_esg_grade']}, Market Cap >= ${scenario_config['mandate_requirements']['min_market_cap_b']}B, Liquidity Score >= {scenario_config['mandate_requirements']['min_liquidity_score']}'
+            )
+        """).collect()
+        
+        print(f"✅ Added pre-screened replacement: {replacement['ticker']} (Rank {replacement['rank']}, AI Score: {replacement['ai_growth_score']})")
+
+# Report template functions removed - now handled by unstructured data hydration engine
+# Templates are in content_library/global/report_templates/ following @unstructured-data-generation.mdc patterns
+
 def build_scenario_data(session: Session, scenario: str):
     """Build scenario-specific data."""
-    print(f"⏭️  Scenario data for {scenario} - placeholder")
+    
+    if scenario == 'mandate_compliance' or scenario == 'portfolio_copilot':
+        print(f"🔧 Building Scenario 3.2: Mandate Compliance data...")
+        
+        # Create tables
+        build_fact_compliance_alerts(session)
+        build_fact_pre_screened_replacements(session)
+        
+        # Generate demo data
+        generate_demo_compliance_alert(session)
+        generate_demo_pre_screened_replacements(session)
+        
+        # Note: Report templates are generated via unstructured data hydration engine
+        # They will be processed through generate_unstructured.py following the
+        # template-based generation pattern defined in @unstructured-data-generation.mdc
+        
+        print("✅ Scenario 3.2: Mandate Compliance data complete")
+        print("   Note: Report templates will be generated via unstructured data pipeline")
+    else:
+        print(f"⏭️  Scenario data for {scenario} - not implemented yet")
 
 def validate_data_quality(session: Session):
     """Validate data quality of the new model."""

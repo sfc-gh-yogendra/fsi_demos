@@ -112,7 +112,7 @@ Verified Query 2:
 name: sector_allocation_by_portfolio
 question: What is the sector allocation for a specific portfolio?
 use_as_onboarding_question: true
-sql: SELECT __ISSUERS.GICS_SECTOR, SUM(__HOLDINGS.MARKETVALUE_BASE) AS SECTOR_VALUE, (SUM(__HOLDINGS.MARKETVALUE_BASE) / SUM(SUM(__HOLDINGS.MARKETVALUE_BASE)) OVER ()) * 100 AS SECTOR_WEIGHT_PCT FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __PORTFOLIOS.PORTFOLIONAME = 'SAM Technology & Infrastructure' AND __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.GICS_SECTOR ORDER BY SECTOR_VALUE DESC
+sql: SELECT __ISSUERS.SIC_DESCRIPTION, SUM(__HOLDINGS.MARKETVALUE_BASE) AS SECTOR_VALUE, (SUM(__HOLDINGS.MARKETVALUE_BASE) / SUM(SUM(__HOLDINGS.MARKETVALUE_BASE)) OVER ()) * 100 AS SECTOR_WEIGHT_PCT FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __PORTFOLIOS.PORTFOLIONAME = 'SAM Technology & Infrastructure' AND __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.SIC_DESCRIPTION ORDER BY SECTOR_VALUE DESC
 
 Verified Query 3:
 name: concentration_warnings
@@ -124,7 +124,7 @@ Verified Query 4:
 name: issuer_exposure_analysis
 question: What is the total exposure to each issuer across all portfolios?
 use_as_onboarding_question: false
-sql: SELECT __ISSUERS.LEGALNAME, __ISSUERS.GICS_SECTOR, SUM(__HOLDINGS.MARKETVALUE_BASE) AS TOTAL_ISSUER_EXPOSURE, COUNT(DISTINCT __PORTFOLIOS.PORTFOLIOID) AS PORTFOLIOS_EXPOSED FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.ISSUERID, __ISSUERS.LEGALNAME, __ISSUERS.GICS_SECTOR ORDER BY TOTAL_ISSUER_EXPOSURE DESC LIMIT 20
+sql: SELECT __ISSUERS.LEGALNAME, __ISSUERS.SIC_DESCRIPTION, SUM(__HOLDINGS.MARKETVALUE_BASE) AS TOTAL_ISSUER_EXPOSURE, COUNT(DISTINCT __PORTFOLIOS.PORTFOLIOID) AS PORTFOLIOS_EXPOSED FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.ISSUERID, __ISSUERS.LEGALNAME, __ISSUERS.SIC_DESCRIPTION ORDER BY TOTAL_ISSUER_EXPOSURE DESC LIMIT 20
 ```
 
 ### Benefits of Enhanced Configuration
@@ -198,33 +198,45 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Semantic View**: `SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`
 - **Description**: "Use this tool for FINANCIAL ANALYSIS OF HOLDINGS using authentic SEC filing data to analyze portfolio companies' financial health, profitability, leverage, and growth metrics. Essential for questions about debt-to-equity ratios, profit margins, revenue growth, cash flow analysis, and fundamental financial metrics of portfolio holdings. Provides 28.7M real SEC filing records for comprehensive company-level financial analysis."
 
-#### Tool 4: search_broker_research (Cortex Search)
+#### Tool 4: supply_chain_analyzer (Cortex Analyst)
+- **Type**: Cortex Analyst
+- **Semantic View**: `SAM_DEMO.AI.SAM_SUPPLY_CHAIN_VIEW`
+- **Description**: "Use this tool for SUPPLY CHAIN RISK ANALYSIS including multi-hop dependency mapping, upstream supplier exposure, downstream customer dependencies, and second-order risk calculation. Provides relationship strength metrics (CostShare, RevenueShare), criticality tiers, and portfolio-weighted exposure calculations with decay factors. Use for questions about supply chain disruptions, supplier dependencies, customer concentration risks, and indirect portfolio exposures through supply chain relationships."
+
+#### Tool 5: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_BROKER_RESEARCH`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search broker research reports and analyst notes for qualitative insights, investment opinions, price targets, and market commentary."
 
-#### Tool 5: search_earnings_transcripts (Cortex Search)
+#### Tool 6: search_earnings_transcripts (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_EARNINGS_TRANSCRIPTS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search earnings call transcripts and management commentary for company guidance, strategic updates, and qualitative business insights."
 
-#### Tool 6: search_press_releases (Cortex Search)
+#### Tool 7: search_press_releases (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_PRESS_RELEASES`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search company press releases for product announcements, corporate developments, and official company communications."
 
-#### Tool 7: search_policies (Cortex Search)
+#### Tool 8: search_policies (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_POLICY_DOCS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search firm investment policies, guidelines, and risk management frameworks including concentration risk limits, ESG requirements, sector allocation constraints, and compliance procedures. CRITICAL: Use this tool to retrieve concentration thresholds before flagging portfolio positions."
+
+#### Tool 9: search_macro_events (Cortex Search)
+- **Type**: Cortex Search
+- **Service**: `SAM_DEMO.AI.SAM_MACRO_EVENTS`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `DOCUMENT_TITLE`
+- **Description**: "Search macro-economic events and market-moving developments including natural disasters, geopolitical events, regulatory shocks, cyber incidents, and supply chain disruptions. Each event includes EventType, Region, Severity, AffectedSectors, and detailed impact assessments. Use for event verification, contextual risk analysis, and understanding macro factors affecting portfolio holdings."
 
 ### Orchestration Model: Claude 4
 
@@ -273,7 +285,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Include trading costs, liquidity constraints, risk implications, and tax considerations
    
 8. For CONCENTRATION ANALYSIS (POLICY-DRIVEN APPROACH):
-   - FIRST: Use search_policies (Tool 7) to retrieve current concentration risk thresholds
+   - FIRST: Use search_policies (Tool 8) to retrieve current concentration risk thresholds
    - Search for: "concentration risk limits", "issuer concentration", "position limits"
    - Extract from policy: warning threshold (typically 6.5%) and breach threshold (typically 7.0%)
    - THEN: Calculate position weights from quantitative_analyzer results
@@ -293,14 +305,28 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Portfolio/fund/holdings questions → quantitative_analyzer (Tool 1, never search first)
    - Implementation/execution questions → implementation_analyzer (Tool 2)
    - Financial analysis of holdings → financial_analyzer (Tool 3)
-   - Concentration analysis → search_policies (Tool 7) FIRST, then quantitative_analyzer (Tool 1)
-   - Policy/compliance questions → search_policies (Tool 7)
-   - Document content questions → appropriate search tool (Tools 4-6)
-   - Risk assessment questions → search tools with risk-focused filtering (Tools 4-6)
-   - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → financial_analyzer (Tool 3) → search tools (Tools 4-6)
+   - Supply chain risk analysis → supply_chain_analyzer (Tool 4)
+   - Concentration analysis → search_policies (Tool 8) FIRST, then quantitative_analyzer (Tool 1)
+   - Policy/compliance questions → search_policies (Tool 8)
+   - Document content questions → appropriate search tool (Tools 5-7, 9)
+   - Risk assessment questions → search tools with risk-focused filtering (Tools 5-7)
+   - Mixed questions → quantitative_analyzer (Tool 1) → implementation_analyzer (Tool 2) → financial_analyzer (Tool 3) → supply_chain_analyzer (Tool 4) → search tools (Tools 5-9)
    - Synthesis queries asking for "implementation plan with specific details" → implementation_analyzer (Tool 2) ONLY
+   - Event risk verification → search_macro_events (Tool 9) → quantitative_analyzer (Tool 1) → supply_chain_analyzer (Tool 4) → press releases/research (Tools 7/5) for corroboration
    
-11. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
+11. For EVENT-DRIVEN RISK VERIFICATION (Real-Time Event Impact Analysis):
+   When user provides external event alert or asks about event impact, follow this workflow:
+   a) VERIFY EVENT: Use search_macro_events (Tool 9) to confirm event details (EventType, Region, Severity, AffectedSectors)
+   b) DIRECT EXPOSURE: Use quantitative_analyzer (Tool 1) filtered by affected region and sectors
+   c) INDIRECT EXPOSURE: Use supply_chain_analyzer (Tool 4) with multi-hop analysis:
+      * Apply 50% decay per hop, max depth 2
+      * Display only exposures ≥5% post-decay
+      * Flag ≥20% as High dependency
+      * Calculate upstream (CostShare) and downstream (RevenueShare) impacts
+   d) CORROBORATE: Search press releases (Tool 7) for company statements about supply chain
+   e) SYNTHESIZE: Provide comprehensive risk assessment with direct + indirect exposures and recommendations
+
+12. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
 ```
 
 ## Agent 2: Research Copilot

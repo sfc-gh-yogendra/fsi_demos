@@ -13,7 +13,7 @@ placeholders:
     - PUBLISH_DATE
     - SEVERITY_LEVEL
   optional:
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
 ---
 
 # {{NGO_NAME}} Assessment: Board Composition at {{ISSUER_NAME}}
@@ -36,7 +36,7 @@ placeholders:
 
 **Board Independence**: {{ISSUER_NAME}}'s board comprises {{BOARD_SIZE}} directors, with {{INDEPENDENT_COUNT}} classified as independent under applicable listing standards. This {{INDEPENDENCE_PCT}}% independence rate meets regulatory requirements and is consistent with governance norms. The independent board members bring relevant expertise and appear to exercise appropriate oversight.
 
-**Board Diversity**: Gender diversity on the board stands at {{GENDER_DIVERSITY_PCT}}%, with {{FEMALE_DIRECTORS}} female directors. Whilst this represents progress from previous years, it falls somewhat below the {{GICS_SECTOR}} sector median of {{SECTOR_MEDIAN}}%. Ethnic and experiential diversity could also be enhanced through future director appointments.
+**Board Diversity**: Gender diversity on the board stands at {{GENDER_DIVERSITY_PCT}}%, with {{FEMALE_DIRECTORS}} female directors. Whilst this represents progress from previous years, it falls somewhat below the {{SIC_DESCRIPTION}} sector median of {{SECTOR_MEDIAN}}%. Ethnic and experiential diversity could also be enhanced through future director appointments.
 
 **Committee Structure**: Audit, Compensation, and Nominating/Governance committees are composed entirely of independent directors, which aligns with best practices. Committee chairs possess appropriate expertise and tenure. Meeting frequency appears adequate for effective oversight.
 

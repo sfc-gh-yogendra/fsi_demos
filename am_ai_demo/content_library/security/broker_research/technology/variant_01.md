@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -35,11 +35,11 @@ disclosure:
 
 ## Executive Summary
 
-We initiate coverage on {{COMPANY_NAME}} with a **{{RATING}}** rating and 12-month price target of ${{PRICE_TARGET_USD}}. As a leading player in the {{GICS_SECTOR}} sector, the company demonstrates robust fundamentals with revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% year-over-year and strong EBIT margins of {{EBIT_MARGIN_PCT}}%. Our positive view is supported by the company's competitive positioning, technology innovation pipeline, and sustained market share gains in key growth segments.
+We initiate coverage on {{COMPANY_NAME}} with a **{{RATING}}** rating and 12-month price target of ${{PRICE_TARGET_USD}}. As a leading player in the {{SIC_DESCRIPTION}} sector, the company demonstrates robust fundamentals with revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% year-over-year and strong EBIT margins of {{EBIT_MARGIN_PCT}}%. Our positive view is supported by the company's competitive positioning, technology innovation pipeline, and sustained market share gains in key growth segments.
 
 ## Investment Highlights
 
-**Strong Market Position**: {{COMPANY_NAME}} maintains a leadership position in the {{GICS_SECTOR}} industry, benefiting from significant scale advantages and an established customer base. The company's comprehensive product portfolio and brand strength provide meaningful competitive moats that support pricing power and customer retention.
+**Strong Market Position**: {{COMPANY_NAME}} maintains a leadership position in the {{SIC_DESCRIPTION}} industry, benefiting from significant scale advantages and an established customer base. The company's comprehensive product portfolio and brand strength provide meaningful competitive moats that support pricing power and customer retention.
 
 **Growth Drivers**: We identify three primary catalysts for continued revenue expansion. First, ongoing digital transformation initiatives across enterprise customers are driving sustained demand for the company's core offerings. Second, emerging opportunities in cloud computing and artificial intelligence are creating new revenue streams with attractive margins. Third, international market expansion, particularly in high-growth Asia-Pacific regions, represents a significant untapped opportunity.
 
@@ -47,7 +47,7 @@ We initiate coverage on {{COMPANY_NAME}} with a **{{RATING}}** rating and 12-mon
 
 ## Key Risks
 
-**Competitive Intensity**: The {{GICS_SECTOR}} sector remains highly competitive with rapid technological change and evolving customer preferences. New entrants and established competitors continue to invest aggressively in product development and market share acquisition, which could pressure pricing and margins.
+**Competitive Intensity**: The {{SIC_DESCRIPTION}} sector remains highly competitive with rapid technological change and evolving customer preferences. New entrants and established competitors continue to invest aggressively in product development and market share acquisition, which could pressure pricing and margins.
 
 **Execution Risk**: The company's growth strategy requires successful new product launches and effective go-to-market execution. Any delays in product development cycles or market adoption could negatively impact our revenue and earnings forecasts.
 
@@ -57,11 +57,11 @@ We initiate coverage on {{COMPANY_NAME}} with a **{{RATING}}** rating and 12-mon
 
 Our ${{PRICE_TARGET_USD}} price target is derived from a discounted cash flow analysis assuming a weighted average cost of capital of 8.5% and terminal growth rate of 3.5%. This valuation implies a forward P/E ratio of approximately {{PE_RATIO}}x, representing a modest premium to sector peers but justified by the company's superior growth profile and market position.
 
-On a relative valuation basis, {{COMPANY_NAME}} trades at {{PE_RATIO}}x forward earnings, compared to the {{GICS_SECTOR}} sector median of 22x. We believe this valuation appropriately reflects the company's quality and growth characteristics. Our target represents {{UPSIDE_POTENTIAL}}% upside from current levels, which we view as attractive given the company's fundamental strength and positive industry dynamics.
+On a relative valuation basis, {{COMPANY_NAME}} trades at {{PE_RATIO}}x forward earnings, compared to the {{SIC_DESCRIPTION}} sector median of 22x. We believe this valuation appropriately reflects the company's quality and growth characteristics. Our target represents {{UPSIDE_POTENTIAL}}% upside from current levels, which we view as attractive given the company's fundamental strength and positive industry dynamics.
 
 ## Recommendation
 
-We rate {{COMPANY_NAME}} as **{{RATING}}** based on the company's strong competitive position, solid execution track record, and favourable industry tailwinds. The combination of consistent revenue growth, margin expansion potential, and disciplined capital allocation supports our constructive investment view. We recommend accumulating positions on any near-term weakness and view the current entry point as attractive for long-term investors seeking quality exposure to the {{GICS_SECTOR}} sector.
+We rate {{COMPANY_NAME}} as **{{RATING}}** based on the company's strong competitive position, solid execution track record, and favourable industry tailwinds. The combination of consistent revenue growth, margin expansion potential, and disciplined capital allocation supports our constructive investment view. We recommend accumulating positions on any near-term weakness and view the current entry point as attractive for long-term investors seeking quality exposure to the {{SIC_DESCRIPTION}} sector.
 
 ---
 

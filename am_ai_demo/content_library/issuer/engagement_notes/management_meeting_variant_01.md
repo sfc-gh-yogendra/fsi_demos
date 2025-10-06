@@ -11,7 +11,7 @@ placeholders:
     - PUBLISH_DATE
     - MEETING_TYPE
   optional:
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
 ---
 
 # ESG Engagement Log: {{ISSUER_NAME}} Management Meeting
@@ -26,7 +26,7 @@ placeholders:
 
 ## Meeting Overview
 
-Snowcrest Asset Management's ESG team conducted a management meeting with {{ISSUER_NAME}} to discuss the company's environmental strategy, social initiatives, and governance practices. This engagement follows our standard stewardship programme for portfolio holdings and addresses specific ESG topics material to the {{GICS_SECTOR}} sector.
+Snowcrest Asset Management's ESG team conducted a management meeting with {{ISSUER_NAME}} to discuss the company's environmental strategy, social initiatives, and governance practices. This engagement follows our standard stewardship programme for portfolio holdings and addresses specific ESG topics material to the {{SIC_DESCRIPTION}} sector.
 
 The meeting focused on three primary areas: climate transition planning and emissions reduction targets, diversity and inclusion initiatives across the workforce, and board composition and independence considerations. Management demonstrated good awareness of ESG expectations and outlined several initiatives underway to strengthen sustainability performance.
 

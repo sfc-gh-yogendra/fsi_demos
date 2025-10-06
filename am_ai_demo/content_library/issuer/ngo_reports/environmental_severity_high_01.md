@@ -13,7 +13,7 @@ placeholders:
     - PUBLISH_DATE
     - SEVERITY_LEVEL
   optional:
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
 ---
 
 # {{NGO_NAME}} Report: Environmental Concerns at {{ISSUER_NAME}}
@@ -38,7 +38,7 @@ Our findings indicate material gaps between the company's stated environmental c
 
 The investigation was initiated following reports from local communities and regulatory filings indicating potential environmental violations at several of {{ISSUER_NAME}}'s manufacturing facilities. Our research team conducted site visits, reviewed regulatory documents, interviewed affected stakeholders, and analysed the company's environmental disclosure practices.
 
-The {{GICS_SECTOR}} industry faces increasing scrutiny regarding environmental impacts, particularly around emissions, waste management, and water usage. Industry standards and regulatory expectations have evolved significantly, requiring companies to implement robust environmental management systems and demonstrate measurable progress toward sustainability targets.
+The {{SIC_DESCRIPTION}} industry faces increasing scrutiny regarding environmental impacts, particularly around emissions, waste management, and water usage. Industry standards and regulatory expectations have evolved significantly, requiring companies to implement robust environmental management systems and demonstrate measurable progress toward sustainability targets.
 
 International frameworks including the Task Force on Climate-related Financial Disclosures (TCFD) and Science Based Targets initiative (SBTi) provide clear guidance on environmental best practices. Leading companies in the sector have adopted comprehensive climate strategies with ambitious emissions reduction targets and transparent reporting mechanisms.
 
@@ -52,9 +52,9 @@ International frameworks including the Task Force on Climate-related Financial D
 
 **Environmental Governance**: The company's environmental management systems appear insufficient for the scale and complexity of its operations. Board-level oversight of environmental matters is limited, with environmental responsibilities delegated to operational management without adequate reporting to senior leadership. Environmental performance metrics are not incorporated into executive compensation structures.
 
-**Disclosure Quality**: {{ISSUER_NAME}}'s environmental disclosures lack the detail and transparency expected of companies in the {{GICS_SECTOR}} sector. Climate-related financial risk disclosures are incomplete, and the company has not provided investors with adequate information to assess environmental risks and opportunities. Reporting does not align with TCFD recommendations or other recognized frameworks.
+**Disclosure Quality**: {{ISSUER_NAME}}'s environmental disclosures lack the detail and transparency expected of companies in the {{SIC_DESCRIPTION}} sector. Climate-related financial risk disclosures are incomplete, and the company has not provided investors with adequate information to assess environmental risks and opportunities. Reporting does not align with TCFD recommendations or other recognized frameworks.
 
-**Comparison to Peers**: Leading companies in the {{GICS_SECTOR}} sector have demonstrated that ambitious environmental targets and operational improvements are achievable. Peer companies have successfully reduced emissions whilst maintaining profitability, implemented circular economy principles in product design, and achieved third-party certification for environmental management systems. {{ISSUER_NAME}}'s performance lags significantly behind industry leaders.
+**Comparison to Peers**: Leading companies in the {{SIC_DESCRIPTION}} sector have demonstrated that ambitious environmental targets and operational improvements are achievable. Peer companies have successfully reduced emissions whilst maintaining profitability, implemented circular economy principles in product design, and achieved third-party certification for environmental management systems. {{ISSUER_NAME}}'s performance lags significantly behind industry leaders.
 
 ---
 

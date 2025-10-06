@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - TARGET_PRICE_USD
@@ -31,7 +31,7 @@ disclosure:
 **Classification**: Internal Use Only — Snowcrest Asset Management  
 **Analyst**: {{ANALYST_NAME}}, Technology Sector Team  
 **Date**: {{PUBLISH_DATE}}  
-**Sector**: {{GICS_SECTOR}}
+**Sector**: {{SIC_DESCRIPTION}}
 
 ---
 
@@ -66,7 +66,7 @@ Key thesis elements include: (1) competitive moat strengthening through network 
 
 ## Company Overview and Business Model
 
-{{COMPANY_NAME}} operates a diversified {{GICS_SECTOR}} business model spanning cloud infrastructure, enterprise software, and digital services. Revenue streams are well-balanced across subscription-based cloud services ({{CLOUD_REVENUE_PCT}}% of total), perpetual software licences and support ({{SOFTWARE_REVENUE_PCT}}%), and professional services ({{SERVICES_REVENUE_PCT}}%).
+{{COMPANY_NAME}} operates a diversified {{SIC_DESCRIPTION}} business model spanning cloud infrastructure, enterprise software, and digital services. Revenue streams are well-balanced across subscription-based cloud services ({{CLOUD_REVENUE_PCT}}% of total), perpetual software licences and support ({{SOFTWARE_REVENUE_PCT}}%), and professional services ({{SERVICES_REVENUE_PCT}}%).
 
 The business demonstrates attractive unit economics with high gross margins reflecting the operating leverage inherent in software and cloud platforms. Customer acquisition costs are front-loaded but lifetime value calculations remain highly favourable given strong retention rates and expansion opportunities within accounts.
 
@@ -82,7 +82,7 @@ Management quality is demonstrably strong, with a track record of strategic visi
 
 ## Industry and Competitive Analysis
 
-The {{GICS_SECTOR}} industry is experiencing structural transformation driven by cloud migration, AI adoption, and digital-first business models. Industry growth rates of 12-15% annually exceed broader technology sector expansion, creating a favourable backdrop for well-positioned participants.
+The {{SIC_DESCRIPTION}} industry is experiencing structural transformation driven by cloud migration, AI adoption, and digital-first business models. Industry growth rates of 12-15% annually exceed broader technology sector expansion, creating a favourable backdrop for well-positioned participants.
 
 **Competitive Landscape**: {{COMPANY_NAME}} competes with both established technology platforms and specialised point solutions. Key competitors include major cloud providers, enterprise software incumbents, and emerging SaaS challengers. The company's differentiation rests on comprehensive platform capabilities, integration depth, and proven enterprise scalability.
 
@@ -142,7 +142,7 @@ Our ${{TARGET_PRICE_USD}} price target represents a blend of DCF fair value (60%
 
 ## ESG Analysis
 
-{{COMPANY_NAME}} demonstrates above-average ESG performance within the {{GICS_SECTOR}} sector. Environmental initiatives include commitments to carbon neutrality, renewable energy procurement, and circular economy principles in product design. The company has achieved {{CARBON_NEUTRAL_STATUS}} and targets net-zero emissions by 2030.
+{{COMPANY_NAME}} demonstrates above-average ESG performance within the {{SIC_DESCRIPTION}} sector. Environmental initiatives include commitments to carbon neutrality, renewable energy procurement, and circular economy principles in product design. The company has achieved {{CARBON_NEUTRAL_STATUS}} and targets net-zero emissions by 2030.
 
 Social practices encompass diversity and inclusion programmes, competitive employee benefits, and philanthropy in STEM education. Board and workforce diversity metrics exceed sector medians. Governance structures include independent board majority, appropriate executive compensation design, and transparent shareholder communication.
 

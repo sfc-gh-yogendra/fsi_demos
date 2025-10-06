@@ -257,12 +257,189 @@ DEMO_COMPANIES = {
         'country': 'US',
         'sector': 'Communication Services',
         'priority': 4
+    },
+    'TSM': {
+        'openfigi_id': 'BBG001S5WWW4',  # Taiwan Semiconductor ADR
+        'ticker': 'TSM',
+        'company_name': 'Taiwan Semiconductor Manufacturing Company Ltd',
+        'country': 'TW',
+        'sector': 'Information Technology',
+        'priority': 4  # Same priority as NVDA/MSFT for demo scenarios
     }
 }
 
 MAJOR_US_STOCKS = {
     'tier1': ['AMZN', 'TSLA', 'META', 'NFLX', 'CRM', 'ORCL'],
     'tier2': ['CSCO', 'IBM', 'INTC', 'AMD', 'ADBE', 'NOW', 'INTU', 'MU', 'QCOM', 'AVGO', 'TXN', 'LRCX', 'KLAC', 'AMAT', 'MRVL']
+}
+
+# =============================================================================
+# MANDATE COMPLIANCE CONFIGURATION (for Scenario 3.2)
+# =============================================================================
+
+# Mandate compliance demo scenario configuration
+SCENARIO_3_2_MANDATE_COMPLIANCE = {
+    'portfolio': 'SAM AI & Digital Innovation',
+    'non_compliant_holding': {
+        'ticker': 'META',
+        'openfigi_id': 'BBG00DQ6WPS6',  # Meta Platforms Inc. (Facebook)
+        'issue': 'ESG_DOWNGRADE',
+        'original_esg_grade': 'A',
+        'downgraded_esg_grade': 'BBB',
+        'reason': 'Governance concerns related to data privacy practices',
+        'action_deadline_days': 30  # Days from alert to resolution deadline
+    },
+    'pre_screened_replacements': [
+        {
+            'ticker': 'NVDA',
+            'openfigi_id': 'BBG001S5TZJ6',
+            'rank': 1,
+            'ai_growth_score': 92,
+            'esg_grade': 'A',
+            'market_cap_b': 1200,
+            'liquidity_score': 10,
+            'rationale': 'Leader in AI compute infrastructure with dominant data center GPU market share, strong ESG governance, and robust patent portfolio in machine learning accelerators'
+        },
+        {
+            'ticker': 'MSFT',
+            'openfigi_id': 'BBG001S5TD05',
+            'rank': 2,
+            'ai_growth_score': 89,
+            'esg_grade': 'A',
+            'market_cap_b': 2800,
+            'liquidity_score': 10,
+            'rationale': 'Azure AI platform leader with OpenAI partnership, excellent ESG track record, and significant investment in responsible AI development'
+        },
+        {
+            'ticker': 'GOOGL',
+            'openfigi_id': 'BBG009S39JY5',
+            'rank': 3,
+            'ai_growth_score': 85,
+            'esg_grade': 'A',
+            'market_cap_b': 1700,
+            'liquidity_score': 10,
+            'rationale': 'AI research leader with DeepMind and Google Brain, solid ESG performance though some historical privacy concerns addressed'
+        }
+    ],
+    'mandate_requirements': {
+        'min_esg_grade': 'A',
+        'max_concentration': 0.065,  # 6.5% for this portfolio
+        'required_sector': 'Information Technology',
+        'ai_growth_threshold': 80,
+        'min_market_cap_b': 50,
+        'min_liquidity_score': 7
+    }
+}
+
+# =============================================================================
+# SUPPLY CHAIN CONFIGURATION (for Risk Verification scenario)
+# =============================================================================
+
+# Supply chain demo companies for Taiwan earthquake scenario
+SUPPLY_CHAIN_DEMO_COMPANIES = {
+    # Taiwan semiconductor supplier (critical upstream)
+    'TSM': {
+        'openfigi_id': 'BBG001S5WWW4',  # Taiwan Semiconductor ADR (correct FIGI from real data)
+        'ticker': 'TSM',
+        'company_name': 'Taiwan Semiconductor Manufacturing Company Ltd',
+        'country': 'TW',
+        'sector': 'Information Technology',
+        'relationship_type': 'supplier',  # upstream supplier
+        'priority': 1
+    },
+    # US tech companies (downstream customers)
+    'NVDA': {
+        'openfigi_id': 'BBG001S5TZJ6',
+        'ticker': 'NVDA',
+        'company_name': 'NVIDIA Corp',
+        'country': 'US',
+        'sector': 'Information Technology',
+        'relationship_type': 'customer',  # downstream customer of TSM
+        'priority': 2
+    },
+    'AMD': {
+        'openfigi_id': 'BBG000BBQCY0',
+        'ticker': 'AMD',
+        'company_name': 'Advanced Micro Devices Inc',
+        'country': 'US',
+        'sector': 'Information Technology',
+        'relationship_type': 'customer',  # downstream customer of TSM
+        'priority': 2
+    },
+    'AAPL': {
+        'openfigi_id': 'BBG001S5N8V8',
+        'ticker': 'AAPL',
+        'company_name': 'Apple Inc.',
+        'country': 'US',
+        'sector': 'Information Technology',
+        'relationship_type': 'customer',  # downstream customer of TSM
+        'priority': 2
+    },
+    # Automotive companies (second-order downstream)
+    'GM': {
+        'openfigi_id': 'BBG000NDYB67',
+        'ticker': 'GM',
+        'company_name': 'General Motors Co',
+        'country': 'US',
+        'sector': 'Consumer Discretionary',
+        'relationship_type': 'customer',  # downstream customer of chip makers
+        'priority': 3
+    },
+    'F': {
+        'openfigi_id': 'BBG000BQPC32',
+        'ticker': 'F',
+        'company_name': 'Ford Motor Co',
+        'country': 'US',
+        'sector': 'Consumer Discretionary',
+        'relationship_type': 'customer',  # downstream customer of chip makers
+        'priority': 3
+    }
+}
+
+# Supply chain relationship patterns for demo scenario
+# Format: (Company, Counterparty, RelationshipType, CostShare/RevenueShare, CriticalityTier)
+SUPPLY_CHAIN_DEMO_RELATIONSHIPS = [
+    # Taiwan semiconductor → US tech companies (high dependency)
+    ('TSM', 'NVDA', 'Customer', 0.25, 'High'),      # NVDA gets 25% revenue from TSM
+    ('TSM', 'AMD', 'Customer', 0.18, 'High'),       # AMD gets 18% revenue from TSM
+    ('TSM', 'AAPL', 'Customer', 0.30, 'High'),      # AAPL gets 30% revenue from TSM
+    
+    # US tech companies → automotive (medium dependency)
+    ('NVDA', 'GM', 'Customer', 0.08, 'Medium'),     # GM gets 8% chips from NVDA
+    ('NVDA', 'F', 'Customer', 0.06, 'Medium'),      # Ford gets 6% chips from NVDA
+    ('AMD', 'GM', 'Customer', 0.05, 'Medium'),      # GM gets 5% chips from AMD
+]
+
+# Relationship strength ranges by industry
+SUPPLY_CHAIN_RELATIONSHIP_STRENGTHS = {
+    'semiconductors': {
+        'critical_suppliers_share': (0.20, 0.40),   # 20-40% per critical supplier
+        'major_customers_share': (0.15, 0.30),      # 15-30% per major customer
+        'relationship_count_range': (5, 10)          # 5-10 relationships per company
+    },
+    'automotive': {
+        'critical_suppliers_share': (0.10, 0.20),
+        'major_customers_share': (0.08, 0.15),
+        'relationship_count_range': (3, 5)
+    },
+    'technology': {
+        'critical_suppliers_share': (0.15, 0.30),
+        'major_customers_share': (0.10, 0.25),
+        'relationship_count_range': (4, 8)
+    },
+    'default': {
+        'critical_suppliers_share': (0.05, 0.15),
+        'major_customers_share': (0.05, 0.12),
+        'relationship_count_range': (1, 3)
+    }
+}
+
+# Traversal settings for multi-hop exposure calculation
+SUPPLY_CHAIN_TRAVERSAL = {
+    'decay_rate': 0.50,        # 50% decay per hop
+    'max_depth': 2,            # Maximum 2 hops
+    'min_display_threshold': 0.05,  # Display if ≥5% post-decay exposure
+    'high_dependency_threshold': 0.20  # Flag as High if ≥20% post-decay exposure
 }
 
 # =============================================================================
@@ -280,13 +457,14 @@ AVAILABLE_SCENARIOS = [
 ]
 
 SCENARIO_DATA_REQUIREMENTS = {
-    'portfolio_copilot': ['broker_research', 'earnings_transcripts', 'press_releases'],
+    'portfolio_copilot': ['broker_research', 'earnings_transcripts', 'press_releases', 'macro_events', 'report_templates'],
     'research_copilot': ['broker_research', 'earnings_transcripts'],
     'thematic_macro_advisor': ['broker_research', 'press_releases'],
     'esg_guardian': ['ngo_reports', 'engagement_notes', 'policy_docs'],
     'sales_advisor': ['sales_templates', 'philosophy_docs', 'policy_docs'],
     'quant_analyst': ['broker_research', 'earnings_transcripts'],
-    'compliance_advisor': ['policy_docs', 'engagement_notes']
+    'compliance_advisor': ['policy_docs', 'engagement_notes'],
+    'mandate_compliance': ['report_templates']  # Alias for portfolio_copilot mandate compliance mode
 }
 
 # =============================================================================
@@ -334,7 +512,8 @@ DOCUMENT_GENERATION = {
         'risk_framework': 1,
         'form_adv': 1,
         'form_crs': 1,
-        'regulatory_updates': 5
+        'regulatory_updates': 5,
+        'macro_events': 1
     }
 }
 
@@ -501,6 +680,17 @@ DOCUMENT_TYPES = {
         'philosophy_types': ['esg_philosophy', 'risk_philosophy', 'brand_guidelines'],
         'docs_total': 3
     },
+    'report_templates': {
+        'table_name': 'REPORT_TEMPLATES_RAW',
+        'corpus_name': 'REPORT_TEMPLATES_CORPUS',
+        'search_service': 'SAM_REPORT_TEMPLATES',
+        'word_count_range': (1500, 2500),
+        'applies_to': None,
+        'linkage_level': 'global',
+        'template_dir': 'global/report_templates',
+        'template_types': ['mandate_compliance', 'investment_decision', 'risk_assessment'],
+        'docs_total': 1  # Start with just mandate compliance template
+    },
     'market_data': {
         'table_name': 'MARKET_DATA_RAW',
         'corpus_name': 'MARKET_DATA_CORPUS',
@@ -562,6 +752,28 @@ DOCUMENT_TYPES = {
         'template_dir': 'regulatory/regulatory_updates',
         'authorities': ['SEC', 'ESMA', 'FCA', 'IOSCO', 'MiFID_II'],
         'docs_total': 5
+    },
+    'macro_events': {
+        'table_name': 'MACRO_EVENTS_RAW',
+        'corpus_name': 'MACRO_EVENTS_CORPUS',
+        'search_service': 'SAM_MACRO_EVENTS',
+        'word_count_range': (400, 800),
+        'applies_to': None,
+        'linkage_level': 'global',
+        'template_dir': 'global/macro_events',
+        'event_types': ['NaturalDisaster', 'Geopolitical', 'RegulatoryShock', 'CyberIncident', 'SupplyDisruption'],
+        'regions': ['TW', 'US', 'CN', 'EU', 'JP'],
+        'severity_levels': ['Low', 'Medium', 'High', 'Critical'],
+        'affected_sectors': ['Information Technology', 'Consumer Discretionary', 'Industrials', 'Materials'],
+        'docs_total': 1,  # Single Taiwan earthquake event for demo
+        'demo_event': {
+            'event_type': 'NaturalDisaster',
+            'region': 'TW',
+            'severity': 'Critical',
+            'affected_sectors': ['Information Technology', 'Consumer Discretionary'],
+            'title': 'Major Earthquake Disrupts Taiwan Semiconductor Production',
+            'impact_description': 'A 7.2 magnitude earthquake has struck central Taiwan, affecting major semiconductor manufacturing facilities including TSMC fabs. Production halts expected for 2-4 weeks with downstream supply chain impacts on global technology and automotive sectors.'
+        }
     }
 }
 

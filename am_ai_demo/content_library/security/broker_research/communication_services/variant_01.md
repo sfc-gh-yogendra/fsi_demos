@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - PRICE_TARGET_USD
@@ -28,7 +28,7 @@ disclosure:
 
 # {{TICKER}}: Digital Platform Leadership Drives {{RATING}} Rating
 
-**{{BROKER_NAME}} | {{GICS_SECTOR}} Equity Research**  
+**{{BROKER_NAME}} | {{SIC_DESCRIPTION}} Equity Research**  
 {{ANALYST_NAME}}, Senior Analyst | {{PUBLISH_DATE}}
 
 **Investment Rating**: **{{RATING}}**  
@@ -48,7 +48,7 @@ Strategic investments in cloud computing, artificial intelligence, and emerging 
 
 ## Financial Analysis and Outlook
 
-Revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% significantly exceeds broader {{GICS_SECTOR}} industry trends, demonstrating {{COMPANY_NAME}}'s ability to gain advertising wallet share. The company benefits from secular shifts toward digital advertising and away from traditional media channels. Advertising revenue growth is supported by both user engagement increases and improved monetisation efficiency.
+Revenue growth of {{YOY_REVENUE_GROWTH_PCT}}% significantly exceeds broader {{SIC_DESCRIPTION}} industry trends, demonstrating {{COMPANY_NAME}}'s ability to gain advertising wallet share. The company benefits from secular shifts toward digital advertising and away from traditional media channels. Advertising revenue growth is supported by both user engagement increases and improved monetisation efficiency.
 
 Operating margins of {{EBIT_MARGIN_PCT}}% reflect the highly scalable nature of the platform business model. Infrastructure costs grow sub-linearly with user additions, creating operating leverage as the business scales. Management has balanced growth investments in new products and markets with margin expansion, demonstrating disciplined capital allocation.
 
@@ -82,7 +82,7 @@ Relative valuation suggests reasonable upside from current levels. Whilst {{COMP
 
 ## Investment Conclusion
 
-{{COMPANY_NAME}} offers compelling exposure to structural digital advertising growth, platform economics, and technology innovation themes. The company's competitive moats, financial strength, and multiple growth vectors support our **{{RATING}}** recommendation for investors seeking quality growth exposure in the {{GICS_SECTOR}} sector.
+{{COMPANY_NAME}} offers compelling exposure to structural digital advertising growth, platform economics, and technology innovation themes. The company's competitive moats, financial strength, and multiple growth vectors support our **{{RATING}}** recommendation for investors seeking quality growth exposure in the {{SIC_DESCRIPTION}} sector.
 
 ---
 

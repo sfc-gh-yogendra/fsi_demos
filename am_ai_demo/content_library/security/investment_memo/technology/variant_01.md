@@ -8,7 +8,7 @@ placeholders:
   required:
     - COMPANY_NAME
     - TICKER
-    - GICS_SECTOR
+    - SIC_DESCRIPTION
     - PUBLISH_DATE
     - RATING
     - TARGET_PRICE_USD
@@ -28,7 +28,7 @@ disclosure:
 # MEMORANDUM
 
 **TO**: Investment Committee  
-**FROM**: {{ANALYST_NAME}}, {{GICS_SECTOR}} Analyst  
+**FROM**: {{ANALYST_NAME}}, {{SIC_DESCRIPTION}} Analyst  
 **DATE**: {{PUBLISH_DATE}}  
 **RE**: Investment Proposal — {{COMPANY_NAME}} ({{TICKER}})  
 **CLASSIFICATION**: Internal — Committee Use Only
@@ -53,7 +53,7 @@ disclosure:
 
 I recommend the Investment Committee approve a {{POSITION_SIZE_PCT}}% position in {{COMPANY_NAME}} for the {{PORTFOLIO_NAME}}. This investment provides high-quality exposure to cloud computing and artificial intelligence themes that align with our technology sector strategy whilst offering attractive risk-adjusted return potential.
 
-**Investment Thesis in Brief**: {{COMPANY_NAME}} is a {{GICS_SECTOR}} leader experiencing accelerating growth from cloud platform adoption and AI product innovation. The company's competitive moats are strengthening through network effects and customer lock-in, whilst margin expansion potential remains underappreciated by the market. Our ${{TARGET_PRICE_USD}} price target implies {{UPSIDE_PCT}}% upside from current levels.
+**Investment Thesis in Brief**: {{COMPANY_NAME}} is a {{SIC_DESCRIPTION}} leader experiencing accelerating growth from cloud platform adoption and AI product innovation. The company's competitive moats are strengthening through network effects and customer lock-in, whilst margin expansion potential remains underappreciated by the market. Our ${{TARGET_PRICE_USD}} price target implies {{UPSIDE_PCT}}% upside from current levels.
 
 **Key Supporting Factors**:
 - Accelerating cloud revenue growth ({{CLOUD_GROWTH}}% YoY) with improving retention metrics
@@ -83,7 +83,7 @@ Portfolio construction considerations support this position size. The allocation
 
 ## COMPANY AND INDUSTRY OVERVIEW
 
-{{COMPANY_NAME}} operates in the rapidly growing cloud computing and enterprise software segments of the {{GICS_SECTOR}} industry. The company's platform approach provides customers with integrated solutions spanning infrastructure, application development, data management, and AI capabilities.
+{{COMPANY_NAME}} operates in the rapidly growing cloud computing and enterprise software segments of the {{SIC_DESCRIPTION}} industry. The company's platform approach provides customers with integrated solutions spanning infrastructure, application development, data management, and AI capabilities.
 
 **Industry Dynamics**: The enterprise software and cloud infrastructure markets are experiencing robust growth driven by digital transformation imperatives. Legacy on-premises systems are being replaced with cloud-based alternatives offering superior agility, scalability, and cost efficiency. Industry growth rates of 15-20% annually are expected to sustain for the next 3-5 years.
 
@@ -218,7 +218,7 @@ D. Competitive Intelligence Summary
 
 ---
 
-**Prepared By**: {{ANALYST_NAME}}, {{GICS_SECTOR}} Analyst  
+**Prepared By**: {{ANALYST_NAME}}, {{SIC_DESCRIPTION}} Analyst  
 **Reviewed By**: Head of Research  
 **For**: Investment Committee Meeting {{IC_MEETING_DATE}}
 
