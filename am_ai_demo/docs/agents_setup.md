@@ -238,6 +238,23 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search macro-economic events and market-moving developments including natural disasters, geopolitical events, regulatory shocks, cyber incidents, and supply chain disruptions. Each event includes EventType, Region, Severity, AffectedSectors, and detailed impact assessments. Use for event verification, contextual risk analysis, and understanding macro factors affecting portfolio holdings."
 
+#### Tool 10: mandate_compliance_analyzer (Cortex Analyst)
+- **Type**: Cortex Analyst
+- **Semantic View**: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
+- **Description**: "Use this tool for MANDATE COMPLIANCE ANALYSIS including ESG grade checks, concentration compliance, thematic mandate requirements, and pre-screened replacement identification. Provides AI_Growth_Score, ESG grades, sector exposures, and compliance status. Use for questions about mandate breaches, ESG downgrades, replacement candidates, and compliance monitoring."
+
+#### Tool 11: search_report_templates (Cortex Search)
+- **Type**: Cortex Search
+- **Service**: `SAM_DEMO.AI.SAM_REPORT_TEMPLATES`
+- **ID Column**: `DOCUMENT_ID`
+- **Title Column**: `DOCUMENT_TITLE`
+- **Description**: "Search report templates and formatting guidance for investment committee memos, mandate compliance reports, and decision documentation. Retrieve template structure and section requirements to guide report synthesis."
+
+#### Tool 12: generate_investment_committee_pdf (Custom Tool - Python Stored Procedure)
+- **Type**: Python Stored Procedure
+- **Function**: `SAM_DEMO.AI.GENERATE_INVESTMENT_COMMITTEE_PDF(markdown_content TEXT, portfolio_name TEXT, security_ticker TEXT)`
+- **Description**: "Generate professional PDF reports from markdown content. Pass the complete synthesized markdown report, portfolio name, and security ticker. Returns the stage path to the generated PDF. Use after synthesizing a complete investment committee memo based on template guidance."
+
 ### Orchestration Model: Claude 4
 
 ### Planning Instructions:
@@ -326,7 +343,31 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    d) CORROBORATE: Search press releases (Tool 7) for company statements about supply chain
    e) SYNTHESIZE: Provide comprehensive risk assessment with direct + indirect exposures and recommendations
 
-12. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
+12. For MANDATE COMPLIANCE & SECURITY REPLACEMENT workflows:
+   When user reports a compliance breach (e.g., ESG downgrade, concentration breach):
+   a) VERIFY BREACH: Use mandate_compliance_analyzer (Tool 10) to check current ESG grade, concentration, and mandate requirements
+   b) IDENTIFY REPLACEMENTS: Use mandate_compliance_analyzer (Tool 10) to find pre-screened replacement candidates with:
+      * Similar AI growth potential (AI_Growth_Score)
+      * Compliant ESG grades
+      * Appropriate sector exposure
+      * Within concentration limits
+   c) ANALYZE REPLACEMENTS: For each candidate, use:
+      * quantitative_analyzer (Tool 1) for current portfolio exposure
+      * financial_analyzer (Tool 3) for financial health metrics
+      * search_broker_research (Tool 6) for analyst views
+      * search_earnings_transcripts (Tool 7) for recent guidance
+   d) GENERATE REPORT: 
+      * Use search_report_templates (Tool 11) to retrieve "MANDATE_COMPLIANCE_STANDARD" template guidance
+      * Synthesize a complete investment committee memo in markdown following template structure:
+        - Executive Summary with clear recommendation
+        - Breach details with specific ESG grade and mandate requirements
+        - Replacement analysis with AI growth scores, ESG grades, financial metrics
+        - Risk assessment and implementation considerations
+        - Appendices with supporting data
+      * Call generate_investment_committee_pdf (Tool 12) with the complete markdown content, portfolio name, and security ticker
+      * Provide the user with the PDF stage path for the generated report
+
+13. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
 ```
 
 ## Agent 2: Research Copilot

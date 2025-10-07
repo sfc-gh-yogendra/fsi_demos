@@ -1,6 +1,52 @@
 # Snowcrest Asset Management (SAM) AI Demo - 100% Real Assets
 
-A comprehensive demonstration of Snowflake Intelligence for asset management customers, covering Protfolio Managers, Research Analysts, Quantitative Analysts, Client Relationship Managers, and Risk & Compliance Officers.
+A comprehensive demonstration of Snowflake Intelligence for asset management customers, covering Portfolio Managers, Research Analysts, Quantitative Analysts, Client Relationship Managers, and Risk & Compliance Officers.
+
+Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scenarios that all use Agents.
+
+## Available Scenarios by Role
+
+### Portfolio Manager
+**Agent: Portfolio Copilot**
+- **Portfolio Insights & Benchmarking** ✅ **IMPLEMENTED**
+  - Portfolio analytics that combines quantitative holdings data with qualitative research insights in seconds, enabling faster decision-making and better risk management.
+  
+- **Real-Time Event Impact & Second-Order Risk Verification** ✅ **IMPLEMENTED**
+  -Event risk verification that combines macro event intelligence, direct portfolio exposure analysis, and sophisticated supply chain dependency mapping to quantify both immediate and indirect portfolio impacts in real-time.
+  
+- **AI-Assisted Mandate Compliance & Security Replacement** ✅ **IMPLEMENTED**
+  - Compliance workflow that automatically identifies pre-screened replacement candidates, analyzes their strategic fit, and generates investment committee documentation—reducing breach response time from days to minutes.
+
+**Agent: Thematic Macro Advisor**  
+- **Investment Theme Analysis** ✅ **IMPLEMENTED**
+  - Thematic analysis that combines current portfolio positioning with comprehensive research synthesis to identify theme-based investment opportunities and optimize strategic allocation decisions.
+
+### Research Analyst
+**Agent: Research Copilot**
+- **Document Research & Analysis** ✅ **IMPLEMENTED**
+  - Research synthesis that analyzes thousands of documents across broker reports, earnings transcripts, and press releases to deliver comprehensive investment insights and market intelligence in seconds.
+  
+- **Earnings Intelligence Extensions** ✅ **IMPLEMENTED**
+  - Earnings analysis that combines transcript commentary with financial estimates, guidance tracking, and surprise calculations to provide comprehensive quarterly earnings insights.
+
+### Quantitative Analyst
+**Agent: Quant Analyst**
+- **Factor Analysis & Performance Attribution** ✅ **IMPLEMENTED**
+  - Factor analysis that screens portfolios against multiple quantitative factors, tracks factor evolution over time, and generates professional investment research reports with comprehensive statistical analysis.
+
+### Client Relations
+**Agent: Sales Advisor**
+- **Client Reporting & Template Formatting** ✅ **IMPLEMENTED**
+  - Client reporting that synthesizes portfolio data, performance metrics, and firm philosophy into professionally formatted quarterly letters following exact template specifications.
+
+### Risk & Compliance Officer
+**Agent: ESG Guardian**
+- **ESG Risk Monitoring & Policy Compliance** ✅ **IMPLEMENTED**
+  - ESG monitoring that scans portfolio holdings against NGO reports and sustainability policies to identify controversies, assess severity, and recommend engagement actions aligned with firm ESG commitments.
+
+**Agent: Compliance Advisor**
+- **Mandate Monitoring & Breach Detection** ✅ **IMPLEMENTED**
+  - Mandate compliance that continuously monitors portfolio positions against investment guidelines, automatically detects concentration breaches and ESG violations, and cites specific policy sections for immediate remediation.
 
 
 ## Quick Start
@@ -112,45 +158,6 @@ Quick validation query:
 
 Use the complete demo scripts in `docs/demo_scenarios.md` for professional demonstrations.
 
-## Demo Overview
-
-### Company Profile: Snowcrest Asset Management (SAM)
-- **Multi-asset investment firm** with 10 portfolios ($12.5B total AUM)
-- **Enhanced Architecture**: Industry-standard data model with SecurityID and issuer hierarchies
-- **Specializes in**: Thematic growth, ESG leadership, quantitative strategies
-- **Geographic focus**: Global with emphasis on US (55%), Europe (30%), APAC/EM (15%)
-- **Asset classes**: Equities (70%), Corporate Bonds (20%), ETFs (10%)
-
-### Available Demo Scenarios
-
-✅ **Foundation Complete**: Industry-standard data model with 100% real assets
-
-| Scenario | Agent | Status | Key Capabilities |
-|----------|-------|--------|------------------|
-| **Portfolio Insights** | `portfolio_copilot` | **✅ IMPLEMENTED** | Holdings analysis, implementation planning, trading costs, risk budgets, **supply chain risk verification** |
-| **Research Intelligence** | `research_copilot` | **✅ IMPLEMENTED** | Document research and analysis across broker reports and earnings |
-| **Thematic Analysis** | `thematic_macro_advisor` | **✅ IMPLEMENTED** | Theme discovery, exposure analysis, macro scenario modeling |
-| **ESG Monitoring** | `esg_guardian` | **✅ IMPLEMENTED** | Controversy scanning, policy compliance, engagement tracking |
-| **Compliance** | `compliance_advisor` | **✅ IMPLEMENTED** | Mandate monitoring, breach detection, policy citation |
-| **Client Reporting** | `sales_advisor` | **✅ IMPLEMENTED** | Performance reports, template formatting, philosophy integration |
-| **Factor Analysis** | `quant_analyst` | **✅ IMPLEMENTED** | Factor screening, time-series analysis, factor evolution trends |
-
-- **🆕 ENHANCED**: Portfolio Copilot now includes **real-time event impact analysis** with supply chain risk verification (multi-hop dependency tracking)
-
-**To Build Specific Scenarios**:
-```bash
-# Build ESG & Compliance scenarios (NGO reports, engagement notes, policy docs)
-python python/main.py --connection-name [your-connection] --scenarios esg_guardian
-
-# Note: Compliance Advisor shares all components with ESG Guardian (no separate build needed)
-
-# Build all implemented scenarios
-python python/main.py --connection-name [your-connection] --scenarios all
-
-# Test mode for faster development
-python python/main.py --connection-name [your-connection] --scenarios esg_guardian --test-mode
-```
-
 ## Configuration Defaults
 
 | Setting | Default Value | Description |
@@ -199,71 +206,12 @@ python python/main.py --connection-name [your-connection] --scenarios esg_guardi
 └── README.md                   # This file
 ```
 
-## Enhanced Data Architecture
+## Data Architecture
 
 ### Database: `SAM_DEMO`
 - **RAW Schema**: External provider simulation + raw documents
 - **CURATED Schema**: Industry-standard dimension/fact model
 - **AI Schema**: Enhanced semantic views and Cortex Search services
-
-### Enhanced Data Model Features
-- **Immutable SecurityID**: Corporate action resilience and temporal integrity
-- **Transaction-Based Holdings**: ABOR positions built from canonical transaction log
-- **Issuer Hierarchies**: Corporate structure and parent company analysis
-- **Supply Chain Relationships**: Issuer-level supplier/customer dependencies with cost/revenue share percentages
-- **Enhanced Document Integration**: Stable SecurityID/IssuerID linkage
-- **Real Data Integration**: Authentic market data with synthetic fallback
-- **Macro Events Corpus**: Real-time market-moving event documentation
-
-### Data Providers (Simulated)
-- **NorthStar Data (NSD)**: ESG ratings, equity factors, estimates, MSCI ACWI benchmark
-- **PolarMetrics (PLM)**: Market prices, fundamentals, credit ratings, yield curves, S&P 500/Nasdaq benchmarks
-- **Internal SAM**: Portfolio holdings, policies, templates, engagement notes
-
-## Key Features
-
-### 🎯 **Realistic Data**
-- **Authentic Tickers**: 14,000+ real securities from SEC Filings dataset (AAPL, NVDA, ASML, TSM, NESTLE)
-- **Synthetic Market Data**: Realistic OHLCV records for all 14,000+ securities with proper volatility patterns
-- **Correlated Relationships**: P/E ratios align with growth, sector-specific factor scores
-- **Temporal Consistency**: Earnings dates align with transcripts, quarterly reporting cycles
-- **Complex Analytics**: Bond mathematics, ESG ratings, factor exposures, compliance monitoring
-- **Global Coverage**: Proper geographic distribution (55% US, 30% EU, 15% APAC/EM)
-- **Supply Chain Graph**: Issuer-level dependencies with multi-hop traversal and decay factors
-
-### 🤖 **Enhanced AI Components**
-- **Semantic Views**: Multi-table analytics with issuer hierarchy support + implementation planning + supply chain risk analysis
-- **Search Services**: Enhanced with SecurityID/IssuerID attributes for stable document linkage + macro events corpus
-- **Intelligent Agents**: 7 role-specific agents with professional portfolio management capabilities
-- **Content Generation**: Deterministic template-based generation (50+ curated templates, no LLM dependencies)
-- **ESG & Compliance**: Full document corpus supporting ESG monitoring, mandate compliance, and regulatory tracking
-- **Implementation Planning**: Trading costs, liquidity analysis, risk budgets, and execution planning
-- **Real-Time Risk Assessment**: Event-driven workflows with direct and indirect exposure analysis via supply chain dependencies
-- **Dedicated Warehouses**: `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH`
-- **Industry-Standard Architecture**: Complete professional asset management data model
-
-### 📊 **Investment Themes**
-- **On-Device AI**: Semiconductor and software companies
-- **Renewable Energy Transition**: Clean energy and infrastructure
-- **Cybersecurity**: Security software and services
-
-### ⚖️ **Compliance Monitoring**
-- Concentration limits (7% max, 6.5% warning)
-- Fixed income guardrails (75% IG minimum, duration tolerance)
-- ESG requirements (BBB minimum rating, controversy exclusions)
-
-## Content Generation Approach
-
-The demo uses **template-based content generation** via the hydration engine for all document types:
-
-### Template-Based Generation (Hydration Engine)
-- **50+ Curated Templates**: Professional markdown templates with YAML front matter
-- **Complete Coverage**: All document types (broker research, earnings transcripts, NGO reports, policies, etc.)
-- **Smart Placeholders**: Context-aware replacement with entity data, dates, and metrics
-- **Deterministic Output**: Consistent results with same RNG_SEED for reproducible demos
-- **Fast Builds**: Near-instant generation using template hydration
-- **No LLM Dependencies**: Build-time generation requires no Cortex Complete calls
-- **High Quality**: Manually curated templates ensure professional, realistic content
 
 ## Troubleshooting
 
@@ -297,87 +245,3 @@ Error: No active warehouse selected
 - **Solution**: Ensure warehouse specified in connection profile exists and is running
 - Recommend MEDIUM or larger for full builds
 - Build will auto-create `SAM_DEMO_EXECUTION_WH` and `SAM_DEMO_CORTEX_WH` if needed
-
-### Data Quality Issues
-
-**Duplicate Companies in Holdings**
-- This should be resolved with the enhanced issuer linkage
-- Verify distinct issuers: `SELECT COUNT(DISTINCT IssuerID) FROM SAM_DEMO.CURATED.DIM_ISSUER;`
-- Check for commercial metals co: Should appear only once
-
-**Missing Bond Data**
-- Bonds with maturity before 2020 are automatically filtered out
-- Check bond counts: `SELECT COUNT(*) FROM SAM_DEMO.CURATED.DIM_SECURITY WHERE AssetClass = 'Corporate Bond';`
-- Verify parsed coupon rates: Not all should be 5.0%
-
-**Low Issuer Linkage**
-- Expected: ~100% of securities linked to issuers
-- Check: `SELECT match_method, COUNT(*) FROM SAM_DEMO.CURATED.DIM_SECURITY GROUP BY match_method;`
-- Should see: CIK matches (~10K), SECURITY_NAME matches (~2.5K), SYNTHETIC matches (~1.5K)
-
-### Agent Configuration Issues
-
-**Agent Not Responding**
-- Verify agent has access to semantic views and search services
-- Test individual tools before configuring agent
-- Check tool configurations match exact service names: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
-
-**Search Returns No Results**
-- Verify corpus tables have content: `SELECT COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS;`
-- Check search service exists: `SHOW CORTEX SEARCH SERVICES IN SAM_DEMO.AI;`
-- Test search directly with SQL before using in agent
-
-**Semantic View Query Fails**
-- Verify view syntax: `DESCRIBE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW;`
-- Check all referenced tables exist in CURATED schema
-- Test simple query first: `SELECT * FROM SEMANTIC_VIEW(...) LIMIT 5;`
-
-### Performance Issues
-
-**Build Takes Too Long**
-- **Solution**: Use test mode for development: `--test-mode`
-- Reduces securities from 14,000 to 1,400 (10x faster)
-- Use larger warehouse (LARGE instead of MEDIUM)
-
-**Agent Response Slow**
-- Check warehouse size for Cortex Search
-- Verify search service refresh is complete: `SHOW CORTEX SEARCH SERVICES;`
-- Consider using dedicated warehouse for agent queries
-
-### Support Resources
-
-- **Agent Configuration**: Complete setup in `docs/agents_setup.md`
-- **Demo Scripts**: Ready-to-use flows in `docs/demo_scenarios.md`
-- **Data Model**: Schema documentation in `docs/data_model.md`
-
-## Real Asset Data
-
-The demo uses **14,000+ authentic financial instruments** from the SEC Filings dataset (OpenFIGI), providing maximum realism and authenticity for customer demonstrations:
-
-- **100% Real Securities**: All tickers and Bloomberg FIGI identifiers are authentic
-- **3,303 Real Issuers**: Complete corporate hierarchies and relationships
-- **Global Coverage**: Proper geographic distribution across US, Europe, and APAC/EM
-- **Asset Classes**: Equities (10,000), Corporate Bonds (3,000), ETFs (1,000)
-- **Automatic Loading**: `V_REAL_ASSETS` view created automatically from SEC Filings dataset
-- **No Manual Steps**: No CSV files or data extraction required
-
-## Architecture Highlights
-
-### Data Model Excellence
-- **Immutable SecurityID**: Ensures corporate action resilience and temporal integrity
-- **Transaction-Based Holdings**: Complete audit trail from transaction log to positions
-- **Issuer Hierarchies**: Support for parent company and corporate structure analysis
-- **Industry Standard**: Dimension/fact architecture following asset management best practices
-
-### AI Component Integration
-- **8 Semantic Views**: Multi-table analytics with comprehensive business logic (including supply chain risk analysis)
-- **11+ Search Services**: Document search with SecurityID/IssuerID linkage (including macro events corpus)
-- **7 Intelligent Agents**: Role-specific agents with professional capabilities (enhanced with real-time risk assessment)
-- **Template Library**: 50+ curated templates for consistent, high-quality content
-
-### Performance Optimization
-- **Dedicated Warehouses**: Separate compute for execution and Cortex Search
-- **Test Mode**: 10% data volumes (1,400 securities) for rapid development iteration
-- **Fast Builds**: Template-based generation (no LLM calls) for near-instant document creation
-- **Reproducible Results**: Deterministic outputs using RNG_SEED configuration
-- **No External Dependencies**: All content generated from local templates

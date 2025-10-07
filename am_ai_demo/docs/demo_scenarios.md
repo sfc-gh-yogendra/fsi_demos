@@ -10,6 +10,7 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 **Agent: Portfolio Copilot**
 - Portfolio Insights & Benchmarking ✅ **IMPLEMENTED**
 - Real-Time Event Impact & Second-Order Risk Verification ✅ **IMPLEMENTED**
+- AI-Assisted Mandate Compliance & Security Replacement ✅ **IMPLEMENTED**
 
 **Agent: Thematic Macro Advisor**  
 - Investment Theme Analysis ✅ **IMPLEMENTED**
@@ -360,6 +361,147 @@ Complete demo scenarios organized by role and agent, with step-by-step conversat
 - **Event Intelligence Repository**: Structured macro event database with standardized attributes
 - **Real-Time Risk Quantification**: Instant calculation of portfolio-weighted supply chain exposures
 - **Multi-Modal Intelligence**: Seamless integration of event data, portfolio holdings, supply chain graphs, and corporate communications
+
+---
+
+### Portfolio Copilot - AI-Assisted Mandate Compliance & Security Replacement
+
+#### Business Context Setup
+
+**Persona**: David Chen, Senior Portfolio Manager at Snowcrest Asset Management  
+**Business Challenge**: Portfolio managers must respond quickly to mandate compliance breaches (e.g., ESG downgrades) by identifying suitable replacement securities that maintain portfolio strategy while meeting compliance requirements. Traditional processes involve manual screening, multiple system lookups, and time-consuming committee documentation.  
+**Value Proposition**: AI-powered compliance workflow that automatically identifies pre-screened replacement candidates, analyzes their strategic fit, and generates investment committee documentation—reducing breach response time from days to minutes.
+
+**Agent**: `portfolio_copilot`  
+**Data Available**: SAM AI & Digital Innovation portfolio, compliance alerts, pre-screened replacements, ESG data, financial filings, broker research
+
+#### Demo Flow
+
+**Scene Setting**: David receives a compliance alert that META has been downgraded to ESG grade D due to governance concerns, violating the SAM AI & Digital Innovation fund's minimum BBB ESG requirement. He needs to identify a suitable replacement that maintains the portfolio's AI/digital innovation focus while meeting all mandate requirements, then document his recommendation for the investment committee.
+
+##### Step 1: Verify Compliance Breach
+**User Input**: 
+```
+"I've received an alert that META has been downgraded to ESG grade D. Can you verify this breach for the SAM AI & Digital Innovation portfolio and show me our current exposure?"
+```
+
+**Expected Response**:
+- Confirmation of META's ESG downgrade from BBB to D
+- Current portfolio exposure to META (weight %, market value)
+- Mandate requirement: Minimum ESG grade BBB
+- Breach severity: Critical (grade D vs required BBB)
+- Recommendation: Identify replacement security
+
+**Talking Points**:
+- Instant compliance verification using mandate_compliance_analyzer
+- Clear identification of mandate breach with specific thresholds
+- Portfolio-specific exposure analysis for impact assessment
+
+**Key Features Highlighted**: 
+- Cortex Analyst for compliance rule checking
+- Real-time ESG data integration
+- Portfolio-specific mandate requirements
+
+##### Step 2: Identify Pre-Screened Replacement Candidates
+**User Input**: 
+```
+"Based on that breach, what are our pre-screened replacement candidates that meet the mandate requirements and maintain our AI growth focus?"
+```
+
+**Expected Response**:
+- Table of pre-screened candidates (NVDA, MSFT, GOOGL):
+  - Ticker, Company Name
+  - AI Growth Score (0-10 scale)
+  - ESG Grade (A/BBB/B)
+  - Current portfolio weight
+  - Strategic fit rationale
+- Ranking by AI Growth Score
+- ESG compliance status (all meet BBB+ requirement)
+
+**Talking Points**:
+- Pre-screened candidates ensure compliance and strategic fit
+- AI Growth Score quantifies alignment with portfolio theme
+- Multiple options provide flexibility for committee decision
+
+**Key Features Highlighted**: 
+- Mandate-aware candidate identification
+- Thematic scoring (AI Growth Score)
+- Portfolio positioning context
+
+##### Step 3: Analyze Top Replacement Candidate
+**User Input**: 
+```
+"Give me a comprehensive analysis of NVDA as a replacement—include financial health, recent analyst views, and earnings guidance"
+```
+
+**Expected Response**:
+- **Financial Health** (from SEC filings):
+  - Revenue growth trends, profit margins, cash flow strength
+  - Debt-to-equity ratio, balance sheet quality
+- **Analyst Views** (from broker research):
+  - Recent rating: Buy/Outperform
+  - Price targets and investment thesis
+  - AI/semiconductor growth outlook
+- **Earnings Guidance** (from transcripts):
+  - Recent quarter performance
+  - Management guidance on AI demand
+  - Forward-looking statements
+
+**Talking Points**:
+- Multi-source analysis combining structured and unstructured data
+- Authentic SEC filing data for fundamental analysis
+- Real broker research and earnings commentary for market context
+
+**Key Features Highlighted**: 
+- SAM_SEC_FILINGS_VIEW for financial analysis
+- Cortex Search across multiple document types
+- Integrated quantitative + qualitative insights
+
+##### Step 4: Generate Investment Committee Report
+**User Input**: 
+```
+"Generate an investment committee memo documenting this compliance breach and recommending NVDA as a replacement"
+```
+
+**Expected Response**:
+- Confirmation: "I've generated your investment committee memo. Synthesizing from template guidance..."
+- Report includes:
+  - **Executive Summary**: Clear recommendation to replace META with NVDA
+  - **Breach Details**: ESG downgrade specifics and mandate violation
+  - **Replacement Analysis**: 
+    * NVDA's AI Growth Score (9/10) vs META (8/10)
+    * ESG compliance (A grade vs required BBB)
+    * Financial strength metrics
+    * Analyst support and market positioning
+  - **Risk Assessment**: Implementation risks and monitoring requirements
+  - **Appendices**: Supporting data tables and research citations
+- PDF file path: `@SAM_REPORTS_STAGE/SAM_AI_Digital_Innovation_META_Replacement_YYYYMMDD_HHMMSS.pdf`
+
+**Talking Points**:
+- Automated report generation following firm templates
+- Comprehensive documentation for audit trail
+- Professional PDF output ready for committee review
+- Entire workflow completed in minutes vs days
+
+**Key Features Highlighted**: 
+- Template-guided report synthesis
+- Custom Python stored procedure for PDF generation
+- Snowflake stage for secure report storage
+- Complete audit trail from alert to documentation
+
+#### Scenario Wrap-up
+
+**Business Impact Summary**:
+- **Response Time**: Compliance breach resolution from days to minutes
+- **Risk Mitigation**: Immediate identification of compliant alternatives
+- **Decision Quality**: Multi-source analysis (financial + research + ESG)
+- **Audit Trail**: Automated committee documentation with full lineage
+
+**Technical Differentiators**:
+- **Mandate-Aware AI**: Compliance rules integrated into agent planning
+- **Multi-View Analytics**: Combines SAM_ANALYST_VIEW, SAM_SEC_FILINGS_VIEW, and Cortex Search
+- **Custom Tool Integration**: Python stored procedures for PDF generation
+- **Secure Report Storage**: Snowflake stage for governed document management
 
 ---
 
