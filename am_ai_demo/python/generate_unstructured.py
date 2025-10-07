@@ -27,44 +27,33 @@ def build_all(session: Session, document_types: List[str], test_mode: bool = Fal
         document_types: List of document types to generate
         test_mode: If True, use reduced document counts for faster development
     """
-    print("📝 Starting unstructured data generation...")
+    # print("Building unstructured data...")
     
     # Ensure database context is set
     try:
         session.sql(f"USE DATABASE {config.DATABASE['name']}").collect()
         session.sql(f"USE SCHEMA RAW").collect()
     except Exception as e:
-        print(f"⚠️  Could not set database context: {e}")
-        print("   This is expected if database doesn't exist yet")
+        print(f"WARNING: Could not set database context: {e}")
     
     # Generate documents using template hydration
-    print("🎨 Using pre-generated template hydration...")
-    print(f"   Template library: {config.CONTENT_LIBRARY_PATH}")
-    print(f"   Content version: {config.CONTENT_VERSION}")
-    print(f"   Test mode: {'Yes (reduced counts)' if test_mode else 'No (full counts)'}")
-    
     for doc_type in document_types:
         try:
-            print(f"\n📄 Hydrating {doc_type}...")
             count = hydration_engine.hydrate_documents(session, doc_type, test_mode=test_mode)
-            print(f"   ✅ Generated {count} documents for {doc_type}")
         except Exception as e:
-            print(f"   ❌ Failed to hydrate {doc_type}: {e}")
+            print(f"ERROR: Failed to hydrate {doc_type}: {e}")
             # Continue with other document types
             continue
     
     # Create corpus tables for Cortex Search
-    print("\n📚 Creating normalized corpus tables...")
     create_corpus_tables(session, document_types)
     
-    print("\n✅ Unstructured data generation complete (template hydration)")
+    # print("Unstructured data generation complete")
 
 def create_corpus_tables(session: Session, document_types: List[str]):
     """Create normalized corpus tables for Cortex Search indexing."""
     
     for doc_type in document_types:
-        print(f"📚 Creating {doc_type} corpus table...")
-        
         raw_table = f"{config.DATABASE['name']}.RAW.{config.DOCUMENT_TYPES[doc_type]['table_name']}"
         corpus_table = f"{config.DATABASE['name']}.CURATED.{config.DOCUMENT_TYPES[doc_type]['corpus_name']}"
         
@@ -82,7 +71,3 @@ def create_corpus_tables(session: Session, document_types: List[str]):
                 RAW_MARKDOWN as DOCUMENT_TEXT
             FROM {raw_table}
         """).collect()
-        
-        print(f"   ✅ Created corpus table: {corpus_table}")
-    
-    print("✅ All corpus tables created successfully")

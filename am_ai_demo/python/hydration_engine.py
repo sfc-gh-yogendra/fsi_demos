@@ -63,7 +63,7 @@ def load_templates(doc_type: str) -> List[Dict[str, Any]]:
     if not templates:
         raise ValueError(f"No templates found for {doc_type} in {template_path}")
     
-    print(f"   📚 Loaded {len(templates)} template(s) for {doc_type}")
+    # print(f"    Loaded {len(templates)} template(s) for {doc_type}")
     return templates
 
 def load_single_template(file_path: str) -> Optional[Dict[str, Any]]:
@@ -106,7 +106,7 @@ def load_single_template(file_path: str) -> Optional[Dict[str, Any]]:
         missing_fields = [f for f in required_fields if f not in metadata]
         
         if missing_fields:
-            print(f"   ⚠️  Template {file_path} missing required fields: {missing_fields}")
+            print(f"   WARNING:  Template {file_path} missing required fields: {missing_fields}")
             return None
         
         return {
@@ -1172,8 +1172,8 @@ def query_tier2_portfolio_metrics(session: Session, portfolio_id: int) -> Dict[s
             metrics['SECTOR_ALLOCATION_TABLE'] = sectors
     
     except Exception as e:
-        print(f"   ⚠️  Tier 2 query failed for portfolio {portfolio_id}: {e}")
-        print(f"   ℹ️  Falling back to Tier 1 numerics")
+        print(f"   WARNING:  Tier 2 query failed for portfolio {portfolio_id}: {e}")
+        # print(f"   ℹ️  Falling back to Tier 1 numerics")
         # Fallback to Tier 1 if queries fail
         pass
     
@@ -1241,7 +1241,7 @@ def process_conditional_placeholders(template: Dict[str, Any], context: Dict[str
             context[name] = selected_value
             
         except Exception as e:
-            print(f"   ⚠️  Conditional placeholder {name} evaluation failed: {e}")
+            print(f"   WARNING:  Conditional placeholder {name} evaluation failed: {e}")
             # Use first available option as fallback
             context[name] = list(options.values())[0] if options else ''
     
@@ -1300,7 +1300,7 @@ def render_template(template: Dict[str, Any], context: Dict[str, Any]) -> Tuple[
             # Replace {{> partial_name}} with partial content
             body = body.replace(f'{{{{> {partial_name}}}}}', partial_content)
         except Exception as e:
-            print(f"   ⚠️  Could not load partial {partial_name}: {e}")
+            print(f"   WARNING:  Could not load partial {partial_name}: {e}")
     
     # Fill all {{PLACEHOLDER}} patterns
     rendered = body
@@ -1323,7 +1323,7 @@ def render_template(template: Dict[str, Any], context: Dict[str, Any]) -> Tuple[
     # Check for unresolved placeholders
     unresolved = re.findall(r'\{\{([A-Z_]+)\}\}', rendered)
     if unresolved:
-        print(f"   ⚠️  Unresolved placeholders: {unresolved[:5]}")  # Show first 5
+        print(f"   WARNING:  Unresolved placeholders: {unresolved[:5]}")  # Show first 5
         # Don't fail - some placeholders might be optional
     
     # Extract document title from first H1 if not in context
@@ -1355,7 +1355,7 @@ def write_to_raw_table(session: Session, doc_type: str, documents: List[Dict[str
         documents: List of dicts with 'rendered' content and 'context'
     """
     if not documents:
-        print(f"   ⚠️  No documents to write for {doc_type}")
+        print(f"   WARNING:  No documents to write for {doc_type}")
         return
     
     table_name = f"{config.DATABASE['name']}.RAW.{config.DOCUMENT_TYPES[doc_type]['table_name']}"
@@ -1432,7 +1432,7 @@ def write_to_raw_table(session: Session, doc_type: str, documents: List[Dict[str
     if data:
         df = session.create_dataframe(data)
         df.write.mode("overwrite").save_as_table(table_name)
-        print(f"   ✅ Wrote {len(data)} documents to {table_name}")
+        # print(f"   ✅ Wrote {len(data)} documents to {table_name}")
 
 # ============================================================================
 # PUBLIC API
@@ -1450,7 +1450,7 @@ def hydrate_documents(session: Session, doc_type: str, test_mode: bool = False) 
     Returns:
         Number of documents generated
     """
-    print(f"   🎨 Hydrating {doc_type}...")
+    # print(f"    Hydrating {doc_type}...")
     
     # Load templates
     templates = load_templates(doc_type)
@@ -1459,7 +1459,7 @@ def hydrate_documents(session: Session, doc_type: str, test_mode: bool = False) 
     entities = get_entities_for_doc_type(session, doc_type, test_mode)
     
     if not entities:
-        print(f"   ⚠️  No entities found for {doc_type}")
+        print(f"   WARNING:  No entities found for {doc_type}")
         return 0
     
     # Render documents
@@ -1497,7 +1497,7 @@ def hydrate_documents(session: Session, doc_type: str, test_mode: bool = False) 
             })
             
         except Exception as e:
-            print(f"   ⚠️  Failed to hydrate {doc_type} for entity {entity.get('id')}: {e}")
+            print(f"   WARNING:  Failed to hydrate {doc_type} for entity {entity.get('id')}: {e}")
             continue
     
     # Write to RAW table

@@ -1,16 +1,10 @@
 ---
-document_type: report_template
-template_name: MANDATE_COMPLIANCE_STANDARD
-report_type: MANDATE_COMPLIANCE
-category: COMMITTEE
-version: "1.0"
-word_count: 2000
-status: APPROVED
-created_by: SYSTEM
+doc_type: report_templates
+linkage_level: global
+variant_id: mandate_compliance_standard
+word_count_target: 2000
 placeholders:
-  - none
-applies_to: global
-usage_context: Investment committee decisions for mandate compliance actions
+  required: []
 ---
 
 # Investment Committee Decision: Mandate Compliance Action

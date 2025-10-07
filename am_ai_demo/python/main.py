@@ -72,7 +72,7 @@ def validate_scenarios(scenario_list: List[str]) -> List[str]:
     """Validate and return list of valid scenarios."""
     invalid_scenarios = [s for s in scenario_list if s not in AVAILABLE_SCENARIOS]
     if invalid_scenarios:
-        print(f"❌ Invalid scenarios: {invalid_scenarios}")
+        print(f"ERROR: Invalid scenarios: {invalid_scenarios}")
         print(f"Available scenarios: {AVAILABLE_SCENARIOS}")
         sys.exit(1)
     
@@ -91,12 +91,10 @@ def create_snowpark_session(connection_name: str):
     try:
         from snowflake.snowpark import Session
         
-        print(f"🔗 Connecting to Snowflake using connection: {connection_name}")
         session = Session.builder.config("connection_name", connection_name).create()
         
         # Test connection
         result = session.sql("SELECT CURRENT_VERSION()").collect()
-        print(f"✅ Connected successfully to Snowflake version: {result[0][0]}")
         
         # Create dedicated warehouses for the demo
         create_demo_warehouses(session)
@@ -104,12 +102,12 @@ def create_snowpark_session(connection_name: str):
         return session
         
     except ImportError:
-        print(f"❌ Connection failed: {str(e)}")
-        print("❌ Error: snowflake-snowpark-python not installed")
+        print(f"ERROR: Connection failed: {str(e)}")
+        print("ERROR: Error: snowflake-snowpark-python not installed")
         print("Install with: pip install -r requirements.txt")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Connection failed: {str(e)}")
+        print(f"ERROR: Connection failed: {str(e)}")
         print(f"Please ensure:")
         print(f"  1. Connection '{connection_name}' exists in ~/.snowflake/connections.toml")
         print(f"  2. Connection details (account, user, password, etc.) are correct")
@@ -119,7 +117,7 @@ def create_snowpark_session(connection_name: str):
 def create_demo_warehouses(session):
     """Create dedicated warehouses for demo execution and Cortex Search services."""
     try:
-        print("🏗️ Creating demo warehouses...")
+        
         
         # Get warehouse configs from structured config
         execution_wh = WAREHOUSES['execution']['name']
@@ -138,7 +136,7 @@ def create_demo_warehouses(session):
             AUTO_RESUME = TRUE
             COMMENT = '{execution_comment}'
         """).collect()
-        print(f"✅ Created execution warehouse: {execution_wh}")
+        
         
         # Create Cortex Search warehouse for search services
         session.sql(f"""
@@ -148,23 +146,23 @@ def create_demo_warehouses(session):
             AUTO_RESUME = TRUE
             COMMENT = '{cortex_comment}'
         """).collect()
-        print(f"✅ Created Cortex Search warehouse: {cortex_wh}")
+        
         
         # Set session to use execution warehouse by default
         session.use_warehouse(execution_wh)
-        print(f"✅ Session configured to use: {execution_wh}")
+        
         
     except Exception as e:
-        print(f"⚠️ Warning: Failed to create warehouses: {e}")
-        print("Continuing with existing warehouse from connection...")
+        print(f"WARNING: Failed to create warehouses: {e}")
+        
 
 def main():
     """Main execution function."""
     start_time = datetime.now()
     
-    print("🏔️  Snowcrest Asset Management (SAM) Demo Builder")
+    print("Snowcrest Asset Management (SAM) Demo Builder")
     print("=" * 60)
-    print(f"⏰ Build started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Build started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
     # Parse arguments
@@ -177,12 +175,11 @@ def main():
         scenario_list = [s.strip() for s in args.scenarios.split(',')]
     validated_scenarios = validate_scenarios(scenario_list)
     
-    print(f"🎭 Scenarios: {', '.join(validated_scenarios)}")
-    print(f"🏗️  Scope: {args.scope}")
-    print(f"🔗 Connection: {args.connection_name}")
+    print(f"Scenarios: {', '.join(validated_scenarios)}")
+    print(f"Scope: {args.scope}")
+    print(f"Connection: {args.connection_name}")
     if args.test_mode:
-        print(f"🧪 Test Mode: Using 10% data volumes")
-    print()
+        print(f"Test Mode: Using 10% data volumes")
     print("=" * 60)
     
     # Create Snowpark session
@@ -204,7 +201,7 @@ def main():
     try:
         # Step 1: Build structured data (foundation + scenario-specific)
         if build_structured:
-            print(f"📊 Step {step_number}/{total_steps}: Building structured data...")
+            print(f"\nStep {step_number}/{total_steps}: Structured data")
             step_number += 1
             # Import and run structured data generation
             import generate_structured
@@ -212,16 +209,15 @@ def main():
             
         # Step 2: Build unstructured data (documents and content)
         if build_unstructured:
-            print(f"📝 Step {step_number}/{total_steps}: Building unstructured data...")
+            print(f"\nStep {step_number}/{total_steps}: Unstructured data")
             step_number += 1
             
             # Validate that structured data exists (unstructured depends on it)
             try:
                 session.sql(f"SELECT COUNT(*) FROM {DATABASE['name']}.CURATED.DIM_SECURITY LIMIT 1").collect()
             except Exception as e:
-                print("❌ Unstructured data generation requires structured data to exist first.")
-                print("💡 Run with --scope structured first, or use --scope data to build both together.")
-                print(f"   Error details: {e}")
+                print("ERROR: Unstructured data generation requires structured data to exist first.")
+                print("Run with --scope structured first, or use --scope data to build both together.")
                 raise
             
             # Import and run unstructured data generation
@@ -231,7 +227,7 @@ def main():
         
         # Step 3: Build AI components
         if build_semantic or build_search:
-            print(f"🤖 Step {step_number}/{total_steps}: Building AI components...")
+            print(f"\nStep {step_number}/{total_steps}: AI components")
             import build_ai
             build_ai.build_all(session, validated_scenarios, build_semantic, build_search)
         
@@ -240,11 +236,11 @@ def main():
         
         print()
         print("=" * 60)
-        print("🎉 SAM Demo Environment Build Complete!")
-        print(f"⏰ Build completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"⌛ Total duration: {duration}")
-        print(f"📍 Database: {DATABASE['name']}")
-        print(f"🎭 Scenarios: {', '.join(validated_scenarios)}")
+        print("SAM Demo Environment Build Complete")
+        print(f"Build completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Total duration: {duration}")
+        print(f"Database: {DATABASE['name']}")
+        print(f"Scenarios: {', '.join(validated_scenarios)}")
         print()
         print("Next steps:")
         print("1. Configure agents in Snowflake Intelligence (see docs/agents_setup.md)")
@@ -252,7 +248,7 @@ def main():
         print("3. Run validation checks (see docs/runbooks.md)")
         
     except ImportError as e:
-        print(f"❌ Missing module: {e}")
+        print(f"ERROR: Missing module: {e}")
         print("Ensure all required Python modules are created:")
         print("- python/generate_structured.py")
         print("- python/generate_unstructured.py") 
@@ -263,12 +259,12 @@ def main():
         duration = end_time - start_time
         print()
         print("=" * 60)
-        print("🛑 BUILD FAILED!")
-        print(f"❌ Error: {str(e)}")
-        print(f"⏰ Failed after: {duration}")
+        print("BUILD FAILED")
+        print(f"ERROR: {str(e)}")
+        print(f"Failed after: {duration}")
         print("=" * 60)
         print()
-        print("💡 Troubleshooting tips:")
+        print("Troubleshooting tips:")
         print("1. Check error message above for specific component that failed")
         print("2. Verify all required data tables exist before AI component creation")
         print("3. Review connection permissions and warehouse availability")

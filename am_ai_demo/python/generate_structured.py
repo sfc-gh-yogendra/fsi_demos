@@ -26,25 +26,22 @@ def build_all(session: Session, scenarios: List[str], test_mode: bool = False):
         scenarios: List of scenario names to build data for
         test_mode: If True, use 10% data volumes for faster testing
     """
-    print("📊 Starting enhanced structured data generation...")
+    # print("Building structured data...")
     
     # Step 1: Create database and schemas
     create_database_structure(session)
     
     # Step 2: Build foundation tables in dependency order
-    print("🏛️  Building foundation tables with enhanced model...")
     build_foundation_tables(session, test_mode)
     
     # Step 3: Build scenario-specific structured data
     for scenario in scenarios:
-        print(f"🎯 Building structured data for scenario: {scenario}")
         build_scenario_data(session, scenario)
     
     # Step 4: Validate data quality
-    print("🔍 Validating data quality...")
     validate_data_quality(session)
     
-    print("✅ Enhanced structured data generation complete")
+    # print("Structured data generation complete")
 
 def create_database_structure(session: Session):
     """Create database and schema structure."""
@@ -53,9 +50,9 @@ def create_database_structure(session: Session):
         session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.RAW").collect()
         session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.CURATED").collect()
         session.sql(f"CREATE OR REPLACE SCHEMA {config.DATABASE['name']}.AI").collect()
-        print(f"✅ Database structure created: {config.DATABASE['name']}")
+        # print(f" Database structure created: {config.DATABASE['name']}")
     except Exception as e:
-        print(f"❌ Failed to create database structure: {e}")
+        print(f"ERROR: Failed to create database structure: {e}")
         raise
 
 def build_foundation_tables(session: Session, test_mode: bool = False):
@@ -63,69 +60,32 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     random.seed(config.RNG_SEED)
     
     # Create real assets view first (required for issuer and security dimensions)
-    print("📊 Creating real assets view...")
     try:
         from extract_real_assets import create_real_assets_view
         create_real_assets_view(session)
     except Exception as e:
-        print(f"❌ Real assets view creation failed: {e}")
+        print(f"ERROR: Real assets view creation failed: {e}")
         raise  # Don't continue without the view
     
-    print("🏢 Building issuer dimension...")
+    # Build all foundation tables (suppress detailed output)
     build_dim_issuer(session, test_mode)
-    
-    print("🔗 Building security dimension with direct identifiers...")
     build_dim_security(session, test_mode)
-    
-    print("📈 Building portfolio dimension...")
     build_dim_portfolio(session)
-    
-    print("📊 Building benchmark dimension...")
     build_dim_benchmark(session)
-    
-    print("🔗 Building supply chain relationships...")
     build_dim_supply_chain_relationships(session, test_mode)
-    
-    print("💱 Building transaction log...")
     build_fact_transaction(session, test_mode)
-    
-    print("📋 Building ABOR positions...")
     build_fact_position_daily_abor(session)
-    
-    print("📈 Building market data...")
     build_fact_marketdata_timeseries(session, test_mode)
-    
-    print("💰 Building SEC filings and fundamentals...")
     build_sec_filings_and_fundamentals(session)
-    
-    print("📊 Building fundamentals and estimates...")
     build_fundamentals_and_estimates(session)
-    
-    print("🌱 Building ESG scores...")
     build_esg_scores(session)
-    
-    print("📏 Building factor exposures...")
     build_factor_exposures(session)
-    
-    print("🎯 Building benchmark holdings...")
     build_benchmark_holdings(session)
-    
-    print("💰 Building transaction cost data...")
     build_transaction_cost_data(session)
-    
-    print("💧 Building liquidity data...")
     build_liquidity_data(session)
-    
-    print("📊 Building risk budget data...")
     build_risk_budget_data(session)
-    
-    print("📅 Building trading calendar data...")
     build_trading_calendar_data(session)
-    
-    print("📋 Building client mandate data...")
     build_client_mandate_data(session)
-    
-    print("🧾 Building tax implications data...")
     build_tax_implications_data(session)
 
 
@@ -134,14 +94,14 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
 def build_dim_issuer(session: Session, test_mode: bool = False):
     """Build issuer dimension from COMPANY_INDEX with proper deduplication."""
     
-    print("✅ Building issuer dimension from SEC Filings COMPANY_INDEX")
+    # print(" Building issuer dimension from SEC Filings COMPANY_INDEX")
     
     # Verify SEC Filings access (view depends on it)
     try:
         from extract_real_assets import verify_sec_filings_access
         verify_sec_filings_access(session)
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"ERROR: Error: {e}")
         raise
     
     # Build issuer dimension using COMPANY_INDEX as the authoritative source
@@ -187,7 +147,7 @@ def build_dim_issuer(session: Session, test_mode: bool = False):
     
     # Get count for reporting
     issuer_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER").collect()[0]['CNT']
-    print(f"✅ Created {issuer_count:,} distinct issuers from COMPANY_INDEX")
+    # print(f" Created {issuer_count:,} distinct issuers from COMPANY_INDEX")
     
     # Report on data quality
     quality_stats = session.sql(f"""
@@ -199,9 +159,9 @@ def build_dim_issuer(session: Session, test_mode: bool = False):
         FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER
     """).collect()[0]
     
-    print(f"   📊 With CIK: {quality_stats['ISSUERS_WITH_CIK']:,}")
-    print(f"   📊 With Industry: {quality_stats['ISSUERS_WITH_INDUSTRY']:,}")
-    print(f"   📊 With Real LEI: {quality_stats['ISSUERS_WITH_REAL_LEI']:,}")
+    # Suppressed: print(f"    With CIK: {quality_stats['ISSUERS_WITH_CIK']:,}")
+    # Suppressed: print(f"    With Industry: {quality_stats['ISSUERS_WITH_INDUSTRY']:,}")
+    # Suppressed: print(f"    With Real LEI: {quality_stats['ISSUERS_WITH_REAL_LEI']:,}")
 
 
 
@@ -211,14 +171,14 @@ def build_dim_security(session: Session, test_mode: bool = False):
     # Use test mode counts if specified (for reporting only)
     securities_count = config.get_securities_count(test_mode)
     
-    print("✅ Building securities from real asset data")
+    # print(" Building securities from real asset data")
     
     # Verify V_REAL_ASSETS view exists (should have been created during foundation build)
     try:
         from extract_real_assets import verify_real_assets_view_exists
         verify_real_assets_view_exists(session)
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"ERROR: Error: {e}")
         raise
     
     # Build security dimension using multi-strategy issuer linkage
@@ -450,10 +410,11 @@ def build_dim_security(session: Session, test_mode: bool = False):
     """).collect()
     
     total_securities = sum(row['CNT'] for row in count_by_class)
-    print(f"✅ Created {total_securities:,} securities from real asset data")
+    # print(f" Created {total_securities:,} securities from real asset data")
     
     for row in count_by_class:
-        print(f"   📊 {row['ASSETCLASS']}: {row['CNT']:,} securities")
+        pass
+        # print(f"    {row['ASSETCLASS']}: {row['CNT']:,} securities")
     
     # Validate issuer linkage quality with detailed breakdown
     linkage_stats = session.sql(f"""
@@ -467,20 +428,20 @@ def build_dim_security(session: Session, test_mode: bool = False):
         FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY
     """).collect()[0]
     
-    print(f"   📊 Issuer linkage results:")
-    print(f"      • Matched via CIK: {linkage_stats['MATCHED_VIA_CIK']:,} securities")
-    print(f"      • Matched via SECURITY_NAME: {linkage_stats['MATCHED_VIA_NAME']:,} securities")
-    print(f"      • Matched via synthetic issuer: {linkage_stats['MATCHED_VIA_SYNTHETIC']:,} securities")
-    print(f"      • Unmatched (using default): {linkage_stats['UNMATCHED']:,} securities")
-    print(f"   📊 Linked to {linkage_stats['DISTINCT_ISSUERS_LINKED']:,} distinct issuers")
+    # Suppressed: print(f"    Issuer linkage results:")
+    # Suppressed: print(f"      • Matched via CIK: {linkage_stats['MATCHED_VIA_CIK']:,} securities")
+    # Suppressed: print(f"      • Matched via SECURITY_NAME: {linkage_stats['MATCHED_VIA_NAME']:,} securities")
+    # Suppressed: print(f"      • Matched via synthetic issuer: {linkage_stats['MATCHED_VIA_SYNTHETIC']:,} securities")
+    # Suppressed: print(f"      • Unmatched (using default): {linkage_stats['UNMATCHED']:,} securities")
+    # Suppressed: print(f"    Linked to {linkage_stats['DISTINCT_ISSUERS_LINKED']:,} distinct issuers")
     
     total_matched = linkage_stats['MATCHED_VIA_CIK'] + linkage_stats['MATCHED_VIA_NAME'] + linkage_stats['MATCHED_VIA_SYNTHETIC']
     pct_matched = 100.0 * total_matched / total_securities
-    print(f"   ✅ {pct_matched:.1f}% of securities have issuer linkage")
+    # Suppressed: print(f"   ✅ {pct_matched:.1f}% of securities have issuer linkage")
     
     if linkage_stats['UNMATCHED'] > 0:
         pct_unmatched = 100.0 * linkage_stats['UNMATCHED'] / total_securities
-        print(f"   ℹ️  {pct_unmatched:.1f}% securities without issuer match (edge cases only)")
+        # print(f"   ℹ️  {pct_unmatched:.1f}% securities without issuer match (edge cases only)")
     
     # Report on bond parsing success
     bond_stats = session.sql(f"""
@@ -495,10 +456,11 @@ def build_dim_security(session: Session, test_mode: bool = False):
     """).collect()
     
     if bond_stats and bond_stats[0]['TOTAL_BONDS'] > 0:
-        print(f"   📊 Bond parsing results:")
-        print(f"      • Bonds with parsed coupon rate: {bond_stats[0]['BONDS_WITH_PARSED_RATE']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
-        print(f"      • Bonds with parsed maturity: {bond_stats[0]['BONDS_WITH_PARSED_MATURITY']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
-        print(f"      • Maturity range: {bond_stats[0]['EARLIEST_MATURITY']} to {bond_stats[0]['LATEST_MATURITY']}")
+        pass
+        # print(f"    Bond parsing results:")
+        # print(f"      • Bonds with parsed coupon rate: {bond_stats[0]['BONDS_WITH_PARSED_RATE']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
+        # print(f"      • Bonds with parsed maturity: {bond_stats[0]['BONDS_WITH_PARSED_MATURITY']:,} of {bond_stats[0]['TOTAL_BONDS']:,}")
+        # print(f"      • Maturity range: {bond_stats[0]['EARLIEST_MATURITY']} to {bond_stats[0]['LATEST_MATURITY']}")
 
 
 def build_dim_portfolio(session: Session):
@@ -521,7 +483,7 @@ def build_dim_portfolio(session: Session):
     portfolios_df = session.create_dataframe(portfolio_data)
     portfolios_df.write.mode("overwrite").save_as_table(f"{config.DATABASE['name']}.CURATED.DIM_PORTFOLIO")
     
-    print(f"✅ Created {len(portfolio_data)} portfolios from unified config")
+    # print(f" Created {len(portfolio_data)} portfolios from unified config")
 
 def build_dim_benchmark(session: Session):
     """Build benchmark dimension."""
@@ -537,7 +499,7 @@ def build_dim_benchmark(session: Session):
     benchmarks_df = session.create_dataframe(benchmark_data)
     benchmarks_df.write.mode("overwrite").save_as_table(f"{config.DATABASE['name']}.CURATED.DIM_BENCHMARK")
     
-    print(f"✅ Created {len(benchmark_data)} benchmarks")
+    # print(f" Created {len(benchmark_data)} benchmarks")
 
 def build_dim_supply_chain_relationships(session: Session, test_mode: bool = False):
     """
@@ -553,7 +515,7 @@ def build_dim_supply_chain_relationships(session: Session, test_mode: bool = Fal
     database_name = config.DATABASE['name']
     random.seed(config.RNG_SEED)
     
-    print("🔗 Building supply chain relationships...")
+    # print("🔗 Building supply chain relationships...")
     
     # Step 1: Create the table structure (without foreign key constraints for simplicity)
     # Foreign key constraints removed to avoid data type mismatches with ROW_NUMBER-generated IssuerIDs
@@ -598,19 +560,20 @@ def build_dim_supply_chain_relationships(session: Session, test_mode: bool = Fal
             
             if result:
                 issuer_map[ticker] = result[0]['ISSUERID']
-                print(f"   Found issuer for {ticker}: {result[0]['LEGALNAME']}")
             else:
-                print(f"   ⚠️  Could not find issuer for {ticker}")
+                print(f"WARNING: Could not find issuer for {ticker}")
         except Exception as e:
-            print(f"   ⚠️  Error looking up {ticker}: {e}")
+            pass
+            # print(f"     Error looking up {ticker}: {e}")
     
     # Step 3: Create demo relationships from config
     relationships = []
     relationship_id = 1
     
     if not issuer_map:
-        print(f"   ⚠️  No demo companies found in DIM_ISSUER")
-        print(f"   Available tickers in database:")
+        pass
+        # print(f"     No demo companies found in DIM_ISSUER")
+        # print(f"   Available tickers in database:")
         available_tickers = session.sql(f"""
             SELECT DISTINCT s.Ticker 
             FROM {database_name}.CURATED.DIM_SECURITY s
@@ -618,7 +581,8 @@ def build_dim_supply_chain_relationships(session: Session, test_mode: bool = Fal
             ORDER BY s.Ticker
         """).collect()
         for row in available_tickers:
-            print(f"      - {row['TICKER']}")
+            pass
+            # print(f"      - {row['TICKER']}")
     
     for company_ticker, counterparty_ticker, rel_type, share, criticality in config.SUPPLY_CHAIN_DEMO_RELATIONSHIPS:
         if company_ticker in issuer_map and counterparty_ticker in issuer_map:
@@ -703,11 +667,11 @@ def build_dim_supply_chain_relationships(session: Session, test_mode: bool = Fal
         relationships_df.write.mode("overwrite").save_as_table(
             f"{database_name}.CURATED.DIM_SUPPLY_CHAIN_RELATIONSHIPS"
         )
-        print(f"✅ Created {len(relationships)} supply chain relationships")
-        print(f"   - {len([r for r in relationships if 'Demo' in r.get('Notes', '')])} demo relationships")
-        print(f"   - {len([r for r in relationships if 'Industry' in r.get('Notes', '')])} industry relationships")
+        # print(f" Created {len(relationships)} supply chain relationships")
+        # print(f"   - {len([r for r in relationships if 'Demo' in r.get('Notes', '')])} demo relationships")
+        # print(f"   - {len([r for r in relationships if 'Industry' in r.get('Notes', '')])} industry relationships")
     else:
-        print("⚠️  No supply chain relationships created")
+        print("WARNING:  No supply chain relationships created")
 
 def build_fact_transaction(session: Session, test_mode: bool = False):
     """Generate synthetic transaction history."""
@@ -718,13 +682,13 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
         column_names = [col['name'] for col in columns]
         if 'FIGI' not in column_names:
             raise Exception(f"DIM_SECURITY table missing FIGI column. Available columns: {column_names}")
-        print("✅ Verified DIM_SECURITY table has FIGI column")
+        # print(" Verified DIM_SECURITY table has FIGI column")
     except Exception as e:
-        print(f"❌ Table structure verification failed: {e}")
+        print(f"ERROR: Table structure verification failed: {e}")
         raise
     
     # Generate transactions for the last 12 months that build up to current positions
-    print("💱 Generating synthetic transaction history...")
+    # print("💱 Generating synthetic transaction history...")
     
     # Get SQL mapping for demo portfolios (eliminates hardcoded company references)
     demo_sql_mapping = config.build_demo_portfolios_sql_mapping()
@@ -918,12 +882,12 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
         WHERE (HASH(sh.SecurityID, ptd.trade_date) % 100) < 20  -- 20% of portfolio-security-day combinations create transactions
     """).collect()
     
-    print("✅ Created transaction history")
+    # print(" Created transaction history")
 
 def build_fact_position_daily_abor(session: Session):
     """Build ABOR positions from transaction log."""
     
-    print("📋 Building ABOR positions from transactions...")
+    # print("📋 Building ABOR positions from transactions...")
     
     session.sql(f"""
         -- Build ABOR (Accounting Book of Record) positions from transaction history
@@ -987,12 +951,12 @@ def build_fact_position_daily_abor(session: Session):
         JOIN portfolio_totals pt ON ps.HoldingDate = pt.HoldingDate AND ps.PortfolioID = pt.PortfolioID
     """).collect()
     
-    print("✅ Created ABOR positions")
+    # print(" Created ABOR positions")
 
 def build_fact_marketdata_timeseries(session: Session, test_mode: bool = False):
     """Build synthetic market data for all securities."""
     
-    print("📝 Generating synthetic market data for portfolio securities only")
+    # print("📝 Generating synthetic market data for portfolio securities only")
     build_marketdata_synthetic(session)
 
 def build_marketdata_synthetic(session: Session):
@@ -1074,7 +1038,7 @@ def build_marketdata_synthetic(session: Session):
         FROM securities_dates
     """).collect()
     
-    print("✅ Created synthetic market data")
+    # print(" Created synthetic market data")
 
 # Placeholder functions for remaining tables (to be implemented)
 def build_fundamentals_and_estimates(session: Session):
@@ -1164,13 +1128,13 @@ def build_fundamentals_and_estimates(session: Session):
         FROM estimate_base
     """).collect()
     
-    print("✅ Created fundamentals and estimates with realistic relationships")
+    # print(" Created fundamentals and estimates with realistic relationships")
 
 def build_sec_filings_and_fundamentals(session: Session):
     """Build SEC filings table and synthetic fundamentals as fallback."""
     
     # First, create the FACT_SEC_FILINGS table structure
-    print("🏗️  Creating FACT_SEC_FILINGS table structure...")
+    # print("🏗️  Creating FACT_SEC_FILINGS table structure...")
     session.sql(f"""
         CREATE OR REPLACE TABLE {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS (
             FilingID BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -1199,11 +1163,12 @@ def build_sec_filings_and_fundamentals(session: Session):
     
     # Try to load real SEC filing data, fallback to synthetic fundamentals if not available
     try:
-        print("📄 Attempting to load real SEC filing data...")
+        pass
+        # print("📄 Attempting to load real SEC filing data...")
         
         # Test SEC_FILINGS database access
         test_result = session.sql("SELECT COUNT(*) as cnt FROM SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES LIMIT 1").collect()
-        print("✅ SEC_FILINGS database accessible")
+        # print(" SEC_FILINGS database accessible")
         
         # Load SEC filing data using our enhanced view approach
         session.sql(f"""
@@ -1264,16 +1229,16 @@ def build_sec_filings_and_fundamentals(session: Session):
         
         # Get count of loaded records
         sec_count = session.sql(f"SELECT COUNT(*) as cnt FROM {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS").collect()[0]['CNT']
-        print(f"✅ Loaded {sec_count:,} SEC filing records from real data")
+        # print(f" Loaded {sec_count:,} SEC filing records from real data")
         
     except Exception as e:
-        print(f"⚠️  SEC filing data not available: {e}")
-        print("📊 Falling back to synthetic fundamentals generation...")
+        print(f"WARNING:  SEC filing data not available: {e}")
+        # print(" Falling back to synthetic fundamentals generation...")
         
         # Call the existing fundamentals function as fallback
         build_fundamentals_and_estimates(session)
     
-    print("✅ SEC filings and fundamentals data ready")
+    # print(" SEC filings and fundamentals data ready")
 
 def build_esg_scores(session: Session):
     """Build ESG scores with SecurityID linkage using efficient SQL generation."""
@@ -1355,7 +1320,7 @@ def build_esg_scores(session: Session):
                'MSCI' FROM base_scores
     """).collect()
     
-    print("✅ Created ESG scores with sector and regional differentiation")
+    # print(" Created ESG scores with sector and regional differentiation")
 
 def build_factor_exposures(session: Session):
     """Build factor exposures with SecurityID linkage using efficient SQL generation."""
@@ -1440,7 +1405,7 @@ def build_factor_exposures(session: Session):
         SELECT SecurityID, EXPOSURE_DATE, 'Volatility', VOLATILITY_FACTOR, 0.35 FROM base_exposures
     """).collect()
     
-    print("✅ Created factor exposures with sector-specific characteristics")
+    # print(" Created factor exposures with sector-specific characteristics")
 
 def build_benchmark_holdings(session: Session):
     """Build benchmark holdings with SecurityID linkage using efficient SQL generation."""
@@ -1521,7 +1486,7 @@ def build_benchmark_holdings(session: Session):
         WHERE WEIGHT >= 0.0001  -- Minimum 0.01% weight
     """).collect()
     
-    print("✅ Created benchmark holdings with realistic index compositions")
+    # print(" Created benchmark holdings with realistic index compositions")
 
 def build_transaction_cost_data(session: Session):
     """Build transaction cost and market microstructure data for realistic execution planning."""
@@ -1579,7 +1544,7 @@ def build_transaction_cost_data(session: Session):
         CROSS JOIN business_dates bd
     """).collect()
     
-    print("✅ Created transaction cost and market microstructure data")
+    # print(" Created transaction cost and market microstructure data")
 
 def build_liquidity_data(session: Session):
     """Build liquidity and cash flow data for portfolio implementation planning."""
@@ -1616,7 +1581,7 @@ def build_liquidity_data(session: Session):
         CROSS JOIN monthly_dates md
     """).collect()
     
-    print("✅ Created portfolio liquidity and cash flow data")
+    # print(" Created portfolio liquidity and cash flow data")
 
 def build_risk_budget_data(session: Session):
     """Build risk budget and limits data for professional risk management."""
@@ -1655,7 +1620,7 @@ def build_risk_budget_data(session: Session):
         FROM portfolios p
     """).collect()
     
-    print("✅ Created risk budget and limits data")
+    # print(" Created risk budget and limits data")
 
 def build_trading_calendar_data(session: Session):
     """Build trading calendar with blackout periods and market events."""
@@ -1702,7 +1667,7 @@ def build_trading_calendar_data(session: Session):
         WHERE fd.EVENT_DATE IS NOT NULL
     """).collect()
     
-    print("✅ Created trading calendar with blackout periods and events")
+    # print(" Created trading calendar with blackout periods and events")
 
 def build_client_mandate_data(session: Session):
     """Build client mandate and approval requirements data."""
@@ -1747,7 +1712,7 @@ def build_client_mandate_data(session: Session):
         FROM portfolios p
     """).collect()
     
-    print("✅ Created client mandate and approval requirements data")
+    # print(" Created client mandate and approval requirements data")
 
 def build_tax_implications_data(session: Session):
     """Build tax implications and cost basis data for tax-efficient execution."""
@@ -1791,7 +1756,7 @@ def build_tax_implications_data(session: Session):
         FROM portfolio_holdings ph
     """).collect()
     
-    print("✅ Created tax implications and cost basis data")
+    # print(" Created tax implications and cost basis data")
 
 # =============================================================================
 # MANDATE COMPLIANCE DATA (Scenario 3.2)
@@ -1805,12 +1770,14 @@ def build_fact_compliance_alerts(session: Session):
     database_name = config.DATABASE['name']
     
     # Create the table
+    # Note: No foreign key constraints - DIM_PORTFOLIO and DIM_SECURITY are created via DataFrames
+    # which don't define primary keys, so foreign key constraints would fail
     session.sql(f"""
         CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_COMPLIANCE_ALERTS (
             AlertID BIGINT IDENTITY(1,1) PRIMARY KEY,
             AlertDate DATE NOT NULL,
-            PortfolioID BIGINT NOT NULL,
-            SecurityID BIGINT NOT NULL,
+            PortfolioID BIGINT NOT NULL,              -- FK to DIM_PORTFOLIO (not enforced)
+            SecurityID BIGINT NOT NULL,               -- FK to DIM_SECURITY (not enforced)
             AlertType VARCHAR(50) NOT NULL,           -- 'ESG_DOWNGRADE', 'CONCENTRATION_BREACH', etc.
             AlertSeverity VARCHAR(20) NOT NULL,       -- 'WARNING', 'BREACH'
             OriginalValue VARCHAR(50),                -- e.g., 'A' (ESG grade before downgrade)
@@ -1820,13 +1787,11 @@ def build_fact_compliance_alerts(session: Session):
             AlertDescription TEXT,
             ResolvedDate DATE,                        -- When alert was resolved (NULL if active)
             ResolvedBy VARCHAR(100),                  -- PM who resolved
-            ResolutionNotes TEXT,
-            FOREIGN KEY (PortfolioID) REFERENCES {database_name}.CURATED.DIM_PORTFOLIO(PortfolioID),
-            FOREIGN KEY (SecurityID) REFERENCES {database_name}.CURATED.DIM_SECURITY(SecurityID)
+            ResolutionNotes TEXT
         )
     """).collect()
     
-    print("✅ Created FACT_COMPLIANCE_ALERTS table")
+    # print(" Created FACT_COMPLIANCE_ALERTS table")
 
 def build_fact_pre_screened_replacements(session: Session):
     """
@@ -1836,11 +1801,13 @@ def build_fact_pre_screened_replacements(session: Session):
     database_name = config.DATABASE['name']
     
     # Create the table
+    # Note: No foreign key constraints - DIM_PORTFOLIO and DIM_SECURITY are created via DataFrames
+    # which don't define primary keys, so foreign key constraints would fail
     session.sql(f"""
         CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_PRE_SCREENED_REPLACEMENTS (
             ReplacementID BIGINT IDENTITY(1,1) PRIMARY KEY,
-            PortfolioID BIGINT NOT NULL,              -- Which portfolio/mandate
-            SecurityID BIGINT NOT NULL,               -- Candidate security
+            PortfolioID BIGINT NOT NULL,              -- Which portfolio/mandate (FK not enforced)
+            SecurityID BIGINT NOT NULL,               -- Candidate security (FK not enforced)
             ScreenDate DATE NOT NULL,                 -- When pre-screened
             IsEligible BOOLEAN NOT NULL,              -- Passes basic criteria
             ReplacementRank INTEGER,                  -- Priority ranking (1=best, lower is better)
@@ -1852,13 +1819,11 @@ def build_fact_pre_screened_replacements(session: Session):
             -- Audit trail
             EligibilityReason TEXT,                   -- Why this candidate qualifies
             ScreeningCriteria TEXT,                   -- Criteria applied during screening
-            LastUpdated TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-            FOREIGN KEY (PortfolioID) REFERENCES {database_name}.CURATED.DIM_PORTFOLIO(PortfolioID),
-            FOREIGN KEY (SecurityID) REFERENCES {database_name}.CURATED.DIM_SECURITY(SecurityID)
+            LastUpdated TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
         )
     """).collect()
     
-    print("✅ Created FACT_PRE_SCREENED_REPLACEMENTS table")
+    # print(" Created FACT_PRE_SCREENED_REPLACEMENTS table")
 
 # Note: Report templates are now generated via unstructured data hydration engine
 # following @unstructured-data-generation.mdc patterns. The template files are in
@@ -1882,7 +1847,7 @@ def generate_demo_compliance_alert(session: Session):
     """).collect()
     
     if not portfolio_id_result:
-        print(f"⚠️  Portfolio '{portfolio_name}' not found - skipping demo alert")
+        print(f"WARNING:  Portfolio '{portfolio_name}' not found - skipping demo alert")
         return
     
     portfolio_id = portfolio_id_result[0]['PORTFOLIOID']
@@ -1897,7 +1862,7 @@ def generate_demo_compliance_alert(session: Session):
     """).collect()
     
     if not security_id_result:
-        print(f"⚠️  Security {non_compliant['ticker']} not found - skipping demo alert")
+        print(f"WARNING:  Security {non_compliant['ticker']} not found - skipping demo alert")
         return
     
     security_id = security_id_result[0]['SECURITYID']
@@ -1926,7 +1891,7 @@ def generate_demo_compliance_alert(session: Session):
         )
     """).collect()
     
-    print(f"✅ Generated demo compliance alert: {non_compliant['ticker']} ESG downgrade from {non_compliant['original_esg_grade']} to {non_compliant['downgraded_esg_grade']}")
+    # print(f" Generated demo compliance alert: {non_compliant['ticker']} ESG downgrade from {non_compliant['original_esg_grade']} to {non_compliant['downgraded_esg_grade']}")
 
 def generate_demo_pre_screened_replacements(session: Session):
     """
@@ -1945,7 +1910,7 @@ def generate_demo_pre_screened_replacements(session: Session):
     """).collect()
     
     if not portfolio_id_result:
-        print(f"⚠️  Portfolio '{portfolio_name}' not found - skipping pre-screened replacements")
+        print(f"WARNING:  Portfolio '{portfolio_name}' not found - skipping pre-screened replacements")
         return
     
     portfolio_id = portfolio_id_result[0]['PORTFOLIOID']
@@ -1965,7 +1930,7 @@ def generate_demo_pre_screened_replacements(session: Session):
         """).collect()
         
         if not security_id_result:
-            print(f"⚠️  Security {replacement['ticker']} not found - skipping")
+            print(f"WARNING:  Security {replacement['ticker']} not found - skipping")
             continue
         
         security_id = security_id_result[0]['SECURITYID']
@@ -1992,7 +1957,7 @@ def generate_demo_pre_screened_replacements(session: Session):
             )
         """).collect()
         
-        print(f"✅ Added pre-screened replacement: {replacement['ticker']} (Rank {replacement['rank']}, AI Score: {replacement['ai_growth_score']})")
+        # print(f" Added pre-screened replacement: {replacement['ticker']} (Rank {replacement['rank']}, AI Score: {replacement['ai_growth_score']})")
 
 # Report template functions removed - now handled by unstructured data hydration engine
 # Templates are in content_library/global/report_templates/ following @unstructured-data-generation.mdc patterns
@@ -2001,7 +1966,8 @@ def build_scenario_data(session: Session, scenario: str):
     """Build scenario-specific data."""
     
     if scenario == 'mandate_compliance' or scenario == 'portfolio_copilot':
-        print(f"🔧 Building Scenario 3.2: Mandate Compliance data...")
+        pass
+        # print(f" Building Scenario 3.2: Mandate Compliance data...")
         
         # Create tables
         build_fact_compliance_alerts(session)
@@ -2015,15 +1981,16 @@ def build_scenario_data(session: Session, scenario: str):
         # They will be processed through generate_unstructured.py following the
         # template-based generation pattern defined in @unstructured-data-generation.mdc
         
-        print("✅ Scenario 3.2: Mandate Compliance data complete")
-        print("   Note: Report templates will be generated via unstructured data pipeline")
+        # print(" Scenario 3.2: Mandate Compliance data complete")
+        # print("   Note: Report templates will be generated via unstructured data pipeline")
     else:
-        print(f"⏭️  Scenario data for {scenario} - not implemented yet")
+        pass
+        # print(f"⏭️  Scenario data for {scenario} - not implemented yet")
 
 def validate_data_quality(session: Session):
     """Validate data quality of the new model."""
     
-    print("🔍 Running data quality checks...")
+    # print("🔍 Running data quality checks...")
     
     # Check portfolio weights sum to 100%
     weight_check = session.sql(f"""
@@ -2038,9 +2005,10 @@ def validate_data_quality(session: Session):
     """).collect()
     
     if weight_check:
-        print(f"⚠️  Portfolio weight deviations found: {len(weight_check)} portfolios")
+        print(f"WARNING:  Portfolio weight deviations found: {len(weight_check)} portfolios")
     else:
-        print("✅ Portfolio weights sum to 100%")
+        pass
+        # print(" Portfolio weights sum to 100%")
     
     # Check security identifier integrity (simplified - check direct columns)
     security_check = session.sql(f"""
@@ -2057,12 +2025,12 @@ def validate_data_quality(session: Session):
         with_ticker = result['SECURITIES_WITH_TICKER']
         with_figi = result['SECURITIES_WITH_FIGI']
         
-        print(f"✅ Security identifier validation: {total} securities total")
-        print(f"📊 Identifier coverage: {with_ticker} with TICKER ({with_ticker/total*100:.1f}%), {with_figi} with FIGI ({with_figi/total*100:.1f}%)")
+        # print(f" Security identifier validation: {total} securities total")
+        # print(f" Identifier coverage: {with_ticker} with TICKER ({with_ticker/total*100:.1f}%), {with_figi} with FIGI ({with_figi/total*100:.1f}%)")
         
         if with_ticker < total:
-            print(f"⚠️  {total - with_ticker} securities missing TICKER")
+            print(f"WARNING:  {total - with_ticker} securities missing TICKER")
         if with_figi < total:
-            print(f"⚠️  {total - with_figi} securities missing FIGI")
+            print(f"WARNING:  {total - with_figi} securities missing FIGI")
     
-    print("✅ Data quality validation complete")
+    # print(" Data quality validation complete")
