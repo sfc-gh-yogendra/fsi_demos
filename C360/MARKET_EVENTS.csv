@@ -1,0 +1,4 @@
+EVENT_ID,START_DATE,END_DATE,EVENT_NAME,DESCRIPTION,IMPACT_TYPE
+EVT_130D586C,2020-04-11 00:00:00.000,2021-12-31 00:00:00.000,Post-COVID Recovery Rally,Strong market recovery fueled by stimulus measures.,Strong Growth / Rally
+EVT_3B88FCFD,2022-01-01 00:00:00.000,2023-06-30 00:00:00.000,Inflation Surge & Rate Hikes,Period of high inflation and central bank interest rate increases.,Increased Volatility / Sector Rotation
+EVT_A8C02A12,2023-07-01 00:00:00.000,2025-04-10 00:00:00.000,Recent Market Normalization,Period of market adjustment and normalization following rate hikes.,Moderate Volatility / Cautious Growth

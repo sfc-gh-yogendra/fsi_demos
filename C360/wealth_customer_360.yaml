@@ -1,0 +1,1112 @@
+name: WealthManagementAnalytics
+description: Semantic model providing analytical access to synthetic client, portfolio, interaction, and market data for a wealth management firm.
+tables:
+  - name: CLIENTS
+    description: Stores demographic, financial profile, and contact information for individual wealth management clients (customers).
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: CLIENTS
+    dimensions:
+      - name: CLIENT_ID
+        synonyms:
+          - client number
+          - customer id
+          - client key
+        description: Unique identifier for each client.
+        expr: CLIENT_ID
+        data_type: STRING
+        unique: true
+      - name: FIRST_NAME
+        synonyms:
+          - given name
+          - client first name
+        description: Client's first or given name.
+        expr: FIRST_NAME
+        data_type: STRING
+        unique: false
+      - name: LAST_NAME
+        synonyms:
+          - family name
+          - surname
+          - client last name
+        description: Client's last or family name.
+        expr: LAST_NAME
+        data_type: STRING
+        unique: false
+      - name: GENDER
+        synonyms:
+          - client gender
+        description: Client's reported gender.
+        expr: GENDER
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: MARITAL_STATUS
+        synonyms:
+          - client marital status
+        description: Client's marital status.
+        expr: MARITAL_STATUS
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: EMAIL
+        synonyms:
+          - client email
+          - email address
+        description: Client's primary email address.
+        expr: EMAIL
+        data_type: STRING
+        unique: false
+      - name: PHONE_NUMBER
+        synonyms:
+          - client phone
+          - phone
+        description: Client's primary phone number.
+        expr: PHONE_NUMBER
+        data_type: STRING
+        unique: false
+      - name: ADDRESS
+        synonyms:
+          - client address
+          - street address
+        description: Client's residential street address.
+        expr: ADDRESS
+        data_type: STRING
+        unique: false
+      - name: CITY
+        synonyms:
+          - client city
+        description: Client's residential city.
+        expr: CITY
+        data_type: STRING
+        unique: false
+      - name: STATE
+        synonyms:
+          - client state
+          - province
+        description: Client's residential state abbreviation (USA).
+        expr: STATE
+        data_type: STRING
+        unique: false
+      - name: ZIP_CODE
+        synonyms:
+          - client zip code
+          - postal code
+        description: Client's residential postal code (USA).
+        expr: ZIP_CODE
+        data_type: STRING
+        unique: false
+      - name: COUNTRY
+        synonyms:
+          - client country
+        description: Client's residential country (defaults to USA).
+        expr: COUNTRY
+        data_type: STRING
+        unique: false
+      - name: OCCUPATION
+        synonyms:
+          - client job
+          - profession
+        description: Client's job title or profession.
+        expr: OCCUPATION
+        data_type: STRING
+        unique: false
+      - name: RISK_TOLERANCE
+        synonyms:
+          - client risk profile
+          - investment profile
+          - risk level
+        description: Client's assessed investment risk tolerance level.
+        expr: RISK_TOLERANCE
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: FINANCIAL_GOALS
+        synonyms:
+          - client goals
+          - objectives
+          - financial objectives
+        description: JSON string representing a list of client's stated financial goals (e.g., Retirement, Education Funding).
+        expr: FINANCIAL_GOALS
+        data_type: STRING
+        unique: false
+      - name: LIFE_EVENT
+        synonyms:
+          - client life event
+          - recent event
+        description: Most recent significant life event reported by the client (if any).
+        expr: LIFE_EVENT
+        data_type: STRING
+        unique: false
+        is_enum: true
+    time_dimensions:
+      - name: BIRTH_DATE
+        synonyms:
+          - date of birth
+          - client dob
+        description: Client's date of birth.
+        expr: BIRTH_DATE
+        data_type: DATE
+        unique: false
+      - name: JOIN_DATE
+        synonyms:
+          - client since
+          - onboarding date
+          - join timestamp
+        description: Date and time the client officially joined the wealth management firm.
+        expr: JOIN_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: LAST_UPDATE_TIMESTAMP
+        synonyms:
+          - client record last updated
+        description: Timestamp indicating when the client's record was last updated during generation.
+        expr: LAST_UPDATE_TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: AGE
+        synonyms:
+          - client age
+        description: Client's age in years, calculated as of the dataset generation date.
+        expr: AGE
+        data_type: INTEGER
+      - name: ANNUAL_INCOME
+        synonyms:
+          - income
+          - client salary
+          - yearly income
+        description: Client's approximate annual income in USD.
+        expr: ANNUAL_INCOME
+        data_type: DECIMAL
+      - name: NET_WORTH_ESTIMATE
+        synonyms:
+          - client value
+          - total assets
+          - wealth
+          - estimated net worth
+        description: Client's estimated total net worth in USD.
+        expr: NET_WORTH_ESTIMATE
+        data_type: DECIMAL
+    metrics:
+      - name: NumberOfClients
+        synonyms:
+          - total clients
+          - client count
+          - customer count
+        description: The total number of unique clients.
+        expr: COUNT(DISTINCT CLIENT_ID)
+    primary_key:
+      columns:
+        - CLIENT_ID
+    filters:
+      - name: HighNetWorthClients
+        synonyms:
+          - high value clients
+          - HNW clients
+          - wealthy clients
+        description: Filters for clients with an estimated net worth greater than $1,000,000.
+        expr: NET_WORTH_ESTIMATE > 1000000
+      - name: RetirementGoalClients
+        synonyms:
+          - clients planning for retirement
+        description: Filters for clients whose financial goals include 'Retirement Planning'.
+        expr: CONTAINS(FINANCIAL_GOALS, 'Retirement Planning')
+    synonyms:
+      - customers
+      - individuals
+      - client details
+      - people
+      - client base
+  - name: ADVISORS
+    description: Stores information about the financial advisors at the firm.
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: ADVISORS
+    dimensions:
+      - name: ADVISOR_ID
+        synonyms:
+          - advisor number
+          - employee id
+          - advisor key
+        description: Unique identifier for each financial advisor.
+        expr: ADVISOR_ID
+        data_type: STRING
+        unique: true
+      - name: NAME
+        synonyms:
+          - advisor name
+          - rep name
+        description: Advisor's full name.
+        expr: NAME
+        data_type: STRING
+        unique: false
+      - name: SPECIALIZATION
+        synonyms:
+          - advisor focus area
+          - specialty
+        description: Advisor's area of expertise (e.g., Retirement Planning, Investment Management).
+        expr: SPECIALIZATION
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: REGION
+        synonyms:
+          - advisor region
+          - service area
+        description: Geographical region or state the advisor primarily serves.
+        expr: REGION
+        data_type: STRING
+        unique: false
+    time_dimensions:
+      - name: CREATED_TIMESTAMP
+        synonyms:
+          - advisor record created date
+        description: Timestamp when the advisor's record was created in the system.
+        expr: CREATED_TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: EXPERIENCE_YEARS
+        synonyms:
+          - advisor years of experience
+          - tenure
+        description: Number of years the advisor has worked in the industry.
+        expr: EXPERIENCE_YEARS
+        data_type: INTEGER
+    metrics:
+      - name: NumberOfAdvisors
+        synonyms:
+          - total advisors
+          - advisor count
+          - staff count
+        description: The total number of unique advisors.
+        expr: COUNT(DISTINCT ADVISOR_ID)
+    primary_key:
+      columns:
+        - ADVISOR_ID
+    synonyms:
+      - financial advisors
+      - wealth managers
+      - staff
+      - employees
+      - reps
+      - representatives
+      - relationship managers
+  - name: ACCOUNTS
+    description: Details of financial accounts held by clients (e.g., checking, savings, investment).
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: ACCOUNTS
+    dimensions:
+      - name: ACCOUNT_ID
+        synonyms:
+          - account number
+          - account key
+        description: Unique identifier for each financial account.
+        expr: ACCOUNT_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: CLIENT_ID
+        synonyms:
+          - client number
+          - customer id owning account
+        description: Identifier linking the account to a client in the CLIENTS table.
+        expr: CLIENT_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: ACCOUNT_TYPE
+        synonyms:
+          - type of account
+          - account category
+        description: Type of financial account.
+        expr: ACCOUNT_TYPE
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+      - name: ACCOUNT_NAME
+        synonyms:
+          - account label
+        description: User-friendly name or label for the account.
+        expr: ACCOUNT_NAME
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: CURRENCY
+        synonyms:
+          - account currency
+        description: Currency code for the account (defaults to USD).
+        expr: CURRENCY
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: STATUS
+        synonyms:
+          - account status
+        description: Current status of the account.
+        expr: STATUS
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+    time_dimensions:
+      - name: OPEN_DATE
+        synonyms:
+          - account opened date
+          - creation date
+        description: Date and time the account was opened.
+        expr: OPEN_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: LAST_UPDATE_TIMESTAMP
+        synonyms:
+          - account record last updated
+        description: Timestamp when the account record was last updated during generation.
+        expr: LAST_UPDATE_TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: INITIAL_BALANCE
+        synonyms:
+          - starting balance
+          - opening balance
+        description: Initial cash deposit or balance when the account was opened. For investment accounts, this is the initial funding amount.
+        expr: INITIAL_BALANCE
+        data_type: NUMBER(20,2)
+    metrics:
+      - name: NumberOfAccounts
+        synonyms:
+          - total accounts
+          - account count
+        description: The total number of financial accounts.
+        expr: COUNT(DISTINCT ACCOUNT_ID)
+      - name: NumberOfInvestmentAccounts
+        synonyms:
+          - total investment accounts
+        description: The total number of investment-type accounts.
+        expr: COUNT(DISTINCT CASE WHEN ACCOUNT_TYPE = 'Investment' THEN ACCOUNT_ID ELSE NULL END)
+    primary_key:
+      columns:
+        - ACCOUNT_ID
+    synonyms:
+      - financial accounts
+      - client accounts
+      - bank accounts
+      - investment accounts
+  - name: ACCOUNT_HISTORY
+    description: Stores historical snapshots of balances for non-investment accounts (Checking, Savings).
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: ACCOUNT_HISTORY
+    dimensions:
+      - name: HISTORY_ID
+        synonyms:
+          - history record id
+        description: Unique identifier for each history record.
+        expr: HISTORY_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: ACCOUNT_ID
+        synonyms:
+          - account number
+        description: Identifier linking the history record to an account in the ACCOUNTS table.
+        expr: ACCOUNT_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: CURRENCY
+        synonyms:
+          - balance currency
+        description: Currency code for the balance (defaults to USD).
+        expr: CURRENCY
+        data_type: VARCHAR(16777216)
+        unique: false
+    time_dimensions:
+      - name: TIMESTAMP
+        synonyms:
+          - snapshot date
+          - record date
+          - balance date
+        description: Date and time of the balance snapshot.
+        expr: TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: BALANCE
+        synonyms:
+          - account balance
+          - balance amount
+        description: Account balance at the specified timestamp (for non-investment accounts).
+        expr: BALANCE
+        data_type: NUMBER(20,2)
+    primary_key:
+      columns:
+        - HISTORY_ID
+    synonyms:
+      - balance history
+      - account snapshots
+      - historical balances
+      - statement history
+  - name: ADVISOR_CLIENT_RELATIONSHIPS
+    description: Maps clients to their assigned financial advisors and tracks relationship details.
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: ADVISOR_CLIENT_RELATIONSHIPS
+    dimensions:
+      - name: RELATIONSHIP_ID
+        synonyms:
+          - relationship key
+        description: Unique identifier for each client-advisor relationship.
+        expr: RELATIONSHIP_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: CLIENT_ID
+        synonyms:
+          - client number
+        description: Identifier linking to the client in the CLIENTS table.
+        expr: CLIENT_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: ADVISOR_ID
+        synonyms:
+          - advisor number
+        description: Identifier linking to the advisor in the ADVISORS table.
+        expr: ADVISOR_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: STATUS
+        synonyms:
+          - relationship status
+        description: Current status of the relationship.
+        expr: STATUS
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+    time_dimensions:
+      - name: START_DATE
+        synonyms:
+          - relationship started date
+          - assignment date
+        description: Date and time the client-advisor relationship officially began.
+        expr: START_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: LAST_CONTACT_DATE
+        synonyms:
+          - last interaction date
+          - last touchpoint date
+        description: Timestamp of the last known contact or interaction (approximated during generation).
+        expr: LAST_CONTACT_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    metrics:
+      - name: NumberOfActiveRelationships
+        synonyms:
+          - active relationships count
+        description: The total number of active client-advisor relationships.
+        expr: COUNT(DISTINCT CASE WHEN STATUS = 'Active' THEN RELATIONSHIP_ID ELSE NULL END)
+    primary_key:
+      columns:
+        - RELATIONSHIP_ID
+    synonyms:
+      - relationships
+      - client advisor mapping
+      - assignments
+      - client advisor links
+  - name: PORTFOLIOS
+    description: Represents investment portfolios linked to client accounts, defining strategy.
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: PORTFOLIOS
+    dimensions:
+      - name: PORTFOLIO_ID
+        synonyms:
+          - portfolio number
+          - portfolio key
+        description: Unique identifier for each investment portfolio.
+        expr: PORTFOLIO_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: CLIENT_ID
+        synonyms:
+          - client number
+        description: Identifier linking the portfolio to a client in the CLIENTS table.
+        expr: CLIENT_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: ACCOUNT_ID
+        synonyms:
+          - investment account number
+        description: Identifier linking the portfolio to a specific investment account in the ACCOUNTS table.
+        expr: ACCOUNT_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: PORTFOLIO_NAME
+        synonyms:
+          - portfolio label
+        description: User-friendly name for the portfolio.
+        expr: PORTFOLIO_NAME
+        data_type: STRING
+        unique: false
+      - name: STRATEGY_TYPE
+        synonyms:
+          - portfolio strategy
+          - investment strategy
+          - portfolio risk level
+        description: Investment strategy applied to the portfolio, typically matching client risk tolerance.
+        expr: STRATEGY_TYPE
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: CURRENCY
+        synonyms:
+          - portfolio currency
+        description: Base currency of the portfolio (defaults to USD).
+        expr: CURRENCY
+        data_type: VARCHAR(16777216)
+        unique: false
+    time_dimensions:
+      - name: CREATION_DATE
+        synonyms:
+          - portfolio created date
+        description: Date and time the portfolio was created.
+        expr: CREATION_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: LAST_REBALANCED_DATE
+        synonyms:
+          - last rebalance date
+        description: Timestamp of the last simulated portfolio rebalancing event (if applicable).
+        expr: LAST_REBALANCED_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: LAST_UPDATE_TIMESTAMP
+        synonyms:
+          - portfolio record last updated
+        description: Timestamp when the portfolio record was last updated during generation.
+        expr: LAST_UPDATE_TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    metrics:
+      - name: NumberOfPortfolios
+        synonyms:
+          - total portfolios
+          - portfolio count
+        description: The total number of investment portfolios.
+        expr: COUNT(DISTINCT PORTFOLIO_ID)
+    primary_key:
+      columns:
+        - PORTFOLIO_ID
+    synonyms:
+      - investment portfolios
+      - client portfolios
+      - managed accounts
+      - strategies
+  - name: POSITION_HISTORY
+    description: Stores historical snapshots of asset holdings (positions) within investment portfolios.
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: POSITION_HISTORY
+    dimensions:
+      - name: POSITION_HISTORY_ID
+        synonyms:
+          - position record id
+        description: Unique identifier for each position snapshot record.
+        expr: POSITION_HISTORY_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: PORTFOLIO_ID
+        synonyms:
+          - portfolio number
+        description: Identifier linking the position to a portfolio in the PORTFOLIOS table.
+        expr: PORTFOLIO_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: TICKER
+        synonyms:
+          - symbol
+          - asset symbol
+          - holding
+          - stock ticker
+        description: Ticker symbol of the asset held (e.g., stock, ETF). 'CASH' represents cash holdings.
+        expr: TICKER
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: CURRENCY
+        synonyms:
+          - position currency
+        description: Currency code (defaults to USD).
+        expr: CURRENCY
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: ASSET_CLASS
+        synonyms:
+          - type of asset
+          - asset category
+        description: Broad asset class category for the holding.
+        expr: ASSET_CLASS
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+    time_dimensions:
+      - name: TIMESTAMP
+        synonyms:
+          - snapshot date
+          - as of date
+          - position date
+        description: Date and time of the position snapshot.
+        expr: TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: QUANTITY
+        synonyms:
+          - shares
+          - units
+          - number held
+          - position quantity
+          - cash amount
+        description: Number of shares or units held at the snapshot time. For 'CASH', this is the cash balance amount.
+        expr: QUANTITY
+        data_type: NUMBER(38,10)
+      - name: UNIT_PRICE
+        synonyms:
+          - price
+          - market price
+          - share price
+          - position price
+        description: Market price per share/unit at the snapshot time. For 'CASH', this is 1.00.
+        expr: UNIT_PRICE
+        data_type: NUMBER(20,4)
+      - name: MARKET_VALUE
+        synonyms:
+          - position value
+          - value
+          - total value
+          - holding value
+        description: Total market value of the position (Quantity * Unit Price) at the snapshot time.
+        expr: MARKET_VALUE
+        data_type: NUMBER(20,2)
+    metrics:
+      - name: TotalPortfolioValueAsOfDate
+        synonyms:
+          - total portfolio market value
+          - AUM
+        description: Sum of market values for all non-cash positions in a portfolio at a specific date (requires filtering).
+        expr: SUM(CASE WHEN TICKER != 'CASH' THEN MARKET_VALUE ELSE 0 END)
+    primary_key:
+      columns:
+        - POSITION_HISTORY_ID
+    synonyms:
+      - holdings history
+      - portfolio positions
+      - asset snapshots
+      - position details
+      - holdings
+  - name: TRANSACTIONS
+    description: Records of financial transactions within investment portfolios (buys, sells, deposits, withdrawals).
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: TRANSACTIONS
+    dimensions:
+      - name: TRANSACTION_ID
+        synonyms:
+          - transaction number
+          - trade id
+        description: Unique identifier for each transaction.
+        expr: TRANSACTION_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: PORTFOLIO_ID
+        synonyms:
+          - portfolio number
+        description: Identifier linking the transaction to a portfolio in the PORTFOLIOS table.
+        expr: PORTFOLIO_ID
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: TICKER
+        synonyms:
+          - symbol
+          - asset traded
+          - stock traded
+        description: Ticker symbol of the asset involved. 'CASH' for deposits/withdrawals.
+        expr: TICKER
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: TRANSACTION_TYPE
+        synonyms:
+          - trade type
+          - action
+          - activity type
+        description: Type of transaction performed.
+        expr: TRANSACTION_TYPE
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+      - name: CURRENCY
+        synonyms:
+          - transaction currency
+        description: Currency code (defaults to USD).
+        expr: CURRENCY
+        data_type: VARCHAR(16777216)
+        unique: false
+    time_dimensions:
+      - name: TIMESTAMP
+        synonyms:
+          - transaction date
+          - trade date
+          - activity date
+        description: Date and time the transaction occurred.
+        expr: TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: QUANTITY
+        synonyms:
+          - shares traded
+          - units traded
+          - transaction quantity
+          - deposit amount
+          - withdrawal amount
+        description: Number of shares/units transacted. For 'CASH', this is the deposit/withdrawal amount.
+        expr: QUANTITY
+        data_type: NUMBER(38,10)
+      - name: PRICE
+        synonyms:
+          - transaction price
+          - execution price
+          - trade price
+        description: Price per share/unit at the time of the transaction. 1.00 for 'CASH' transactions.
+        expr: PRICE
+        data_type: NUMBER(20,4)
+      - name: TOTAL_AMOUNT
+        synonyms:
+          - transaction value
+          - total value
+          - amount
+          - trade value
+        description: Total value of the transaction (Quantity * Price). For 'CASH', equals Quantity.
+        expr: TOTAL_AMOUNT
+        data_type: NUMBER(20,2)
+    metrics:
+      - name: TotalBuyAmount
+        synonyms:
+          - total purchased value
+        description: Sum of total amounts for 'Buy' transactions.
+        expr: SUM(CASE WHEN TRANSACTION_TYPE = 'Buy' THEN TOTAL_AMOUNT ELSE 0 END)
+      - name: TotalSellAmount
+        synonyms:
+          - total sold value
+        description: Sum of total amounts for 'Sell' transactions.
+        expr: SUM(CASE WHEN TRANSACTION_TYPE = 'Sell' THEN TOTAL_AMOUNT ELSE 0 END)
+      - name: NumberOfTrades
+        synonyms:
+          - trade count
+        description: Total number of Buy or Sell transactions.
+        expr: COUNT(CASE WHEN TRANSACTION_TYPE IN ('Buy', 'Sell') THEN TRANSACTION_ID ELSE NULL END)
+    synonyms:
+      - trades
+      - portfolio activity
+      - transaction log
+      - buys and sells
+      - activity history
+      - trading activity
+  - name: INTERACTIONS
+    description: Logs of interactions between clients and advisors (meetings, calls, emails, complaints, service requests).
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: INTERACTIONS
+    dimensions:
+      - name: INTERACTION_ID
+        synonyms:
+          - interaction number
+          - contact id
+        description: Unique identifier for each interaction record.
+        expr: INTERACTION_ID
+        data_type: STRING
+        unique: true
+      - name: CLIENT_ID
+        synonyms:
+          - client number
+        description: Identifier linking the interaction to a client.
+        expr: CLIENT_ID
+        data_type: STRING
+        unique: false
+      - name: ADVISOR_ID
+        synonyms:
+          - advisor number
+        description: Identifier linking the interaction to an advisor.
+        expr: ADVISOR_ID
+        data_type: STRING
+        unique: false
+      - name: RELATIONSHIP_ID
+        synonyms:
+          - relationship key
+        description: Identifier linking the interaction to a specific client-advisor relationship (optional).
+        expr: RELATIONSHIP_ID
+        data_type: STRING
+        unique: false
+      - name: INTERACTION_TYPE
+        synonyms:
+          - contact type
+          - interaction category
+        description: The type or category of the interaction.
+        expr: INTERACTION_TYPE
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: CHANNEL
+        synonyms:
+          - communication channel
+          - medium
+          - contact method
+        description: Communication channel used for the interaction.
+        expr: CHANNEL
+        data_type: STRING
+        unique: false
+        is_enum: true
+      - name: PURPOSE_SUBJECT
+        synonyms:
+          - subject
+          - topic
+          - reason for contact
+          - interaction purpose
+        description: The main reason, purpose, or subject line of the interaction.
+        expr: PURPOSE_SUBJECT
+        data_type: STRING
+        unique: false
+      - name: OUTCOME_NOTES
+        synonyms:
+          - status
+          - resolution status
+          - outcome category
+          - structured outcome
+        description: Stores the simple, structured outcome category (e.g., 'Issue Resolved', 'Action items agreed', 'Processing'). Provides a quick status.
+        expr: OUTCOME_NOTES
+        data_type: STRING
+        unique: false
+    time_dimensions:
+      - name: TIMESTAMP
+        synonyms:
+          - interaction date
+          - contact date
+          - interaction time
+        description: Date and time the interaction occurred.
+        expr: TIMESTAMP
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    facts:
+      - name: DURATION_MINUTES
+        synonyms:
+          - call length
+          - meeting duration
+          - interaction duration
+        description: Duration of the interaction in minutes (primarily for Calls and Meetings).
+        expr: DURATION_MINUTES
+        data_type: INTEGER
+    metrics:
+      - name: NumberOfInteractions
+        synonyms:
+          - total interactions
+          - interaction count
+          - contact count
+        description: The total number of interactions.
+        expr: COUNT(DISTINCT INTERACTION_ID)
+      - name: NumberOfMeetings
+        synonyms:
+          - total meetings
+          - meeting count
+        description: The total number of meeting interactions.
+        expr: COUNT(DISTINCT CASE WHEN INTERACTION_TYPE = 'Meeting' THEN INTERACTION_ID ELSE NULL END)
+      - name: NumberOfComplaints
+        synonyms:
+          - total complaints
+          - complaint count
+        description: The total number of complaint interactions.
+        expr: COUNT(DISTINCT CASE WHEN INTERACTION_TYPE = 'Complaint' THEN INTERACTION_ID ELSE NULL END)
+    primary_key:
+      columns:
+        - INTERACTION_ID
+    synonyms:
+      - client interactions
+      - communication log
+      - contact history
+      - meetings
+      - calls
+      - emails
+      - client contacts
+  - name: MARKET_EVENTS
+    description: Stores defined periods of significant market events or conditions for contextual reference.
+    base_table:
+      database: FSI_DEMOS
+      schema: WEALTH_360
+      table: MARKET_EVENTS
+    dimensions:
+      - name: EVENT_ID
+        synonyms:
+          - market event key
+        description: Unique identifier for each market event period.
+        expr: EVENT_ID
+        data_type: VARCHAR(16777216)
+        unique: true
+      - name: EVENT_NAME
+        synonyms:
+          - market period name
+          - event title
+        description: A descriptive name for the market event period.
+        expr: EVENT_NAME
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: DESCRIPTION
+        synonyms:
+          - event details
+        description: A brief description of the market event or condition.
+        expr: DESCRIPTION
+        data_type: VARCHAR(16777216)
+        unique: false
+      - name: IMPACT_TYPE
+        synonyms:
+          - market impact
+          - event category
+        description: Categorization of the event's general market impact.
+        expr: IMPACT_TYPE
+        data_type: VARCHAR(16777216)
+        unique: false
+        is_enum: true
+    time_dimensions:
+      - name: START_DATE
+        synonyms:
+          - event start
+        description: Start date (inclusive) of the market event period.
+        expr: START_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+      - name: END_DATE
+        synonyms:
+          - event end
+        description: End date (inclusive) of the market event period.
+        expr: END_DATE
+        data_type: TIMESTAMP_NTZ
+        unique: false
+    primary_key:
+      columns:
+        - EVENT_ID
+    synonyms:
+      - market conditions
+      - economic events
+      - market periods
+      - market commentary points
+relationships:
+  - name: ClientAccounts
+    left_table: ACCOUNTS
+    right_table: CLIENTS
+    relationship_columns:
+      - left_column: CLIENT_ID
+        right_column: CLIENT_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: ClientRelationships
+    left_table: ADVISOR_CLIENT_RELATIONSHIPS
+    right_table: CLIENTS
+    relationship_columns:
+      - left_column: CLIENT_ID
+        right_column: CLIENT_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: AdvisorRelationships
+    left_table: ADVISOR_CLIENT_RELATIONSHIPS
+    right_table: ADVISORS
+    relationship_columns:
+      - left_column: ADVISOR_ID
+        right_column: ADVISOR_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: ClientPortfolios
+    left_table: PORTFOLIOS
+    right_table: CLIENTS
+    relationship_columns:
+      - left_column: CLIENT_ID
+        right_column: CLIENT_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: AccountPortfolios
+    left_table: PORTFOLIOS
+    right_table: ACCOUNTS
+    relationship_columns:
+      - left_column: ACCOUNT_ID
+        right_column: ACCOUNT_ID
+    join_type: inner
+    relationship_type: one_to_one
+  - name: PortfolioPositionHistory
+    left_table: POSITION_HISTORY
+    right_table: PORTFOLIOS
+    relationship_columns:
+      - left_column: PORTFOLIO_ID
+        right_column: PORTFOLIO_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: PortfolioTransactions
+    left_table: TRANSACTIONS
+    right_table: PORTFOLIOS
+    relationship_columns:
+      - left_column: PORTFOLIO_ID
+        right_column: PORTFOLIO_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: ClientInteraction
+    left_table: INTERACTIONS
+    right_table: CLIENTS
+    relationship_columns:
+      - left_column: CLIENT_ID
+        right_column: CLIENT_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: AdvisorInteractions
+    left_table: INTERACTIONS
+    right_table: ADVISORS
+    relationship_columns:
+      - left_column: ADVISOR_ID
+        right_column: ADVISOR_ID
+    join_type: inner
+    relationship_type: many_to_one
+  - name: RelationshipInteractions
+    left_table: INTERACTIONS
+    right_table: ADVISOR_CLIENT_RELATIONSHIPS
+    relationship_columns:
+      - left_column: RELATIONSHIP_ID
+        right_column: RELATIONSHIP_ID
+    join_type: left_outer
+    relationship_type: many_to_one
+  - name: AccountHistoryLink
+    left_table: ACCOUNT_HISTORY
+    right_table: ACCOUNTS
+    relationship_columns:
+      - left_column: ACCOUNT_ID
+        right_column: ACCOUNT_ID
+    join_type: inner
+    relationship_type: many_to_one
+verified_queries:
+  - name: low_engagement_high_net_worth_clients
+    question: 'Which clients has a low engagement and high net worth  '
+    use_as_onboarding_question: true
+    sql: WITH last_interaction AS (SELECT i.client_id, MAX(i.timestamp) AS last_interaction_date FROM interactions AS i GROUP BY i.client_id) SELECT DISTINCT c.client_id, c.first_name, c.last_name, c.net_worth_estimate FROM clients AS c LEFT OUTER JOIN last_interaction AS li ON c.client_id = li.client_id WHERE c.net_worth_estimate > 1000000 AND (li.last_interaction_date IS NULL OR li.last_interaction_date < DATEADD(DAY, -180, CURRENT_DATE)) ORDER BY c.net_worth_estimate DESC NULLS LAST
+    verified_by: Mats Stellwall
+    verified_at: 1744536162
+  - name: fum_ytd_percentage_growth
+    question: What is the FUM (Funds under management) % growth YTD (Year to Date)
+    use_as_onboarding_question: true
+    sql: WITH port AS (SELECT p.portfolio_id, TO_TIMESTAMP(DATE_TRUNC('YEAR', CURRENT_DATE)) AS start_of_year, TO_TIMESTAMP(CURRENT_DATE) AS end_date FROM portfolios AS p), daily_portfolio_value AS (SELECT ph.portfolio_id, ph.timestamp, SUM(ph.market_value) AS tot_market_value FROM position_history AS ph WHERE ph.ticker <> 'CASH' GROUP BY ALL), start_of_year_value AS (SELECT 1 AS join_id, p.start_of_year, SUM(tot_market_value) AS tot_market_value FROM port AS p ASOF JOIN daily_portfolio_value AS pv MATCH_CONDITION (p.start_of_year >= pv.timestamp) ON p.portfolio_id = pv.portfolio_id GROUP BY ALL), latest_value AS (SELECT 1 AS join_id, p.end_date, SUM(tot_market_value) AS tot_market_value FROM port AS p ASOF JOIN daily_portfolio_value AS pv MATCH_CONDITION (p.end_date >= pv.timestamp) ON p.portfolio_id = pv.portfolio_id GROUP BY ALL) SELECT l.end_date AS current_date_, l.tot_market_value AS current_aum, s.start_of_year AS ytd_start_date, s.tot_market_value AS ytd_start_aum, (current_aum - ytd_start_aum) / NULLIF(NULLIF(ytd_start_aum, 0), 0) AS ytd_growth_pct FROM latest_value AS l INNER JOIN start_of_year_value AS s ON (l.join_id = s.join_id)
+    verified_by: Mats Stellwall
+    verified_at: 1750172058
+  - name: ManagerCompareClientRiskProfilesForAdvisors
+    question: Show the distribution of client risk tolerance levels (e.g., count per category) for Emily Bond's clients compared to Jeremiah Dodson's clients.
+    use_as_onboarding_question: true
+    sql: SELECT a.NAME AS ADVISOR_NAME, c.RISK_TOLERANCE, COUNT(DISTINCT c.CLIENT_ID) AS CLIENT_COUNT FROM CLIENTS AS c JOIN ADVISOR_CLIENT_RELATIONSHIPS AS r ON c.CLIENT_ID = r.CLIENT_ID JOIN ADVISORS AS a ON r.ADVISOR_ID = a.ADVISOR_ID WHERE a.NAME IN ('Emily Bond', 'Jeremiah Dodson') AND r.STATUS = 'Active' GROUP BY 1, 2 ORDER BY 1, 2
+    verified_by: Mats Stellwall
+    verified_at: 1750172127
+custom_instructions: When collecting values from history tables based on dates or timestamps always  use ASOF JOIN with MATCH_CONDITION to get the vale.

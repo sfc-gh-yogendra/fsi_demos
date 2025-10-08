@@ -1,0 +1,94 @@
+-- Where the PDF's are stored
+ls @docs;
+
+-- Step 1 Extract the text from the document, keep the format as is
+CREATE OR REPLACE TABLE CARBON_REDUCTION_DOCS_RAW
+AS
+SELECT
+    relative_path, 
+    GET_PRESIGNED_URL(@docs, relative_path, 604800) as scoped_file_url, 
+    SNOWFLAKE.CORTEX.PARSE_DOCUMENT(@docs, relative_path , {'mode': 'layout'}) as raw_text_dict,
+    TO_VARCHAR(raw_text_dict:content) as raw_text
+FROM DIRECTORY(@docs);
+
+-- Verify the extraction, the raw_text_dict column has the json returned and raw_text has the markdown text
+select * from CARBON_REDUCTION_DOCS_RAW LIMIT 2;
+
+-- Step 2: Add metadata for each document using LLM, artcle explaining the advantge of doing so https://www.snowflake.com/en/engineering-blog/impact-retrieval-chunking-finance-rag/
+CREATE OR REPLACE TABLE CARBON_REDUCTION_DOCS_METADATA AS (
+    SELECT
+        relative_path,
+        --scoped_file_url,
+        -- raw_text,
+        SNOWFLAKE.CORTEX.COMPLETE(
+        'llama3.3-70b', -- See https://docs.snowflake.com/en/user-guide/snowflake-cortex/aisql#availability for models that can be used
+        'I am going to provide a document which will be indexed by a retrieval system containing many similar documents. I want you to provide key information associated with this document that can help differentiate this document in the index. Follow these instructions:
+    1. Do not dwell on low level details. Only provide key high level information that a human might be expected to provide when searching for this doc.
+    2. Do not use any formatting, just provide keys and values using a colon to separate key and value. Have each key and value be on a new line.\n\nDoc starts here:\n' 
+    || raw_text || '\nDoc ends here\n\n') TEXT_METADATA,
+    FROM	
+        CARBON_REDUCTION_DOCS_RAW
+);
+
+-- Check the meta data generated 
+SELECT * FROM CARBON_REDUCTION_DOCS_METADATA LIMIT 2;
+
+-- Step 3: Create the chunks and add the metadata to each chunk
+CREATE OR REPLACE TABLE CARBON_REDUCTION_CONTEXTUALIZED_CHUNKS AS (
+    WITH SPLIT_TEXT_CHUNKS AS (
+        SELECT
+            relative_path,
+            scoped_file_url,
+            C.VALUE AS CHUNK,
+        FROM
+           CARBON_REDUCTION_DOCS_RAW,
+           LATERAL FLATTEN( input => SNOWFLAKE.CORTEX.SPLIT_TEXT_RECURSIVE_CHARACTER (
+              raw_text,
+              'none',
+              1800, -- SET CHUNK SIZE
+              300 -- SET CHUNK OVERLAP
+           )) C
+    )
+    SELECT
+        C.relative_path,
+        C.scoped_file_url,
+        CONCAT(M.TEXT_METADATA, '\n\n', C.CHUNK) AS CONTEXTUALIZED_CHUNK,
+    FROM
+        SPLIT_TEXT_CHUNKS C
+    JOIN
+        CARBON_REDUCTION_DOCS_METADATA M ON C.relative_path = M.relative_path);
+
+-- Verify
+select * from CARBON_REDUCTION_CONTEXTUALIZED_CHUNKS limit 10;
+
+-- Step 4: Create the Cortex Search service to be used for retrival https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-search/query-cortex-search-service
+CREATE OR REPLACE CORTEX SEARCH SERVICE CARBON_REDUCTION_search_service
+  ON CONTEXTUALIZED_CHUNK -- Indexed column that search is on
+  ATTRIBUTES relative_path, scoped_file_url -- Fields that can be used for filtering
+  WAREHOUSE = cortex_search_wh
+  TARGET_LAG = '1 day'
+  EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0' -- See for 
+  AS (
+    SELECT
+        CONTEXTUALIZED_CHUNK,
+        relative_path,
+        scoped_file_url
+    FROM CARBON_REDUCTION_CONTEXTUALIZED_CHUNKS
+);
+
+
+-- Preview the service
+SELECT PARSE_JSON(
+  SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+      'CARBON_REDUCTION_search_service',
+      '{
+        "query": "What is BT targets and their progress?",
+        "columns":[
+            "relative_path",
+            "CONTEXTUALIZED_CHUNK"
+        ],
+        "limit":5
+      }'
+  )
+)['results'] as results;
+
