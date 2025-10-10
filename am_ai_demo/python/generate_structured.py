@@ -139,7 +139,8 @@ def build_dim_issuer(session: Session, test_mode: bool = False):
             COALESCE(LEI[0]::VARCHAR, 'LEI' || LPAD(ABS(HASH(COMPANY_NAME)) % 1000000, 6, '0')) as LEI,
             COALESCE(COUNTRY_OF_DOMICILE, 'US') as CountryOfIncorporation,
             COALESCE(INDUSTRY_SECTOR, 'Diversified') as SIC_DESCRIPTION,
-            CIK
+            CIK,
+            PRIMARY_TICKER as PrimaryTicker
         FROM company_data
         WHERE COMPANY_NAME IS NOT NULL
         ORDER BY COMPANY_NAME
@@ -1174,9 +1175,9 @@ def build_sec_filings_and_fundamentals(session: Session):
         session.sql(f"""
             INSERT INTO {config.DATABASE['name']}.CURATED.FACT_SEC_FILINGS 
             SELECT 
-                ROW_NUMBER() OVER (ORDER BY s.SecurityID, sri.FISCAL_YEAR, sri.FISCAL_PERIOD, sra.TAG) as FilingID,
+                ROW_NUMBER() OVER (ORDER BY i.IssuerID, sri.FISCAL_YEAR, sri.FISCAL_PERIOD, sra.TAG) as FilingID,
                 s.SecurityID,
-                s.IssuerID,
+                i.IssuerID,
                 sra.CIK,
                 i.LegalName as CompanyName,
                 sri.FISCAL_YEAR as FiscalYear,
@@ -1185,14 +1186,7 @@ def build_sec_filings_and_fundamentals(session: Session):
                 sri.FILED_DATE as FilingDate,
                 sra.PERIOD_START_DATE as PeriodStartDate,
                 sra.PERIOD_END_DATE as PeriodEndDate,
-                -- Standardized reporting date calculation
-                (CASE 
-                    WHEN sri.FISCAL_PERIOD = 'Q1' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 3, 31)
-                    WHEN sri.FISCAL_PERIOD = 'Q2' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 6, 30)
-                    WHEN sri.FISCAL_PERIOD = 'Q3' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 9, 30)
-                    WHEN sri.FISCAL_PERIOD = 'Q4' THEN DATE_FROM_PARTS(sri.FISCAL_YEAR, 12, 31)
-                    ELSE DATE_FROM_PARTS(sri.FISCAL_YEAR, 12, 31)  -- Annual reports
-                END) as ReportingDate,
+                sri.FILED_DATE as ReportingDate,  -- Use filing date as reporting date (actual submission date)
                 sra.TAG,
                 sra.MEASURE_DESCRIPTION as MeasureDescription,
                 sra.VALUE as MeasureValue,
@@ -1200,11 +1194,14 @@ def build_sec_filings_and_fundamentals(session: Session):
                 sra.STATEMENT,
                 'SEC_FILINGS_CYBERSYN' as DataSource,
                 CURRENT_TIMESTAMP() as LoadTimestamp
-            FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY s
-            JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER i ON s.IssuerID = i.IssuerID
+            FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER i
+            JOIN {config.DATABASE['name']}.CURATED.DIM_SECURITY s 
+                ON s.IssuerID = i.IssuerID 
+                AND s.Ticker = i.PrimaryTicker
             JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES sra ON i.CIK = sra.CIK
             JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_INDEX sri ON sra.ADSH = sri.ADSH AND sra.CIK = sri.CIK
-            WHERE sri.FISCAL_YEAR >= YEAR(CURRENT_DATE) - {config.YEARS_OF_HISTORY}
+            WHERE s.AssetClass = 'Equity'
+                AND sri.FISCAL_YEAR >= YEAR(CURRENT_DATE) - {config.YEARS_OF_HISTORY}
                 AND sri.FORM_TYPE IN ('10-K', '10-Q')
                 AND sra.TAG IN (
                     -- Income Statement
@@ -1224,7 +1221,6 @@ def build_sec_filings_and_fundamentals(session: Session):
                     'DepreciationDepletionAndAmortization', 'ShareBasedCompensation'
                 )
                 AND sra.VALUE IS NOT NULL
-                AND s.AssetClass = 'Equity'
         """).collect()
         
         # Get count of loaded records

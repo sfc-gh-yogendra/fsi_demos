@@ -862,8 +862,8 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIE
 	)
 	DIMENSIONS (
 		-- Company dimensions
-		ISSUERS.LegalName AS LEGALNAME WITH SYNONYMS=('company','issuer_name','legal_name') COMMENT='Company legal name',
-		SECURITIES.Ticker AS TICKER WITH SYNONYMS=('symbol','ticker_symbol') COMMENT='Stock ticker symbol',
+		ISSUERS.CompanyName AS LEGALNAME WITH SYNONYMS=('company','issuer_name','legal_name','company_name') COMMENT='Company legal name',
+		ISSUERS.Ticker AS PRIMARYTICKER WITH SYNONYMS=('symbol','ticker_symbol','ticker','primary_ticker') COMMENT='Primary stock ticker symbol for the company',
 		ISSUERS.Industry AS SIC_DESCRIPTION WITH SYNONYMS=('industry','sector','industry_type','business_type','industry_classification') COMMENT='SIC industry classification with granular descriptions. Use for industry-level financial analysis.',
 		
 		-- SEC Filing specific dimensions
@@ -875,11 +875,11 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIE
 		SEC_FILINGS.STATEMENT AS Statement WITH SYNONYMS=('statement','financial_statement','fs_type') COMMENT='Financial statement type (Income Statement, Balance Sheet, Cash Flow)',
 		
 		-- Time dimensions
-		SEC_FILINGS.REPORTINGDATE AS ReportingDate WITH SYNONYMS=('report_date','period_date','date') COMMENT='Standardized financial reporting date',
-		SEC_FILINGS.FISCALPERIOD AS FiscalPeriod WITH SYNONYMS=('period','quarter','fiscal_period') COMMENT='Fiscal reporting period',
+		SEC_FILINGS.FILINGDATE AS FilingDate WITH SYNONYMS=('filing_date','report_date','date','submission_date') COMMENT='SEC filing submission date (when the filing was submitted to SEC)',
+		SEC_FILINGS.FISCALPERIOD AS FiscalPeriod WITH SYNONYMS=('period','quarter','fiscal_period') COMMENT='Fiscal reporting period (Q1, Q2, Q3, Q4, FY)',
 		SEC_FILINGS.FISCALYEAR AS FiscalYear WITH SYNONYMS=('year','fiscal_year') COMMENT='Fiscal year',
-		SEC_FILINGS.PERIODSTARTDATE AS PeriodStartDate WITH SYNONYMS=('start_date','period_start') COMMENT='Financial period start date',
-		SEC_FILINGS.PERIODENDDATE AS PeriodEndDate WITH SYNONYMS=('end_date','period_end') COMMENT='Financial period end date'
+		SEC_FILINGS.PERIODSTARTDATE AS PeriodStartDate WITH SYNONYMS=('start_date','period_start','period_begin') COMMENT='Fiscal period start date (beginning of the reporting period)',
+		SEC_FILINGS.PERIODENDDATE AS PeriodEndDate WITH SYNONYMS=('end_date','period_end','period_close') COMMENT='Fiscal period end date (end of the reporting period)'
 	)
 	METRICS (
 		-- SEC Filing data metrics
