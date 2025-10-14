@@ -81,17 +81,21 @@ warehouse = "your-warehouse"
 
 ### Build Demo Environment (100% Real Assets)
 ```bash
-# Build everything with 14,000+ real securities (all scenarios)
+# Build everything with ~88,000 real securities (all scenarios)
 python python/main.py --connection-name my_demo_connection
 
-# Test mode: Build with 1,400 real securities for faster development testing
+# Test mode: Build with ~8,800 securities for faster development testing
 python python/main.py --connection-name my_demo_connection --test-mode
 
 # Build specific scenarios only
 python python/main.py --connection-name my_demo_connection --scenarios portfolio_copilot,research_copilot
 
-# Build only data layer
+# Build only data layer (skip AI components)
 python python/main.py --connection-name my_demo_connection --scope data
+
+# Build only semantic views and search services (requires data layer)
+python python/main.py --connection-name my_demo_connection --scope semantic
+python python/main.py --connection-name my_demo_connection --scope search
 ```
 
 ## Next Steps After Build
@@ -121,16 +125,33 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 SELECT 'Securities' as table_name, COUNT(*) as record_count FROM SAM_DEMO.CURATED.DIM_SECURITY
 UNION ALL SELECT 'Issuers', COUNT(*) FROM SAM_DEMO.CURATED.DIM_ISSUER
 UNION ALL SELECT 'Holdings', COUNT(*) FROM SAM_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
+UNION ALL SELECT 'Transactions', COUNT(*) FROM SAM_DEMO.CURATED.FACT_TRANSACTION
+UNION ALL SELECT 'SEC Filings', COUNT(*) FROM SAM_DEMO.CURATED.FACT_SEC_FILINGS
 UNION ALL SELECT 'Market Data', COUNT(*) FROM SAM_DEMO.CURATED.FACT_MARKETDATA_TIMESERIES
-UNION ALL SELECT 'Documents', COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS;
+UNION ALL SELECT 'Broker Research', COUNT(*) FROM SAM_DEMO.CURATED.BROKER_RESEARCH_CORPUS
+UNION ALL SELECT 'Earnings Transcripts', COUNT(*) FROM SAM_DEMO.CURATED.EARNINGS_TRANSCRIPTS_CORPUS
+UNION ALL SELECT 'Press Releases', COUNT(*) FROM SAM_DEMO.CURATED.PRESS_RELEASES_CORPUS;
 ```
 
-**Expected Results**:
-- Securities: ~14,000 (or ~1,400 in test mode)
-- Issuers: ~14,800 (includes synthetic issuers for complete coverage)
-- Holdings: ~27,000 positions
-- Market Data: ~4M+ records
-- Documents: ~2,800+ documents
+**Expected Results** (Full Mode):
+- Securities: ~88,000 (100% real from OpenFIGI dataset)
+  - Equity: ~44,000 | Corporate Bonds: ~8,000 | ETFs: ~36,000
+- Issuers: ~68,000 (includes synthetic issuers for complete coverage)
+  - Real from SEC_FILINGS: ~7,500 with CIK linkage
+- Holdings: ~27,000 positions across 10 portfolios
+- Transactions: Transaction-based audit trail
+- SEC Filings: ~74M real records from SEC_FILINGS database
+- Market Data: Synthetic OHLCV for all securities (5 years history)
+- Documents: ~100+ (template-generated from 55+ curated templates)
+  - Security-Level: Broker Research (8), Earnings Transcripts (8), Press Releases (8), Internal Research (8), Investment Memos (8)
+  - Issuer-Level: NGO Reports (8), Engagement Notes (8)
+  - Portfolio-Level: IPS (4), Portfolio Reviews (8)
+  - Global: Policy Docs (3), Sales Templates (2), Philosophy Docs (3), Compliance Manual (1), Risk Framework (1), Market Data (3), Macro Events (1), Report Templates (1)
+  - Regulatory: Form ADV (1), Form CRS (1), Regulatory Updates (5)
+
+**Expected Results** (Test Mode - 10% volumes):
+- Securities: ~8,800 (10% of full volumes)
+- Documents: Similar counts (minimal reduction due to small base numbers)
 
 ### 2. Configure Agents
 
@@ -163,17 +184,20 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 | Setting | Default Value | Description |
 |---------|---------------|-------------|
 | **Connection** | Required via `--connection-name` | Must specify connection from ~/.snowflake/connections.toml |
-| **History** | 5 years | Historical data range |
-| **Securities** | 14,000 real securities (1,400 test mode) | 100% authentic from OpenFIGI dataset |
-| **Issuers** | 3,303 real companies | Corporate hierarchies and relationships |
+| **History** | 5 years | Historical data range for time-series data |
+| **Securities** | ~88,000 (full) / ~8,800 (test) | 100% authentic from OpenFIGI via SEC Filings dataset |
+| **Issuers** | ~68,000 (includes synthetic) | Real companies from SEC_FILINGS + synthetic for coverage |
 | **Identifiers** | TICKER + Bloomberg FIGI | 100% authentic regulatory identifiers |
 | **Language** | UK English | All generated content and agent responses |
 | **Currency** | USD (fully hedged) | Base currency for all analytics |
 | **Returns** | Monthly | Performance calculation frequency |
-| **Real Assets** | ✅ Always Used | 14,000+ authentic securities from SEC Filings dataset |
-| **Market Data** | Synthetic | Realistic OHLCV prices for all securities |
+| **Real Assets** | ✅ Always Used | ~103,000 assets available via V_REAL_ASSETS view |
+| **SEC Filings** | ~74M records | Real financial data from SEC_FILINGS database |
+| **Market Data** | Synthetic OHLCV | Realistic pricing for all securities |
+| **Documents** | ~100+ per scenario | 1 document per entity from 55+ curated templates |
 | **Test Mode** | Available | 10% data volumes for faster development |
-| **Warehouses** | Dedicated | Separate warehouses for execution and Cortex Search |
+| **Warehouses** | Auto-created | SAM_DEMO_EXECUTION_WH and SAM_DEMO_CORTEX_WH |
+| **RNG Seed** | 42 | Deterministic generation for consistent builds |
 
 ## Project Structure
 
@@ -209,9 +233,17 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 ## Data Architecture
 
 ### Database: `SAM_DEMO`
-- **RAW Schema**: External provider simulation + raw documents
+- **RAW Schema**: Real assets view (V_REAL_ASSETS) + raw documents
+  - V_REAL_ASSETS: ~103,000 securities from SEC Filings dataset
+  - Raw document tables for template-based generation
 - **CURATED Schema**: Industry-standard dimension/fact model
+  - 20+ dimension and fact tables with complete data model
+  - Transaction-based holdings with immutable SecurityID
+  - Real SEC filing data (~74M records)
+  - Synthetic market data for all securities
 - **AI Schema**: Enhanced semantic views and Cortex Search services
+  - 4 semantic views (Analyst, Research, Quant, Implementation)
+  - 12+ Cortex Search services with proper document linkage
 
 ## Troubleshooting
 

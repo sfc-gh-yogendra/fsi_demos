@@ -463,7 +463,7 @@ SCENARIO_DATA_REQUIREMENTS = {
     'esg_guardian': ['ngo_reports', 'engagement_notes', 'policy_docs'],
     'sales_advisor': ['sales_templates', 'philosophy_docs', 'policy_docs'],
     'quant_analyst': ['broker_research', 'earnings_transcripts'],
-    'compliance_advisor': ['policy_docs', 'engagement_notes'],
+    'compliance_advisor': ['policy_docs', 'engagement_notes', 'form_adv', 'form_crs', 'regulatory_updates'],
     'mandate_compliance': ['report_templates']  # Alias for portfolio_copilot mandate compliance mode
 }
 
