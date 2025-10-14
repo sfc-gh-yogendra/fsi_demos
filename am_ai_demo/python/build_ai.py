@@ -875,11 +875,11 @@ CREATE OR REPLACE SEMANTIC VIEW {config.DATABASE['name']}.AI.SAM_SEC_FILINGS_VIE
 		SEC_FILINGS.STATEMENT AS Statement WITH SYNONYMS=('statement','financial_statement','fs_type') COMMENT='Financial statement type (Income Statement, Balance Sheet, Cash Flow)',
 		
 		-- Time dimensions
-		SEC_FILINGS.FILINGDATE AS FilingDate WITH SYNONYMS=('filing_date','report_date','date','submission_date') COMMENT='SEC filing submission date (when the filing was submitted to SEC)',
-		SEC_FILINGS.FISCALPERIOD AS FiscalPeriod WITH SYNONYMS=('period','quarter','fiscal_period') COMMENT='Fiscal reporting period (Q1, Q2, Q3, Q4, FY)',
-		SEC_FILINGS.FISCALYEAR AS FiscalYear WITH SYNONYMS=('year','fiscal_year') COMMENT='Fiscal year',
-		SEC_FILINGS.PERIODSTARTDATE AS PeriodStartDate WITH SYNONYMS=('start_date','period_start','period_begin') COMMENT='Fiscal period start date (beginning of the reporting period)',
-		SEC_FILINGS.PERIODENDDATE AS PeriodEndDate WITH SYNONYMS=('end_date','period_end','period_close') COMMENT='Fiscal period end date (end of the reporting period)'
+		SEC_FILINGS.FilingDate AS FILINGDATE WITH SYNONYMS=('filing_date','report_date','date','submission_date') COMMENT='SEC filing submission date (when the filing was submitted to SEC)',
+		SEC_FILINGS.FiscalPeriod AS FISCALPERIOD WITH SYNONYMS=('period','quarter','fiscal_period') COMMENT='Fiscal reporting period (Q1, Q2, Q3, Q4, FY)',
+		SEC_FILINGS.FiscalYear AS FISCALYEAR WITH SYNONYMS=('year','fiscal_year') COMMENT='Fiscal year',
+		SEC_FILINGS.MeasurePeriodStart AS PERIODSTARTDATE WITH SYNONYMS=('measure_start','value_start_date','metric_start_date') COMMENT='Start date of the period that the measure value covers (varies by measure type)',
+		SEC_FILINGS.MeasurePeriodEnd AS PERIODENDDATE WITH SYNONYMS=('measure_end','value_end_date','metric_end_date') COMMENT='End date of the period that the measure value covers (varies by measure type)'
 	)
 	METRICS (
 		-- SEC Filing data metrics
