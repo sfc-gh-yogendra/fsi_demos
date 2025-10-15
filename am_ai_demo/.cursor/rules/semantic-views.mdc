@@ -414,6 +414,138 @@ def create_semantic_view(session: Session):
         raise  # Don't create fallback views - Cortex Analyst requires semantic views
 ```
 
+### 2.4 Enhanced Configuration with WITH EXTENSION
+
+**Purpose**: The `WITH EXTENSION` clause allows you to add enhanced metadata directly to the semantic view definition, including:
+- Time dimensions with custom expressions
+- Verified queries for testing and agent onboarding
+- Custom instructions for SQL generation and question categorization
+
+**Syntax**:
+```sql
+CREATE OR REPLACE SEMANTIC VIEW {view_name}
+    TABLES (...)
+    RELATIONSHIPS (...)
+    DIMENSIONS (...)
+    METRICS (...)
+    COMMENT='...'
+    WITH EXTENSION (CA='{json_configuration}');
+```
+
+**CRITICAL RULES**:
+1. **JSON Escaping**: Use single braces `{` and `}` in Python f-strings (they become `{{` and `}}` in the final JSON)
+2. **No Newlines**: Never use `\n` in `module_custom_instructions` - use spaces instead
+3. **Semantic Names in Verified Queries**: Always use semantic names (the name BEFORE AS in dimension/metric definitions) in verified query SQL
+4. **Dimension Names**: In the `tables` array metadata, use semantic names consistently (e.g., `LEGALNAME`, `PRIMARYTICKER`, not `CompanyName`, `Ticker`)
+
+**Enhanced Configuration Structure**:
+```json
+{
+  "tables": [
+    {
+      "name": "TABLE_ALIAS",
+      "metrics": [{"name": "METRIC_NAME"}],
+      "dimensions": [{"name": "DIMENSION_NAME"}],
+      "time_dimensions": [
+        {
+          "name": "dimension_name",
+          "expr": "SQL_EXPRESSION",
+          "data_type": "DATE",
+          "synonyms": ["synonym1", "synonym2"],
+          "description": "User-friendly description"
+        }
+      ]
+    }
+  ],
+  "relationships": [{"name": "RELATIONSHIP_NAME"}],
+  "verified_queries": [
+    {
+      "name": "query_name",
+      "question": "Natural language question",
+      "sql": "SELECT __TABLE.SemanticName FROM ... WHERE ...",
+      "use_as_onboarding_question": true
+    }
+  ],
+  "module_custom_instructions": {
+    "sql_generation": "Instructions without newlines for SQL generation behavior",
+    "question_categorization": "Instructions without newlines for question understanding"
+  }
+}
+```
+
+**Complete Example**:
+```python
+# In build_ai.py
+def create_sam_analyst_view(session: Session):
+    session.sql(f"""
+        CREATE OR REPLACE SEMANTIC VIEW SAM_DEMO.AI.SAM_ANALYST_VIEW
+        TABLES (
+            HOLDINGS AS SAM_DEMO.CURATED.FACT_POSITION_DAILY_ABOR
+                PRIMARY KEY (HOLDINGDATE, PORTFOLIOID, SECURITYID),
+            PORTFOLIOS AS SAM_DEMO.CURATED.DIM_PORTFOLIO
+                PRIMARY KEY (PORTFOLIOID),
+            SECURITIES AS SAM_DEMO.CURATED.DIM_SECURITY
+                PRIMARY KEY (SECURITYID),
+            ISSUERS AS SAM_DEMO.CURATED.DIM_ISSUER
+                PRIMARY KEY (ISSUERID)
+        )
+        RELATIONSHIPS (
+            HOLDINGS_TO_PORTFOLIOS AS HOLDINGS(PORTFOLIOID) REFERENCES PORTFOLIOS(PORTFOLIOID),
+            HOLDINGS_TO_SECURITIES AS HOLDINGS(SECURITYID) REFERENCES SECURITIES(SECURITYID),
+            SECURITIES_TO_ISSUERS AS SECURITIES(ISSUERID) REFERENCES ISSUERS(ISSUERID)
+        )
+        DIMENSIONS (
+            PORTFOLIOS.PORTFOLIONAME AS PortfolioName,
+            SECURITIES.DESCRIPTION AS Description,
+            SECURITIES.PRIMARYTICKER AS Ticker,
+            ISSUERS.LegalName AS LEGALNAME,
+            ISSUERS.Industry AS SIC_DESCRIPTION,
+            HOLDINGS.HOLDINGDATE AS HoldingDate
+        )
+        METRICS (
+            HOLDINGS.TOTAL_MARKET_VALUE AS SUM(MarketValue_Base),
+            HOLDINGS.HOLDING_COUNT AS COUNT(SecurityID)
+        )
+        COMMENT='Portfolio analytics semantic view'
+        WITH EXTENSION (CA='{{"tables":[{{"name":"HOLDINGS","metrics":[{{"name":"TOTAL_MARKET_VALUE"}},{{"name":"HOLDING_COUNT"}}],"time_dimensions":[{{"name":"HoldingDate","expr":"HOLDINGDATE","data_type":"DATE","synonyms":["position_date","as_of_date"],"description":"Holdings valuation date"}},{{"name":"holding_month","expr":"DATE_TRUNC(\\'MONTH\\', HOLDINGDATE)","data_type":"DATE","synonyms":["month","monthly"],"description":"Monthly aggregation"}}]}},{{"name":"PORTFOLIOS","dimensions":[{{"name":"PORTFOLIONAME"}}]}},{{"name":"SECURITIES","dimensions":[{{"name":"DESCRIPTION"}},{{"name":"PRIMARYTICKER"}}]}},{{"name":"ISSUERS","dimensions":[{{"name":"LEGALNAME"}},{{"name":"SIC_DESCRIPTION"}}]}}],"relationships":[{{"name":"HOLDINGS_TO_PORTFOLIOS"}},{{"name":"HOLDINGS_TO_SECURITIES"}},{{"name":"SECURITIES_TO_ISSUERS"}}],"verified_queries":[{{"name":"top_holdings","question":"What are the top 10 holdings?","sql":"SELECT __SECURITIES.DESCRIPTION, __SECURITIES.PRIMARYTICKER, __HOLDINGS.MARKETVALUE_BASE FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID WHERE __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) ORDER BY __HOLDINGS.MARKETVALUE_BASE DESC LIMIT 10","use_as_onboarding_question":true}}],"module_custom_instructions":{{"sql_generation":"For portfolio weight calculations, always multiply by 100 to show percentages. For current holdings queries, automatically filter to the most recent holding date.","question_categorization":"If users ask about funds or portfolios, treat these as the same concept."}}}}');
+    """).collect()
+```
+
+**Key Points for Verified Queries**:
+- Use `__TABLE_ALIAS.SemanticName` format (double underscore prefix)
+- Reference semantic names (BEFORE AS in definitions):
+  - ✅ `__SECURITIES.DESCRIPTION` (semantic name)
+  - ✅ `__ISSUERS.LegalName` (semantic name)
+  - ❌ `__SECURITIES.Description` (database column name after AS)
+  - ❌ `__ISSUERS.LEGALNAME` (database column name after AS)
+- Always use semantic names that match the DIMENSIONS section
+- Include realistic business queries for agent training
+
+**Common Mistakes to Avoid**:
+```python
+# ❌ WRONG - Double braces {{ }} in f-string (becomes {{{{  }}}} in output)
+f"""WITH EXTENSION (CA='{{{{ "tables": [...] }}}}')"""
+
+# ✅ CORRECT - Single braces { } in f-string (becomes {{ }} in output)
+f"""WITH EXTENSION (CA='{{"tables": [...]}}')"""
+
+# ❌ WRONG - Newlines in module_custom_instructions
+"module_custom_instructions": {
+    "sql_generation": "Instruction line 1.\nInstruction line 2."
+}
+
+# ✅ CORRECT - Spaces instead of newlines
+"module_custom_instructions": {
+    "sql_generation": "Instruction line 1. Instruction line 2."
+}
+
+# ❌ WRONG - Using database column name in verified query
+"sql": "SELECT __ISSUERS.LEGALNAME FROM ..."  # LEGALNAME is after AS
+
+# ✅ CORRECT - Using semantic name in verified query
+"sql": "SELECT __ISSUERS.LegalName FROM ..."  # LegalName is before AS
+```
+
 ## Step 3: Validation and Testing
 
 ### 3.1 Basic Structure Validation

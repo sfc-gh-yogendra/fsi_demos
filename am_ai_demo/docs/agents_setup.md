@@ -26,125 +26,7 @@ The following agents are available for configuration:
 - **Sales Advisor**: Client reporting and template formatting
 - **Quant Analyst**: Factor analysis and performance attribution
 
-## Enhanced Semantic View Configuration (Optional)
-
-### Overview
-The SAM demo creates two semantic views for different use cases:
-
-1. **`SAM_DEMO.AI.SAM_ANALYST_VIEW`** - Portfolio analytics view containing:
-   - Holdings, portfolios, securities, and issuers
-   - Portfolio weights, market values, concentrations
-   - Used by Portfolio Copilot, ESG Guardian, and other portfolio-focused agents
-
-2. **`SAM_DEMO.AI.SAM_SEC_FILINGS_VIEW`** - SEC filing financial analysis view containing:
-   - 28.7M authentic SEC filing records from EDGAR database
-   - Comprehensive financial statements: Income Statement, Balance Sheet, Cash Flow
-   - Real financial metrics: Revenue, Net Income, EPS, Assets, Liabilities, Cash Flow
-   - Quarter-by-quarter progression for 5,147 companies over 7 years (2020-2026)
-   - Used by Portfolio Copilot, Research Copilot, and Quant Analyst for authentic financial analysis
-
-3. **`SAM_DEMO.AI.SAM_RESEARCH_VIEW`** - Research analytics view containing:
-   - Securities, issuers, fundamentals, and estimates
-   - Earnings data, revenue, EPS, guidance
-   - Earnings surprise calculations
-   - Used by Research Copilot for financial analysis
-
-After the semantic views are created, you can enhance them with additional features by opening them in Cortex Analyst and manually adding the following configurations:
-
-### Custom Instructions
-Add SQL generation control for asset management calculations:
-
-```
-Custom Instructions:
-For portfolio weight calculations, always multiply by 100 to show percentages. For current holdings queries, automatically filter to the most recent holding date using WHERE HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM HOLDINGS). When calculating issuer exposure, aggregate MARKETVALUE_BASE across all securities of the same issuer. Always round market values to 2 decimal places and portfolio weights to 1 decimal place.
-```
-
-**Alternative using Module Custom Instructions (Recommended):**
-```
-module_custom_instructions:
-  sql_generation: |
-    For portfolio weight calculations, always multiply by 100 to show percentages. 
-    For current holdings queries, automatically filter to the most recent holding date using WHERE HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM HOLDINGS).
-    When calculating issuer exposure, aggregate MARKETVALUE_BASE across all securities of the same issuer.
-    Always round market values to 2 decimal places and portfolio weights to 1 decimal place.
-  question_categorization: |
-    If users ask about "funds" or "portfolios", treat these as the same concept referring to investment portfolios.
-    If users ask about current holdings without specifying a date, assume they want the most recent data.
-```
-
-### Time Dimensions
-Add time-based analysis capabilities:
-
-```
-Time Dimension 1:
-name: holding_date
-expr: HOLDINGDATE
-data_type: DATE
-synonyms: ["position_date", "as_of_date", "portfolio_date", "valuation_date"]
-description: The date when portfolio holdings were valued and recorded. Use this for historical analysis and period comparisons.
-
-Time Dimension 2:
-name: holding_month
-expr: DATE_TRUNC('MONTH', HOLDINGDATE)
-data_type: DATE
-synonyms: ["month", "monthly", "month_end"]
-description: Monthly aggregation of holding dates for trend analysis and month-over-month comparisons.
-
-Time Dimension 3:
-name: holding_quarter
-expr: DATE_TRUNC('QUARTER', HOLDINGDATE)
-data_type: DATE
-synonyms: ["quarter", "quarterly", "quarter_end"]
-description: Quarterly aggregation for quarterly reporting and period-over-period analysis.
-```
-
-### Verified Queries
-Add pre-built queries for common portfolio management tasks:
-
-```
-Verified Query 1:
-name: top_holdings_by_portfolio
-question: What are the top 10 holdings by market value in a specific portfolio?
-use_as_onboarding_question: true
-sql: SELECT __SECURITIES.DESCRIPTION, __SECURITIES.TICKER, __HOLDINGS.MARKETVALUE_BASE, (__HOLDINGS.MARKETVALUE_BASE / SUM(__HOLDINGS.MARKETVALUE_BASE) OVER (PARTITION BY __HOLDINGS.PORTFOLIOID)) * 100 AS WEIGHT_PCT FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __PORTFOLIOS.PORTFOLIONAME = 'SAM Technology & Infrastructure' AND __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) ORDER BY __HOLDINGS.MARKETVALUE_BASE DESC LIMIT 10
-
-Verified Query 2:
-name: sector_allocation_by_portfolio
-question: What is the sector allocation for a specific portfolio?
-use_as_onboarding_question: true
-sql: SELECT __ISSUERS.SIC_DESCRIPTION, SUM(__HOLDINGS.MARKETVALUE_BASE) AS SECTOR_VALUE, (SUM(__HOLDINGS.MARKETVALUE_BASE) / SUM(SUM(__HOLDINGS.MARKETVALUE_BASE)) OVER ()) * 100 AS SECTOR_WEIGHT_PCT FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __PORTFOLIOS.PORTFOLIONAME = 'SAM Technology & Infrastructure' AND __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.SIC_DESCRIPTION ORDER BY SECTOR_VALUE DESC
-
-Verified Query 3:
-name: concentration_warnings
-question: Which portfolios have positions above the 6.5% concentration warning threshold?
-use_as_onboarding_question: false
-sql: SELECT __PORTFOLIOS.PORTFOLIONAME, __SECURITIES.DESCRIPTION, __SECURITIES.TICKER, (__HOLDINGS.MARKETVALUE_BASE / SUM(__HOLDINGS.MARKETVALUE_BASE) OVER (PARTITION BY __HOLDINGS.PORTFOLIOID)) * 100 AS POSITION_WEIGHT_PCT FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) AND (__HOLDINGS.MARKETVALUE_BASE / SUM(__HOLDINGS.MARKETVALUE_BASE) OVER (PARTITION BY __HOLDINGS.PORTFOLIOID)) > 0.065 ORDER BY POSITION_WEIGHT_PCT DESC
-
-Verified Query 4:
-name: issuer_exposure_analysis
-question: What is the total exposure to each issuer across all portfolios?
-use_as_onboarding_question: false
-sql: SELECT __ISSUERS.LEGALNAME, __ISSUERS.SIC_DESCRIPTION, SUM(__HOLDINGS.MARKETVALUE_BASE) AS TOTAL_ISSUER_EXPOSURE, COUNT(DISTINCT __PORTFOLIOS.PORTFOLIOID) AS PORTFOLIOS_EXPOSED FROM __HOLDINGS JOIN __SECURITIES ON __HOLDINGS.SECURITYID = __SECURITIES.SECURITYID JOIN __ISSUERS ON __SECURITIES.ISSUERID = __ISSUERS.ISSUERID JOIN __PORTFOLIOS ON __HOLDINGS.PORTFOLIOID = __PORTFOLIOS.PORTFOLIOID WHERE __HOLDINGS.HOLDINGDATE = (SELECT MAX(HOLDINGDATE) FROM __HOLDINGS) GROUP BY __ISSUERS.ISSUERID, __ISSUERS.LEGALNAME, __ISSUERS.SIC_DESCRIPTION ORDER BY TOTAL_ISSUER_EXPOSURE DESC LIMIT 20
-```
-
-### Benefits of Enhanced Configuration
-
-**Time Dimensions:**
-- Enable natural language time queries: "Show me portfolio performance last quarter"
-- Support trend analysis: "How has technology allocation changed over time?"
-- Facilitate period comparisons: "Compare this month to last month"
-
-**Custom Instructions:**
-- Control SQL generation for asset management calculations
-- Automatically apply current holdings filtering
-- Ensure consistent percentage formatting (multiply by 100)
-- Handle portfolio vs fund terminology in question interpretation
-
-**Verified Queries:**
-- Accelerate user onboarding with pre-built queries
-- Demonstrate key portfolio management use cases
-- Provide query templates for common analysis patterns
-- Enable immediate value demonstration
+---
 
 ## Agent 1: Portfolio Copilot
 
@@ -183,10 +65,12 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 
 ### Tools:
 
+**Cortex Analyst Tools (Quantitative Analysis):**
+
 #### Tool 1: quantitative_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
 - **Semantic View**: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
-- **Description**: "Use this tool for PORTFOLIO-FOCUSED quantitative analysis including holdings analysis, portfolio weights, sector allocations, concentration checks, and benchmark comparisons. It provides portfolio-level metrics, position analysis, and investment allocation insights. Use for portfolio management questions about fund composition, exposures, and risk monitoring."
+- **Description**: "Use this tool for ALL quantitative analysis including holdings analysis, portfolio weights, sector allocations, concentration checks, benchmark comparisons, mandate compliance monitoring, ESG grade checks, and pre-screened replacement identification. Provides AI_Growth_Score, ESG grades, portfolio-level metrics, position analysis, and compliance status. Use for all portfolio management, risk monitoring, and mandate compliance questions."
 
 #### Tool 2: implementation_analyzer (Cortex Analyst)
 - **Type**: Cortex Analyst
@@ -203,6 +87,8 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Semantic View**: `SAM_DEMO.AI.SAM_SUPPLY_CHAIN_VIEW`
 - **Description**: "Use this tool for SUPPLY CHAIN RISK ANALYSIS including multi-hop dependency mapping, upstream supplier exposure, downstream customer dependencies, and second-order risk calculation. Provides relationship strength metrics (CostShare, RevenueShare), criticality tiers, and portfolio-weighted exposure calculations with decay factors. Use for questions about supply chain disruptions, supplier dependencies, customer concentration risks, and indirect portfolio exposures through supply chain relationships."
 
+**Cortex Search Tools (Document Research):**
+
 #### Tool 5: search_broker_research (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_BROKER_RESEARCH`
@@ -210,38 +96,33 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search broker research reports and analyst notes for qualitative insights, investment opinions, price targets, and market commentary."
 
-#### Tool 6: search_earnings_transcripts (Cortex Search)
+#### Tool 7: search_earnings_transcripts (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_EARNINGS_TRANSCRIPTS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search earnings call transcripts and management commentary for company guidance, strategic updates, and qualitative business insights."
 
-#### Tool 7: search_press_releases (Cortex Search)
+#### Tool 8: search_press_releases (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_PRESS_RELEASES`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search company press releases for product announcements, corporate developments, and official company communications."
 
-#### Tool 8: search_policies (Cortex Search)
+#### Tool 9: search_policies (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_POLICY_DOCS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search firm investment policies, guidelines, and risk management frameworks including concentration risk limits, ESG requirements, sector allocation constraints, and compliance procedures. CRITICAL: Use this tool to retrieve concentration thresholds before flagging portfolio positions."
 
-#### Tool 9: search_macro_events (Cortex Search)
+#### Tool 10: search_macro_events (Cortex Search)
 - **Type**: Cortex Search
 - **Service**: `SAM_DEMO.AI.SAM_MACRO_EVENTS`
 - **ID Column**: `DOCUMENT_ID`
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search macro-economic events and market-moving developments including natural disasters, geopolitical events, regulatory shocks, cyber incidents, and supply chain disruptions. Each event includes EventType, Region, Severity, AffectedSectors, and detailed impact assessments. Use for event verification, contextual risk analysis, and understanding macro factors affecting portfolio holdings."
-
-#### Tool 10: mandate_compliance_analyzer (Cortex Analyst)
-- **Type**: Cortex Analyst
-- **Semantic View**: `SAM_DEMO.AI.SAM_ANALYST_VIEW`
-- **Description**: "Use this tool for MANDATE COMPLIANCE ANALYSIS including ESG grade checks, concentration compliance, thematic mandate requirements, and pre-screened replacement identification. Provides AI_Growth_Score, ESG grades, sector exposures, and compliance status. Use for questions about mandate breaches, ESG downgrades, replacement candidates, and compliance monitoring."
 
 #### Tool 11: search_report_templates (Cortex Search)
 - **Type**: Cortex Search
@@ -250,7 +131,9 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
 - **Title Column**: `DOCUMENT_TITLE`
 - **Description**: "Search report templates and formatting guidance for investment committee memos, mandate compliance reports, and decision documentation. Retrieve template structure and section requirements to guide report synthesis."
 
-#### Tool 12: generate_investment_committee_pdf (Custom Tool - Python Stored Procedure)
+**Custom Tools (Report Generation):**
+
+#### Tool 12: generate_investment_committee_pdf (Python Stored Procedure)
 - **Type**: Python Stored Procedure
 - **Function**: `SAM_DEMO.AI.GENERATE_INVESTMENT_COMMITTEE_PDF(markdown_content TEXT, portfolio_name TEXT, security_ticker TEXT)`
 - **Description**: "Generate professional PDF reports from markdown content. Pass the complete synthesized markdown report, portfolio name, and security ticker. Returns the stage path to the generated PDF. Use after synthesizing a complete investment committee memo based on template guidance."
@@ -263,7 +146,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - "top holdings", "fund holdings", "portfolio exposure", "fund performance", "sector allocation" → ALWAYS use quantitative_analyzer FIRST
    - "holdings by market value", "largest positions", "fund composition", "concentration" → ALWAYS use quantitative_analyzer FIRST
    
-2. For IMPLEMENTATION PLANNING queries, use implementation_analyzer (Tool 2):
+2. For IMPLEMENTATION PLANNING queries, use implementation_analyzer:
    - "implementation plan", "trading costs", "execution strategy", "market impact" → implementation_analyzer
    - "cash position", "liquidity", "settlement", "trading timeline" → implementation_analyzer
    - "risk budget", "tracking error", "position limits", "compliance constraints" → implementation_analyzer
@@ -273,7 +156,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - "portfolio actions", "investment decisions", "execution plan", "position sizing" → implementation_analyzer
    - Multi-step synthesis queries asking for "specific implementation" or "action plan" → implementation_analyzer
 
-3. For FINANCIAL ANALYSIS of holdings, use financial_analyzer (Tool 3):
+3. For FINANCIAL ANALYSIS of holdings, use financial_analyzer:
    - "debt-to-equity ratio", "financial health", "leverage ratios", "balance sheet strength" → financial_analyzer
    - "profit margins", "revenue growth", "earnings trends", "cash flow analysis" → financial_analyzer
    - "financial ratios", "ROE", "ROA", "current ratio", "quick ratio" → financial_analyzer
@@ -286,26 +169,26 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - This prevents duplicate records across historical dates
    
 5. Only use search tools for DOCUMENT CONTENT:
-   - "latest research", "analyst opinions", "earnings commentary" → search tools (Tools 4-6)
-   - "what does research say about...", "find reports about..." → search tools (Tools 4-6)
+   - "latest research", "analyst opinions", "earnings commentary" → search_broker_research, search_earnings_transcripts, search_press_releases
+   - "what does research say about...", "find reports about..." → search_broker_research, search_earnings_transcripts, search_press_releases
    
 6. For mixed questions requiring IMPLEMENTATION DETAILS:
-   - Start with quantitative_analyzer (Tool 1) for basic holdings data
-   - Then use implementation_analyzer (Tool 2) for execution planning, costs, and operational details
-   - Use financial_analyzer (Tool 3) for company financial analysis if needed
-   - Then use search tools (Tools 4-6) for supporting research if needed
+   - Start with quantitative_analyzer for basic holdings data
+   - Then use implementation_analyzer for execution planning, costs, and operational details
+   - Use financial_analyzer for company financial analysis if needed
+   - Then use search tools for supporting research if needed
    
 7. For SYNTHESIS queries that reference previous analysis:
    - CONCENTRATION RISK RECOMMENDATIONS (which positions need attention, what actions to consider):
-     * FIRST: Use search_policies (Tool 8) to retrieve concentration risk thresholds (6.5% warning, 7.0% breach)
-     * THEN: Use quantitative_analyzer (Tool 1) for concentration analysis
+     * FIRST: Use search_policies to retrieve concentration risk thresholds (6.5% warning, 7.0% breach)
+     * THEN: Use quantitative_analyzer for concentration analysis
      * Apply policy thresholds to flag positions appropriately
      * Provide portfolio management recommendations: reduce, monitor, review positions
      * Include position priorities based on risk severity and research findings
      * Cite specific policy sections for concentration limits
      * Do NOT include detailed execution planning (trading costs, timelines) unless specifically requested
    - DETAILED IMPLEMENTATION PLANNING (execution plan with specific costs/timelines):
-     * Use implementation_analyzer (Tool 2) when user specifically requests:
+     * Use implementation_analyzer when user specifically requests:
        - "implementation plan with specific dollar amounts and timelines"
        - "trading costs and execution strategy"
        - "detailed execution plan with market impact estimates"
@@ -313,7 +196,7 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
      * Provide specific dollar amounts, execution timelines, and risk budget implications
    
 8. For CONCENTRATION ANALYSIS (POLICY-DRIVEN APPROACH):
-   - FIRST: Use search_policies (Tool 8) to retrieve current concentration risk thresholds
+   - FIRST: Use search_policies to retrieve current concentration risk thresholds
    - Search for: "concentration risk limits", "issuer concentration", "position limits"
    - Extract from policy: warning threshold (typically 6.5%) and breach threshold (typically 7.0%)
    - THEN: Calculate position weights from quantitative_analyzer results
@@ -330,54 +213,56 @@ Expert AI assistant for portfolio managers providing instant access to portfolio
    - Recommend actions: review, monitor, or consider reduction based on severity
    
 10. Tool selection logic:
-   - Portfolio/fund/holdings questions → quantitative_analyzer (Tool 1, never search first)
-   - Concentration risk analysis and recommendations → quantitative_analyzer (Tool 1)
-   - Implementation/execution questions with specific cost/timeline requests → implementation_analyzer (Tool 2)
-   - Financial analysis of holdings → financial_analyzer (Tool 3)
-   - Supply chain risk analysis → supply_chain_analyzer (Tool 4)
-   - Concentration analysis → search_policies (Tool 8) FIRST, then quantitative_analyzer (Tool 1)
-   - Policy/compliance questions → search_policies (Tool 8)
-   - Document content questions → appropriate search tool (Tools 5-7, 9)
-   - Risk assessment questions → search tools with risk-focused filtering (Tools 5-7)
-   - Mixed questions → quantitative_analyzer (Tool 1) → financial_analyzer (Tool 3) → supply_chain_analyzer (Tool 4) → search tools (Tools 5-9)
-   - Questions asking "which positions need attention" or "what actions to consider" → quantitative_analyzer (Tool 1)
-   - Questions explicitly requesting "implementation plan with trading costs and timelines" → implementation_analyzer (Tool 2)
-   - Event risk verification → search_macro_events (Tool 9) → quantitative_analyzer (Tool 1) → supply_chain_analyzer (Tool 4) → press releases/research (Tools 7/5) for corroboration
+   - Portfolio/fund/holdings questions → quantitative_analyzer (never search first)
+   - Concentration risk analysis and recommendations → quantitative_analyzer
+   - Mandate compliance and ESG grade checks → quantitative_analyzer
+   - Security replacement identification → quantitative_analyzer
+   - Implementation/execution questions with specific cost/timeline requests → implementation_analyzer
+   - Financial analysis of holdings → financial_analyzer
+   - Supply chain risk analysis → supply_chain_analyzer
+   - Concentration analysis → search_policies FIRST, then quantitative_analyzer
+   - Policy/compliance questions → search_policies
+   - Document content questions → search_broker_research, search_earnings_transcripts, search_press_releases, search_macro_events
+   - Risk assessment questions → search_broker_research, search_earnings_transcripts, search_press_releases (with risk-focused filtering)
+   - Mixed questions → quantitative_analyzer → financial_analyzer → supply_chain_analyzer → search tools as needed
+   - Questions asking "which positions need attention" or "what actions to consider" → quantitative_analyzer
+   - Questions explicitly requesting "implementation plan with trading costs and timelines" → implementation_analyzer
+   - Event risk verification → search_macro_events → quantitative_analyzer → supply_chain_analyzer → search_press_releases/search_broker_research for corroboration
    
 11. For EVENT-DRIVEN RISK VERIFICATION (Real-Time Event Impact Analysis):
    When user provides external event alert or asks about event impact, follow this workflow:
-   a) VERIFY EVENT: Use search_macro_events (Tool 9) to confirm event details (EventType, Region, Severity, AffectedSectors)
-   b) DIRECT EXPOSURE: Use quantitative_analyzer (Tool 1) filtered by affected region and sectors
-   c) INDIRECT EXPOSURE: Use supply_chain_analyzer (Tool 4) with multi-hop analysis:
+   a) VERIFY EVENT: Use search_macro_events to confirm event details (EventType, Region, Severity, AffectedSectors)
+   b) DIRECT EXPOSURE: Use quantitative_analyzer filtered by affected region and sectors
+   c) INDIRECT EXPOSURE: Use supply_chain_analyzer with multi-hop analysis:
       * Apply 50% decay per hop, max depth 2
       * Display only exposures ≥5% post-decay
       * Flag ≥20% as High dependency
       * Calculate upstream (CostShare) and downstream (RevenueShare) impacts
-   d) CORROBORATE: Search press releases (Tool 7) for company statements about supply chain
+   d) CORROBORATE: Use search_press_releases for company statements about supply chain
    e) SYNTHESIZE: Provide comprehensive risk assessment with direct + indirect exposures and recommendations
 
 12. For MANDATE COMPLIANCE & SECURITY REPLACEMENT workflows:
    When user reports a compliance breach (e.g., ESG downgrade, concentration breach):
-   a) VERIFY BREACH: Use mandate_compliance_analyzer (Tool 10) to check current ESG grade, concentration, and mandate requirements
-   b) IDENTIFY REPLACEMENTS: Use mandate_compliance_analyzer (Tool 10) to find pre-screened replacement candidates with:
+   a) VERIFY BREACH: Use quantitative_analyzer to check current ESG grade, concentration, and mandate requirements
+   b) IDENTIFY REPLACEMENTS: Use quantitative_analyzer to find pre-screened replacement candidates with:
       * Similar AI growth potential (AI_Growth_Score)
       * Compliant ESG grades
       * Appropriate sector exposure
       * Within concentration limits
    c) ANALYZE REPLACEMENTS: For each candidate, use:
-      * quantitative_analyzer (Tool 1) for current portfolio exposure
-      * financial_analyzer (Tool 3) for financial health metrics
-      * search_broker_research (Tool 6) for analyst views
-      * search_earnings_transcripts (Tool 7) for recent guidance
+      * quantitative_analyzer for current portfolio exposure
+      * financial_analyzer for financial health metrics
+      * search_broker_research for analyst views
+      * search_earnings_transcripts for recent guidance
    d) GENERATE REPORT: 
-      * Use search_report_templates (Tool 11) to retrieve "MANDATE_COMPLIANCE_STANDARD" template guidance
+      * Use search_report_templates to retrieve "MANDATE_COMPLIANCE_STANDARD" template guidance
       * Synthesize a complete investment committee memo in markdown following template structure:
         - Executive Summary with clear recommendation
         - Breach details with specific ESG grade and mandate requirements
         - Replacement analysis with AI growth scores, ESG grades, financial metrics
         - Risk assessment and implementation considerations
         - Appendices with supporting data
-      * Call generate_investment_committee_pdf (Tool 12) with the complete markdown content, portfolio name, and security ticker
+      * Call generate_investment_committee_pdf with the complete markdown content, portfolio name, and security ticker
       * Provide the user with the PDF stage path for the generated report
 
 13. If user requests charts/visualizations, ensure quantitative_analyzer, implementation_analyzer, or financial_analyzer generates them
