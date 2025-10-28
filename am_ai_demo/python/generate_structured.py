@@ -1168,7 +1168,7 @@ def build_sec_filings_and_fundamentals(session: Session):
         # print("📄 Attempting to load real SEC filing data...")
         
         # Test SEC_FILINGS database access
-        test_result = session.sql("SELECT COUNT(*) as cnt FROM SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES LIMIT 1").collect()
+        test_result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.SEC_REPORT_ATTRIBUTES LIMIT 1").collect()
         # print(" SEC_FILINGS database accessible")
         
         # Load SEC filing data using our enhanced view approach
@@ -1198,8 +1198,8 @@ def build_sec_filings_and_fundamentals(session: Session):
             JOIN {config.DATABASE['name']}.CURATED.DIM_SECURITY s 
                 ON s.IssuerID = i.IssuerID 
                 AND s.Ticker = i.PrimaryTicker
-            JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_ATTRIBUTES sra ON i.CIK = sra.CIK
-            JOIN SEC_FILINGS.CYBERSYN.SEC_REPORT_INDEX sri ON sra.ADSH = sri.ADSH AND sra.CIK = sri.CIK
+            JOIN {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.SEC_REPORT_ATTRIBUTES sra ON i.CIK = sra.CIK
+            JOIN {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.SEC_REPORT_INDEX sri ON sra.ADSH = sri.ADSH AND sra.CIK = sri.CIK
             WHERE s.AssetClass = 'Equity'
                 AND sri.FISCAL_YEAR >= YEAR(CURRENT_DATE) - {config.YEARS_OF_HISTORY}
                 AND sri.FORM_TYPE IN ('10-K', '10-Q')

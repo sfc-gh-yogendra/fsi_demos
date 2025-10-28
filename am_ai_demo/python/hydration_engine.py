@@ -234,7 +234,7 @@ def build_security_context(session: Session, security_id: int, doc_type: str) ->
     Returns:
         Context dict with all required placeholders
     """
-    # Query security and issuer data
+    # Query security and issuer data (including CIK for fiscal calendar lookup)
     security_data = session.sql(f"""
         SELECT 
             ds.SecurityID,
@@ -244,7 +244,8 @@ def build_security_context(session: Session, security_id: int, doc_type: str) ->
             di.IssuerID,
             di.LegalName as ISSUER_NAME,
             di.SIC_DESCRIPTION,
-            di.CountryOfIncorporation
+            di.CountryOfIncorporation,
+            di.CIK
         FROM {config.DATABASE['name']}.CURATED.DIM_SECURITY ds
         JOIN {config.DATABASE['name']}.CURATED.DIM_ISSUER di ON ds.IssuerID = di.IssuerID
         WHERE ds.SecurityID = {security_id}
@@ -264,11 +265,12 @@ def build_security_context(session: Session, security_id: int, doc_type: str) ->
         'TICKER': sec['TICKER'],
         'SIC_DESCRIPTION': sec['SIC_DESCRIPTION'],
         'ISSUER_NAME': sec['ISSUER_NAME'],
-        'ASSET_CLASS': sec['ASSETCLASS']
+        'ASSET_CLASS': sec['ASSETCLASS'],
+        'CIK': sec['CIK']  # Include CIK for fiscal calendar lookup
     }
     
-    # Add dates
-    context.update(generate_dates_for_doc_type(doc_type))
+    # Add dates (pass context and session for fiscal calendar lookup)
+    context.update(generate_dates_for_doc_type(doc_type, context=context, session=session))
     
     # Add provider/attribution fields
     context.update(generate_provider_context(context, doc_type))
@@ -341,13 +343,14 @@ def build_issuer_context(session: Session, issuer_id: int, doc_type: str) -> Dic
     Returns:
         Context dict with issuer data
     """
-    # Query issuer data and get a representative ticker
+    # Query issuer data and get a representative ticker (including CIK)
     issuer_data = session.sql(f"""
         SELECT 
             di.IssuerID,
             di.LegalName as ISSUER_NAME,
             di.SIC_DESCRIPTION,
             di.CountryOfIncorporation,
+            di.CIK,
             ds.Ticker
         FROM {config.DATABASE['name']}.CURATED.DIM_ISSUER di
         LEFT JOIN {config.DATABASE['name']}.CURATED.DIM_SECURITY ds ON di.IssuerID = ds.IssuerID
@@ -365,11 +368,12 @@ def build_issuer_context(session: Session, issuer_id: int, doc_type: str) -> Dic
         'ISSUER_ID': iss['ISSUERID'],
         'ISSUER_NAME': iss['ISSUER_NAME'],
         'TICKER': iss['TICKER'] or 'N/A',
-        'SIC_DESCRIPTION': iss['SIC_DESCRIPTION']
+        'SIC_DESCRIPTION': iss['SIC_DESCRIPTION'],
+        'CIK': iss['CIK']  # Include CIK for fiscal calendar lookup
     }
     
-    # Add dates
-    context.update(generate_dates_for_doc_type(doc_type))
+    # Add dates (pass context and session for fiscal calendar lookup)
+    context.update(generate_dates_for_doc_type(doc_type, context=context, session=session))
     
     # Add NGO/meeting type context
     context.update(generate_provider_context(context, doc_type))
@@ -406,15 +410,74 @@ def build_global_context(doc_type: str, doc_num: int = 0) -> Dict[str, Any]:
     return context
 
 # ============================================================================
+# MODULE: Fiscal Calendar Lookup
+# ============================================================================
+
+def get_fiscal_calendar_dates(session: Session, cik: str, num_periods: int = 4) -> List[Dict[str, Any]]:
+    """
+    Query SEC fiscal calendar for recent fiscal periods.
+    
+    Args:
+        session: Snowpark session
+        cik: Central Index Key for the company
+        num_periods: Number of recent periods to return (default 4 for last 4 quarters)
+    
+    Returns:
+        List of dicts with FISCAL_PERIOD, FISCAL_YEAR, PERIOD_END_DATE, PERIOD_START_DATE
+        Ordered by most recent first
+    """
+    if not cik:
+        return []
+    
+    try:
+        fiscal_data = session.sql(f"""
+            SELECT 
+                CIK,
+                COMPANY_NAME,
+                FISCAL_PERIOD,
+                FISCAL_YEAR,
+                PERIOD_END_DATE,
+                PERIOD_START_DATE,
+                DAYS_IN_PERIOD
+            FROM {config.SECURITIES['sec_filings_database']}.{config.SECURITIES['sec_filings_schema']}.SEC_FISCAL_CALENDARS
+            WHERE CIK = '{cik}'
+                AND FISCAL_PERIOD IN ('Q1', 'Q2', 'Q3', 'Q4')  -- Only quarterly data
+                AND PERIOD_END_DATE IS NOT NULL
+            ORDER BY PERIOD_END_DATE DESC
+            LIMIT {num_periods}
+        """).collect()
+        
+        if not fiscal_data:
+            return []
+        
+        return [
+            {
+                'FISCAL_PERIOD': row['FISCAL_PERIOD'],
+                'FISCAL_YEAR': row['FISCAL_YEAR'],
+                'PERIOD_END_DATE': row['PERIOD_END_DATE'],
+                'PERIOD_START_DATE': row['PERIOD_START_DATE'],
+                'COMPANY_NAME': row['COMPANY_NAME']
+            }
+            for row in fiscal_data
+        ]
+    except Exception as e:
+        # If SEC_FISCAL_CALENDARS is not accessible, return empty list
+        # This allows fallback to synthetic date generation
+        return []
+
+# ============================================================================
 # MODULE: Date Generation
 # ============================================================================
 
-def generate_dates_for_doc_type(doc_type: str) -> Dict[str, str]:
+def generate_dates_for_doc_type(doc_type: str, context: Optional[Dict[str, Any]] = None, session: Optional[Session] = None) -> Dict[str, str]:
     """
     Generate appropriate dates based on document type.
+    Uses fiscal calendar data when available for earnings_transcripts and broker_research.
     
     Args:
         doc_type: Document type
+        context: Optional context dict containing CIK for fiscal calendar lookup
+        session: Optional Snowpark session for fiscal calendar queries
     
     Returns:
         Dict with date placeholders
@@ -423,31 +486,74 @@ def generate_dates_for_doc_type(doc_type: str) -> Dict[str, str]:
     
     dates = {}
     
+    # Try to use fiscal calendar for earnings-related documents
+    fiscal_periods = []
+    if doc_type in ['earnings_transcripts', 'broker_research'] and context and session:
+        cik = context.get('CIK')
+        if cik:
+            fiscal_periods = get_fiscal_calendar_dates(session, cik, num_periods=4)
+    
     if doc_type in ['broker_research', 'internal_research', 'press_releases', 'investment_memo']:
-        # Recent dates within last 90 days
-        offset_days = random.randint(1, 90)
-        publish_date = current_date - timedelta(days=offset_days)
-        dates['PUBLISH_DATE'] = publish_date.strftime('%d %B %Y')
+        # If we have fiscal calendar data and this is broker research, align with most recent earnings
+        if doc_type == 'broker_research' and fiscal_periods:
+            # Pick a recent fiscal period (0-2 quarters back for more recent research)
+            period_idx = random.randint(0, min(2, len(fiscal_periods) - 1))
+            fiscal_period = fiscal_periods[period_idx]
+            
+            # Broker research typically published 7-45 days after earnings release
+            # Earnings call is typically 14-30 days after period end
+            period_end = fiscal_period['PERIOD_END_DATE']
+            days_after_period_end = random.randint(21, 75)  # 3 weeks to 2.5 months after quarter end
+            publish_date = period_end + timedelta(days=days_after_period_end)
+            
+            dates['PUBLISH_DATE'] = publish_date.strftime('%d %B %Y')
+            dates['FISCAL_QUARTER'] = fiscal_period['FISCAL_PERIOD']
+            dates['FISCAL_YEAR'] = str(fiscal_period['FISCAL_YEAR'])
+        else:
+            # Fallback: Recent dates within last 90 days
+            offset_days = random.randint(1, 90)
+            publish_date = current_date - timedelta(days=offset_days)
+            dates['PUBLISH_DATE'] = publish_date.strftime('%d %B %Y')
     
     elif doc_type == 'earnings_transcripts':
-        # Quarterly earnings dates
-        # Generate for last 4 quarters
-        quarters_back = random.randint(0, 3)
-        quarter_date = current_date - timedelta(days=90 * quarters_back)
-        quarter_num = ((quarter_date.month - 1) // 3) + 1
-        dates['FISCAL_QUARTER'] = f'Q{quarter_num} {quarter_date.year}'
-        dates['FISCAL_YEAR'] = str(quarter_date.year)
-        dates['PUBLISH_DATE'] = (quarter_date + timedelta(days=random.randint(14, 28))).strftime('%d %B %Y')
+        # Use fiscal calendar if available, otherwise fall back to synthetic dates
+        if fiscal_periods:
+            # Pick one of the recent fiscal periods (0-3 quarters back)
+            period_idx = random.randint(0, len(fiscal_periods) - 1)
+            fiscal_period = fiscal_periods[period_idx]
+            
+            # Earnings calls typically happen 14-30 days after period end
+            period_end = fiscal_period['PERIOD_END_DATE']
+            days_after_period_end = random.randint(14, 30)
+            publish_date = period_end + timedelta(days=days_after_period_end)
+            
+            dates['FISCAL_QUARTER'] = fiscal_period['FISCAL_PERIOD']
+            dates['FISCAL_YEAR'] = str(fiscal_period['FISCAL_YEAR'])
+            dates['PUBLISH_DATE'] = publish_date.strftime('%d %B %Y')
+            
+            # Extract quarter number from fiscal period (e.g., 'Q3' -> 3)
+            quarter_num = int(fiscal_period['FISCAL_PERIOD'][1])
+            fiscal_year = fiscal_period['FISCAL_YEAR']
+        else:
+            # Fallback: Quarterly earnings dates using synthetic generation
+            quarters_back = random.randint(0, 3)
+            quarter_date = current_date - timedelta(days=90 * quarters_back)
+            quarter_num = ((quarter_date.month - 1) // 3) + 1
+            fiscal_year = quarter_date.year
+            
+            dates['FISCAL_QUARTER'] = f'Q{quarter_num} {fiscal_year}'
+            dates['FISCAL_YEAR'] = str(fiscal_year)
+            dates['PUBLISH_DATE'] = (quarter_date + timedelta(days=random.randint(14, 28))).strftime('%d %B %Y')
         
         # Add common earnings placeholders
         dates['QUARTER_NUM'] = str(quarter_num)
         dates['NEXT_QUARTER'] = str((quarter_num % 4) + 1)
         dates['FILING_QUARTER'] = f'Q{(quarter_num % 4) + 1}'
-        dates['NEXT_YEAR'] = str(quarter_date.year + 1)
+        dates['NEXT_YEAR'] = str(fiscal_year + 1)
         dates['CLOSE_QUARTER'] = f'Q{(quarter_num % 4) + 1}'
-        dates['CLOSE_YEAR'] = str(quarter_date.year + 1)
+        dates['CLOSE_YEAR'] = str(fiscal_year + 1)
         dates['LAUNCH_QUARTER'] = f'Q{(quarter_num + 1) % 4 + 1}'
-        dates['LAUNCH_YEAR'] = str(quarter_date.year + 1)
+        dates['LAUNCH_YEAR'] = str(fiscal_year + 1)
     
     elif doc_type in ['ngo_reports', 'engagement_notes']:
         # ESG documents within last 180 days

@@ -71,8 +71,8 @@ SECURITIES = {
         'etfs': 1000
     },
     'real_assets_view': 'V_REAL_ASSETS',
-    'sec_filings_database': 'SEC_FILINGS',
-    'sec_filings_schema': 'CYBERSYN'
+    'sec_filings_database': 'SNOWFLAKE_PUBLIC_DATA_FREE', # 'SEC_FILINGS',
+    'sec_filings_schema': 'PUBLIC_DATA_FREE'
 }
 
 # Helper function for test mode counts
