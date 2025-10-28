@@ -62,7 +62,8 @@ Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scen
   - Minimum: `AWS_EU` enabled
   - Recommended: `ANY_REGIONS`
 - Snowflake Intelligence enabled: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
-- SEC Filings dataset: [Snowflake Marketplace](https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings)
+- SEC Filings dataset: [Snowflake Marketplace - SEC Filings](https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings) or [Snowflake Marketplace - Snowflake Public Data (Free)] https://app.snowflake.com/marketplace/listing/GZTSZ290BV255/snowflake-public-data-products-snowflake-public-data-free
+**If you use the Snowflake Public Data (Free) dataset, you also need to update the SECURITIES dict in config.py to use the correct database and schema names**
 
 #### **Python Environment**
 - Python 3.10+
