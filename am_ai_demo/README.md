@@ -297,27 +297,21 @@ All agents are pre-configured and ready to use - no manual configuration needed!
 
 ### Core Documentation
 
-**Agent Configuration Standards** (Enhanced with Snowflake Best Practices):
+**Agent Configuration Standards**:
 - [`docs/agents_setup.md`](docs/agents_setup.md) - **Production-Ready Agent Configurations**
   - All 7 agents fully configured with comprehensive tool descriptions
-  - Business context, complete workflows, and error handling patterns
-  - Structured response instructions with examples
+  - Complete response and orchestration instructions
   - Aligned with Snowflake Intelligence best practices
-
-- [`docs/agent_config_enhanced_example.md`](docs/agent_config_enhanced_example.md) - **Configuration Reference Template**
-  - Complete reference showing all best practices
+  - Used as source for automated SQL-based agent creation
+  
+- `.cursor/rules/agent-config.mdc` - **Complete Agent Creation Guide**
+  - SQL-based automated agent creation workflow
   - Comprehensive tool description patterns (Data Coverage, When to Use/NOT, Query Best Practices)
   - Business Context patterns (Organization, Key Terms, Categories)
   - Complete workflow examples with step-by-step sequences
   - Error handling scenarios with recovery steps
   - Structured response templates with complete examples
-
-- [`docs/agent_configuration_checklist.md`](docs/agent_configuration_checklist.md) - **Quality Assurance Checklist**
-  - Systematic validation for agent configurations
-  - Section-by-section validation criteria
-  - Common antipatterns to avoid
-  - Testing requirements and procedures
-  - Validation summary template
+  - Validation checklist and quality assurance guidance
 
 **Demo Scenarios**:
 - [`docs/demo_scenarios.md`](docs/demo_scenarios.md) - Complete demo scripts with conversation flows

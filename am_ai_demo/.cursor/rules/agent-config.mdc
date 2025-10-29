@@ -201,32 +201,193 @@ python main.py  # Agents created automatically as part of build
 python -c "from snowflake.snowpark import Session; import create_agents; session = Session.builder.configs(...).create(); create_agents.create_all_agents(session, ['all'])"
 ```
 
-### 2.4 Adding New Agents
+### 2.4 Adding New Agents - Complete Workflow
 
-**To add a new agent:**
+**To add a new agent, follow this comprehensive workflow that uses all patterns from this guide:**
 
-1. **Add instruction functions** in `create_agents.py`:
+#### Step 1: Design Agent Instructions (Using Patterns from Step 3)
+
+**Response Instructions** - Use pattern from Section 3.2.1:
 ```python
 def get_new_agent_response_instructions():
     """Get response instructions for new agent"""
     return """Style:
-- Tone: [appropriate tone]
-- Lead With: [what to lead with]
-...
-"""
+- Tone: [Specific tone for persona - see Section 3.2.1]
+- Lead With: [Answer pattern - see Section 3.2.1]
+- Terminology: [Domain-specific terms - see Section 3.2.1]
+- Precision: [Detail level - see Section 3.2.1]
+- Limitations: [How to communicate gaps - see Section 3.2.1]
 
-def get_new_agent_orchestration_instructions():
-    """Get orchestration instructions for new agent"""
-    return """Business Context:
-- [context]
+Presentation:
+- Tables: Use for [criteria with threshold - see Section 3.2.1]
+- Bar Charts: Use for [criteria - see Section 3.2.1]
+- Line Charts: Use for [criteria - see Section 3.2.1]
+- Single Metrics: Format as "[pattern]"
+- Data Freshness: Always include "[pattern]"
 
-Tool Selection Strategy:
-1. [tool selection logic]
-...
+Response Structure for [Common Query Type 1]:
+Template: "[Structure with placeholders - see Section 3.2.1 for examples]"
+
+Example:
+User: "[realistic question]"
+Response: "[complete example showing all elements]"
+
+Response Structure for [Common Query Type 2]:
+Template: "[Different structure for different query type]"
+
+Example:
+User: "[example question]"
+Response: "[complete example]"
 """
 ```
 
-2. **Register in helper function**:
+**Orchestration Instructions** - Use patterns from Sections 3.1.1, 3.1.2, 3.1.3:
+```python
+def get_new_agent_orchestration_instructions():
+    """Get orchestration instructions for new agent"""
+    return """Business Context:
+
+Organization Context:
+- [Organization details - see Section 3.1.1]
+- [Key metrics - see Section 3.1.1]
+- [Regulatory framework - see Section 3.1.1]
+- [Data operations - see Section 3.1.1]
+
+Key Business Terms:
+- [Term 1]: [Definition with thresholds - see Section 3.1.1]
+- [Term 2]: [Definition with thresholds - see Section 3.1.1]
+- [Term 3]: [Definition with process - see Section 3.1.1]
+
+[Domain] Categories:
+- [Category 1]: [Characteristics - see Section 3.1.1]
+- [Category 2]: [Characteristics - see Section 3.1.1]
+
+Tool Selection Strategy:
+
+1. [Query categorization - see Section 3.1]
+2. [Tool selection logic with ✅/❌ examples]
+3. [Workflow sequencing for multi-tool queries]
+
+Complete Workflow Examples:
+
+Workflow 1: [Workflow Name]
+Trigger: User asks "[example question]"
+
+Step-by-Step Execution:
+1. [First Action]
+   Tool: [tool_name]
+   Query/Search: "[exact pattern]"
+   Extract from results: [specific info]
+   Why this step: [business justification]
+
+2. [Second Action]
+   Tool: [tool_name]
+   Query/Search: "[exact pattern using Step 1 results]"
+   Extract from results: [specific info]
+
+3. [Third Action]
+   [Continue pattern - see Section 3.1.2 for complete example]
+
+4. Synthesize Final Response:
+   - [Element 1]: From Step [X]
+   - [Element 2]: From Step [Y]
+   - Format as: [specific format]
+   - Include: [required elements]
+
+Example Complete Interaction:
+User Question: "[realistic question]"
+Agent Response: "[complete response showing all workflow elements]"
+
+Workflow 2: [Another Workflow]
+[Follow same pattern - see Section 3.1.2]
+
+Error Handling and Edge Cases:
+
+Scenario 1: [Error Condition]
+Detection: [How to identify - see Section 3.1.3]
+Recovery Steps:
+  1. [Recovery action 1]
+  2. [Recovery action 2]
+  3. [Final fallback]
+User Message: "[Exact message pattern]"
+Alternative: [What to suggest]
+
+Scenario 2: [Different Error]
+[Follow same pattern - see Section 3.1.3 for 5 complete examples]
+
+[Continue for 3-5 scenarios]
+"""
+```
+
+#### Step 2: Configure Tools (Using Patterns from Section 2.2)
+
+**For Cortex Analyst tools** - Use pattern from Section 2.2.1:
+- Include Data Coverage (5 elements)
+- Include Semantic Model Contents (4 elements)
+- Include When to Use (3-4 examples)
+- Include When NOT to Use (3 anti-patterns with alternatives)
+- Include Query Best Practices (3+ with ✅/❌ examples)
+
+**For Cortex Search tools** - Use pattern from Section 2.2.1:
+- Include Data Sources (5 elements)
+- Include When to Use (3-4 examples)
+- Include When NOT to Use (3 anti-patterns with alternatives)
+- Include Search Query Best Practices (3+ with ✅/❌ examples)
+
+#### Step 3: Implement Agent Creation Function
+
+```python
+def create_new_agent(session: Session):
+    """Create new agent with comprehensive tool descriptions."""
+    database_name = config.DATABASE['name']
+    
+    # Get instructions from helper functions
+    instructions = get_agent_instructions()['new_agent']
+    response_formatted = format_instructions_for_yaml(instructions['response'])
+    orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.new_agent
+  COMMENT = '[2-3 sentence description: persona + capabilities + value proposition]'
+  PROFILE = '{{"display_name": "[Display Name]"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: claude-sonnet-4-5
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "[tool_name]"
+        description: "[Use comprehensive pattern from Section 2.2.1 - include Data Coverage, When to Use/NOT, Query Best Practices]"
+    - tool_spec:
+        type: "cortex_search"
+        name: "search_[document_type]"
+        description: "[Use comprehensive pattern from Section 2.2.1 - include Data Sources, When to Use/NOT, Search Best Practices]"
+  tool_resources:
+    [tool_name]:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "SAM_DEMO_EXECUTION_WH"
+      semantic_view: "{database_name}.AI.[SEMANTIC_VIEW_NAME]"
+    search_[document_type]:
+      search_service: "{database_name}.AI.SAM_[SERVICE_NAME]"
+      id_column: "DOCUMENT_ID"
+      title_column: "DOCUMENT_TITLE"
+      max_results: 4
+  $$;
+"""
+    
+    session.sql(sql).collect()
+    print("✅ Created agent: new_agent")
+```
+
+#### Step 4: Register Agent
+
+**Add to `get_agent_instructions()` function**:
 ```python
 def get_agent_instructions():
     return {
@@ -238,38 +399,7 @@ def get_agent_instructions():
     }
 ```
 
-3. **Create agent function**:
-```python
-def create_new_agent(session: Session):
-    """Create new agent."""
-    database_name = config.DATABASE['name']
-    
-    instructions = get_agent_instructions()['new_agent']
-    response_formatted = format_instructions_for_yaml(instructions['response'])
-    orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
-    
-    sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.new_agent
-  COMMENT = '[agent description]'
-  PROFILE = '{{"display_name": "[Display Name]"}}'
-  FROM SPECIFICATION
-  $$
-  models:
-    orchestration: claude-sonnet-4-5
-  instructions:
-    response: "{response_formatted}"
-    orchestration: "{orchestration_formatted}"
-  tools:
-    # ... tool specifications
-  tool_resources:
-    # ... tool resources
-  $$;
-"""
-    session.sql(sql).collect()
-    print("✅ Created agent: new_agent")
-```
-
-4. **Add to `create_all_agents()` function**:
+**Add to `create_all_agents()` function**:
 ```python
 def create_all_agents(session: Session, scenarios: List[str]):
     agents_to_create = {
@@ -278,6 +408,25 @@ def create_all_agents(session: Session, scenarios: List[str]):
     }
     # ... rest of function
 ```
+
+#### Step 5: Validate Using Checklist
+
+Follow the validation checklist:
+- [ ] Use **Section 2.2.1** for comprehensive tool descriptions
+- [ ] Use **Section 3.1.1** for business context patterns
+- [ ] Use **Section 3.1.2** for explicit workflow examples
+- [ ] Use **Section 3.1.3** for error handling patterns
+- [ ] Use **Section 3.2.1** for structured response instructions
+- [ ] Reference **@agent_configuration_checklist.md** for systematic validation
+- [ ] Reference **@agent_config_enhanced_example.md** for complete reference template
+
+#### Complete Example Reference
+
+See existing agents in `create_agents.py` for working examples:
+- **portfolio_copilot**: Full comprehensive example with all patterns
+- **research_copilot**: Multi-tool search and analysis pattern
+- **thematic_macro_advisor**: Thematic investment strategy pattern
+- **esg_guardian**: Compliance and risk monitoring pattern
 
 ## Step 3: Agent Configuration Reference (For Documentation)
 
