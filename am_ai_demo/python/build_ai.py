@@ -11,7 +11,7 @@ from snowflake.snowpark import Session
 from typing import List
 import config
 
-def build_all(session: Session, scenarios: List[str], build_semantic: bool = True, build_search: bool = True):
+def build_all(session: Session, scenarios: List[str], build_semantic: bool = True, build_search: bool = True, build_agents: bool = True):
     """
     Build AI components for the specified scenarios.
     
@@ -20,6 +20,7 @@ def build_all(session: Session, scenarios: List[str], build_semantic: bool = Tru
         scenarios: List of scenario names
         build_semantic: Whether to build semantic views
         build_search: Whether to build search services
+        build_agents: Whether to create Snowflake Intelligence agents
     """
     # print(" Starting AI components build...")
     # print(f"   Scenarios: {', '.join(scenarios)}")
@@ -50,6 +51,18 @@ def build_all(session: Session, scenarios: List[str], build_semantic: bool = Tru
     except Exception as e:
         print(f"ERROR: Warning: Custom tool creation failed: {e}")
         # print("   Continuing build - custom tools are optional for basic functionality")
+    
+    # Create Snowflake Intelligence agents
+    if build_agents:
+        # print("🤖 Creating Snowflake Intelligence agents...")
+        try:
+            import create_agents
+            created, failed = create_agents.create_all_agents(session, scenarios)
+            if failed > 0:
+                print(f"   ⚠️  WARNING: {failed} agents failed to create")
+        except Exception as e:
+            print(f"ERROR: Warning: Agent creation failed: {e}")
+            # print("   Continuing build - agents can be created manually if needed")
     
     # Validate components
     # print(" Validating AI components...")

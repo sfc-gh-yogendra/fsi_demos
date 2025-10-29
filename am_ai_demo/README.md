@@ -83,6 +83,7 @@ warehouse = "your-warehouse"
 ### Build Demo Environment (100% Real Assets)
 ```bash
 # Build everything with ~88,000 real securities (all scenarios)
+# Creates data, semantic views, search services, and all 7 agents automatically
 python python/main.py --connection-name my_demo_connection
 
 # Test mode: Build with ~8,800 securities for faster development testing
@@ -98,6 +99,15 @@ python python/main.py --connection-name my_demo_connection --scope data
 python python/main.py --connection-name my_demo_connection --scope semantic
 python python/main.py --connection-name my_demo_connection --scope search
 ```
+
+**What Gets Created:**
+- ✅ Database: `SAM_DEMO` with RAW, CURATED, and AI schemas
+- ✅ Data: ~88,000 real securities, portfolios, holdings, transactions, documents
+- ✅ Semantic Views: 4 views for portfolio analytics, research, quantitative analysis
+- ✅ Search Services: 12+ services for broker research, earnings, press releases, etc.
+- ✅ **Agents: All 7 agents automatically created in `SNOWFLAKE_INTELLIGENCE.AGENTS`**
+  - Portfolio Copilot, Research Copilot, Thematic Macro Advisor
+  - ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst
 
 ## Next Steps After Build
 
@@ -154,31 +164,60 @@ UNION ALL SELECT 'Press Releases', COUNT(*) FROM SAM_DEMO.CURATED.PRESS_RELEASES
 - Securities: ~8,800 (10% of full volumes)
 - Documents: Similar counts (minimal reduction due to small base numbers)
 
-### 2. Configure Agents
+### 2. Verify Agents Created
 
-Follow the detailed instructions in `docs/agents_setup.md` to configure agents in Snowflake Intelligence:
+All 7 agents are automatically created during the build. Verify they exist:
 
-1. Navigate to Snowflake Intelligence in Snowsight
-2. Create new agent (e.g., `portfolio_copilot`)
-3. Add tools (Cortex Analyst + Cortex Search)
-4. Configure planning and response instructions
+```sql
+-- Check agents were created in Snowflake Intelligence
+SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS;
+```
 
-### 3. Test Agent
+**Expected Agents:**
+- `portfolio_copilot` - Portfolio analytics and benchmarking
+- `research_copilot` - Document research and company analysis  
+- `thematic_macro_advisor` - Thematic investment strategy
+- `esg_guardian` - ESG risk monitoring
+- `compliance_advisor` - Mandate monitoring and breach detection
+- `sales_advisor` - Client reporting and communications
+- `quant_analyst` - Factor analysis and performance attribution
 
-Quick validation query:
+**Agent Details:**
+- All agents created with SQL `CREATE AGENT` statements
+- Instructions properly formatted with YAML escaping
+- Full tool configurations (Cortex Analyst + Cortex Search)
+- Available immediately in Snowflake Intelligence UI
+
+### 3. Test Agents
+
+Navigate to **Snowflake Intelligence** in Snowsight and test with quick validation queries:
+
+**Portfolio Copilot:**
 ```
 "What are my top 10 holdings by market value in the SAM Global Thematic Growth portfolio?"
 ```
 
-**Expected Response**: 
-- Table with Ticker, Company Name, Weight %, Market Value
-- Concentration warnings for positions >6.5%
-- Total exposure percentage
+**Research Copilot:**
+```
+"Analyze Microsoft's financial health using the latest SEC filings"
+```
+
+**ESG Guardian:**
+```
+"Check ESG risks in our portfolios"
+```
+
+**Expected Response Format**: 
+- Professional formatting with tables and charts
+- Concentration warnings with severity indicators (⚠️, 🚨)
+- Proper source citations with dates
 - Clean data with no duplicates
 
 ### 4. Run Demo Scenarios
 
 Use the complete demo scripts in `docs/demo_scenarios.md` for professional demonstrations.
+
+All agents are pre-configured and ready to use - no manual configuration needed!
 
 ## Configuration Defaults
 
@@ -223,7 +262,8 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 │   ├── generate_structured.py # Structured data generation (100% real assets)
 │   ├── generate_unstructured.py # Unstructured content generation (template-based)
 │   ├── hydration_engine.py    # Template hydration engine
-│   ├── build_ai.py            # AI components (semantic views, search services)
+│   ├── build_ai.py            # AI components (semantic views, search services, agents)
+│   ├── create_agents.py       # SQL-based agent creation (all 7 agents)
 │   └── extract_real_assets.py # Real asset view creation from SEC Filings
 ├── research/                   # Background research and analysis
 ├── .gitignore                  # Git ignore patterns (logs, cache, backups)
@@ -245,6 +285,120 @@ Use the complete demo scripts in `docs/demo_scenarios.md` for professional demon
 - **AI Schema**: Enhanced semantic views and Cortex Search services
   - 4 semantic views (Analyst, Research, Quant, Implementation)
   - 12+ Cortex Search services with proper document linkage
+
+### Snowflake Intelligence Agents: `SNOWFLAKE_INTELLIGENCE.AGENTS`
+- **Automated Creation**: All 7 agents created via SQL during build process
+  - Portfolio Copilot, Research Copilot, Thematic Macro Advisor
+  - ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst
+- **Implementation**: `python/create_agents.py` with proper YAML formatting
+- **Availability**: Immediately available in Snowflake Intelligence UI
+
+## Documentation
+
+### Core Documentation
+
+**Agent Configuration Standards** (Enhanced with Snowflake Best Practices):
+- [`docs/agents_setup.md`](docs/agents_setup.md) - **Production-Ready Agent Configurations**
+  - All 7 agents fully configured with comprehensive tool descriptions
+  - Business context, complete workflows, and error handling patterns
+  - Structured response instructions with examples
+  - Aligned with Snowflake Intelligence best practices
+
+- [`docs/agent_config_enhanced_example.md`](docs/agent_config_enhanced_example.md) - **Configuration Reference Template**
+  - Complete reference showing all best practices
+  - Comprehensive tool description patterns (Data Coverage, When to Use/NOT, Query Best Practices)
+  - Business Context patterns (Organization, Key Terms, Categories)
+  - Complete workflow examples with step-by-step sequences
+  - Error handling scenarios with recovery steps
+  - Structured response templates with complete examples
+
+- [`docs/agent_configuration_checklist.md`](docs/agent_configuration_checklist.md) - **Quality Assurance Checklist**
+  - Systematic validation for agent configurations
+  - Section-by-section validation criteria
+  - Common antipatterns to avoid
+  - Testing requirements and procedures
+  - Validation summary template
+
+**Demo Scenarios**:
+- [`docs/demo_scenarios.md`](docs/demo_scenarios.md) - Complete demo scripts with conversation flows
+  - Portfolio Manager scenarios (Portfolio Copilot, Thematic Macro Advisor)
+  - Research Analyst scenarios (Research Copilot)
+  - Risk & Compliance scenarios (ESG Guardian, Compliance Advisor)
+  - Client Relations scenarios (Sales Advisor)
+  - Quantitative Analyst scenarios (Quant Analyst)
+
+**Data Model**:
+- [`docs/data_model.md`](docs/data_model.md) - Industry-standard data architecture
+  - 100% real assets from SEC Filings dataset (14,000+ securities)
+  - Immutable SecurityID with transaction-based holdings
+  - Issuer hierarchies and corporate relationships
+  - Enhanced document integration patterns
+
+**Internal Development Rules** (`.cursor/rules/`):
+- `agent-config.mdc` - **SQL-based agent creation** with automated deployment patterns
+- `semantic-views.mdc` - Semantic view creation with WITH EXTENSION patterns
+- `cortex-search.mdc` - Cortex Search service creation and testing
+- `data-generation.mdc` - Enhanced data generation with 100% real assets
+- `unstructured-data-generation.mdc` - Template-based document generation
+- `project-setup.mdc` - Project structure and automated agent status tracking
+- `troubleshooting.mdc` - Comprehensive troubleshooting guide
+
+### Configuration Best Practices Summary
+
+#### Tool Descriptions (Cortex Analyst & Cortex Search)
+✅ **Required Elements**:
+- Data Coverage: Historical range, update frequency, record counts, refresh schedule
+- When to Use: 3-4 specific examples with query patterns
+- When NOT to Use: Alternative tools for anti-patterns
+- Query/Search Best Practices: ✅/❌ examples for good vs bad queries
+
+✅ **Quality Standards**:
+- Specific, not generic ("portfolio analytics" not "gets data")
+- Exact thresholds and values (">6.5% warning" not "high concentration")
+- Clear boundaries between tools with alternatives specified
+
+#### Planning Instructions
+✅ **Required Elements**:
+- Business Context: Organization details, key terms with exact thresholds, domain categories
+- Tool Selection: Query patterns that trigger each tool with ✅/❌ examples
+- Complete Workflows: 2-3 multi-step workflows with tool sequences and synthesis patterns
+- Error Handling: 3-5 common scenarios with detection, recovery, messages, alternatives
+
+✅ **Quality Standards**:
+- Explicit business rules (not assumed context)
+- Step-by-step tool sequences (not "use appropriate tools")
+- Complete workflow examples with realistic questions and responses
+
+#### Response Instructions
+✅ **Required Elements**:
+- Style: Tone, lead-with pattern, terminology, precision, limitations
+- Presentation: Tables, charts, formatting rules with specific criteria
+- Response Structures: 2-3 templates with complete examples
+
+✅ **Quality Standards**:
+- Specific patterns ("Weight is 8.2% (⚠️ exceeds 6.5%) as of 31 Dec 2024")
+- Not generic guidance ("be professional and helpful")
+- Domain-specific formatting rules with examples
+
+### Quick Reference: Agent Enhancement Impact
+
+**Before Enhancement**:
+- Tool descriptions: 2-3 sentences per tool
+- Planning instructions: Basic tool selection logic
+- Response instructions: General style guidance
+
+**After Enhancement** (Following Snowflake Best Practices):
+- Tool descriptions: 15-25 lines per tool with comprehensive sections
+- Planning instructions: Business context + workflows + error handling
+- Response instructions: Structured with style, presentation, and templates
+- **Total Enhancement**: 3-4x more detail per agent, all following Snowflake Intelligence best practices
+
+### Related Resources
+
+- [Snowflake Intelligence Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence)
+- [Cortex Analyst Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst)
+- [Cortex Search Documentation](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-search)
+- [Best Practices Guide](research/FINAL_%20Definitive%20Guide%20for%20Building%20Cortex%20Agents.md) - Internal research on Snowflake agent configuration
 
 ## Troubleshooting
 
