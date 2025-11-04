@@ -50,10 +50,13 @@ def verify_table_columns(session: Session) -> None:
         "CURATED.FACT_CONSENSUS_ESTIMATE", 
         "CURATED.FACT_EARNINGS_ACTUAL",
         "CURATED.FACT_STOCK_PRICE_DAILY",
-        "RAW.NEWS_ARTICLES_CORPUS",
-        "RAW.RESEARCH_REPORTS_CORPUS",
+        "CURATED.NEWS_ARTICLES_CORPUS",
+        "CURATED.RESEARCH_REPORTS_CORPUS",
         "CURATED.DIM_CLIENT",
-        "RAW.PROPRIETARY_SIGNALS"
+        "CURATED.FACT_MACRO_SIGNAL",
+        "CURATED.DIM_ECONOMIC_REGION",
+        "CURATED.DIM_SECTOR_MACRO_CORRELATION",
+        "CURATED.DIM_SECTOR"
     ]
     
     for table in tables_to_check:
@@ -193,10 +196,6 @@ def create_thematic_research_semantic_view(session: Session) -> None:
     semantic_view_sql = """
 CREATE OR REPLACE SEMANTIC VIEW AI.THEMATIC_RESEARCH_VIEW
 	TABLES (
-		REPORTS AS RAW.RESEARCH_REPORTS_CORPUS
-			PRIMARY KEY (REPORT_ID)
-			WITH SYNONYMS=('research_reports','thematic_reports','analysis')
-			COMMENT='Internal research reports with thematic analysis',
 		COMPANIES AS CURATED.DIM_COMPANY
 			PRIMARY KEY (TICKER)
 			WITH SYNONYMS=('companies_master','company_info','firms')
@@ -204,27 +203,17 @@ CREATE OR REPLACE SEMANTIC VIEW AI.THEMATIC_RESEARCH_VIEW
 		PRICES AS CURATED.FACT_STOCK_PRICE_DAILY
 			PRIMARY KEY (TICKER, PRICE_DATE)
 			WITH SYNONYMS=('stock_prices','market_data','price_history')
-			COMMENT='Historical stock price data for performance analysis',
-		NEWS AS RAW.NEWS_ARTICLES_CORPUS
-			PRIMARY KEY (ARTICLE_ID)
-			WITH SYNONYMS=('news_articles','market_news','events')
-			COMMENT='News articles and market event coverage'
+			COMMENT='Historical stock price data for performance analysis'
 	)
 	RELATIONSHIPS (
-		PRICES_TO_COMPANIES AS PRICES(TICKER) REFERENCES COMPANIES(TICKER),
-		NEWS_TO_COMPANIES AS NEWS(AFFECTED_TICKER) REFERENCES COMPANIES(TICKER)
+		PRICES_TO_COMPANIES AS PRICES(TICKER) REFERENCES COMPANIES(TICKER)
 	)
 	DIMENSIONS (
 		COMPANIES.TICKER AS TICKER WITH SYNONYMS=('symbol','stock_ticker','ticker_symbol') COMMENT='Company stock ticker symbol',
 		COMPANIES.COMPANY_NAME AS COMPANY_NAME WITH SYNONYMS=('company','firm_name','corporation') COMMENT='Company name',
 		COMPANIES.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector') COMMENT='Business sector classification',
 		COMPANIES.INDUSTRY AS INDUSTRY WITH SYNONYMS=('industry_group','business_line') COMMENT='Industry classification',
-		REPORTS.REPORT_TYPE AS REPORT_TYPE WITH SYNONYMS=('analysis_type','research_type') COMMENT='Type of research report',
-		REPORTS.THEMATIC_TAGS AS THEMATIC_TAGS WITH SYNONYMS=('thematic_tags','investment_themes','topics') COMMENT='Thematic investment tags and topics',
-		REPORTS.AUTHOR AS AUTHOR WITH SYNONYMS=('analyst','research_author','writer') COMMENT='Report author name',
-		REPORTS.PUBLISHED_DATE AS PUBLISHED_DATE WITH SYNONYMS=('publication_date','report_date') COMMENT='Report publication date',
-		PRICES.PRICE_DATE AS PRICE_DATE WITH SYNONYMS=('trade_date','market_date','date') COMMENT='Stock price date',
-		NEWS.SOURCE AS SOURCE WITH SYNONYMS=('source','publication','media') COMMENT='News article source'
+		PRICES.PRICE_DATE AS PRICE_DATE WITH SYNONYMS=('trade_date','market_date','date') COMMENT='Stock price date'
 	)
 	METRICS (
 		PRICES.AVG_PRICE AS AVG(CLOSE) WITH SYNONYMS=('average_price','mean_price','avg_close') COMMENT='Average stock closing price',
@@ -233,7 +222,7 @@ CREATE OR REPLACE SEMANTIC VIEW AI.THEMATIC_RESEARCH_VIEW
 		PRICES.TOTAL_VOLUME AS SUM(VOLUME) WITH SYNONYMS=('total_trading_volume','sum_volume','cumulative_volume') COMMENT='Total trading volume',
 		COMPANIES.TOTAL_MARKET_CAP AS SUM(MARKET_CAP_BILLIONS) WITH SYNONYMS=('total_market_cap','sum_market_cap','aggregate_cap') COMMENT='Total market capitalization'
 	)
-	COMMENT='Thematic investment research semantic view for analyzing trends, themes, and cross-sector opportunities';
+	COMMENT='Thematic investment research semantic view for analyzing company performance and market trends';
     """
     
     try:
@@ -271,17 +260,12 @@ CREATE OR REPLACE SEMANTIC VIEW AI.CLIENT_MARKET_IMPACT_VIEW
 		DISCUSSIONS AS CURATED.FACT_CLIENT_DISCUSSION
 			PRIMARY KEY (CLIENT_ID, DISCUSSION_DATE)
 			WITH SYNONYMS=('client_meetings','strategic_discussions','relationship_management')
-			COMMENT='Client discussion and meeting tracking',
-		REPORTS AS RAW.RESEARCH_REPORTS_CORPUS
-			PRIMARY KEY (REPORT_ID)
-			WITH SYNONYMS=('research_reports','content_library','thematic_reports')
-			COMMENT='Internal research reports with thematic tags and topics'
+			COMMENT='Client discussion and meeting tracking'
 	)
 	RELATIONSHIPS (
 		TRADING_TO_CLIENTS AS TRADING(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
 		ENGAGEMENT_TO_CLIENTS AS ENGAGEMENT(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
-		DISCUSSIONS_TO_CLIENTS AS DISCUSSIONS(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID),
-		ENGAGEMENT_TO_REPORTS AS ENGAGEMENT(CONTENT_ID) REFERENCES REPORTS(REPORT_ID)
+		DISCUSSIONS_TO_CLIENTS AS DISCUSSIONS(CLIENT_ID) REFERENCES CLIENTS(CLIENT_ID)
 	)
 	DIMENSIONS (
 		CLIENTS.CLIENT_ID AS CLIENT_ID WITH SYNONYMS=('client','customer_id','account_id') COMMENT='Unique client identifier',
@@ -293,15 +277,11 @@ CREATE OR REPLACE SEMANTIC VIEW AI.CLIENT_MARKET_IMPACT_VIEW
 		TRADING.DERIVATIVE_TYPE AS DERIVATIVE_TYPE WITH SYNONYMS=('product','instrument_type','trade_type') COMMENT='Specific derivative instrument type',
 		TRADING.CLEARING_CCP AS CLEARING_CCP WITH SYNONYMS=('ccp','clearing_house','central_counterparty') COMMENT='Central counterparty for clearing',
 		ENGAGEMENT.ENGAGEMENT_TYPE AS ENGAGEMENT_TYPE WITH SYNONYMS=('interaction_type','content_action','content_type') COMMENT='Type of content engagement',
-		ENGAGEMENT.CONTENT_ID AS CONTENT_ID WITH SYNONYMS=('report_id','research_id','document_id') COMMENT='Research content identifier',
+		ENGAGEMENT.CONTENT_ID AS CONTENT_ID WITH SYNONYMS=('report_id','research_id','document_id') COMMENT='Research content identifier for correlation with Cortex Search',
 		ENGAGEMENT.ENGAGEMENT_TIMESTAMP AS ENGAGEMENT_TIMESTAMP WITH SYNONYMS=('engagement_date','interaction_date','content_date','engagement_time') COMMENT='Date and time of content engagement',
 		DISCUSSIONS.DISCUSSION_TYPE AS DISCUSSION_TYPE WITH SYNONYMS=('meeting_type','interaction_type') COMMENT='Type of client discussion',
 		DISCUSSIONS.RELATIONSHIP_MANAGER AS RELATIONSHIP_MANAGER WITH SYNONYMS=('account_manager','rm','contact') COMMENT='Relationship manager name',
-		DISCUSSIONS.TOPICS_DISCUSSED AS TOPICS_DISCUSSED WITH SYNONYMS=('discussion_topics','meeting_topics','conversation_themes') COMMENT='Topics discussed in client meetings',
-		REPORTS.TITLE AS TITLE WITH SYNONYMS=('content_title','research_title','document_title','report_title') COMMENT='Research report title',
-		REPORTS.THEMATIC_TAGS AS THEMATIC_TAGS WITH SYNONYMS=('topics','themes','subject_tags','content_themes','topic_category','ficc_topics','emir_3_0','electronic_trading','bond_transparency','mifid_ii','esg_integration','market_structure_topics') COMMENT='Thematic tags including FICC, EMIR 3.0, Electronic Trading, Bond Markets, MiFID II, ESG Integration',
-		REPORTS.REPORT_TYPE AS REPORT_TYPE WITH SYNONYMS=('content_type','research_type','document_type') COMMENT='Type of research report',
-		REPORTS.AUTHOR AS AUTHOR WITH SYNONYMS=('content_author','research_author','document_author','report_author') COMMENT='Research report author'
+		DISCUSSIONS.TOPICS_DISCUSSED AS TOPICS_DISCUSSED WITH SYNONYMS=('discussion_topics','meeting_topics','conversation_themes','emir_3_0','market_structure','regulatory_topics') COMMENT='Topics discussed in client meetings including EMIR 3.0 and market structure'
 	)
 	METRICS (
 		CLIENTS.TOTAL_AUM AS SUM(AUM_BILLIONS) WITH SYNONYMS=('total_assets','sum_aum','aggregate_assets') COMMENT='Total assets under management',
@@ -311,7 +291,7 @@ CREATE OR REPLACE SEMANTIC VIEW AI.CLIENT_MARKET_IMPACT_VIEW
 		ENGAGEMENT.ENGAGEMENT_DURATION AS SUM(ENGAGEMENT_DURATION_MINUTES) WITH SYNONYMS=('engagement_score','interaction_score','content_score','total_duration') COMMENT='Total engagement duration in minutes',
 		DISCUSSIONS.DISCUSSION_COUNT AS COUNT(DISCUSSION_DATE) WITH SYNONYMS=('meeting_count','interaction_frequency') COMMENT='Count of client discussions and meetings'
 	)
-	COMMENT='Client market impact analysis for personalized research and EMIR 3.0 risk assessment';
+	COMMENT='Client market impact analysis for understanding trading patterns and engagement with research content';
     """
     
     try:
@@ -334,18 +314,22 @@ def create_global_macro_signals_semantic_view(session: Session) -> None:
     semantic_view_sql = """
 CREATE OR REPLACE SEMANTIC VIEW AI.GLOBAL_MACRO_SIGNALS_VIEW
 	TABLES (
-		SIGNALS AS RAW.PROPRIETARY_SIGNALS
+		SIGNALS AS CURATED.FACT_MACRO_SIGNAL
 			PRIMARY KEY (SIGNAL_DATE, SIGNAL_NAME)
 			WITH SYNONYMS=('macro_signals','economic_indicators','frost_indicators')
 			COMMENT='Proprietary macroeconomic signals and leading indicators',
-		REGIONS AS RAW.ECONOMIC_REGIONS
+		REGIONS AS CURATED.DIM_ECONOMIC_REGION
 			PRIMARY KEY (REGION_CODE)
 			WITH SYNONYMS=('geographic_regions','economic_zones','geographies')
 			COMMENT='Economic regions with GDP and population data',
-		CORRELATIONS AS RAW.SECTOR_MACRO_CORRELATIONS
+		CORRELATIONS AS CURATED.DIM_SECTOR_MACRO_CORRELATION
 			PRIMARY KEY (SECTOR, SIGNAL_NAME)
 			WITH SYNONYMS=('sector_correlations','macro_relationships','signal_correlations')
 			COMMENT='Correlation patterns between sectors and macro signals',
+		SECTORS AS CURATED.DIM_SECTOR
+			PRIMARY KEY (SECTOR)
+			WITH SYNONYMS=('sector_master','sector_dim','industry_sectors')
+			COMMENT='Sector dimension table for proper relationships',
 		COMPANIES AS CURATED.DIM_COMPANY
 			PRIMARY KEY (TICKER)
 			WITH SYNONYMS=('companies_master','company_info','firms')
@@ -356,7 +340,8 @@ CREATE OR REPLACE SEMANTIC VIEW AI.GLOBAL_MACRO_SIGNALS_VIEW
 			COMMENT='Historical stock price data for performance analysis'
 	)
 	RELATIONSHIPS (
-		CORRELATIONS_TO_COMPANIES AS CORRELATIONS(SECTOR) REFERENCES COMPANIES(SECTOR),
+		CORRELATIONS_TO_SECTORS AS CORRELATIONS(SECTOR) REFERENCES SECTORS(SECTOR),
+		COMPANIES_TO_SECTORS AS COMPANIES(SECTOR) REFERENCES SECTORS(SECTOR),
 		PRICES_TO_COMPANIES AS PRICES(TICKER) REFERENCES COMPANIES(TICKER)
 	)
 	DIMENSIONS (
@@ -368,7 +353,9 @@ CREATE OR REPLACE SEMANTIC VIEW AI.GLOBAL_MACRO_SIGNALS_VIEW
 		REGIONS.REGION_CODE AS REGION_CODE WITH SYNONYMS=('country_code','geo_code') COMMENT='Region code identifier',
 		REGIONS.REGION_NAME AS REGION_NAME WITH SYNONYMS=('region','country','geographic_name') COMMENT='Full region name',
 		REGIONS.REGION_TYPE AS REGION_TYPE WITH SYNONYMS=('economy_type','market_type') COMMENT='Type of economy (Developed, Emerging)',
-		CORRELATIONS.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector','sector_name') COMMENT='Business sector name',
+		SECTORS.SECTOR AS SECTOR WITH SYNONYMS=('sector_name','industry_sector','business_sector') COMMENT='Sector name',
+		SECTORS.SECTOR_DESCRIPTION AS SECTOR_DESCRIPTION WITH SYNONYMS=('sector_desc') COMMENT='Sector description',
+		CORRELATIONS.CORRELATION_SECTOR AS SECTOR WITH SYNONYMS=('corr_sector','signal_sector','correlation_sector') COMMENT='Sector for correlation mapping',
 		CORRELATIONS.INTERPRETATION AS INTERPRETATION WITH SYNONYMS=('correlation_interpretation','relationship_description') COMMENT='Interpretation of sector-signal correlation',
 		COMPANIES.TICKER AS TICKER WITH SYNONYMS=('symbol','stock_ticker','ticker_symbol') COMMENT='Company stock ticker symbol',
 		COMPANIES.COMPANY_NAME AS COMPANY_NAME WITH SYNONYMS=('company','firm_name','corporation') COMMENT='Company name',

@@ -46,8 +46,8 @@ def get_agent_configs():
     
     return {
         "earnings_analysis_agent": {
-            "agent_name": "earnings_analysis_agent",
-            "display_name": "Earnings Analysis Assistant", 
+            "agent_name": "MR_EARNINGS_ANALYSIS_AGENT",
+            "display_name": "Earnings Analysis Assistant (Market Research)", 
             "description": "Specialized assistant for analyzing quarterly earnings results, consensus estimates, and management commentary",
             "orchestration_model": "Claude 4",
             "tools": [
@@ -92,8 +92,8 @@ Tone: Professional, analytical, and confident while remaining objective."""
         },
         
         "thematic_research_agent": {
-            "agent_name": "thematic_research_agent",
-            "display_name": "Thematic Investment Research Assistant",
+            "agent_name": "MR_THEMATIC_RESEARCH_AGENT",
+            "display_name": "Thematic Investment Research Assistant (Market Research)",
             "description": "Advanced assistant for discovering emerging investment themes and cross-sector trends from alternative data sources",
             "orchestration_model": "Claude 4", 
             "tools": [
@@ -152,8 +152,8 @@ Tone: Insightful, forward-looking, and commercially minded while remaining analy
         },
         
         "global_macro_strategy_agent": {
-            "agent_name": "global_macro_strategy_agent",
-            "display_name": "Global Macro Strategy Assistant",
+            "agent_name": "MR_GLOBAL_MACRO_STRATEGY_AGENT",
+            "display_name": "Global Macro Strategy Assistant (Market Research)",
             "description": "Expert assistant for analyzing proprietary macroeconomic signals and developing cross-asset investment strategies",
             "orchestration_model": "Claude 4",
             "tools": [
@@ -212,8 +212,8 @@ Tone: Strategic, authoritative, and investment-focused while remaining analytica
         },
         
         "market_reports_agent": {
-            "agent_name": "market_reports_agent", 
-            "display_name": "Market Structure Research Assistant",
+            "agent_name": "MR_MARKET_REPORTS_AGENT", 
+            "display_name": "Market Structure Research Assistant (Market Research)",
             "description": "Specialist in market structure analysis, regulatory changes, and institutional client insights",
             "orchestration_model": "Claude 4",
             "tools": [
@@ -225,8 +225,8 @@ Tone: Strategic, authoritative, and investment-focused while remaining analytica
         },
         
         "client_strategy_agent": {
-            "agent_name": "client_strategy_agent",
-            "display_name": "Client Strategy Assistant", 
+            "agent_name": "MR_CLIENT_STRATEGY_AGENT",
+            "display_name": "Client Strategy Assistant (Market Research)", 
             "description": "Strategic assistant for preparing data-driven client meetings and personalized recommendations",
             "orchestration_model": "Claude 4",
             "tools": [
@@ -315,17 +315,18 @@ def create_earnings_analysis_agent(session: Session) -> None:
     
     # Get instructions from existing configs
     config = get_agent_configs()['earnings_analysis_agent']
+    display_name = config['display_name']
     response_formatted = format_instructions_for_yaml(config['response_instructions'])
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.earnings_analysis_agent
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_EARNINGS_ANALYSIS_AGENT
   COMMENT = 'Specialized assistant for analyzing quarterly earnings results, consensus estimates, and management commentary'
-  PROFILE = '{{"display_name": "Earnings Analysis Assistant (Frost Markets Intelligence)"}}'
+  PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
   $$
   models:
-    orchestration: claude-sonnet-4-5
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
   instructions:
     response: "{response_formatted}"
     orchestration: "{orchestration_formatted}"
@@ -370,17 +371,18 @@ def create_thematic_research_agent(session: Session) -> None:
     
     # Get instructions from existing configs
     config = get_agent_configs()['thematic_research_agent']
+    display_name = config['display_name']
     response_formatted = format_instructions_for_yaml(config['response_instructions'])
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.thematic_research_agent
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_THEMATIC_RESEARCH_AGENT
   COMMENT = 'Advanced assistant for discovering emerging investment themes and cross-sector trends from alternative data sources'
-  PROFILE = '{{"display_name": "Thematic Investment Research Assistant (Frost Markets Intelligence)"}}'
+  PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
   $$
   models:
-    orchestration: claude-sonnet-4-5
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
   instructions:
     response: "{response_formatted}"
     orchestration: "{orchestration_formatted}"
@@ -434,17 +436,18 @@ def create_global_macro_strategy_agent(session: Session) -> None:
     
     # Get instructions from existing configs
     config = get_agent_configs()['global_macro_strategy_agent']
+    display_name = config['display_name']
     response_formatted = format_instructions_for_yaml(config['response_instructions'])
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.global_macro_strategy_agent
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_GLOBAL_MACRO_STRATEGY_AGENT
   COMMENT = 'Expert assistant for analyzing proprietary macroeconomic signals and developing cross-asset investment strategies'
-  PROFILE = '{{"display_name": "Global Macro Strategy Assistant (Frost Markets Intelligence)"}}'
+  PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
   $$
   models:
-    orchestration: claude-sonnet-4-5
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
   instructions:
     response: "{response_formatted}"
     orchestration: "{orchestration_formatted}"
@@ -493,20 +496,26 @@ def create_all_agents(session: Session, scenarios: List[str] = None) -> None:
     if scenarios is None:
         scenarios = ['all']
     
-    agents_to_create = {
-        'earnings_analysis_agent': create_earnings_analysis_agent,
-        'thematic_research_agent': create_thematic_research_agent,
-        'global_macro_strategy_agent': create_global_macro_strategy_agent
+    # Map scenarios to agent creation functions
+    scenario_to_agent = {
+        'equity_research_earnings': create_earnings_analysis_agent,
+        'equity_research_thematic': create_thematic_research_agent,
+        'global_macro_strategy': create_global_macro_strategy_agent,
+        'global_research_reports': None,  # Phase 2 - not implemented yet
+        'global_research_client_strategy': None  # Phase 2 - not implemented yet
     }
     
     print("\n🤖 Creating Snowflake Intelligence Agents...")
     
-    for agent_name, create_func in agents_to_create.items():
-        if 'all' in scenarios or any(scenario in agent_name for scenario in scenarios):
+    for scenario, create_func in scenario_to_agent.items():
+        if 'all' in scenarios or scenario in scenarios:
+            if create_func is None:
+                print(f"⏭️  Skipping {scenario} (not implemented yet)")
+                continue
             try:
                 create_func(session)
             except Exception as e:
-                print(f"❌ Error creating {agent_name}: {e}")
+                print(f"❌ Error creating agent for {scenario}: {e}")
                 # Continue with other agents even if one fails
                 continue
     

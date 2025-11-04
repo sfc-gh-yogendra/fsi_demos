@@ -20,17 +20,17 @@ def create_database_schema(session):
     try:
         # Create database first
         print("   📊 Creating database...")
-        session.sql("CREATE DATABASE IF NOT EXISTS MARKETS_AI_DEMO COMMENT = 'Frost Markets Intelligence - Snowflake AI Demo Database'").collect()
+        session.sql(f"CREATE OR REPLACE DATABASE {DemoConfig.DATABASE_NAME} COMMENT = '{DemoConfig.DATABASE['comment']}'").collect()
         
         # Set database context
         print("   🏗️  Setting database context...")
-        session.sql("USE DATABASE MARKETS_AI_DEMO").collect()
+        session.sql(f"USE DATABASE {DemoConfig.DATABASE_NAME}").collect()
         
         # Create schemas with industry-standard names
         print("   📁 Creating schemas...")
-        session.sql("CREATE SCHEMA IF NOT EXISTS RAW COMMENT = 'Raw external data and unstructured documents'").collect()
-        session.sql("CREATE SCHEMA IF NOT EXISTS CURATED COMMENT = 'Industry-standard dimension/fact model for analysis'").collect()
-        session.sql("CREATE SCHEMA IF NOT EXISTS AI COMMENT = 'Semantic views, Cortex Search services, and AI components'").collect()
+        session.sql("CREATE OR REPLACE SCHEMA RAW COMMENT = 'Raw external data and unstructured documents'").collect()
+        session.sql("CREATE OR REPLACE SCHEMA CURATED COMMENT = 'Industry-standard dimension/fact model for analysis'").collect()
+        session.sql("CREATE OR REPLACE SCHEMA AI COMMENT = 'Semantic views, Cortex Search services, and AI components'").collect()
         
         # Set default context
         print("   🎯 Setting default context...")
@@ -98,7 +98,7 @@ def create_ai_components(session, mode):
         
         # Create Snowflake Intelligence agents
         print("  🤖 Creating Snowflake Intelligence agents...")
-        create_all_agents(session, DemoConfig.PHASE_1_SCENARIOS + DemoConfig.PHASE_2_SCENARIOS)
+        create_all_agents(session, DemoConfig.SCENARIOS)
         
         print("✅ AI components created successfully")
         
@@ -131,7 +131,7 @@ def main():
     )
     parser.add_argument(
         "--scenario",
-        choices=DemoConfig.PHASE_1_SCENARIOS + DemoConfig.PHASE_2_SCENARIOS,
+        choices=DemoConfig.SCENARIOS,
         help="Specific scenario to setup (requires --mode=scenario-specific)"
     )
     parser.add_argument(

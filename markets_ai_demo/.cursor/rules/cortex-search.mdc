@@ -1,7 +1,7 @@
 ---
-globs: *.py,*.sql
+description: Complete step-by-step guide for creating and testing Cortex Search services for document search.
+alwaysApply: false
 ---
-
 # Cortex Search Development Patterns
 
 ## CRITICAL: Cortex Search Service Creation Rules
@@ -91,7 +91,7 @@ SELECT
     TICKER,
     FISCAL_QUARTER,
     FULL_TEXT
-FROM RAW.EARNINGS_TRANSCRIPTS_CORPUS;
+FROM CURATED.EARNINGS_TRANSCRIPTS_CORPUS;
 ```
 
 #### Research Reports Search Service:
@@ -110,7 +110,7 @@ SELECT
     AUTHOR,
     PUBLISHED_DATE,
     FULL_TEXT
-FROM RAW.RESEARCH_REPORTS_CORPUS;
+FROM CURATED.RESEARCH_REPORTS_CORPUS;
 ```
 
 #### News Articles Search Service:
@@ -128,7 +128,7 @@ SELECT
     AFFECTED_TICKER,
     PUBLISHED_AT,
     BODY
-FROM RAW.NEWS_ARTICLES_CORPUS;
+FROM CURATED.NEWS_ARTICLES_CORPUS;
 ```
 
 ### Testing and Validation Patterns

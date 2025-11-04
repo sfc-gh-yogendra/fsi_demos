@@ -60,22 +60,22 @@ def create_demo_warehouses(session: Session) -> None:
         
         # Create compute warehouse for general operations
         compute_wh_sql = f"""
-        CREATE WAREHOUSE IF NOT EXISTS {DemoConfig.COMPUTE_WAREHOUSE}
-        WITH WAREHOUSE_SIZE = 'MEDIUM'
+        CREATE OR REPLACE WAREHOUSE {DemoConfig.WAREHOUSES['compute']['name']}
+        WITH WAREHOUSE_SIZE = '{DemoConfig.WAREHOUSES['compute']['size']}'
         AUTO_SUSPEND = 300
         AUTO_RESUME = TRUE
-        COMMENT = 'Frost Markets Intelligence - Compute warehouse for data processing and analysis'
+        COMMENT = '{DemoConfig.WAREHOUSES['compute']['comment']}'
         """
         session.sql(compute_wh_sql).collect()
         print(f"   ✅ Created compute warehouse: {DemoConfig.COMPUTE_WAREHOUSE}")
         
         # Create search warehouse for Cortex Search services
         search_wh_sql = f"""
-        CREATE WAREHOUSE IF NOT EXISTS {DemoConfig.SEARCH_WAREHOUSE}
-        WITH WAREHOUSE_SIZE = 'MEDIUM'
+        CREATE OR REPLACE WAREHOUSE {DemoConfig.WAREHOUSES['search']['name']}
+        WITH WAREHOUSE_SIZE = '{DemoConfig.WAREHOUSES['search']['size']}'
         AUTO_SUSPEND = 300
         AUTO_RESUME = TRUE
-        COMMENT = 'Frost Markets Intelligence - Search warehouse for Cortex Search services'
+        COMMENT = '{DemoConfig.WAREHOUSES['search']['comment']}'
         """
         session.sql(search_wh_sql).collect()
         print(f"   ✅ Created search warehouse: {DemoConfig.SEARCH_WAREHOUSE}")
@@ -95,12 +95,12 @@ def set_demo_context(session: Session) -> None:
     try:
         # Set database context
         session.sql(f"USE DATABASE {DemoConfig.DATABASE_NAME}").collect()
-        session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW_DATA']}").collect()
+        session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW']}").collect()
         session.sql(f"USE WAREHOUSE {DemoConfig.COMPUTE_WAREHOUSE}").collect()
         
         print(f"✅ Demo context set:")
         print(f"   Database: {DemoConfig.DATABASE_NAME}")
-        print(f"   Schema: {DemoConfig.SCHEMAS['RAW_DATA']}")
+        print(f"   Schema: {DemoConfig.SCHEMAS['RAW']}")
         print(f"   Warehouse: {DemoConfig.COMPUTE_WAREHOUSE}")
         
     except Exception as e:

@@ -19,9 +19,9 @@ def generate_macro_signals(session: Session) -> None:
     
     print("   🌍 Generating macroeconomic signals data...")
     
-    # Create PROPRIETARY_SIGNALS table
+    # Create FACT_MACRO_SIGNAL table
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.PROPRIETARY_SIGNALS (
+    CREATE OR REPLACE TABLE CURATED.FACT_MACRO_SIGNAL (
         SIGNAL_DATE DATE,
         SIGNAL_NAME VARCHAR(100),
         SIGNAL_VALUE FLOAT,
@@ -109,7 +109,7 @@ def generate_macro_signals(session: Session) -> None:
     ]
     
     # Get events for signal impact
-    events_df = session.table("MASTER_EVENT_LOG").collect()
+    events_df = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").collect()
     
     # Generate time series data for each signal
     signals_data = []
@@ -163,7 +163,7 @@ def generate_macro_signals(session: Session) -> None:
     # Save to Snowflake
     if signals_data:
         signals_df = session.create_dataframe(signals_data)
-        signals_df.write.mode("overwrite").save_as_table("RAW.PROPRIETARY_SIGNALS")
+        signals_df.write.mode("overwrite").save_as_table("CURATED.FACT_MACRO_SIGNAL")
         print(f"   ✅ Generated {len(signals_data)} signal data points")
     else:
         print("   ⚠️  No signal data generated")
@@ -175,7 +175,7 @@ def generate_economic_regions(session: Session) -> None:
     print("   🗺️  Generating economic regions data...")
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.ECONOMIC_REGIONS (
+    CREATE OR REPLACE TABLE CURATED.DIM_ECONOMIC_REGION (
         REGION_CODE VARCHAR(10) PRIMARY KEY,
         REGION_NAME VARCHAR(100),
         REGION_TYPE VARCHAR(50),
@@ -199,7 +199,7 @@ def generate_economic_regions(session: Session) -> None:
     ]
     
     regions_df = session.create_dataframe(regions_data)
-    regions_df.write.mode("overwrite").save_as_table("RAW.ECONOMIC_REGIONS")
+    regions_df.write.mode("overwrite").save_as_table("CURATED.DIM_ECONOMIC_REGION")
     print(f"   ✅ Generated {len(regions_data)} economic regions")
 
 
@@ -209,11 +209,12 @@ def generate_sector_correlations(session: Session) -> None:
     print("   📈 Generating sector-macro correlations...")
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.SECTOR_MACRO_CORRELATIONS (
+    CREATE OR REPLACE TABLE CURATED.DIM_SECTOR_MACRO_CORRELATION (
         SECTOR VARCHAR(100),
         SIGNAL_NAME VARCHAR(100),
         CORRELATION_COEFFICIENT FLOAT,
-        INTERPRETATION VARCHAR(500)
+        INTERPRETATION VARCHAR(500),
+        PRIMARY KEY (SECTOR, SIGNAL_NAME)
     )
     """
     session.sql(create_table_sql).collect()
@@ -263,7 +264,7 @@ def generate_sector_correlations(session: Session) -> None:
     ]
     
     correlations_df = session.create_dataframe(correlations_data)
-    correlations_df.write.mode("overwrite").save_as_table("RAW.SECTOR_MACRO_CORRELATIONS")
+    correlations_df.write.mode("overwrite").save_as_table("CURATED.DIM_SECTOR_MACRO_CORRELATION")
     print(f"   ✅ Generated {len(correlations_data)} correlation mappings")
 
 

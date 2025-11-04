@@ -1,8 +1,99 @@
 ---
-globs: *.py,*.sql
+description: Complete step-by-step guide for creating and testing SEMANTIC VIEWs for Cortex Analyst.
+alwaysApply: false
 ---
-
 # Semantic Views Development Patterns
+
+## 🔴 CRITICAL SYNTAX RULE - READ THIS FIRST 🔴
+
+### The #1 Rule That You Must Never Forget
+
+```
+SEMANTIC_NAME  AS  DATABASE_COLUMN
+     ↑         ↑         ↑
+   What      Always   Actual column
+   users      this     from table
+   say      direction  (from DESCRIBE)
+```
+
+**Before writing ANY dimension or metric:**
+1. Run `DESCRIBE TABLE` to get exact column names
+2. Decide what semantic name users will say
+3. Write: `TABLE.SemanticName AS ACTUAL_COLUMN_NAME`
+4. NOT: `TABLE.ACTUAL_COLUMN_NAME AS SemanticName` ← THIS IS WRONG
+
+### Common Mistakes to Avoid
+
+❌ **WRONG** - Using non-existent column name:
+```sql
+-- If table has column SECTOR:
+SECTORS.SECTOR AS SECTOR_NAME  -- Error! SECTOR_NAME doesn't exist
+```
+
+✅ **CORRECT** - Semantic name matches or differs from actual column:
+```sql
+-- If table has column SECTOR:
+SECTORS.SECTOR AS SECTOR              -- Users say "SECTOR", column is SECTOR
+SECTORS.SECTOR_NAME AS SECTOR         -- Users say "SECTOR_NAME", column is SECTOR
+SECTORS.COMPANY_SECTOR AS SECTOR      -- Users say "COMPANY_SECTOR", column is SECTOR
+```
+
+### Real Example from Our Project
+
+**DIM_SECTOR table has these columns:**
+```sql
+CREATE TABLE CURATED.DIM_SECTOR (
+    SECTOR VARCHAR(50) PRIMARY KEY,        -- Actual column
+    SECTOR_DESCRIPTION VARCHAR(500)        -- Actual column
+)
+```
+
+❌ **WRONG**:
+```sql
+SECTORS.SECTOR AS SECTOR_NAME  -- Tries to find column SECTOR_NAME, fails!
+```
+
+✅ **CORRECT**:
+```sql
+SECTORS.SECTOR AS SECTOR WITH SYNONYMS=('sector_name','industry_sector')
+-- Users can say "SECTOR" or "sector_name", actual column is SECTOR
+```
+
+## Schema Requirements for Semantic Views
+
+**CRITICAL RULE**: Semantic views must ONLY reference tables from the **CURATED** schema.
+
+### Why This Matters
+- Semantic views are for **structured data analysis** with Cortex Analyst
+- RAW schema contains unstructured documents (corpus tables)
+- Unstructured documents should be accessed via **Cortex Search services**
+
+### Schema Usage
+✅ **CORRECT** - Only CURATED tables:
+```sql
+CREATE OR REPLACE SEMANTIC VIEW AI.MY_VIEW
+  TABLES (
+    COMPANIES AS CURATED.DIM_COMPANY
+    PRICES AS CURATED.FACT_STOCK_PRICE_DAILY
+    CLIENTS AS CURATED.DIM_CLIENT
+  )
+```
+
+❌ **WRONG** - Using RAW schema tables:
+```sql
+CREATE OR REPLACE SEMANTIC VIEW AI.MY_VIEW
+  TABLES (
+    COMPANIES AS CURATED.DIM_COMPANY
+    REPORTS AS RAW.RESEARCH_REPORTS_CORPUS     -- ❌ NO RAW tables!
+    NEWS AS RAW.NEWS_ARTICLES_CORPUS           -- ❌ NO RAW tables!
+  )
+```
+
+### How to Access Unstructured Data
+Use **Cortex Search services** (not semantic views):
+- Create search service on `RAW.RESEARCH_REPORTS_CORPUS`
+- Create search service on `RAW.NEWS_ARTICLES_CORPUS`
+- Agents use both Cortex Analyst (semantic views) and Cortex Search (documents)
 
 ## CRITICAL: Semantic View Creation Rules
 **MANDATORY**: Follow these exact patterns for all semantic view development
@@ -315,5 +406,31 @@ SELECT * FROM SEMANTIC_VIEW(
 3. **Create the SQL** - follow exact syntax patterns above
 4. **Test creation** - use error handling pattern to debug issues
 5. **Validate functionality** - use SEMANTIC_VIEW() testing patterns above
+
+## Pre-Creation Checklist
+
+Before creating ANY semantic view, verify:
+
+### ✅ Schema Check
+- [ ] All tables are from **CURATED** schema
+- [ ] No RAW schema tables included
+- [ ] No AI schema tables included (only for output, not input)
+
+### ✅ Syntax Check
+- [ ] Ran `DESCRIBE TABLE` on all physical tables
+- [ ] All dimensions use: `TABLE.SemanticName AS ACTUAL_COLUMN`
+- [ ] All metrics use: `TABLE.MetricName AS AGGREGATION(ACTUAL_COLUMN)`
+- [ ] Verified actual column names exist in tables
+
+### ✅ Relationship Check
+- [ ] All relationships reference PRIMARY KEY columns only
+- [ ] No relationships referencing non-key columns
+- [ ] Relationship format: `NAME AS TABLE(FK) REFERENCES TABLE(PK)`
+
+### ✅ Common Errors to Avoid
+- [ ] No backwards syntax: `TABLE.ACTUAL AS SEMANTIC` ✗
+- [ ] No RAW schema tables ✗
+- [ ] No non-existent column names ✗
+- [ ] No relationships to non-primary-key columns ✗
 
 **CRITICAL**: Semantic views are required for Cortex Analyst - regular SQL views will NOT work.

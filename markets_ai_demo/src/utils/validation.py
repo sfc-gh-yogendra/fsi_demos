@@ -69,29 +69,30 @@ def validate_data_quality(session: Session) -> None:
     
     # Check table row counts - RAW schema
     raw_tables = [
-        "MASTER_EVENT_LOG",
-        "PROPRIETARY_SIGNALS",
-        "ECONOMIC_REGIONS",
-        "SECTOR_MACRO_CORRELATIONS",
-        "SEC_FILINGS_CORPUS",
-        "EARNINGS_TRANSCRIPTS_CORPUS", 
-        "NEWS_ARTICLES_CORPUS",
-        "RESEARCH_REPORTS_CORPUS"
+        "MASTER_EVENT_LOG"
     ]
     
     # CURATED schema tables
     curated_tables = [
+        "DIM_SECTOR",
         "DIM_COMPANY",
         "DIM_CLIENT",
         "DIM_COMPANY_GEO_REVENUE",
         "DIM_COMPANY_CREDIT_RATING",
+        "SEC_FILINGS_CORPUS",
+        "EARNINGS_TRANSCRIPTS_CORPUS", 
+        "NEWS_ARTICLES_CORPUS",
+        "RESEARCH_REPORTS_CORPUS",
+        "DIM_ECONOMIC_REGION",
+        "DIM_SECTOR_MACRO_CORRELATION",
         "FACT_STOCK_PRICE_DAILY",
         "FACT_CONSENSUS_ESTIMATE",
         "FACT_CLIENT_TRADE",
         "FACT_PORTFOLIO_HOLDING",
         "FACT_CLIENT_ENGAGEMENT",
         "FACT_CLIENT_DISCUSSION",
-        "FACT_EARNINGS_ACTUAL"
+        "FACT_EARNINGS_ACTUAL",
+        "FACT_MACRO_SIGNAL"
     ]
     
     for table in raw_tables:
@@ -300,7 +301,7 @@ def validate_earnings_scenario(session: Session) -> None:
             
         # Check for transcript data
         transcript_sql = """
-        SELECT COUNT(*) as cnt FROM RAW.EARNINGS_TRANSCRIPTS_CORPUS
+        SELECT COUNT(*) as cnt FROM CURATED.EARNINGS_TRANSCRIPTS_CORPUS
         WHERE TICKER = 'NFLX'
         """
         result = session.sql(transcript_sql).collect()
@@ -336,7 +337,7 @@ def validate_thematic_scenario(session: Session) -> None:
             
         # Check for research reports
         research_sql = """
-        SELECT COUNT(*) as cnt FROM RAW.RESEARCH_REPORTS_CORPUS
+        SELECT COUNT(*) as cnt FROM CURATED.RESEARCH_REPORTS_CORPUS
         WHERE THEMATIC_TAGS LIKE '%Carbon%'
         """
         result = session.sql(research_sql).collect()
@@ -356,7 +357,7 @@ def validate_market_structure_scenario(session: Session) -> None:
     try:
         # 1. Check for FICC market structure content in research reports
         search_sql = """
-        SELECT COUNT(*) as cnt FROM RAW.RESEARCH_REPORTS_CORPUS
+        SELECT COUNT(*) as cnt FROM CURATED.RESEARCH_REPORTS_CORPUS
         WHERE THEMATIC_TAGS LIKE '%FICC%' AND THEMATIC_TAGS LIKE '%EMIR 3.0%'
         """
         result = session.sql(search_sql).collect()
@@ -430,8 +431,8 @@ def generate_validation_report(session: Session) -> str:
         
         tables = [
             ("RAW", "MASTER_EVENT_LOG"),
-            ("RAW", "SEC_FILINGS_CORPUS"),
-            ("RAW", "NEWS_ARTICLES_CORPUS"),
+            ("CURATED", "SEC_FILINGS_CORPUS"),
+            ("CURATED", "NEWS_ARTICLES_CORPUS"),
             ("CURATED", "DIM_COMPANY"),
             ("CURATED", "FACT_STOCK_PRICE_DAILY"),
             ("CURATED", "DIM_CLIENT")

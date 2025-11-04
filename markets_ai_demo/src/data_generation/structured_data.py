@@ -22,6 +22,9 @@ fake = Faker()
 def generate_all_structured_data(session: Session) -> None:
     """Generate all structured data tables for the demo"""
     
+    print("   🏭 Generating sector dimension...")
+    generate_sector_dimension(session)
+    
     print("   🏢 Generating companies data...")
     generate_companies(session)
     
@@ -46,6 +49,28 @@ def generate_all_structured_data(session: Session) -> None:
     generate_all_macro_data(session)
     
     print("   ✅ All structured data generated")
+
+
+def generate_sector_dimension(session: Session) -> None:
+    """Generate sector dimension table"""
+    
+    create_table_sql = """
+    CREATE OR REPLACE TABLE CURATED.DIM_SECTOR (
+        SECTOR VARCHAR(50) PRIMARY KEY,
+        SECTOR_DESCRIPTION VARCHAR(500)
+    )
+    """
+    session.sql(create_table_sql).collect()
+    
+    sectors_data = [
+        {"SECTOR": sector, "SECTOR_DESCRIPTION": f"{sector} sector companies"}
+        for sector in DemoConfig.SECTOR_LIST
+    ]
+    
+    sectors_df = session.create_dataframe(sectors_data)
+    sectors_df.write.mode("overwrite").save_as_table("CURATED.DIM_SECTOR")
+    
+    print(f"   ✅ Generated {len(sectors_data)} sectors")
 
 
 def generate_companies(session: Session) -> None:
@@ -103,7 +128,7 @@ def generate_historical_stock_prices(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get events for price impact calculation
-    events_df = session.table("RAW.MASTER_EVENT_LOG").collect()
+    events_df = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").collect()
     events_by_ticker = {}
     for event in events_df:
         ticker = event['AFFECTED_TICKER']
@@ -123,7 +148,7 @@ def generate_historical_stock_prices(session: Session) -> None:
         print(f"     📊 Generating prices for {ticker}...")
         
         # Starting price based on market cap
-        companies_data = session.table("COMPANIES").filter(col("TICKER") == ticker).collect()
+        companies_data = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
         if companies_data:
             market_cap = companies_data[0]['MARKET_CAP_BILLIONS']
             base_price = max(50, min(500, market_cap / 6))  # Rough approximation
@@ -206,7 +231,7 @@ def generate_consensus_estimates(session: Session) -> None:
     
     for ticker in DemoConfig.TICKER_LIST:
         # Get company info for scaling estimates
-        companies_data = session.table("CURATED.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
+        companies_data = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
         market_cap = companies_data[0]['MARKET_CAP_BILLIONS'] if companies_data else 100
         
         for quarter in quarters:
@@ -382,7 +407,7 @@ def generate_portfolio_data(session: Session) -> None:
     
     # Get latest prices for market value calculation
     for ticker in DemoConfig.TICKER_LIST:
-        price_data = session.table("CURATED.FACT_STOCK_PRICE_DAILY").filter(col("TICKER") == ticker).sort(col("PRICE_DATE").desc()).limit(1).collect()
+        price_data = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.FACT_STOCK_PRICE_DAILY").filter(col("TICKER") == ticker).sort(col("PRICE_DATE").desc()).limit(1).collect()
         if price_data:
             latest_prices[ticker] = price_data[0]['CLOSE']
         else:
@@ -475,7 +500,7 @@ def generate_vendor_data(session: Session) -> None:
     
     for ticker in DemoConfig.TICKER_LIST:
         # Assign ratings based on company size/stability
-        companies_data = session.table("CURATED.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
+        companies_data = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
         if companies_data:
             market_cap = companies_data[0]['MARKET_CAP_BILLIONS']
             sector = companies_data[0]['SECTOR']
@@ -596,8 +621,8 @@ def generate_client_engagement(session: Session, clients_data: list) -> None:
                     })
     
     if engagement_data:
-    engagement_df = session.create_dataframe(engagement_data)
-    engagement_df.write.mode("overwrite").save_as_table("CURATED.FACT_CLIENT_ENGAGEMENT")
+        engagement_df = session.create_dataframe(engagement_data)
+        engagement_df.write.mode("overwrite").save_as_table("CURATED.FACT_CLIENT_ENGAGEMENT")
     
     print(f"   📈 Client engagement data: {len(engagement_data)} interactions")
 

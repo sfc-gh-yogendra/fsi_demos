@@ -4,6 +4,10 @@
 class DemoConfig:
     """Configuration settings for the Frost Markets Intelligence demo"""
     
+    # --- Company/Project Information ---
+    COMPANY_NAME = "Frost Markets Intelligence"
+    PROJECT_NAME = "Snowflake AI Demo"
+    
     # --- Data Volume and Scope ---
     NUM_COMPANIES = 15
     NUM_CLIENTS = 25
@@ -105,6 +109,8 @@ class DemoConfig:
     
     # --- Snowflake AI Configuration ---
     CORTEX_MODEL_NAME = "llama3.1-70b"
+    AGENT_ORCHESTRATION_MODEL = "claude-sonnet-4-5"
+    AGENT_SCHEMA = "SNOWFLAKE_INTELLIGENCE.AGENTS"
     
     # --- Snowflake Connection Configuration ---
     # This value can be overridden by command-line argument
@@ -114,7 +120,7 @@ class DemoConfig:
     # Nested dictionary structure for better organization
     DATABASE = {
         "name": "MARKETS_AI_DEMO",
-        "comment": "Frost Markets Intelligence - Snowflake AI Demo Database"
+        "comment": f"{COMPANY_NAME} - {PROJECT_NAME} Database"
     }
     
     # Legacy support
@@ -138,12 +144,12 @@ class DemoConfig:
         "compute": {
             "name": "MARKETS_AI_DEMO_COMPUTE_WH",
             "size": "MEDIUM",
-            "comment": "Compute warehouse for data generation and processing"
+            "comment": f"{COMPANY_NAME} - Compute warehouse for data generation and processing"
         },
         "search": {
             "name": "MARKETS_AI_DEMO_SEARCH_WH",
             "size": "SMALL",
-            "comment": "Search warehouse for Cortex Search services"
+            "comment": f"{COMPANY_NAME} - Search warehouse for Cortex Search services"
         }
     }
     
@@ -152,13 +158,14 @@ class DemoConfig:
     SEARCH_WAREHOUSE = "MARKETS_AI_DEMO_SEARCH_WH"
     
     # --- Demo Scenario Configuration ---
-    PHASE_1_SCENARIOS = [
+    SCENARIOS = [
         "equity_research_earnings",
-        "equity_research_thematic"
+        "equity_research_thematic",
+        "global_macro_strategy",
+        "global_research_reports",
+        "global_research_client_strategy"
     ]
     
-    PHASE_2_SCENARIOS = [
-        "global_research_reports",
-        "global_research_client_strategy",
-        "global_macro_strategy"
-    ]
+    # Legacy support for backward compatibility
+    PHASE_1_SCENARIOS = ["equity_research_earnings", "equity_research_thematic"]
+    PHASE_2_SCENARIOS = ["global_research_reports", "global_research_client_strategy", "global_macro_strategy"]

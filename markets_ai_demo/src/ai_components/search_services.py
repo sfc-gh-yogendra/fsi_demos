@@ -39,7 +39,7 @@ def create_earnings_transcripts_search(session: Session) -> None:
         TICKER,
         FISCAL_QUARTER,
         FULL_TEXT
-    FROM RAW.EARNINGS_TRANSCRIPTS_CORPUS
+    FROM CURATED.EARNINGS_TRANSCRIPTS_CORPUS
     """
     
     try:
@@ -74,7 +74,7 @@ def create_research_reports_search(session: Session) -> None:
         AUTHOR,
         PUBLISHED_DATE,
         FULL_TEXT
-    FROM RAW.RESEARCH_REPORTS_CORPUS
+    FROM CURATED.RESEARCH_REPORTS_CORPUS
     """
     
     try:
@@ -105,10 +105,10 @@ def create_news_articles_search(session: Session) -> None:
         ARTICLE_ID,
         HEADLINE,
         SOURCE,
-        AFFECTED_TICKER, 
+        AFFECTED_TICKER,
         PUBLISHED_AT,
         BODY
-    FROM RAW.NEWS_ARTICLES_CORPUS
+    FROM CURATED.NEWS_ARTICLES_CORPUS
     """
     
     try:

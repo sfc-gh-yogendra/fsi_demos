@@ -49,15 +49,16 @@ cursor.execute(sql)
 ## Schema Organization
 
 ### RAW Schema
-Purpose: Store raw external data and unstructured documents
-- Event/reference data: `MASTER_EVENT_LOG`, `PROPRIETARY_SIGNALS`, `ECONOMIC_REGIONS`, `SECTOR_MACRO_CORRELATIONS`
-- Unstructured corpus: `SEC_FILINGS_CORPUS`, `EARNINGS_TRANSCRIPTS_CORPUS`, `NEWS_ARTICLES_CORPUS`, `RESEARCH_REPORTS_CORPUS`
+Purpose: Store raw event/reference data and temporary staging tables
+- Event/reference data: `MASTER_EVENT_LOG`
+- Temporary staging tables: `TEMP_PROMPTS_*` (ephemeral, created during data generation)
 
 ### CURATED Schema
 Purpose: Industry-standard dimensional model for analysis
 - Dimension tables (DIM_): Company, client, and reference data
 - Fact tables (FACT_): Transactional and time-series data
-- Example: `CURATED.DIM_COMPANY`, `CURATED.FACT_STOCK_PRICE_DAILY`, `CURATED.FACT_CLIENT_TRADE`
+- Unstructured corpus: `SEC_FILINGS_CORPUS`, `EARNINGS_TRANSCRIPTS_CORPUS`, `NEWS_ARTICLES_CORPUS`, `RESEARCH_REPORTS_CORPUS`
+- Example: `CURATED.DIM_COMPANY`, `CURATED.FACT_STOCK_PRICE_DAILY`, `CURATED.SEC_FILINGS_CORPUS`
 
 ### AI Schema
 Purpose: AI components (semantic views, search services, agents)

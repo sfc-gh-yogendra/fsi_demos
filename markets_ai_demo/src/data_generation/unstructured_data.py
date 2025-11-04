@@ -61,7 +61,7 @@ def generate_sec_filings(session: Session) -> None:
     
     # Create table for SEC filings corpus
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.SEC_FILINGS_CORPUS (
+    CREATE OR REPLACE TABLE CURATED.SEC_FILINGS_CORPUS (
         FILING_ID STRING,
         TICKER VARCHAR(10),
         FISCAL_QUARTER VARCHAR(7),
@@ -74,8 +74,8 @@ def generate_sec_filings(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get company and event data for context
-    companies = session.table("CURATED.DIM_COMPANY").collect()
-    events = session.table("RAW.MASTER_EVENT_LOG").collect()
+    companies = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").collect()
+    events = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").collect()
     
     # Create events lookup
     events_by_ticker = {}
@@ -163,14 +163,14 @@ Instructions:
             })
     
     # Generate content using Cortex complete()
-    _generate_content_with_cortex(session, filing_prompts, "RAW.SEC_FILINGS_CORPUS")
+    _generate_content_with_cortex(session, filing_prompts, "CURATED.SEC_FILINGS_CORPUS")
 
 
 def generate_earnings_transcripts(session: Session) -> None:
     """Generate earnings call transcripts"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.EARNINGS_TRANSCRIPTS_CORPUS (
+    CREATE OR REPLACE TABLE CURATED.EARNINGS_TRANSCRIPTS_CORPUS (
         TRANSCRIPT_ID STRING,
         TICKER VARCHAR(10),
         FISCAL_QUARTER VARCHAR(7),
@@ -182,8 +182,8 @@ def generate_earnings_transcripts(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get data for context
-    companies = session.table("CURATED.DIM_COMPANY").collect()
-    events = session.table("RAW.MASTER_EVENT_LOG").collect()
+    companies = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").collect()
+    events = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").collect()
     
     events_by_ticker = {}
     for event in events:
@@ -281,14 +281,14 @@ Style Guidelines:
                 "PROMPT": prompt
             })
     
-    _generate_content_with_cortex(session, transcript_prompts, "RAW.EARNINGS_TRANSCRIPTS_CORPUS")
+    _generate_content_with_cortex(session, transcript_prompts, "CURATED.EARNINGS_TRANSCRIPTS_CORPUS")
 
 
 def generate_news_articles(session: Session) -> None:
     """Generate news articles corpus based on events"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.NEWS_ARTICLES_CORPUS (
+    CREATE OR REPLACE TABLE CURATED.NEWS_ARTICLES_CORPUS (
         ARTICLE_ID STRING,
         AFFECTED_TICKER VARCHAR(10),
         PUBLISHED_AT TIMESTAMP_NTZ,
@@ -301,8 +301,8 @@ def generate_news_articles(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get events to generate news articles
-    events = session.table("RAW.MASTER_EVENT_LOG").collect()
-    companies = {row['TICKER']: row['COMPANY_NAME'] for row in session.table("CURATED.DIM_COMPANY").collect()}
+    events = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").collect()
+    companies = {row['TICKER']: row['COMPANY_NAME'] for row in session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").collect()}
     
     news_prompts = []
     sources = ["Reuters", "Bloomberg", "Wall Street Journal", "Financial Times", "MarketWatch"]
@@ -367,14 +367,14 @@ Make the article feel authentic and well-researched."""
             "PROMPT": prompt
         })
     
-    _generate_content_with_cortex(session, news_prompts, "RAW.NEWS_ARTICLES_CORPUS")
+    _generate_content_with_cortex(session, news_prompts, "CURATED.NEWS_ARTICLES_CORPUS")
 
 
 def generate_research_reports(session: Session) -> None:
     """Generate internal research reports corpus for search capabilities"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RAW.RESEARCH_REPORTS_CORPUS (
+    CREATE OR REPLACE TABLE CURATED.RESEARCH_REPORTS_CORPUS (
         REPORT_ID STRING,
         TITLE VARCHAR(500),
         REPORT_TYPE VARCHAR(50),
@@ -562,7 +562,7 @@ Special Instructions for Market Structure Reports:
             "PROMPT": prompt
         })
     
-    _generate_content_with_cortex(session, research_prompts, "RAW.RESEARCH_REPORTS_CORPUS")
+    _generate_content_with_cortex(session, research_prompts, "CURATED.RESEARCH_REPORTS_CORPUS")
 
 
 def _generate_content_with_cortex(session: Session, prompts_data: list, target_table: str) -> None:
@@ -576,7 +576,9 @@ def _generate_content_with_cortex(session: Session, prompts_data: list, target_t
         return
     
     # Step 1 & 2: Prompts already generated, store in temporary table
-    temp_table = f"TEMP_PROMPTS_{target_table}"
+    # Extract just the table name without schema for temp table
+    table_name_only = target_table.split('.')[-1]  # Gets "SEC_FILINGS_CORPUS" from "RAW.SEC_FILINGS_CORPUS"
+    temp_table = f"{DemoConfig.SCHEMAS['RAW']}.TEMP_PROMPTS_{table_name_only}"
     prompts_df = session.create_dataframe(prompts_data)
     prompts_df.write.mode("overwrite").save_as_table(temp_table)
     
@@ -589,23 +591,23 @@ def _generate_content_with_cortex(session: Session, prompts_data: list, target_t
     print(f"     🤖 Generating content with Cortex (model: {DemoConfig.CORTEX_MODEL_NAME})...")
     
     try:
-        # Add content column based on table type
-        if target_table == "SEC_FILINGS_RAW":
+        # Add content column based on table type (check against table name only)
+        if table_name_only == "SEC_FILINGS_CORPUS":
             content_df = temp_df.with_column(
                 "FULL_TEXT",
                 complete(lit(DemoConfig.CORTEX_MODEL_NAME), col("PROMPT"))
             )
-        elif target_table == "EARNINGS_CALL_TRANSCRIPTS":
+        elif table_name_only == "EARNINGS_TRANSCRIPTS_CORPUS":
             content_df = temp_df.with_column(
                 "FULL_TEXT", 
                 complete(lit(DemoConfig.CORTEX_MODEL_NAME), col("PROMPT"))
             )
-        elif target_table == "NEWS_ARTICLES":
+        elif table_name_only == "NEWS_ARTICLES_CORPUS":
             content_df = temp_df.with_column(
                 "BODY",
                 complete(lit(DemoConfig.CORTEX_MODEL_NAME), col("PROMPT"))
             )
-        elif target_table == "RESEARCH_REPORTS":
+        elif table_name_only == "RESEARCH_REPORTS_CORPUS":
             content_df = temp_df.with_column(
                 "FULL_TEXT",
                 complete(lit(DemoConfig.CORTEX_MODEL_NAME), col("PROMPT"))

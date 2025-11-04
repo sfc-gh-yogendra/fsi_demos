@@ -69,7 +69,7 @@ def generate_master_event_log(session: Session) -> None:
     print(f"   ✅ Generated {len(events)} major market events")
     
     # Display sample events
-    sample_events = session.table("RAW.MASTER_EVENT_LOG").limit(3).collect()
+    sample_events = session.table(f"{DemoConfig.SCHEMAS['RAW']}.MASTER_EVENT_LOG").limit(3).collect()
     print("   📋 Sample events:")
     for event in sample_events:
         print(f"      {event['EVENT_DATE']} - {event['AFFECTED_TICKER']}: {event['EVENT_DESCRIPTION'][:60]}...")
