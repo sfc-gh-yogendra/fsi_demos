@@ -79,7 +79,7 @@ ATTRIBUTES CATEGORY, AUTHOR, DOCUMENT_ID, PUBLISHED_DATE, TITLE
 
 #### Earnings Transcripts Search Service:
 ```sql
-CREATE OR REPLACE CORTEX SEARCH SERVICE ANALYTICS.EARNINGS_TRANSCRIPTS_SEARCH
+CREATE OR REPLACE CORTEX SEARCH SERVICE AI.EARNINGS_TRANSCRIPTS_SEARCH
 ON FULL_TEXT
 ATTRIBUTES TRANSCRIPT_ID, TITLE, TICKER, FISCAL_QUARTER
 WAREHOUSE = MARKETS_AI_DEMO_SEARCH_WH
@@ -91,12 +91,12 @@ SELECT
     TICKER,
     FISCAL_QUARTER,
     FULL_TEXT
-FROM RAW_DATA.EARNINGS_CALL_TRANSCRIPTS;
+FROM RAW.EARNINGS_TRANSCRIPTS_CORPUS;
 ```
 
 #### Research Reports Search Service:
 ```sql
-CREATE OR REPLACE CORTEX SEARCH SERVICE ANALYTICS.RESEARCH_REPORTS_SEARCH
+CREATE OR REPLACE CORTEX SEARCH SERVICE AI.RESEARCH_REPORTS_SEARCH
 ON FULL_TEXT
 ATTRIBUTES REPORT_ID, TITLE, REPORT_TYPE, THEMATIC_TAGS, AUTHOR, PUBLISHED_DATE
 WAREHOUSE = MARKETS_AI_DEMO_SEARCH_WH
@@ -110,12 +110,12 @@ SELECT
     AUTHOR,
     PUBLISHED_DATE,
     FULL_TEXT
-FROM RAW_DATA.RESEARCH_REPORTS;
+FROM RAW.RESEARCH_REPORTS_CORPUS;
 ```
 
 #### News Articles Search Service:
 ```sql
-CREATE OR REPLACE CORTEX SEARCH SERVICE ANALYTICS.NEWS_ARTICLES_SEARCH
+CREATE OR REPLACE CORTEX SEARCH SERVICE AI.NEWS_ARTICLES_SEARCH
 ON BODY
 ATTRIBUTES ARTICLE_ID, HEADLINE, SOURCE, AFFECTED_TICKER, PUBLISHED_AT
 WAREHOUSE = MARKETS_AI_DEMO_SEARCH_WH
@@ -128,7 +128,7 @@ SELECT
     AFFECTED_TICKER,
     PUBLISHED_AT,
     BODY
-FROM RAW_DATA.NEWS_ARTICLES;
+FROM RAW.NEWS_ARTICLES_CORPUS;
 ```
 
 ### Testing and Validation Patterns
@@ -142,7 +142,7 @@ SHOW CORTEX SEARCH SERVICES LIKE '%SERVICE_NAME%';
 #### Service Functionality Test:
 ```sql
 -- Test search functionality (when available)
-SELECT SEARCH_PREVIEW('ANALYTICS.SERVICE_NAME', 'test query') LIMIT 3;
+SELECT SEARCH_PREVIEW('AI.SERVICE_NAME', 'test query') LIMIT 3;
 ```
 
 #### Fallback Testing Pattern:
@@ -162,7 +162,7 @@ When configuring Cortex Search tools in Snowflake Intelligence agents:
 ```markdown
 Tool Type: Cortex Search
 Tool Name: search_{document_type}
-Search Service: ANALYTICS.{SERVICE_NAME}
+Search Service: AI.{SERVICE_NAME}
 ID Column: {ID_COLUMN}
 Title Column: {TITLE_COLUMN}
 Description: {tool_description}
@@ -172,21 +172,21 @@ Description: {tool_description}
 ```markdown
 Tool Type: Cortex Search
 Tool Name: search_earnings_transcripts
-Search Service: ANALYTICS.EARNINGS_TRANSCRIPTS_SEARCH
+Search Service: AI.EARNINGS_TRANSCRIPTS_SEARCH
 ID Column: TRANSCRIPT_ID
 Title Column: TITLE
 Description: Searches earnings call transcripts for management commentary and insights.
 
 Tool Type: Cortex Search
 Tool Name: search_research_reports
-Search Service: ANALYTICS.RESEARCH_REPORTS_SEARCH
+Search Service: AI.RESEARCH_REPORTS_SEARCH
 ID Column: REPORT_ID
 Title Column: TITLE
 Description: Searches internal research reports and analysis.
 
 Tool Type: Cortex Search
 Tool Name: search_news_articles
-Search Service: ANALYTICS.NEWS_ARTICLES_SEARCH
+Search Service: AI.NEWS_ARTICLES_SEARCH
 ID Column: ARTICLE_ID
 Title Column: HEADLINE
 Description: Searches news articles and market event coverage.
@@ -218,7 +218,7 @@ def create_search_service(session: Session, service_config: dict) -> None:
     """Create Cortex Search service with proper error handling"""
     
     search_service_sql = f"""
-    CREATE OR REPLACE CORTEX SEARCH SERVICE ANALYTICS.{service_config['name']}
+    CREATE OR REPLACE CORTEX SEARCH SERVICE AI.{service_config['name']}
     ON {service_config['content_column']}
     ATTRIBUTES {', '.join(service_config['attributes'])}
     WAREHOUSE = {DemoConfig.SEARCH_WAREHOUSE}

@@ -87,6 +87,18 @@ def build_foundation_tables(session: Session, test_mode: bool = False):
     build_trading_calendar_data(session)
     build_client_mandate_data(session)
     build_tax_implications_data(session)
+    
+    # Middle office tables
+    build_dim_counterparty(session)
+    build_dim_custodian(session)
+    build_fact_trade_settlement(session, test_mode)
+    build_fact_reconciliation(session, test_mode)
+    build_fact_nav_calculation(session, test_mode)
+    build_fact_nav_components(session, test_mode)
+    build_fact_corporate_actions(session, test_mode)
+    build_fact_corporate_action_impact(session, test_mode)
+    build_fact_cash_movements(session, test_mode)
+    build_fact_cash_positions(session, test_mode)
 
 
 
@@ -869,8 +881,8 @@ def build_fact_transaction(session: Session, test_mode: bool = False):
             END as Quantity,
             -- Realistic stock prices ($50-$500 range)
             UNIFORM(50, 500, RANDOM()) as Price,
-            -- Gross amount calculated elsewhere (NULL for now)
-            NULL as GrossAmount_Local,
+            -- Gross amount calculated as Quantity * Price
+            Quantity * Price as GrossAmount_Local,
             -- Realistic commission costs ($5-$50)
             UNIFORM(5, 50, RANDOM()) as Commission_Local,
             -- Standard currency and system identifiers
@@ -1957,6 +1969,539 @@ def generate_demo_pre_screened_replacements(session: Session):
 
 # Report template functions removed - now handled by unstructured data hydration engine
 # Templates are in content_library/global/report_templates/ following @unstructured-data-generation.mdc patterns
+
+# =============================================================================
+# MIDDLE OFFICE TABLES
+# =============================================================================
+
+def build_dim_counterparty(session: Session):
+    """Build counterparty dimension with settlement characteristics."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Define realistic counterparties with settlement profiles
+    counterparties = [
+        ('Goldman Sachs', 'Broker', 0.02, 1.8, 'A'),
+        ('Morgan Stanley', 'Broker', 0.015, 1.9, 'A'),
+        ('JP Morgan', 'Broker', 0.01, 1.7, 'AA'),
+        ('Barclays', 'Broker', 0.025, 2.1, 'A'),
+        ('Credit Suisse', 'Broker', 0.03, 2.3, 'BBB'),
+        ('Deutsche Bank', 'Broker', 0.028, 2.2, 'BBB'),
+        ('BNP Paribas', 'Broker', 0.018, 1.9, 'A'),
+        ('UBS', 'Broker', 0.012, 1.8, 'AA'),
+        ('Citi', 'Broker', 0.015, 1.9, 'A'),
+        ('Bank of America', 'Broker', 0.013, 1.8, 'A'),
+        ('BNY Mellon', 'Custodian', 0.005, 1.5, 'AA'),
+        ('State Street', 'Custodian', 0.005, 1.5, 'AA'),
+        ('JPM Custody', 'Custodian', 0.004, 1.5, 'AA'),
+        ('Northern Trust', 'Custodian', 0.006, 1.6, 'AA'),
+        ('HSBC Custody', 'Custodian', 0.007, 1.7, 'A'),
+        ('Prime Broker A', 'Prime', 0.02, 1.9, 'A'),
+        ('Prime Broker B', 'Prime', 0.022, 2.0, 'A'),
+        ('Clearing Firm A', 'Broker', 0.015, 1.8, 'A'),
+        ('Clearing Firm B', 'Broker', 0.017, 1.9, 'A'),
+        ('Market Maker A', 'Broker', 0.02, 2.0, 'BBB')
+    ]
+    
+    # Create table
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.DIM_COUNTERPARTY (
+            CounterpartyID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            CounterpartyName VARCHAR(255) NOT NULL,
+            CounterpartyType VARCHAR(50),
+            HistoricalFailRate DECIMAL(5,4),
+            AverageSettlementTime DECIMAL(5,2),
+            RiskRating VARCHAR(10)
+        )
+    """).collect()
+    
+    # Insert counterparties
+    for name, ctype, fail_rate, avg_time, rating in counterparties:
+        session.sql(f"""
+            INSERT INTO {database_name}.CURATED.DIM_COUNTERPARTY 
+            (CounterpartyName, CounterpartyType, HistoricalFailRate, AverageSettlementTime, RiskRating)
+            VALUES ('{name}', '{ctype}', {fail_rate}, {avg_time}, '{rating}')
+        """).collect()
+
+
+def build_dim_custodian(session: Session):
+    """Build custodian dimension."""
+    database_name = config.DATABASE['name']
+    
+    # Define major custodians
+    custodians = [
+        ('BNY Mellon', 'Global Custodian', 'Americas, EMEA, APAC', 'Premium'),
+        ('State Street', 'Global Custodian', 'Americas, EMEA, APAC', 'Premium'),
+        ('JPMorgan Custody', 'Global Custodian', 'Americas, EMEA, APAC', 'Premium'),
+        ('Northern Trust', 'Regional Custodian', 'Americas, EMEA', 'Standard'),
+        ('HSBC Custody', 'Global Custodian', 'EMEA, APAC', 'Standard'),
+        ('Citi Custody', 'Global Custodian', 'Americas, EMEA, APAC', 'Premium'),
+        ('Deutsche Bank Custody', 'Regional Custodian', 'EMEA', 'Standard'),
+        ('BNP Paribas Securities Services', 'Regional Custodian', 'EMEA', 'Standard')
+    ]
+    
+    # Create table
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.DIM_CUSTODIAN (
+            CustodianID BIGINT IDENTITY(1,1) PRIMARY KEY,
+            CustodianName VARCHAR(255) NOT NULL,
+            CustodianType VARCHAR(100),
+            CoverageRegions VARCHAR(255),
+            ServiceLevel VARCHAR(50)
+        )
+    """).collect()
+    
+    # Insert custodians
+    for name, ctype, regions, service in custodians:
+        session.sql(f"""
+            INSERT INTO {database_name}.CURATED.DIM_CUSTODIAN 
+            (CustodianName, CustodianType, CoverageRegions, ServiceLevel)
+            VALUES ('{name}', '{ctype}', '{regions}', '{service}')
+        """).collect()
+
+
+def build_fact_trade_settlement(session: Session, test_mode: bool = False):
+    """Build trade settlement fact table with status tracking."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_TRADE_SETTLEMENT AS
+        WITH trade_data AS (
+            SELECT 
+                t.TransactionID,
+                t.TransactionDate,
+                DATEADD(day, 2, t.TransactionDate) as SettlementDate,
+                t.PortfolioID,
+                t.SecurityID,
+                ABS(t.GrossAmount_Local) as SettlementValue,
+                t.Currency,
+                -- Assign counterparty and custodian with some randomness
+                MOD(ABS(HASH(t.TransactionID)), 20) + 1 as CounterpartyID,
+                MOD(ABS(HASH(t.TransactionID * 2)), 8) + 1 as CustodianID,
+                -- Generate failure flag (2-5% failure rate)
+                UNIFORM(0, 100, RANDOM()) as failure_chance
+            FROM {database_name}.CURATED.FACT_TRANSACTION t
+            WHERE t.TransactionType IN ('BUY', 'SELL')
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY TransactionID) as SettlementID,
+            TransactionID as TradeID,
+            TransactionDate as TradeDate,
+            SettlementDate,
+            CASE 
+                WHEN failure_chance <= 3 THEN 'Failed'
+                WHEN failure_chance <= 5 THEN 'Pending'
+                ELSE 'Settled'
+            END as Status,
+            PortfolioID,
+            SecurityID,
+            CounterpartyID,
+            CustodianID,
+            SettlementValue,
+            Currency,
+            CASE 
+                WHEN failure_chance <= 1 THEN 'SSI mismatch'
+                WHEN failure_chance <= 2 THEN 'Insufficient shares'
+                WHEN failure_chance <= 3 THEN 'Counterparty system issue'
+                ELSE NULL
+            END as FailureReason,
+            CASE 
+                WHEN failure_chance <= 3 THEN DATEADD(day, UNIFORM(1, 3, RANDOM()), SettlementDate)
+                ELSE NULL
+            END as ResolvedDate
+        FROM trade_data
+    """).collect()
+
+
+def build_fact_reconciliation(session: Session, test_mode: bool = False):
+    """Build reconciliation fact table tracking breaks and resolutions."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_RECONCILIATION AS
+        WITH position_data AS (
+            SELECT 
+                p.HoldingDate,
+                p.PortfolioID,
+                p.SecurityID,
+                p.MarketValue_Base,
+                p.Quantity,
+                -- Generate break flag (1-2% break rate)
+                UNIFORM(0, 100, RANDOM()) as break_chance,
+                UNIFORM(0, 3, RANDOM()) as break_type_flag
+            FROM {database_name}.CURATED.FACT_POSITION_DAILY_ABOR p
+        ),
+        breaks AS (
+            SELECT 
+                HoldingDate as ReconciliationDate,
+                PortfolioID,
+                SecurityID,
+                CASE 
+                    WHEN break_type_flag < 1 THEN 'Position'
+                    WHEN break_type_flag < 2 THEN 'Cash'
+                    ELSE 'Price'
+                END as BreakType,
+                MarketValue_Base as InternalValue,
+                -- Generate custodian value with small difference
+                MarketValue_Base * (1 + UNIFORM(-0.05, 0.05, RANDOM())) as CustodianValue,
+                break_chance
+            FROM position_data
+            WHERE break_chance <= 2
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY ReconciliationDate, PortfolioID, SecurityID) as ReconciliationID,
+            ReconciliationDate,
+            PortfolioID,
+            SecurityID,
+            BreakType,
+            InternalValue,
+            CustodianValue,
+            ABS(InternalValue - CustodianValue) as Difference,
+            CASE 
+                WHEN break_chance <= 0.5 THEN 'Open'
+                WHEN break_chance <= 1.5 THEN 'Investigating'
+                ELSE 'Resolved'
+            END as Status,
+            CASE 
+                WHEN break_chance > 0.5 THEN DATEADD(day, UNIFORM(1, 5, RANDOM()), ReconciliationDate)
+                ELSE NULL
+            END as ResolutionDate,
+            CASE 
+                WHEN break_chance > 1.5 THEN 'Timing difference - resolved through custodian confirmation'
+                WHEN break_chance > 0.5 THEN 'Under investigation - awaiting custodian response'
+                ELSE NULL
+            END as ResolutionNotes
+        FROM breaks
+    """).collect()
+
+
+def build_fact_nav_calculation(session: Session, test_mode: bool = False):
+    """Build NAV calculation fact table."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_NAV_CALCULATION AS
+        WITH daily_positions AS (
+            SELECT 
+                HoldingDate,
+                PortfolioID,
+                SUM(MarketValue_Base) as TotalAssets
+            FROM {database_name}.CURATED.FACT_POSITION_DAILY_ABOR
+            GROUP BY HoldingDate, PortfolioID
+        ),
+        nav_calc AS (
+            SELECT 
+                HoldingDate as CalculationDate,
+                PortfolioID,
+                TotalAssets,
+                TotalAssets * 0.001 as TotalLiabilities,  -- 0.1% liabilities
+                TotalAssets * 0.999 as NetAssets,
+                100000000.00 as SharesOutstanding,  -- Fixed 100M shares
+                (TotalAssets * 0.999) / 100000000.00 as NAVperShare,
+                UNIFORM(0, 100, RANDOM()) as anomaly_chance
+            FROM daily_positions
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY CalculationDate, PortfolioID) as NAVID,
+            CalculationDate,
+            PortfolioID,
+            NAVperShare,
+            TotalAssets,
+            TotalLiabilities,
+            NetAssets,
+            SharesOutstanding,
+            CASE 
+                WHEN anomaly_chance <= 1 THEN 'Pending Review'
+                ELSE 'Calculated'
+            END as CalculationStatus,
+            CASE 
+                WHEN anomaly_chance <= 0.5 THEN 'NAV change >2% from prior day'
+                WHEN anomaly_chance <= 1 THEN 'Missing prices detected'
+                ELSE NULL
+            END as AnomaliesDetected,
+            CASE 
+                WHEN anomaly_chance <= 1 THEN 'Pending'
+                ELSE 'Approved'
+            END as ApprovalStatus,
+            CASE 
+                WHEN anomaly_chance > 1 THEN 'Operations Manager'
+                ELSE NULL
+            END as ApprovedBy,
+            CASE 
+                WHEN anomaly_chance > 1 THEN DATEADD(hour, 2, CalculationDate)
+                ELSE NULL
+            END as ApprovalTimestamp
+        FROM nav_calc
+    """).collect()
+
+
+def build_fact_nav_components(session: Session, test_mode: bool = False):
+    """Build NAV component detail table."""
+    database_name = config.DATABASE['name']
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_NAV_COMPONENTS AS
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY n.NAVID, p.SecurityID) as ComponentID,
+            n.NAVID,
+            'Securities' as ComponentType,
+            p.MarketValue_Base as ComponentValue,
+            p.SecurityID,
+            p.Quantity,
+            p.MarketValue_Base / NULLIF(p.Quantity, 0) as Price,
+            NULL as AccrualAmount
+        FROM {database_name}.CURATED.FACT_NAV_CALCULATION n
+        JOIN {database_name}.CURATED.FACT_POSITION_DAILY_ABOR p
+            ON n.CalculationDate = p.HoldingDate
+            AND n.PortfolioID = p.PortfolioID
+    """).collect()
+
+
+def build_fact_corporate_actions(session: Session, test_mode: bool = False):
+    """Build corporate actions fact table."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_CORPORATE_ACTIONS AS
+        WITH top_securities AS (
+            SELECT DISTINCT
+                p.SecurityID,
+                s.IssuerID,
+                p.HoldingDate,
+                ROW_NUMBER() OVER (PARTITION BY p.SecurityID ORDER BY p.HoldingDate) as day_num
+            FROM {database_name}.CURATED.FACT_POSITION_DAILY_ABOR p
+            JOIN {database_name}.CURATED.DIM_SECURITY s ON p.SecurityID = s.SecurityID
+            WHERE p.SecurityID IN (
+                SELECT TOP 100 SecurityID 
+                FROM {database_name}.CURATED.FACT_POSITION_DAILY_ABOR
+                GROUP BY SecurityID
+                ORDER BY SUM(MarketValue_Base) DESC
+            )
+        ),
+        action_dates AS (
+            SELECT 
+                SecurityID,
+                IssuerID,
+                HoldingDate as AnnouncementDate,
+                day_num,
+                UNIFORM(0, 3, RANDOM()) as action_type_flag
+            FROM top_securities
+            WHERE MOD(day_num, 90) = 0  -- Quarterly events
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY AnnouncementDate, SecurityID) as ActionID,
+            SecurityID,
+            IssuerID,
+            CASE 
+                WHEN action_type_flag < 2.7 THEN 'Dividend'
+                WHEN action_type_flag < 2.9 THEN 'Split'
+                ELSE 'Merger'
+            END as ActionType,
+            AnnouncementDate,
+            DATEADD(day, 15, AnnouncementDate) as ExDate,
+            DATEADD(day, 16, AnnouncementDate) as RecordDate,
+            DATEADD(day, 30, AnnouncementDate) as PaymentDate,
+            CASE 
+                WHEN action_type_flag < 2.7 THEN 'Quarterly dividend: $' || ROUND(UNIFORM(0.50, 2.00, RANDOM()), 2) || ' per share'
+                WHEN action_type_flag < 2.9 THEN '2-for-1 stock split'
+                ELSE 'Acquisition announcement'
+            END as ActionDetails,
+            CASE 
+                WHEN action_type_flag < 2.7 THEN UNIFORM(0.50, 2.00, RANDOM())
+                WHEN action_type_flag < 2.9 THEN 2.0
+                ELSE 0.0
+            END as ImpactValue,
+            CASE 
+                WHEN action_type_flag < 2.7 THEN 'Processed'
+                WHEN action_type_flag < 2.9 THEN 'Pending'
+                ELSE 'Announced'
+            END as ProcessingStatus,
+            UNIFORM(1, 10, RANDOM()) as PortfoliosAffected
+        FROM action_dates
+    """).collect()
+
+
+def build_fact_corporate_action_impact(session: Session, test_mode: bool = False):
+    """Build corporate action impact on portfolios."""
+    database_name = config.DATABASE['name']
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    # Join on the closest holding date on or before the record date
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_CORPORATE_ACTION_IMPACT AS
+        WITH latest_positions AS (
+            SELECT 
+                ca.ActionID,
+                ca.SecurityID,
+                ca.ActionType,
+                ca.ImpactValue,
+                ca.PaymentDate,
+                ca.ProcessingStatus,
+                ca.RecordDate,
+                p.PortfolioID,
+                p.Quantity,
+                p.HoldingDate,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ca.ActionID, p.PortfolioID 
+                    ORDER BY p.HoldingDate DESC
+                ) as rn
+            FROM {database_name}.CURATED.FACT_CORPORATE_ACTIONS ca
+            JOIN {database_name}.CURATED.FACT_POSITION_DAILY_ABOR p
+                ON ca.SecurityID = p.SecurityID
+                AND p.HoldingDate <= ca.RecordDate
+            WHERE ca.ActionType IN ('Dividend', 'Split')
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY ActionID, PortfolioID) as ImpactID,
+            ActionID,
+            PortfolioID,
+            SecurityID,
+            Quantity as PositionBefore,
+            CASE 
+                WHEN ActionType = 'Split' THEN Quantity * ImpactValue
+                ELSE Quantity
+            END as PositionAfter,
+            CASE 
+                WHEN ActionType = 'Dividend' THEN Quantity * ImpactValue
+                ELSE 0
+            END as CashImpact,
+            PaymentDate as ProcessedDate,
+            'Operations Team' as ProcessedBy,
+            CASE 
+                WHEN ProcessingStatus = 'Processed' THEN 'Validated'
+                ELSE 'Pending'
+            END as ValidationStatus
+        FROM latest_positions
+        WHERE rn = 1
+    """).collect()
+
+
+def build_fact_cash_movements(session: Session, test_mode: bool = False):
+    """Build cash movement fact table."""
+    database_name = config.DATABASE['name']
+    random.seed(config.RNG_SEED)
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_CASH_MOVEMENTS AS
+        WITH all_movements AS (
+        -- Trade settlement cash flows
+        SELECT 
+            t.TransactionDate as MovementDate,
+            t.PortfolioID,
+            'Trade Settlement' as MovementType,
+            t.GrossAmount_Local as Amount,
+            t.Currency,
+            MOD(ABS(HASH(t.TransactionID)), 20) + 1 as CounterpartyID,
+            'Trade #' || t.TransactionID as Reference,
+            'Settled' as Status,
+            DATEADD(day, 2, t.TransactionDate) as ValueDate
+        FROM {database_name}.CURATED.FACT_TRANSACTION t
+        WHERE t.TransactionType IN ('BUY', 'SELL')
+        
+        UNION ALL
+        
+        -- Dividend cash flows
+        SELECT 
+            ca.PaymentDate as MovementDate,
+            cai.PortfolioID,
+            'Dividend' as MovementType,
+            cai.CashImpact as Amount,
+            'USD' as Currency,
+            NULL as CounterpartyID,
+            'Corp Action #' || ca.ActionID as Reference,
+            'Received' as Status,
+            ca.PaymentDate as ValueDate
+        FROM {database_name}.CURATED.FACT_CORPORATE_ACTION_IMPACT cai
+        JOIN {database_name}.CURATED.FACT_CORPORATE_ACTIONS ca ON cai.ActionID = ca.ActionID
+        WHERE ca.ActionType = 'Dividend'
+        
+        UNION ALL
+        
+        -- Fee payments
+        SELECT 
+            n.CalculationDate as MovementDate,
+            n.PortfolioID,
+            'Fee' as MovementType,
+            n.TotalAssets * -0.001 as Amount,
+            'USD' as Currency,
+            NULL as CounterpartyID,
+            'Management Fee' as Reference,
+            'Paid' as Status,
+            n.CalculationDate as ValueDate
+        FROM {database_name}.CURATED.FACT_NAV_CALCULATION n
+        WHERE DAY(n.CalculationDate) = 1  -- Monthly fees
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY MovementDate, PortfolioID) as CashMovementID,
+            MovementDate,
+            PortfolioID,
+            MovementType,
+            Amount,
+            Currency,
+            CounterpartyID,
+            Reference,
+            Status,
+            ValueDate
+        FROM all_movements
+    """).collect()
+
+
+def build_fact_cash_positions(session: Session, test_mode: bool = False):
+    """Build daily cash position snapshots."""
+    database_name = config.DATABASE['name']
+    
+    # Create table using CREATE TABLE AS SELECT pattern (no foreign keys)
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {database_name}.CURATED.FACT_CASH_POSITIONS AS
+        WITH daily_flows AS (
+            SELECT 
+                MovementDate,
+                PortfolioID,
+                Currency,
+                MOD(ABS(HASH(PortfolioID)), 8) + 1 as CustodianID,
+                SUM(CASE WHEN Amount > 0 THEN Amount ELSE 0 END) as Inflows,
+                SUM(CASE WHEN Amount < 0 THEN ABS(Amount) ELSE 0 END) as Outflows
+            FROM {database_name}.CURATED.FACT_CASH_MOVEMENTS
+            GROUP BY MovementDate, PortfolioID, Currency
+        ),
+        cumulative_cash AS (
+            SELECT 
+                MovementDate as PositionDate,
+                PortfolioID,
+                CustodianID,
+                Currency,
+                LAG(Inflows - Outflows, 1, 10000000) OVER (PARTITION BY PortfolioID ORDER BY MovementDate) as OpeningBalance,
+                Inflows,
+                Outflows,
+                0 as FXGainLoss,
+                Inflows - Outflows as NetChange
+            FROM daily_flows
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY PositionDate, PortfolioID) as CashPositionID,
+            PositionDate,
+            PortfolioID,
+            CustodianID,
+            Currency,
+            OpeningBalance,
+            Inflows,
+            Outflows,
+            FXGainLoss,
+            OpeningBalance + Inflows - Outflows + FXGainLoss as ClosingBalance,
+            'Reconciled' as ReconciliationStatus
+        FROM cumulative_cash
+    """).collect()
+
 
 def build_scenario_data(session: Session, scenario: str):
     """Build scenario-specific data."""

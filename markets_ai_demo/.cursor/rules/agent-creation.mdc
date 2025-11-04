@@ -1,0 +1,270 @@
+---
+description: SQL-based agent creation patterns for Snowflake Intelligence
+---
+
+# Agent Creation Guide for Frost Markets Intelligence
+
+## Overview
+
+All agents are created automatically using SQL `CREATE AGENT` statements during the build process. This ensures consistent deployment and eliminates manual configuration.
+
+## SQL-Based Agent Creation Pattern
+
+### Agent Creation Method:
+- ✅ **SQL-Based**: All agents created using `CREATE OR REPLACE AGENT` statements
+- ✅ **Automated**: Executed automatically via `python setup.py`
+- ✅ **Centralized**: All agent creation logic in `src/ai_components/agents.py`
+- ✅ **Properly Formatted**: Instructions use YAML escaping (`\n` for newlines, `\"` for quotes)
+
+### YAML Formatting Helper Function
+
+**CRITICAL**: Use this helper function to format multi-line instructions for SQL:
+
+```python
+def format_instructions_for_yaml(text: str) -> str:
+    """
+    Format multi-line instructions for YAML specification within SQL.
+    - Replace actual line breaks with \n
+    - Escape double quotes with \"
+    - Escape single quotes with '' (SQL standard)
+    """
+    formatted = text.replace('\n', '\\n')
+    formatted = formatted.replace('"', '\\"')
+    formatted = formatted.replace("'", "''")
+    return formatted
+```
+
+### Agent Creation Function Pattern
+
+**MANDATORY**: Follow this pattern for all agent creation functions:
+
+```python
+def create_{agent_name}_agent(session: Session) -> None:
+    """Create {Agent Display Name} agent via SQL"""
+    database_name = DemoConfig.DATABASE_NAME
+    warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
+    
+    # Get instructions from existing configs
+    config = get_phase_X_agent_configs()['{agent_name}_agent']
+    response_formatted = format_instructions_for_yaml(config['response_instructions'])
+    orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}_agent
+  COMMENT = 'Brief description of agent purpose and capabilities'
+  PROFILE = '{{"display_name": "{Agent Display Name} (Frost Markets Intelligence)"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: claude-sonnet-4-5
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "{tool_name}"
+        description: "Comprehensive tool description with Data Coverage, When to Use, When NOT to Use, Query Best Practices"
+    - tool_spec:
+        type: "cortex_search"
+        name: "search_{document_type}"
+        description: "Comprehensive search description with Data Sources, When to Use, When NOT to Use, Search Best Practices"
+  tool_resources:
+    {tool_name}:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      semantic_view: "{database_name}.AI.{SEMANTIC_VIEW_NAME}"
+    search_{document_type}:
+      search_service: "{database_name}.AI.{SEARCH_SERVICE_NAME}"
+      id_column: "{ID_COLUMN}"
+      title_column: "{TITLE_COLUMN}"
+      max_results: 4
+  $$;
+"""
+    
+    try:
+        session.sql(sql).collect()
+        print("✅ Created agent: {agent_name}_agent")
+    except Exception as e:
+        print(f"❌ Failed to create {agent_name}_agent: {{str(e)}}")
+        print(f"📋 Full SQL attempted:")
+        print(sql)
+        raise
+```
+
+## Comprehensive Tool Descriptions
+
+### Cortex Analyst Tool Description Pattern
+
+**MANDATORY**: Include all sections for each Cortex Analyst tool:
+
+```yaml
+description: |
+  {One-sentence purpose statement}
+  
+  Data Coverage:
+  - Historical: {time range, e.g., "8 quarters of earnings data"}
+  - Current: {update frequency, e.g., "Daily refresh at 4 PM ET"}
+  - Sources: {underlying tables, e.g., "CURATED.DIM_COMPANY, CURATED.FACT_EARNINGS_ACTUAL"}
+  - Records: {approximate scale, e.g., "15 companies, 8 quarters"}
+  - Refresh: {refresh schedule, e.g., "Daily at market close"}
+  
+  When to Use:
+  - {Specific use case 1 with example}
+  - {Specific use case 2 with example}
+  - {Specific use case 3 with example}
+  
+  When NOT to Use:
+  - {Anti-pattern 1 with alternative tool}
+  - {Anti-pattern 2 with alternative tool}
+  - {Anti-pattern 3 with explanation}
+  
+  Query Best Practices:
+  - Be specific about time ranges: ✅ "last 3 quarters" vs ❌ "recent"
+  - Use semantic names: ✅ "total revenue" vs ❌ "sum(revenue_value)"
+  - Filter to latest date for current data: ✅ "most recent quarter"
+```
+
+### Cortex Search Tool Description Pattern
+
+**MANDATORY**: Include all sections for each Cortex Search tool:
+
+```yaml
+description: |
+  {One-sentence purpose statement}
+  
+  Data Sources:
+  - Document Types: {types included}
+  - Update Frequency: {how often new documents added}
+  - Historical Range: {typical age range}
+  - Index Freshness: {lag time}
+  - Typical Count: {approximate number of documents}
+  
+  When to Use:
+  - {Specific use case 1 with example}
+  - {Specific use case 2 with example}
+  - {Specific use case 3 with example}
+  
+  When NOT to Use:
+  - Quantitative data (use {analyst_tool_name})
+  - {Anti-pattern 2 with alternative}
+  - {Anti-pattern 3 with alternative}
+  
+  Search Query Best Practices:
+  - Use specific terms: ✅ "Apple iPhone revenue guidance" vs ❌ "Apple news"
+  - Include multiple keywords: ✅ "carbon capture technology investment"
+  - Use technical terms when appropriate: ✅ "debt-to-equity ratio"
+```
+
+## Agent Registration
+
+### Add to create_all_agents() Function:
+
+```python
+def create_all_agents(session: Session, scenarios: List[str] = None) -> None:
+    """Create all Snowflake Intelligence agents for specified scenarios."""
+    if scenarios is None:
+        scenarios = ['all']
+    
+    agents_to_create = {
+        'earnings_analysis_agent': create_earnings_analysis_agent,
+        'thematic_research_agent': create_thematic_research_agent,
+        'global_macro_strategy_agent': create_global_macro_strategy_agent,
+        # Add new agent here
+        '{new_agent_name}_agent': create_{new_agent_name}_agent
+    }
+    
+    print("\n🤖 Creating Snowflake Intelligence Agents...")
+    
+    for agent_name, create_func in agents_to_create.items():
+        if 'all' in scenarios or any(scenario in agent_name for scenario in scenarios):
+            try:
+                create_func(session)
+            except Exception as e:
+                print(f"❌ Error creating {agent_name}: {e}")
+                continue
+    
+    print("✅ All agents created successfully\n")
+```
+
+## Integration with Setup Process
+
+### In setup.py:
+
+```python
+def create_ai_components(session, mode):
+    """Create Snowflake AI components"""
+    try:
+        from ai_components.semantic_views import create_all_semantic_views
+        from ai_components.search_services import create_all_search_services
+        from ai_components.agents import create_all_agents
+        
+        # Create semantic views
+        create_all_semantic_views(session)
+        
+        # Create search services
+        create_all_search_services(session)
+        
+        # Create Snowflake Intelligence agents
+        create_all_agents(session, DemoConfig.PHASE_1_SCENARIOS + DemoConfig.PHASE_2_SCENARIOS)
+        
+        print("✅ AI components created successfully")
+    except Exception as e:
+        print(f"❌ Error creating AI components: {str(e)}")
+        raise
+```
+
+## Frost Markets Intelligence Agent Types
+
+### Phase 1 Agents (Build First):
+1. **Earnings Analysis Assistant**: Analyzes quarterly earnings, consensus estimates, management commentary
+   - Tools: earnings_data_analyzer (Cortex Analyst), search_earnings_transcripts (Cortex Search)
+   - Semantic View: AI.EARNINGS_ANALYSIS_VIEW
+   - Search Service: AI.EARNINGS_TRANSCRIPTS_SEARCH
+
+2. **Thematic Investment Research Assistant**: Discovers emerging themes and cross-sector trends
+   - Tools: thematic_data_analyzer (Cortex Analyst), search_research_reports, search_news_articles (Cortex Search)
+   - Semantic View: AI.THEMATIC_RESEARCH_VIEW
+   - Search Services: AI.RESEARCH_REPORTS_SEARCH, AI.NEWS_ARTICLES_SEARCH
+
+### Phase 2 Agents (Future):
+3. **Global Macro Strategy Assistant**: Analyzes proprietary macroeconomic signals and develops cross-asset strategies
+   - Tools: macro_signals_analyzer (Cortex Analyst), search_research_reports (Cortex Search)
+   - Semantic View: AI.GLOBAL_MACRO_SIGNALS_VIEW
+   - Search Service: AI.RESEARCH_REPORTS_SEARCH
+
+## Testing Agent Creation
+
+### Manual Test:
+```bash
+# Test agent creation directly
+python -c "from snowflake.snowpark import Session; from config import DemoConfig; from src.ai_components.agents import create_all_agents; session = Session.builder.config('connection_name', DemoConfig.SNOWFLAKE_CONNECTION_NAME).create(); create_all_agents(session)"
+```
+
+### Verify in Snowflake:
+```sql
+-- Check created agents
+SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS;
+
+-- View agent details
+DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.earnings_analysis_agent;
+```
+
+## Success Criteria
+
+- [ ] All agents created without errors
+- [ ] Agents visible in Snowflake Intelligence UI
+- [ ] Agent tool configurations reference correct semantic views and search services
+- [ ] Instructions properly formatted (no YAML syntax errors)
+- [ ] Test queries work for each agent
+- [ ] Agent responses follow configured tone and format
+
+## Benefits of SQL-Based Agent Creation
+
+1. **Consistency**: Same configuration every time, no manual errors
+2. **Version Control**: Agent configs stored in code, easy to track changes
+3. **Automation**: No manual UI steps, agents ready immediately after setup
+4. **Rapid Iteration**: Quick to update and redeploy agents
+5. **Documentation**: Agent configs serve as implementation documentation

@@ -16,7 +16,7 @@ This is a demo showcasing Snowflake AI capabilities for financial markets resear
 - **Phase 2**: Add Global Research & Market Insights Analyst scenarios later
 
 ## Target Architecture
-- **Database**: MARKETS_AI_DEMO with multiple schemas (RAW_DATA, ENRICHED_DATA, ANALYTICS)
+- **Database**: MARKETS_AI_DEMO with multiple schemas (RAW, CURATED, AI)
 - **Personas**: 2 main personas, 4 separate agents (2 scenarios per persona)
 - **Data Volume**: Minimal viable dataset (10-15 companies, 20-25 clients, 1 year history)
 - **Events**: 5-10 major market events driving cross-scenario correlations

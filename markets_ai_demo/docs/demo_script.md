@@ -4,10 +4,16 @@ This document provides complete scripts for delivering the Frost Markets Intelli
 
 ## 🎯 Demo Overview
 
-**Duration**: 45-60 minutes (15 minutes per scenario)  
-**Format**: Modular - can demo individual scenarios or all three  
+**Duration**: 60 minutes (15 minutes per scenario)  
+**Format**: Modular - can demo individual scenarios or all four  
 **Audience**: Financial services professionals, data teams, AI/ML practitioners  
 **Goal**: Demonstrate intelligence augmentation for financial analysts using Snowflake AI
+
+**Available Scenarios**:
+1. Global Research & Market Insights - Market Structure Reports (Phase 1)
+2. Equity Research Analyst - Earnings Analysis (Phase 1)
+3. Equity Research Analyst - Thematic Research (Phase 1)
+4. Global Research & Market Insights - Macro Strategy Report Generation (Phase 2 - NEW)
 
 ## 📋 Pre-Demo Checklist
 
@@ -455,6 +461,161 @@ It looks like Johnson Matthey has underperformed the other two. Summarize their 
 - Multi-source document analysis and synthesis
 - Thematic pattern recognition across data types
 - Investment-focused entity extraction and mapping
+
+---
+
+## 🌍 Scenario 4: Global Research & Market Insights - Macro Strategy Report Generation (15 minutes)
+
+### Business Context Setup (2 minutes)
+
+**Persona**: Global Macro Strategist at Frost Markets Intelligence
+
+**Business Challenge**: 
+"Traditional macro research relies on lagging economic indicators available to everyone. By the time consensus data is published, markets have already moved. We need to leverage proprietary leading indicators to generate differentiated investment insights and position clients ahead of macro regime shifts."
+
+**Value Proposition**:
+- **Proprietary Signal Analysis**: Leverage unique Frost macroeconomic indicators unavailable to competitors
+- **Cross-Asset Intelligence**: Connect macro signals to specific sector and asset class opportunities
+- **Data-Driven Positioning**: Quantify sector correlations with macro indicators for systematic strategies
+- **Strategic Differentiation**: Deliver unique insights that drive alpha-generating investment decisions
+
+**AI Tools in Use**:
+- **GLOBAL_MACRO_SIGNALS_VIEW**: Proprietary macroeconomic signals and sector correlation analysis
+- **RESEARCH_REPORTS_SEARCH**: Access to macro strategy research and thematic reports
+- **Cortex Analyst**: Quantitative signal analysis and trend identification
+- **Cortex Complete**: Strategic report synthesis and investment recommendations
+
+---
+
+### Demo Flow
+
+#### Setup (30 seconds)
+
+**Navigation**: Open Snowsight → Snowflake Intelligence → Select "Global Macro Strategy Assistant"
+
+**Scene Setting**: "Let's help Marcus, a Global Macro Strategist, develop his quarterly macro outlook report using our proprietary Frost indicators to generate differentiated investment insights."
+
+---
+
+#### Query 1: Proprietary Signal Analysis (4 minutes)
+
+**User Input:**
+```
+What is the current level of the Frost Global Shipping Volume Index and how has it trended over the past quarter?
+```
+
+**Expected Response:**
+- Current index level (e.g., "The Frost Global Shipping Volume Index currently stands at 103.2")
+- Quarterly trend analysis (e.g., "up 2.8% from 100.4 at the start of the quarter")
+- Interpretation of the signal's economic implications
+- Comparison to historical levels or key thresholds
+
+**Demo Talking Points:**
+- **"This is our proprietary leading indicator unavailable to competitors"**
+- **"Shipping volumes predict economic activity 2-3 months ahead of official data"**
+- **"We're translating alternative data into investable insights"**
+
+**Key Features Highlighted:**
+- Proprietary macroeconomic signal tracking
+- Trend analysis and time-series analytics
+- Leading indicator interpretation
+- Competitive intelligence advantage
+
+---
+
+#### Query 2: Sector Correlation Analysis (4 minutes)
+
+**User Input:**
+```
+Which sectors have the strongest correlation with the Frost Commodity Price Momentum indicator and what are those correlation coefficients?
+```
+
+**Expected Response:**
+- Ranked list of sectors by correlation strength
+- Specific correlation coefficients (e.g., "Energy sector: 0.91 correlation, Technology sector: 0.35 correlation")
+- Interpretation of the relationships
+- Investment implications for sector positioning
+
+**Demo Talking Points:**
+- **"We've quantified how each sector responds to our macro signals"**
+- **"This creates a systematic framework for sector rotation strategies"**
+- **"Energy stocks move almost 1:1 with commodity momentum, while tech is much less sensitive"**
+
+**Key Features Highlighted:**
+- Sector-macro correlation analytics
+- Quantitative investment framework
+- Systematic positioning insights
+- Cross-asset relationship mapping
+
+---
+
+#### Query 3: Multi-Signal Investment Strategy (4 minutes)
+
+**User Input:**
+```
+Based on the current readings of our Frost Central Bank Liquidity Indicator and Frost Credit Conditions Indicator, which sectors should institutional investors overweight or underweight?
+```
+
+**Expected Response:**
+- Current levels of both indicators
+- Analysis of what the combination signals (e.g., "tightening liquidity but healthy credit conditions")
+- Sector-specific recommendations with rationale
+- Overweight/underweight guidance with supporting correlations
+- Risk considerations and hedging strategies
+
+**Demo Talking Points:**
+- **"We're combining multiple proprietary signals for robust recommendations"**
+- **"The agent synthesizes complex macro relationships into actionable sector calls"**
+- **"This creates a quantitative foundation for strategic asset allocation"**
+
+**Key Features Highlighted:**
+- Multi-signal synthesis and analysis
+- Sector positioning recommendations
+- Risk-aware strategy development
+- Cross-indicator pattern recognition
+
+---
+
+#### Query 4: Strategic Report Generation (3 minutes)
+
+**User Input:**
+```
+Draft an executive summary for my quarterly macro outlook report, highlighting the key signals showing strength (Shipping Volume, Tech Capex) and the defensive positioning warranted by declining liquidity indicators
+```
+
+**Expected Response:**
+- Professional executive summary format
+- Integration of specific signal data points
+- Balanced assessment of growth indicators vs. caution signals
+- Clear sector rotation recommendations
+- Investment-focused conclusions with actionable guidance
+
+**Demo Talking Points:**
+- **"From raw macro signals to publication-ready strategic content"**
+- **"Notice how it balances bullish and bearish indicators for nuanced positioning"**
+- **"This maintains our analytical rigor while accelerating delivery to clients"**
+
+**Key Features Highlighted:**
+- AI-powered content generation with macro expertise
+- Multi-signal synthesis into coherent narrative
+- Investment-grade report quality
+- Strategic recommendation framework
+
+---
+
+### Scenario 4 Wrap-up (2 minutes)
+
+**Business Impact Summary:**
+- **Competitive Differentiation**: "Proprietary Frost indicators create unique insights unavailable to competitors"
+- **Strategic Alpha**: "Data-driven sector positioning based on quantified macro relationships"
+- **Operational Efficiency**: "Accelerate macro analysis and report generation from days to hours"
+- **Client Value**: "Deliver actionable, differentiated investment strategies that drive returns"
+
+**Technical Differentiators:**
+- Proprietary macroeconomic signal infrastructure
+- Quantified sector-macro correlation framework
+- Cross-asset strategy synthesis capabilities
+- Leading indicator-driven investment positioning
 
 ---
 

@@ -58,8 +58,123 @@ start_date, end_date = get_dynamic_date_range()  # 2-year span from quarters
 - **History**: Dynamic based on NUM_HISTORICAL_QUARTERS (default: 8 quarters/2 years)
 - **Events**: 5-10 market-moving events spread across dynamic date range
 
+## Schema Placement Guidelines
+
+### RAW Schema
+Place tables here if they represent:
+- Raw external data sources (e.g., `MASTER_EVENT_LOG`)
+- Unstructured documents/text (use `_CORPUS` suffix)
+- Reference/lookup data that doesn't change (e.g., `ECONOMIC_REGIONS`)
+
+Examples: `RAW.SEC_FILINGS_CORPUS`, `RAW.PROPRIETARY_SIGNALS`
+
+### CURATED Schema
+Place tables here if they represent:
+- Dimension tables describing entities (use `DIM_` prefix)
+  - Companies, clients, products, locations
+- Fact tables with measurements/metrics (use `FACT_` prefix)
+  - Transactions, events, time-series data
+  - Daily prices, quarterly earnings, client trades
+
+Examples: `CURATED.DIM_COMPANY`, `CURATED.FACT_STOCK_PRICE_DAILY`, `CURATED.FACT_CLIENT_TRADE`
+
+### AI Schema
+Created by AI components (not data generation):
+- Semantic views for Cortex Analyst
+- Cortex Search services
+- Do NOT create tables in this schema manually
+
+## SQL Generation Best Practices (CRITICAL)
+
+### Rule 1: Never Hardcode Config Values in SQL
+**MANDATORY**: Always use config helper functions, never hardcode tickers, sectors, or lists in SQL generation code.
+
+#### ✅ Correct Approach:
+```python
+# Use config helper functions for safe SQL generation
+from config import DemoConfig
+
+sql = f"""
+SELECT * FROM COMPANIES 
+WHERE TICKER IN {DemoConfig.get_demo_company_tickers_sql()}
+  AND SECTOR IN {DemoConfig.get_demo_sectors_sql()}
+"""
+```
+
+#### ❌ Wrong Approach:
+```python
+# NEVER hardcode lists in SQL
+sql = """
+SELECT * FROM COMPANIES 
+WHERE TICKER IN ('AAPL', 'MSFT', 'GOOGL')  -- ❌ Hardcoded!
+"""
+```
+
+### Rule 2: Use safe_sql_tuple() for Empty List Handling
+**MANDATORY**: Always use safe_sql_tuple() to prevent SQL syntax errors from empty lists.
+
+#### ✅ Correct Approach:
+```python
+from config import DemoConfig
+
+# Handles empty lists gracefully
+tickers = ['AAPL', 'MSFT']  # or could be []
+sql = f"SELECT * FROM COMPANIES WHERE TICKER IN {DemoConfig.safe_sql_tuple(tickers)}"
+
+# Output: WHERE TICKER IN ('AAPL', 'MSFT')
+# If empty: WHERE TICKER IN ('__NONE__')
+```
+
+#### ❌ Wrong Approach:
+```python
+# Can cause SQL syntax errors
+tickers = []
+sql = f"SELECT * FROM COMPANIES WHERE TICKER IN {tuple(tickers)}"  # ❌ ERROR: WHERE TICKER IN ()
+```
+
+### Rule 3: Extract Config Dictionary Values Before f-strings
+**MANDATORY**: Extract nested dictionary values to variables before using in f-strings to avoid bracket syntax errors.
+
+#### ✅ Correct Approach:
+```python
+# Extract values first
+database_name = DemoConfig.DATABASE['name']
+warehouse_name = DemoConfig.WAREHOUSES['compute']['name']
+
+sql = f"""
+USE DATABASE {database_name};
+USE WAREHOUSE {warehouse_name};
+"""
+```
+
+#### ❌ Wrong Approach:
+```python
+# Causes bracket nesting errors in f-strings
+sql = f"""
+USE DATABASE {DemoConfig.DATABASE['name']};  -- ❌ Bracket errors!
+"""
+```
+
+### Rule 4: Use Snowpark DataFrames for Data Generation
+**MANDATORY**: Use Snowpark DataFrames for all structured data generation, not pandas.
+
+#### ✅ Correct Approach:
+```python
+from snowflake.snowpark import Session
+
+data = [
+    {"TICKER": "AAPL", "COMPANY_NAME": "Apple Inc."},
+    {"TICKER": "MSFT", "COMPANY_NAME": "Microsoft Corp."}
+]
+
+df = session.create_dataframe(data)
+df.write.mode("overwrite").save_as_table("COMPANIES")
+```
+
 ## Quality Assurance
 - Every agent question in scenarios must have supporting data
 - Cross-reference event dates across all generated tables
 - Ensure sentiment scores align with event types (positive/negative)
 - Validate that geographic revenue exposure data supports risk scenarios
+- Use config helper functions for all SQL generation
+- Never hardcode tickers, sectors, or date ranges

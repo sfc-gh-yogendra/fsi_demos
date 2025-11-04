@@ -10,15 +10,15 @@ def create_all_semantic_views(session: Session) -> None:
     
     print("   🔍 Creating REAL semantic views for Cortex Analyst...")
     
-    # Create EARNINGS_ACTUALS table first
+    # Create EARNINGS_ACTUALS fact table first
     create_actuals_sql = """
-    CREATE OR REPLACE TABLE ENRICHED_DATA.EARNINGS_ACTUALS AS
+    CREATE OR REPLACE TABLE CURATED.FACT_EARNINGS_ACTUAL AS
     SELECT 
         TICKER,
         FISCAL_QUARTER,
         METRIC_NAME,
         ESTIMATE_VALUE * (1 + UNIFORM(-0.1, 0.1, RANDOM())) AS ACTUAL_VALUE
-    FROM RAW_DATA.CONSENSUS_ESTIMATES 
+    FROM CURATED.FACT_CONSENSUS_ESTIMATE 
     WHERE PROVIDER = 'FactSet'
     """
     session.sql(create_actuals_sql).collect()
@@ -37,15 +37,23 @@ def create_all_semantic_views(session: Session) -> None:
     
     print("   🔍 Creating CLIENT_MARKET_IMPACT_VIEW semantic view...")
     create_client_market_impact_semantic_view(session)
+    
+    print("   🔍 Creating GLOBAL_MACRO_SIGNALS_VIEW semantic view...")
+    create_global_macro_signals_semantic_view(session)
 
 
 def verify_table_columns(session: Session) -> None:
     """Verify actual column names in source tables before creating semantic view"""
     
     tables_to_check = [
-        "RAW_DATA.COMPANIES",
-        "RAW_DATA.CONSENSUS_ESTIMATES", 
-        "ENRICHED_DATA.EARNINGS_ACTUALS"
+        "CURATED.DIM_COMPANY",
+        "CURATED.FACT_CONSENSUS_ESTIMATE", 
+        "CURATED.FACT_EARNINGS_ACTUAL",
+        "CURATED.FACT_STOCK_PRICE_DAILY",
+        "RAW.NEWS_ARTICLES_CORPUS",
+        "RAW.RESEARCH_REPORTS_CORPUS",
+        "CURATED.DIM_CLIENT",
+        "RAW.PROPRIETARY_SIGNALS"
     ]
     
     for table in tables_to_check:
@@ -58,23 +66,89 @@ def verify_table_columns(session: Session) -> None:
             print(f"      ❌ Error describing {table}: {str(e)}")
 
 
+def validate_synonym_uniqueness(synonyms_dict: dict) -> bool:
+    """
+    Validate that all synonyms are unique across dimensions and metrics.
+    
+    Args:
+        synonyms_dict: Dictionary mapping element names to their synonym lists
+        
+    Returns:
+        True if all synonyms are unique, False otherwise
+    """
+    all_synonyms = {}
+    duplicates_found = False
+    
+    for element_name, synonyms in synonyms_dict.items():
+        for synonym in synonyms:
+            if synonym in all_synonyms:
+                print(f"   ⚠️  Duplicate synonym '{synonym}' found in:")
+                print(f"      - {all_synonyms[synonym]}")
+                print(f"      - {element_name}")
+                duplicates_found = True
+            else:
+                all_synonyms[synonym] = element_name
+    
+    if not duplicates_found:
+        print(f"   ✅ All {len(all_synonyms)} synonyms are unique")
+        return True
+    else:
+        return False
+
+
+def test_semantic_view(session: Session, view_name: str, test_queries: list) -> None:
+    """
+    Test semantic view with SEMANTIC_VIEW() queries.
+    
+    Args:
+        session: Snowpark session
+        view_name: Full name of semantic view (e.g., ANALYTICS.EARNINGS_ANALYSIS_VIEW)
+        test_queries: List of test query dictionaries with 'description', 'metrics', 'dimensions', 'limit'
+    """
+    print(f"   🧪 Testing {view_name}...")
+    
+    for i, test_query in enumerate(test_queries, 1):
+        description = test_query.get('description', f'Test {i}')
+        metrics = test_query.get('metrics', [])
+        dimensions = test_query.get('dimensions', [])
+        limit = test_query.get('limit', 5)
+        
+        metrics_str = ', '.join(metrics) if metrics else ''
+        dimensions_str = ', '.join(dimensions) if dimensions else ''
+        
+        query = f"""
+        SELECT * FROM SEMANTIC_VIEW(
+            {view_name}
+            {f'METRICS {metrics_str}' if metrics_str else ''}
+            {f'DIMENSIONS {dimensions_str}' if dimensions_str else ''}
+        ) LIMIT {limit}
+        """
+        
+        try:
+            result = session.sql(query).collect()
+            print(f"      ✅ {description}: {len(result)} rows returned")
+        except Exception as e:
+            print(f"      ❌ {description}: {str(e)}")
+            print(f"         Query: {query.strip()}")
+
+
 def create_earnings_analysis_semantic_view(session: Session) -> None:
     """
     Create SEMANTIC VIEW for earnings analysis - required for Cortex Analyst
     """
     
     semantic_view_sql = """
-CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.EARNINGS_ANALYSIS_VIEW
+CREATE OR REPLACE SEMANTIC VIEW AI.EARNINGS_ANALYSIS_VIEW
 	TABLES (
-		ACTUALS AS ENRICHED_DATA.EARNINGS_ACTUALS
+		ACTUALS AS CURATED.FACT_EARNINGS_ACTUAL
 			PRIMARY KEY (TICKER, FISCAL_QUARTER, METRIC_NAME)
 			WITH SYNONYMS=('earnings_results','financial_results','quarterly_results')
 			COMMENT='Actual quarterly earnings results for companies',
-		ESTIMATES AS RAW_DATA.CONSENSUS_ESTIMATES  
+		ESTIMATES AS CURATED.FACT_CONSENSUS_ESTIMATE  
 			PRIMARY KEY (TICKER, FISCAL_QUARTER, METRIC_NAME, PROVIDER)
 			WITH SYNONYMS=('consensus_estimates','analyst_estimates','forecasts')
 			COMMENT='Consensus estimates from financial data providers',
-		COMPANIES AS RAW_DATA.COMPANIES
+		COMPANIES AS CURATED.DIM_COMPANY
 			PRIMARY KEY (TICKER)
 			WITH SYNONYMS=('companies_master','company_info')
 			COMMENT='Company master data including sector and industry'
@@ -117,21 +191,21 @@ def create_thematic_research_semantic_view(session: Session) -> None:
     """
     
     semantic_view_sql = """
-CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.THEMATIC_RESEARCH_VIEW
+CREATE OR REPLACE SEMANTIC VIEW AI.THEMATIC_RESEARCH_VIEW
 	TABLES (
-		REPORTS AS RAW_DATA.RESEARCH_REPORTS
+		REPORTS AS RAW.RESEARCH_REPORTS_CORPUS
 			PRIMARY KEY (REPORT_ID)
 			WITH SYNONYMS=('research_reports','thematic_reports','analysis')
 			COMMENT='Internal research reports with thematic analysis',
-		COMPANIES AS RAW_DATA.COMPANIES
+		COMPANIES AS CURATED.DIM_COMPANY
 			PRIMARY KEY (TICKER)
 			WITH SYNONYMS=('companies_master','company_info','firms')
 			COMMENT='Company master data with sector and industry classification',
-		PRICES AS RAW_DATA.HISTORICAL_STOCK_PRICES
+		PRICES AS CURATED.FACT_STOCK_PRICE_DAILY
 			PRIMARY KEY (TICKER, PRICE_DATE)
 			WITH SYNONYMS=('stock_prices','market_data','price_history')
 			COMMENT='Historical stock price data for performance analysis',
-		NEWS AS RAW_DATA.NEWS_ARTICLES
+		NEWS AS RAW.NEWS_ARTICLES_CORPUS
 			PRIMARY KEY (ARTICLE_ID)
 			WITH SYNONYMS=('news_articles','market_news','events')
 			COMMENT='News articles and market event coverage'
@@ -180,25 +254,25 @@ def create_client_market_impact_semantic_view(session: Session) -> None:
     """
     
     semantic_view_sql = """
-CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.CLIENT_MARKET_IMPACT_VIEW
+CREATE OR REPLACE SEMANTIC VIEW AI.CLIENT_MARKET_IMPACT_VIEW
 	TABLES (
-		CLIENTS AS RAW_DATA.CLIENT_PROFILES
+		CLIENTS AS CURATED.DIM_CLIENT
 			PRIMARY KEY (CLIENT_ID)
 			WITH SYNONYMS=('client_info','customer_profiles','institutional_clients')
 			COMMENT='Client profile information and assets under management',
-		TRADING AS RAW_DATA.CLIENT_TRADING_ACTIVITY
+		TRADING AS CURATED.FACT_CLIENT_TRADE
 			PRIMARY KEY (TRADE_ID)
 			WITH SYNONYMS=('client_trades','trading_activity','derivative_trades')
 			COMMENT='Client derivative trading activity and clearing details',
-		ENGAGEMENT AS RAW_DATA.CLIENT_ENGAGEMENT
+		ENGAGEMENT AS CURATED.FACT_CLIENT_ENGAGEMENT
 			PRIMARY KEY (CLIENT_ID, CONTENT_ID, ENGAGEMENT_TIMESTAMP)
 			WITH SYNONYMS=('content_engagement','research_downloads','client_interactions')
 			COMMENT='Client engagement with research content and reports',
-		DISCUSSIONS AS RAW_DATA.CLIENT_DISCUSSIONS
+		DISCUSSIONS AS CURATED.FACT_CLIENT_DISCUSSION
 			PRIMARY KEY (CLIENT_ID, DISCUSSION_DATE)
 			WITH SYNONYMS=('client_meetings','strategic_discussions','relationship_management')
 			COMMENT='Client discussion and meeting tracking',
-		REPORTS AS RAW_DATA.RESEARCH_REPORTS
+		REPORTS AS RAW.RESEARCH_REPORTS_CORPUS
 			PRIMARY KEY (REPORT_ID)
 			WITH SYNONYMS=('research_reports','content_library','thematic_reports')
 			COMMENT='Internal research reports with thematic tags and topics'
@@ -249,3 +323,155 @@ CREATE OR REPLACE SEMANTIC VIEW ANALYTICS.CLIENT_MARKET_IMPACT_VIEW
         print(semantic_view_sql)
         print("   ❓ Please help fix the SQL syntax error above")
         raise
+
+
+def create_global_macro_signals_semantic_view(session: Session) -> None:
+    """
+    Create GLOBAL_MACRO_SIGNALS_VIEW semantic view for macroeconomic analysis
+    Supports Global Macro Strategy scenarios
+    """
+    
+    semantic_view_sql = """
+CREATE OR REPLACE SEMANTIC VIEW AI.GLOBAL_MACRO_SIGNALS_VIEW
+	TABLES (
+		SIGNALS AS RAW.PROPRIETARY_SIGNALS
+			PRIMARY KEY (SIGNAL_DATE, SIGNAL_NAME)
+			WITH SYNONYMS=('macro_signals','economic_indicators','frost_indicators')
+			COMMENT='Proprietary macroeconomic signals and leading indicators',
+		REGIONS AS RAW.ECONOMIC_REGIONS
+			PRIMARY KEY (REGION_CODE)
+			WITH SYNONYMS=('geographic_regions','economic_zones','geographies')
+			COMMENT='Economic regions with GDP and population data',
+		CORRELATIONS AS RAW.SECTOR_MACRO_CORRELATIONS
+			PRIMARY KEY (SECTOR, SIGNAL_NAME)
+			WITH SYNONYMS=('sector_correlations','macro_relationships','signal_correlations')
+			COMMENT='Correlation patterns between sectors and macro signals',
+		COMPANIES AS CURATED.DIM_COMPANY
+			PRIMARY KEY (TICKER)
+			WITH SYNONYMS=('companies_master','company_info','firms')
+			COMMENT='Company master data with sector classification',
+		PRICES AS CURATED.FACT_STOCK_PRICE_DAILY
+			PRIMARY KEY (TICKER, PRICE_DATE)
+			WITH SYNONYMS=('stock_prices','market_data','price_history')
+			COMMENT='Historical stock price data for performance analysis'
+	)
+	RELATIONSHIPS (
+		CORRELATIONS_TO_COMPANIES AS CORRELATIONS(SECTOR) REFERENCES COMPANIES(SECTOR),
+		PRICES_TO_COMPANIES AS PRICES(TICKER) REFERENCES COMPANIES(TICKER)
+	)
+	DIMENSIONS (
+		SIGNALS.SIGNAL_DATE AS SIGNAL_DATE WITH SYNONYMS=('date','observation_date','macro_date','time_period') COMMENT='Date of signal observation',
+		SIGNALS.SIGNAL_NAME AS SIGNAL_NAME WITH SYNONYMS=('indicator_name','signal','macro_indicator','economic_indicator') COMMENT='Name of macroeconomic signal',
+		SIGNALS.SIGNAL_CATEGORY AS SIGNAL_CATEGORY WITH SYNONYMS=('indicator_category','signal_type','macro_category') COMMENT='Category of macroeconomic signal',
+		SIGNALS.SIGNAL_REGION AS SIGNAL_REGION WITH SYNONYMS=('geography','region','economic_region') COMMENT='Geographic region for the signal',
+		SIGNALS.SIGNAL_DESCRIPTION AS SIGNAL_DESCRIPTION WITH SYNONYMS=('description','indicator_description') COMMENT='Description of the macroeconomic signal',
+		REGIONS.REGION_CODE AS REGION_CODE WITH SYNONYMS=('country_code','geo_code') COMMENT='Region code identifier',
+		REGIONS.REGION_NAME AS REGION_NAME WITH SYNONYMS=('region','country','geographic_name') COMMENT='Full region name',
+		REGIONS.REGION_TYPE AS REGION_TYPE WITH SYNONYMS=('economy_type','market_type') COMMENT='Type of economy (Developed, Emerging)',
+		CORRELATIONS.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector','sector_name') COMMENT='Business sector name',
+		CORRELATIONS.INTERPRETATION AS INTERPRETATION WITH SYNONYMS=('correlation_interpretation','relationship_description') COMMENT='Interpretation of sector-signal correlation',
+		COMPANIES.TICKER AS TICKER WITH SYNONYMS=('symbol','stock_ticker','ticker_symbol') COMMENT='Company stock ticker symbol',
+		COMPANIES.COMPANY_NAME AS COMPANY_NAME WITH SYNONYMS=('company','firm_name','corporation') COMMENT='Company name',
+		COMPANIES.INDUSTRY AS INDUSTRY WITH SYNONYMS=('industry_group','business_line') COMMENT='Industry classification',
+		PRICES.PRICE_DATE AS PRICE_DATE WITH SYNONYMS=('trade_date','market_date','stock_date') COMMENT='Stock price date'
+	)
+	METRICS (
+		SIGNALS.AVG_SIGNAL_VALUE AS AVG(SIGNAL_VALUE) WITH SYNONYMS=('average_signal','mean_indicator','avg_macro_value') COMMENT='Average value of macroeconomic signal',
+		SIGNALS.MAX_SIGNAL_VALUE AS MAX(SIGNAL_VALUE) WITH SYNONYMS=('highest_signal','peak_indicator','max_macro_value') COMMENT='Maximum value of macroeconomic signal',
+		SIGNALS.MIN_SIGNAL_VALUE AS MIN(SIGNAL_VALUE) WITH SYNONYMS=('lowest_signal','bottom_indicator','min_macro_value') COMMENT='Minimum value of macroeconomic signal',
+		REGIONS.TOTAL_GDP AS SUM(GDP_TRILLIONS) WITH SYNONYMS=('sum_gdp','total_economic_output','aggregate_gdp') COMMENT='Total GDP across regions in trillions',
+		REGIONS.TOTAL_POPULATION AS SUM(POPULATION_MILLIONS) WITH SYNONYMS=('sum_population','total_population','aggregate_population') COMMENT='Total population across regions in millions',
+		CORRELATIONS.AVG_CORRELATION AS AVG(CORRELATION_COEFFICIENT) WITH SYNONYMS=('average_correlation','mean_correlation') COMMENT='Average correlation coefficient between sectors and signals',
+		PRICES.AVG_PRICE AS AVG(CLOSE) WITH SYNONYMS=('average_price','mean_price','avg_close') COMMENT='Average stock closing price',
+		PRICES.TOTAL_VOLUME AS SUM(VOLUME) WITH SYNONYMS=('total_trading_volume','sum_volume','cumulative_volume') COMMENT='Total trading volume'
+	)
+	COMMENT='Global macroeconomic signals semantic view for analyzing proprietary indicators and their correlations with sectors';
+    """
+    
+    try:
+        result = session.sql(semantic_view_sql).collect()
+        print("   ✅ GLOBAL_MACRO_SIGNALS_VIEW semantic view created successfully")
+    except Exception as e:
+        print(f"   ❌ Failed to create GLOBAL_MACRO_SIGNALS_VIEW: {str(e)}")
+        print(f"   📋 Full SQL attempted:")
+        print(semantic_view_sql)
+        print("   ❓ Please help fix the SQL syntax error above")
+        raise
+
+
+def test_all_semantic_views(session: Session) -> None:
+    """
+    Test all created semantic views with SEMANTIC_VIEW() queries.
+    This validates that the views work correctly with Cortex Analyst.
+    """
+    print("\n   🧪 Testing all semantic views...")
+    
+    # Test EARNINGS_ANALYSIS_VIEW
+    earnings_tests = [
+        {
+            'description': 'Basic earnings test',
+            'metrics': ['TOTAL_ACTUAL'],
+            'dimensions': ['TICKER'],
+            'limit': 5
+        },
+        {
+            'description': 'Complex earnings test',
+            'metrics': ['TOTAL_ACTUAL', 'AVG_ESTIMATE'],
+            'dimensions': ['TICKER', 'FISCAL_QUARTER', 'METRIC_NAME'],
+            'limit': 10
+        }
+    ]
+    test_semantic_view(session, 'AI.EARNINGS_ANALYSIS_VIEW', earnings_tests)
+    
+    # Test THEMATIC_RESEARCH_VIEW
+    thematic_tests = [
+        {
+            'description': 'Basic thematic test',
+            'metrics': ['AVG_PRICE'],
+            'dimensions': ['TICKER'],
+            'limit': 5
+        },
+        {
+            'description': 'Complex thematic test',
+            'metrics': ['AVG_PRICE', 'TOTAL_VOLUME'],
+            'dimensions': ['TICKER', 'SECTOR', 'PRICE_DATE'],
+            'limit': 10
+        }
+    ]
+    test_semantic_view(session, 'AI.THEMATIC_RESEARCH_VIEW', thematic_tests)
+    
+    # Test CLIENT_MARKET_IMPACT_VIEW
+    client_tests = [
+        {
+            'description': 'Basic client test',
+            'metrics': ['ENGAGEMENT_COUNT'],
+            'dimensions': ['CLIENT_NAME'],
+            'limit': 5
+        },
+        {
+            'description': 'Complex client test',
+            'metrics': ['ENGAGEMENT_COUNT', 'TOTAL_AUM'],
+            'dimensions': ['CLIENT_NAME', 'CLIENT_TYPE', 'REGION'],
+            'limit': 10
+        }
+    ]
+    test_semantic_view(session, 'AI.CLIENT_MARKET_IMPACT_VIEW', client_tests)
+    
+    # Test GLOBAL_MACRO_SIGNALS_VIEW
+    macro_tests = [
+        {
+            'description': 'Basic macro test',
+            'metrics': ['AVG_SIGNAL_VALUE'],
+            'dimensions': ['SIGNAL_NAME'],
+            'limit': 5
+        },
+        {
+            'description': 'Complex macro test',
+            'metrics': ['AVG_SIGNAL_VALUE', 'AVG_CORRELATION'],
+            'dimensions': ['SIGNAL_NAME', 'SECTOR', 'SIGNAL_REGION'],
+            'limit': 10
+        }
+    ]
+    test_semantic_view(session, 'AI.GLOBAL_MACRO_SIGNALS_VIEW', macro_tests)
+    
+    print("\n   ✅ Semantic view testing completed")

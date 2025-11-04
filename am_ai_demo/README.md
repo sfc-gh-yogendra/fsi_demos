@@ -7,6 +7,8 @@ Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scen
 ## Available Scenarios by Role
 
 ### Portfolio Manager
+**[📖 View Portfolio Manager Scenarios](docs/demo_scenarios_portfolio_manager.md)**
+
 **Agent: Portfolio Copilot**
 - **Portfolio Insights & Benchmarking** ✅ **IMPLEMENTED**
   - Portfolio analytics that combines quantitative holdings data with qualitative research insights in seconds, enabling faster decision-making and better risk management.
@@ -22,6 +24,8 @@ Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scen
   - Thematic analysis that combines current portfolio positioning with comprehensive research synthesis to identify theme-based investment opportunities and optimize strategic allocation decisions.
 
 ### Research Analyst
+**[📖 View Research Analyst Scenarios](docs/demo_scenarios_research_analyst.md)**
+
 **Agent: Research Copilot**
 - **Document Research & Analysis** ✅ **IMPLEMENTED**
   - Research synthesis that analyzes thousands of documents across broker reports, earnings transcripts, and press releases to deliver comprehensive investment insights and market intelligence in seconds.
@@ -30,16 +34,22 @@ Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scen
   - Earnings analysis that combines transcript commentary with financial estimates, guidance tracking, and surprise calculations to provide comprehensive quarterly earnings insights.
 
 ### Quantitative Analyst
+**[📖 View Quantitative Analyst Scenarios](docs/demo_scenarios_quantitative_analyst.md)**
+
 **Agent: Quant Analyst**
 - **Factor Analysis & Performance Attribution** ✅ **IMPLEMENTED**
   - Factor analysis that screens portfolios against multiple quantitative factors, tracks factor evolution over time, and generates professional investment research reports with comprehensive statistical analysis.
 
 ### Client Relations
+**[📖 View Client Relations Scenarios](docs/demo_scenarios_client_relations.md)**
+
 **Agent: Sales Advisor**
 - **Client Reporting & Template Formatting** ✅ **IMPLEMENTED**
   - Client reporting that synthesizes portfolio data, performance metrics, and firm philosophy into professionally formatted quarterly letters following exact template specifications.
 
 ### Risk & Compliance Officer
+**[📖 View Risk & Compliance Scenarios](docs/demo_scenarios_risk_compliance.md)**
+
 **Agent: ESG Guardian**
 - **ESG Risk Monitoring & Policy Compliance** ✅ **IMPLEMENTED**
   - ESG monitoring that scans portfolio holdings against NGO reports and sustainability policies to identify controversies, assess severity, and recommend engagement actions aligned with firm ESG commitments.
@@ -47,6 +57,13 @@ Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scen
 **Agent: Compliance Advisor**
 - **Mandate Monitoring & Breach Detection** ✅ **IMPLEMENTED**
   - Mandate compliance that continuously monitors portfolio positions against investment guidelines, automatically detects concentration breaches and ESG violations, and cites specific policy sections for immediate remediation.
+
+### Middle Office Operations
+**[📖 View Middle Office Scenarios](docs/demo_scenarios_middle_office.md)**
+
+**Agent: Middle Office Copilot**
+- **NAV Calculation & Settlement Monitoring** ✅ **IMPLEMENTED**
+  - Operations intelligence that monitors trade settlements, reconciliation breaks, NAV calculations, corporate actions, and cash management across all portfolios and custodians—providing real-time exception management and automated root cause analysis for middle office operations teams.
 
 
 ## Quick Start
@@ -83,7 +100,7 @@ warehouse = "your-warehouse"
 ### Build Demo Environment (100% Real Assets)
 ```bash
 # Build everything with ~88,000 real securities (all scenarios)
-# Creates data, semantic views, search services, and all 7 agents automatically
+# Creates data, semantic views, search services, and all 8 agents automatically
 python python/main.py --connection-name my_demo_connection
 
 # Test mode: Build with ~8,800 securities for faster development testing
@@ -103,11 +120,11 @@ python python/main.py --connection-name my_demo_connection --scope search
 **What Gets Created:**
 - ✅ Database: `SAM_DEMO` with RAW, CURATED, and AI schemas
 - ✅ Data: ~88,000 real securities, portfolios, holdings, transactions, documents
-- ✅ Semantic Views: 4 views for portfolio analytics, research, quantitative analysis
+- ✅ Semantic Views: 7 views for portfolio analytics, research, quantitative analysis, implementation, SEC filings, supply chain, and middle office
 - ✅ Search Services: 12+ services for broker research, earnings, press releases, etc.
-- ✅ **Agents: All 7 agents automatically created in `SNOWFLAKE_INTELLIGENCE.AGENTS`**
+- ✅ **Agents: All 8 agents automatically created in `SNOWFLAKE_INTELLIGENCE.AGENTS`**
   - Portfolio Copilot, Research Copilot, Thematic Macro Advisor
-  - ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst
+  - ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst, Middle Office Copilot
 
 ## Next Steps After Build
 
@@ -166,7 +183,7 @@ UNION ALL SELECT 'Press Releases', COUNT(*) FROM SAM_DEMO.CURATED.PRESS_RELEASES
 
 ### 2. Verify Agents Created
 
-All 7 agents are automatically created during the build. Verify they exist:
+All 8 agents are automatically created during the build. Verify they exist:
 
 ```sql
 -- Check agents were created in Snowflake Intelligence
@@ -181,6 +198,7 @@ SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS;
 - `compliance_advisor` - Mandate monitoring and breach detection
 - `sales_advisor` - Client reporting and communications
 - `quant_analyst` - Factor analysis and performance attribution
+- `middle_office_copilot` - NAV calculation and settlement monitoring
 
 **Agent Details:**
 - All agents created with SQL `CREATE AGENT` statements
@@ -207,6 +225,11 @@ Navigate to **Snowflake Intelligence** in Snowsight and test with quick validati
 "Check ESG risks in our portfolios"
 ```
 
+**Middle Office Copilot:**
+```
+"Show me all failed settlements from the past 3 business days"
+```
+
 **Expected Response Format**: 
 - Professional formatting with tables and charts
 - Concentration warnings with severity indicators (⚠️, 🚨)
@@ -215,7 +238,9 @@ Navigate to **Snowflake Intelligence** in Snowsight and test with quick validati
 
 ### 4. Run Demo Scenarios
 
-Use the complete demo scripts in `docs/demo_scenarios.md` for professional demonstrations.
+Use the complete demo scripts organized by role:
+- **Index**: [`docs/demo_scenarios.md`](docs/demo_scenarios.md) - Overview with links to all role-specific scenarios
+- **Role-Specific Scenarios**: Each role has its own detailed demo script file with step-by-step conversation flows
 
 All agents are pre-configured and ready to use - no manual configuration needed!
 
@@ -263,7 +288,7 @@ All agents are pre-configured and ready to use - no manual configuration needed!
 │   ├── generate_unstructured.py # Unstructured content generation (template-based)
 │   ├── hydration_engine.py    # Template hydration engine
 │   ├── build_ai.py            # AI components (semantic views, search services, agents)
-│   ├── create_agents.py       # SQL-based agent creation (all 7 agents)
+│   ├── create_agents.py       # SQL-based agent creation (all 8 agents)
 │   └── extract_real_assets.py # Real asset view creation from SEC Filings
 ├── research/                   # Background research and analysis
 ├── .gitignore                  # Git ignore patterns (logs, cache, backups)
@@ -283,13 +308,14 @@ All agents are pre-configured and ready to use - no manual configuration needed!
   - Real SEC filing data (~74M records)
   - Synthetic market data for all securities
 - **AI Schema**: Enhanced semantic views and Cortex Search services
-  - 4 semantic views (Analyst, Research, Quant, Implementation)
+  - 7 semantic views (Analyst, Research, Quant, Implementation, SEC Filings, Supply Chain, Middle Office)
   - 12+ Cortex Search services with proper document linkage
 
 ### Snowflake Intelligence Agents: `SNOWFLAKE_INTELLIGENCE.AGENTS`
-- **Automated Creation**: All 7 agents created via SQL during build process
+- **Automated Creation**: All 8 agents created via SQL during build process
   - Portfolio Copilot, Research Copilot, Thematic Macro Advisor
   - ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst
+  - Middle Office Copilot
 - **Implementation**: `python/create_agents.py` with proper YAML formatting
 - **Availability**: Immediately available in Snowflake Intelligence UI
 
@@ -299,7 +325,7 @@ All agents are pre-configured and ready to use - no manual configuration needed!
 
 **Agent Configuration Standards**:
 - [`docs/agents_setup.md`](docs/agents_setup.md) - **Production-Ready Agent Configurations**
-  - All 7 agents fully configured with comprehensive tool descriptions
+  - All 8 agents fully configured with comprehensive tool descriptions
   - Complete response and orchestration instructions
   - Aligned with Snowflake Intelligence best practices
   - Used as source for automated SQL-based agent creation
@@ -314,12 +340,13 @@ All agents are pre-configured and ready to use - no manual configuration needed!
   - Validation checklist and quality assurance guidance
 
 **Demo Scenarios**:
-- [`docs/demo_scenarios.md`](docs/demo_scenarios.md) - Complete demo scripts with conversation flows
-  - Portfolio Manager scenarios (Portfolio Copilot, Thematic Macro Advisor)
-  - Research Analyst scenarios (Research Copilot)
-  - Risk & Compliance scenarios (ESG Guardian, Compliance Advisor)
-  - Client Relations scenarios (Sales Advisor)
-  - Quantitative Analyst scenarios (Quant Analyst)
+- [`docs/demo_scenarios.md`](docs/demo_scenarios.md) - Index and overview of all demo scenarios organized by role
+- [`docs/demo_scenarios_portfolio_manager.md`](docs/demo_scenarios_portfolio_manager.md) - Portfolio Manager scenarios (Portfolio Copilot, Thematic Macro Advisor)
+- [`docs/demo_scenarios_research_analyst.md`](docs/demo_scenarios_research_analyst.md) - Research Analyst scenarios (Research Copilot)
+- [`docs/demo_scenarios_quantitative_analyst.md`](docs/demo_scenarios_quantitative_analyst.md) - Quantitative Analyst scenarios (Quant Analyst)
+- [`docs/demo_scenarios_client_relations.md`](docs/demo_scenarios_client_relations.md) - Client Relations scenarios (Sales Advisor)
+- [`docs/demo_scenarios_risk_compliance.md`](docs/demo_scenarios_risk_compliance.md) - Risk & Compliance scenarios (ESG Guardian, Compliance Advisor)
+- [`docs/demo_scenarios_middle_office.md`](docs/demo_scenarios_middle_office.md) - Middle Office Operations scenarios (Middle Office Copilot)
 
 **Data Model**:
 - [`docs/data_model.md`](docs/data_model.md) - Industry-standard data architecture

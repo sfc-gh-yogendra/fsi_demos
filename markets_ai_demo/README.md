@@ -81,15 +81,22 @@ The setup process will:
 4. ✅ Generate unstructured data using Cortex Complete
 5. ✅ Create semantic views for Cortex Analyst
 6. ✅ Create Cortex Search services
-7. ✅ Validate all components
+7. ✅ **Create Snowflake Intelligence agents automatically via SQL**
+8. ✅ Validate all components
 
-## 🤖 Agent Configuration
+## 🤖 Agents (Automatically Created)
 
-After setup completes, configure agents in Snowsight:
+The setup process **automatically creates** all agents via SQL - no manual configuration needed!
 
-1. Open **Snowsight** → **AI & ML** → **Snowflake Intelligence**
-2. Click **Create Agent**
-3. Follow detailed instructions in **[📖 Agent Setup Guide](docs/agent_setup_instructions.md)**
+**Agents Created:**
+- **Earnings Analysis Assistant** - Analyzes quarterly earnings, consensus estimates, and management commentary
+- **Thematic Investment Research Assistant** - Discovers emerging themes and cross-sector trends
+- **Global Macro Strategy Assistant** - Analyzes proprietary macroeconomic signals and develops investment strategies
+
+After setup completes, agents are immediately available in:
+**Snowsight** → **AI & ML** → **Snowflake Intelligence**
+
+> **Note**: Agents are created using SQL `CREATE AGENT` statements during setup. See `.cursor/rules/agent-creation.mdc` for implementation details.
 
 ## 🎭 Demo Delivery
 
@@ -119,28 +126,35 @@ For complete demo scripts, talking points, and delivery guidance:
 ### Database Structure
 ```
 MARKETS_AI_DEMO/
-├── RAW_DATA/           # Source data tables
-│   ├── COMPANIES
-│   ├── HISTORICAL_STOCK_PRICES  
-│   ├── CONSENSUS_ESTIMATES
-│   ├── CLIENT_PROFILES
-│   ├── CLIENT_TRADING_ACTIVITY
-│   ├── CLIENT_ENGAGEMENT
-│   ├── CLIENT_DISCUSSIONS
-│   ├── SEC_FILINGS_RAW
-│   ├── EARNINGS_CALL_TRANSCRIPTS
-│   ├── NEWS_ARTICLES
-│   └── ...
-├── ENRICHED_DATA/      # AI-processed data
-│   ├── EARNINGS_ACTUALS
-│   └── THEMATIC_INTELLIGENCE
-└── ANALYTICS/          # Semantic views & search services
-    ├── EARNINGS_ANALYSIS_VIEW
-    ├── THEMATIC_RESEARCH_VIEW
-    ├── CLIENT_MARKET_IMPACT_VIEW
-    ├── EARNINGS_TRANSCRIPTS_SEARCH
-    ├── RESEARCH_REPORTS_SEARCH
-    └── NEWS_ARTICLES_SEARCH
+├── RAW/                # Raw external data and unstructured documents
+│   ├── MASTER_EVENT_LOG
+│   ├── PROPRIETARY_SIGNALS
+│   ├── ECONOMIC_REGIONS
+│   ├── SECTOR_MACRO_CORRELATIONS
+│   ├── SEC_FILINGS_CORPUS
+│   ├── EARNINGS_TRANSCRIPTS_CORPUS
+│   ├── NEWS_ARTICLES_CORPUS
+│   └── RESEARCH_REPORTS_CORPUS
+├── CURATED/            # Industry-standard dimension/fact model
+│   ├── DIM_COMPANY
+│   ├── DIM_CLIENT
+│   ├── DIM_COMPANY_GEO_REVENUE
+│   ├── DIM_COMPANY_CREDIT_RATING
+│   ├── FACT_STOCK_PRICE_DAILY
+│   ├── FACT_CONSENSUS_ESTIMATE
+│   ├── FACT_CLIENT_TRADE
+│   ├── FACT_PORTFOLIO_HOLDING
+│   ├── FACT_CLIENT_ENGAGEMENT
+│   ├── FACT_CLIENT_DISCUSSION
+│   └── FACT_EARNINGS_ACTUAL
+└── AI/                 # Semantic views, Cortex Search services, AI components
+    ├── EARNINGS_ANALYSIS_VIEW (semantic view)
+    ├── THEMATIC_RESEARCH_VIEW (semantic view)
+    ├── CLIENT_MARKET_IMPACT_VIEW (semantic view)
+    ├── GLOBAL_MACRO_SIGNALS_VIEW (semantic view)
+    ├── EARNINGS_TRANSCRIPTS_SEARCH (search service)
+    ├── RESEARCH_REPORTS_SEARCH (search service)
+    └── NEWS_ARTICLES_SEARCH (search service)
 ```
 
 ### Key Design Principles
@@ -258,9 +272,9 @@ DROP DATABASE IF EXISTS MARKETS_AI_DEMO CASCADE;
 Before presenting:
 - [ ] Run full setup successfully (`python setup.py --mode=full`)
 - [ ] Validate all components pass tests
-- [ ] Configure both agents in Snowsight ([Agent Setup Guide](docs/agent_setup_instructions.md))
-- [ ] Test sample queries for each scenario  
-- [ ] Verify search services are indexed (check search_service_status)
+- [ ] Verify agents were created (check Snowflake Intelligence UI)
+- [ ] Test sample queries for each agent/scenario  
+- [ ] Verify search services are indexed (wait 5-10 minutes after setup)
 - [ ] Practice demo script timing ([Demo Script](docs/demo_script.md))
 - [ ] Review client-specific talking points
 

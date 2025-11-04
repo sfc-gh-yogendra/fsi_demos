@@ -71,8 +71,8 @@ SECURITIES = {
         'etfs': 1000
     },
     'real_assets_view': 'V_REAL_ASSETS',
-    'sec_filings_database': 'SNOWFLAKE_PUBLIC_DATA_FREE', # 'SEC_FILINGS',
-    'sec_filings_schema': 'PUBLIC_DATA_FREE'
+    'sec_filings_database': 'SEC_FILINGS', #'SNOWFLAKE_PUBLIC_DATA_FREE',
+    'sec_filings_schema': 'CYBERSYN' #'PUBLIC_DATA_FREE'
 }
 
 # Helper function for test mode counts
@@ -453,7 +453,8 @@ AVAILABLE_SCENARIOS = [
     'esg_guardian',
     'sales_advisor',
     'quant_analyst',
-    'compliance_advisor'
+    'compliance_advisor',
+    'middle_office_copilot'
 ]
 
 SCENARIO_DATA_REQUIREMENTS = {
@@ -464,6 +465,7 @@ SCENARIO_DATA_REQUIREMENTS = {
     'sales_advisor': ['sales_templates', 'philosophy_docs', 'policy_docs'],
     'quant_analyst': ['broker_research', 'earnings_transcripts'],
     'compliance_advisor': ['policy_docs', 'engagement_notes', 'form_adv', 'form_crs', 'regulatory_updates'],
+    'middle_office_copilot': ['custodian_reports', 'reconciliation_notes', 'ssi_documents', 'ops_procedures'],
     'mandate_compliance': ['report_templates']  # Alias for portfolio_copilot mandate compliance mode
 }
 
@@ -476,6 +478,96 @@ CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CONFIG_DIR)
 CONTENT_LIBRARY_PATH = os.path.join(PROJECT_ROOT, 'content_library')
 CONTENT_VERSION = '1.0'
+
+# =============================================================================
+# SECTOR MAPPING CONFIGURATION (for template selection)
+# =============================================================================
+
+# Map SIC industry descriptions to GICS sectors for template matching
+SIC_TO_GICS_MAPPING = {
+    'Information Technology': [
+        'software', 'computer programming', 'prepackaged software', 'data processing',
+        'computer systems design', 'information retrieval', 'computer facilities',
+        'semiconductors', 'electronic computers', 'computer peripheral',
+        'computer integrated systems', 'computer storage devices', 'computer terminals'
+    ],
+    'Health Care': [
+        'pharmaceutical', 'drugs', 'medicinal', 'biological', 'medical',
+        'hospital', 'health', 'diagnostic', 'surgical', 'dental',
+        'biotechnology', 'medical instruments', 'medical laboratories'
+    ],
+    'Consumer Discretionary': [
+        'retail', 'automobile', 'motor vehicle', 'apparel', 'restaurant',
+        'hotel', 'broadcasting', 'cable', 'media', 'entertainment', 'leisure',
+        'department store', 'specialty retail', 'home furnishing'
+    ],
+    'Financials': [
+        'bank', 'insurance', 'investment', 'securities', 'credit',
+        'finance', 'real estate', 'mortgage', 'savings institution',
+        'asset management', 'capital markets'
+    ],
+    'Energy': [
+        'oil', 'gas', 'petroleum', 'crude', 'coal', 'energy',
+        'exploration', 'drilling', 'refining', 'pipeline'
+    ],
+    'Industrials': [
+        'aerospace', 'defense', 'construction', 'machinery', 'equipment',
+        'transportation', 'airline', 'railroad', 'trucking', 'freight',
+        'engineering', 'electrical equipment', 'industrial machinery'
+    ],
+    'Consumer Staples': [
+        'food', 'beverage', 'tobacco', 'household products', 'personal products',
+        'grocery', 'packaged foods', 'soft drinks'
+    ],
+    'Materials': [
+        'chemicals', 'metals', 'mining', 'paper', 'packaging',
+        'steel', 'aluminum', 'gold', 'silver', 'construction materials'
+    ],
+    'Utilities': [
+        'electric', 'water', 'natural gas utility', 'power generation',
+        'electric services', 'water supply'
+    ],
+    'Communication Services': [
+        'telecommunications', 'wireless', 'internet services', 'social media',
+        'telephone communications', 'cable television'
+    ],
+    'Real Estate': [
+        'reit', 'real estate investment', 'property management',
+        'real estate operating', 'real estate development'
+    ]
+}
+
+# =============================================================================
+# EXECUTIVE NAMES CONFIGURATION (for earnings transcripts)
+# =============================================================================
+
+# Realistic executive names for deterministic generation in earnings transcripts
+EXECUTIVE_NAMES = {
+    'ceo': {
+        'first_names': [
+            'Satya', 'Tim', 'Sundar', 'Lisa', 'Pat', 'Amy', 'Jensen', 'Mark', 'Andy', 'Mary',
+            'Brian', 'Shantanu', 'Arvind', 'Thomas', 'Daniel', 'Sarah', 'Michael', 'Karen', 'David', 'Jennifer',
+            'Robert', 'Susan', 'James', 'Patricia', 'John', 'Linda', 'William', 'Barbara', 'Richard', 'Elizabeth'
+        ],
+        'last_names': [
+            'Nadella', 'Cook', 'Pichai', 'Su', 'Gelsinger', 'Hood', 'Huang', 'Zuckerberg', 'Jassy', 'Barra',
+            'Chesky', 'Narayen', 'Krishna', 'Kurian', 'Ek', 'Friar', 'Rapino', 'Lynch', 'Solomon', 'Morgan',
+            'Anderson', 'Thompson', 'Martinez', 'Garcia', 'Rodriguez', 'Wilson', 'Taylor', 'Moore', 'Jackson', 'White'
+        ]
+    },
+    'cfo': {
+        'first_names': [
+            'Amy', 'Luca', 'Ruth', 'Dave', 'Safra', 'Brian', 'Colette', 'David', 'Kelly', 'Jason',
+            'Melissa', 'Peter', 'Christine', 'James', 'Rebecca', 'Frank', 'Kathleen', 'Martin', 'Susan', 'Robert',
+            'Matthew', 'Nancy', 'Christopher', 'Betty', 'Daniel', 'Helen', 'Paul', 'Sandra', 'Mark', 'Donna'
+        ],
+        'last_names': [
+            'Hood', 'Maestri', 'Porat', 'Wehner', 'Catz', 'Olsavsky', 'Kress', 'Bozeman', 'Kramer', 'Child',
+            'Fisher', 'Zaffino', 'McCarthy', 'Bell', 'Benzschawel', 'Milligan', 'Osberg', 'Whitehurst', 'Mahoney', 'Shanks',
+            'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott'
+        ]
+    }
+}
 
 # Document generation volumes
 DOCUMENT_GENERATION = {
@@ -774,6 +866,51 @@ DOCUMENT_TYPES = {
             'title': 'Major Earthquake Disrupts Taiwan Semiconductor Production',
             'impact_description': 'A 7.2 magnitude earthquake has struck central Taiwan, affecting major semiconductor manufacturing facilities including TSMC fabs. Production halts expected for 2-4 weeks with downstream supply chain impacts on global technology and automotive sectors.'
         }
+    },
+    'custodian_reports': {
+        'table_name': 'CUSTODIAN_REPORTS_RAW',
+        'corpus_name': 'CUSTODIAN_REPORTS_CORPUS',
+        'search_service': 'SAM_CUSTODIAN_REPORTS',
+        'word_count_range': (500, 800),
+        'applies_to': 'portfolios',
+        'linkage_level': 'portfolio',
+        'template_dir': 'portfolio/custodian_reports',
+        'report_types': ['daily_holdings', 'cash_statement', 'transaction_summary'],
+        'portfolios': DEMO_PORTFOLIOS_WITH_DOCS,
+        'docs_per_portfolio': 3
+    },
+    'reconciliation_notes': {
+        'table_name': 'RECONCILIATION_NOTES_RAW',
+        'corpus_name': 'RECONCILIATION_NOTES_CORPUS',
+        'search_service': 'SAM_RECONCILIATION_NOTES',
+        'word_count_range': (200, 400),
+        'applies_to': None,
+        'linkage_level': 'global',
+        'template_dir': 'global/reconciliation_notes',
+        'break_types': ['position_break', 'cash_break', 'price_break', 'corporate_action_break'],
+        'docs_total': 8
+    },
+    'ssi_documents': {
+        'table_name': 'SSI_DOCUMENTS_RAW',
+        'corpus_name': 'SSI_DOCUMENTS_CORPUS',
+        'search_service': 'SAM_SSI_DOCUMENTS',
+        'word_count_range': (300, 600),
+        'applies_to': None,
+        'linkage_level': 'global',
+        'template_dir': 'global/ssi_documents',
+        'instruction_types': ['equity_settlement', 'fx_settlement', 'bond_settlement'],
+        'docs_total': 6
+    },
+    'ops_procedures': {
+        'table_name': 'OPS_PROCEDURES_RAW',
+        'corpus_name': 'OPS_PROCEDURES_CORPUS',
+        'search_service': 'SAM_OPS_PROCEDURES',
+        'word_count_range': (800, 1500),
+        'applies_to': None,
+        'linkage_level': 'global',
+        'template_dir': 'global/ops_procedures',
+        'procedure_types': ['settlement_failure_resolution', 'nav_calculation_process', 'reconciliation_workflow'],
+        'docs_total': 3
     }
 }
 

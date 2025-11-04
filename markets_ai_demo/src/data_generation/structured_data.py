@@ -40,14 +40,19 @@ def generate_all_structured_data(session: Session) -> None:
     print("   🌍 Generating third-party vendor data...")
     generate_vendor_data(session)
     
+    print("   🌍 Generating macroeconomic signals...")
+    # Import macro data generation
+    from data_generation.macro_data import generate_all_macro_data
+    generate_all_macro_data(session)
+    
     print("   ✅ All structured data generated")
 
 
 def generate_companies(session: Session) -> None:
-    """Generate the companies table with real tickers"""
+    """Generate the companies dimension table with real tickers"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE COMPANIES (
+    CREATE OR REPLACE TABLE CURATED.DIM_COMPANY (
         TICKER VARCHAR(10) PRIMARY KEY,
         COMPANY_NAME VARCHAR(100),
         SECTOR VARCHAR(100),
@@ -77,14 +82,14 @@ def generate_companies(session: Session) -> None:
     ]
     
     companies_df = session.create_dataframe(company_data)
-    companies_df.write.mode("overwrite").save_as_table("COMPANIES")
+    companies_df.write.mode("overwrite").save_as_table("CURATED.DIM_COMPANY")
 
 
 def generate_historical_stock_prices(session: Session) -> None:
-    """Generate historical stock prices with event-driven volatility"""
+    """Generate historical stock prices fact table with event-driven volatility"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE HISTORICAL_STOCK_PRICES (
+    CREATE OR REPLACE TABLE CURATED.FACT_STOCK_PRICE_DAILY (
         TICKER VARCHAR(10),
         PRICE_DATE DATE,
         OPEN NUMBER(18, 4),
@@ -98,7 +103,7 @@ def generate_historical_stock_prices(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get events for price impact calculation
-    events_df = session.table("MASTER_EVENT_LOG").collect()
+    events_df = session.table("RAW.MASTER_EVENT_LOG").collect()
     events_by_ticker = {}
     for event in events_df:
         ticker = event['AFFECTED_TICKER']
@@ -174,16 +179,16 @@ def generate_historical_stock_prices(session: Session) -> None:
         batch_df = session.create_dataframe(batch)
         
         if i == 0:
-            batch_df.write.mode("overwrite").save_as_table("HISTORICAL_STOCK_PRICES")
+            batch_df.write.mode("overwrite").save_as_table("CURATED.FACT_STOCK_PRICE_DAILY")
         else:
-            batch_df.write.mode("append").save_as_table("HISTORICAL_STOCK_PRICES")
+            batch_df.write.mode("append").save_as_table("CURATED.FACT_STOCK_PRICE_DAILY")
 
 
 def generate_consensus_estimates(session: Session) -> None:
-    """Generate consensus estimates from fictional providers"""
+    """Generate consensus estimates fact table from fictional providers"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE CONSENSUS_ESTIMATES (
+    CREATE OR REPLACE TABLE CURATED.FACT_CONSENSUS_ESTIMATE (
         TICKER VARCHAR(10),
         FISCAL_QUARTER VARCHAR(7),
         METRIC_NAME VARCHAR(50),
@@ -201,7 +206,7 @@ def generate_consensus_estimates(session: Session) -> None:
     
     for ticker in DemoConfig.TICKER_LIST:
         # Get company info for scaling estimates
-        companies_data = session.table("COMPANIES").filter(col("TICKER") == ticker).collect()
+        companies_data = session.table("CURATED.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
         market_cap = companies_data[0]['MARKET_CAP_BILLIONS'] if companies_data else 100
         
         for quarter in quarters:
@@ -227,15 +232,15 @@ def generate_consensus_estimates(session: Session) -> None:
                     })
     
     estimates_df = session.create_dataframe(estimates_data)
-    estimates_df.write.mode("overwrite").save_as_table("CONSENSUS_ESTIMATES")
+    estimates_df.write.mode("overwrite").save_as_table("CURATED.FACT_CONSENSUS_ESTIMATE")
 
 
 def generate_client_data(session: Session) -> None:
-    """Generate client profiles and trading activity"""
+    """Generate client dimension and trading activity fact tables"""
     
-    # Client profiles table
+    # Client profiles dimension table
     create_clients_sql = """
-    CREATE OR REPLACE TABLE CLIENT_PROFILES (
+    CREATE OR REPLACE TABLE CURATED.DIM_CLIENT (
         CLIENT_ID STRING PRIMARY KEY,
         CLIENT_NAME VARCHAR(100),
         CLIENT_TYPE VARCHAR(50),
@@ -287,11 +292,11 @@ def generate_client_data(session: Session) -> None:
         })
     
     clients_df = session.create_dataframe(clients_data)
-    clients_df.write.mode("overwrite").save_as_table("CLIENT_PROFILES")
+    clients_df.write.mode("overwrite").save_as_table("CURATED.DIM_CLIENT")
     
-    # Client trading activity (focused on derivatives for EMIR 3.0 scenario)
+    # Client trading activity fact table (focused on derivatives for EMIR 3.0 scenario)
     create_trading_sql = """
-    CREATE OR REPLACE TABLE CLIENT_TRADING_ACTIVITY (
+    CREATE OR REPLACE TABLE CURATED.FACT_CLIENT_TRADE (
         CLIENT_ID STRING,
         TRADE_DATE DATE,
         NOTIONAL_VALUE NUMBER(20, 2),
@@ -340,7 +345,7 @@ def generate_client_data(session: Session) -> None:
             })
     
     trading_df = session.create_dataframe(trading_data)
-    trading_df.write.mode("overwrite").save_as_table("CLIENT_TRADING_ACTIVITY")
+    trading_df.write.mode("overwrite").save_as_table("CURATED.FACT_CLIENT_TRADE")
     
     # Generate CLIENT_ENGAGEMENT data for Market Structure Reports scenario
     generate_client_engagement(session, clients_data)
@@ -354,9 +359,9 @@ def generate_client_data(session: Session) -> None:
 def generate_portfolio_data(session: Session) -> None:
     """Generate firm portfolio holdings and trades"""
     
-    # Portfolio holdings
+    # Portfolio holdings fact table
     create_holdings_sql = """
-    CREATE OR REPLACE TABLE PORTFOLIO_HOLDINGS (
+    CREATE OR REPLACE TABLE CURATED.FACT_PORTFOLIO_HOLDING (
         PORTFOLIO_ID VARCHAR(50),
         TICKER VARCHAR(10),
         QUANTITY NUMBER(18, 0),
@@ -377,7 +382,7 @@ def generate_portfolio_data(session: Session) -> None:
     
     # Get latest prices for market value calculation
     for ticker in DemoConfig.TICKER_LIST:
-        price_data = session.table("HISTORICAL_STOCK_PRICES").filter(col("TICKER") == ticker).sort(col("PRICE_DATE").desc()).limit(1).collect()
+        price_data = session.table("CURATED.FACT_STOCK_PRICE_DAILY").filter(col("TICKER") == ticker).sort(col("PRICE_DATE").desc()).limit(1).collect()
         if price_data:
             latest_prices[ticker] = price_data[0]['CLOSE']
         else:
@@ -409,7 +414,7 @@ def generate_portfolio_data(session: Session) -> None:
                 })
     
     holdings_df = session.create_dataframe(holdings_data)
-    holdings_df.write.mode("overwrite").save_as_table("PORTFOLIO_HOLDINGS")
+    holdings_df.write.mode("overwrite").save_as_table("CURATED.FACT_PORTFOLIO_HOLDING")
 
 
 def generate_vendor_data(session: Session) -> None:
@@ -417,7 +422,7 @@ def generate_vendor_data(session: Session) -> None:
     
     # FactSet Geographic Revenue data
     create_geo_revenue_sql = """
-    CREATE OR REPLACE TABLE FACTSET_GEO_REVENUE (
+    CREATE OR REPLACE TABLE CURATED.DIM_COMPANY_GEO_REVENUE (
         TICKER VARCHAR(10),
         COUNTRY VARCHAR(50),
         REVENUE_PERCENTAGE FLOAT
@@ -451,11 +456,11 @@ def generate_vendor_data(session: Session) -> None:
                 })
     
     geo_revenue_df = session.create_dataframe(geo_revenue_data)
-    geo_revenue_df.write.mode("overwrite").save_as_table("FACTSET_GEO_REVENUE")
+    geo_revenue_df.write.mode("overwrite").save_as_table("CURATED.DIM_COMPANY_GEO_REVENUE")
     
-    # S&P Credit Ratings
+    # S&P Credit Ratings (company dimension extension)
     create_ratings_sql = """
-    CREATE OR REPLACE TABLE SP_CREDIT_RATINGS (
+    CREATE OR REPLACE TABLE CURATED.DIM_COMPANY_CREDIT_RATING (
         TICKER VARCHAR(10),
         RATING VARCHAR(10),
         RATING_DATE DATE,
@@ -470,7 +475,7 @@ def generate_vendor_data(session: Session) -> None:
     
     for ticker in DemoConfig.TICKER_LIST:
         # Assign ratings based on company size/stability
-        companies_data = session.table("COMPANIES").filter(col("TICKER") == ticker).collect()
+        companies_data = session.table("CURATED.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
         if companies_data:
             market_cap = companies_data[0]['MARKET_CAP_BILLIONS']
             sector = companies_data[0]['SECTOR']
@@ -500,15 +505,15 @@ def generate_vendor_data(session: Session) -> None:
         })
     
     ratings_df = session.create_dataframe(ratings_data)
-    ratings_df.write.mode("overwrite").save_as_table("SP_CREDIT_RATINGS")
+    ratings_df.write.mode("overwrite").save_as_table("CURATED.DIM_COMPANY_CREDIT_RATING")
 
 
 def generate_client_engagement(session: Session, clients_data: list) -> None:
     """Generate client engagement data for Market Structure Reports scenario"""
     
-    # Create CLIENT_ENGAGEMENT table
+    # Create CLIENT_ENGAGEMENT fact table
     create_engagement_sql = """
-    CREATE OR REPLACE TABLE CLIENT_ENGAGEMENT (
+    CREATE OR REPLACE TABLE CURATED.FACT_CLIENT_ENGAGEMENT (
         CLIENT_ID STRING,
         CONTENT_ID STRING,
         ENGAGEMENT_TYPE VARCHAR(20),
@@ -591,8 +596,8 @@ def generate_client_engagement(session: Session, clients_data: list) -> None:
                     })
     
     if engagement_data:
-        engagement_df = session.create_dataframe(engagement_data)
-        engagement_df.write.mode("overwrite").save_as_table("CLIENT_ENGAGEMENT")
+    engagement_df = session.create_dataframe(engagement_data)
+    engagement_df.write.mode("overwrite").save_as_table("CURATED.FACT_CLIENT_ENGAGEMENT")
     
     print(f"   📈 Client engagement data: {len(engagement_data)} interactions")
 
@@ -600,9 +605,9 @@ def generate_client_engagement(session: Session, clients_data: list) -> None:
 def generate_client_discussions(session: Session, clients_data: list) -> None:
     """Generate client discussions data to track one-on-one meetings"""
     
-    # Create CLIENT_DISCUSSIONS table
+    # Create CLIENT_DISCUSSIONS fact table
     create_discussions_sql = """
-    CREATE OR REPLACE TABLE CLIENT_DISCUSSIONS (
+    CREATE OR REPLACE TABLE CURATED.FACT_CLIENT_DISCUSSION (
         CLIENT_ID STRING,
         DISCUSSION_DATE DATE,
         DISCUSSION_TYPE VARCHAR(50),
@@ -706,6 +711,6 @@ def generate_client_discussions(session: Session, clients_data: list) -> None:
     
     if discussion_data:
         discussions_df = session.create_dataframe(discussion_data)
-        discussions_df.write.mode("overwrite").save_as_table("CLIENT_DISCUSSIONS")
+        discussions_df.write.mode("overwrite").save_as_table("CURATED.FACT_CLIENT_DISCUSSION")
     
     print(f"   💬 Client discussions data: {len(discussion_data)} meetings")

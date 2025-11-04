@@ -53,3 +53,17 @@ description: Project structure and file organization standards
 - README with setup instructions
 - Inline comments for complex business logic
 - Agent configuration examples in agents.py
+
+## Database Schema Standards
+When creating tables, follow these naming and placement rules:
+
+### Table Naming
+- **Dimensions**: `DIM_` prefix (e.g., `DIM_COMPANY`, `DIM_CLIENT`)
+- **Facts**: `FACT_` prefix (e.g., `FACT_STOCK_PRICE_DAILY`, `FACT_CLIENT_TRADE`)
+- **Unstructured**: `_CORPUS` suffix (e.g., `SEC_FILINGS_CORPUS`, `NEWS_ARTICLES_CORPUS`)
+- **Reference**: No prefix (e.g., `MASTER_EVENT_LOG`, `ECONOMIC_REGIONS`)
+
+### Schema Placement
+- **RAW**: Raw data sources and unstructured documents
+- **CURATED**: Dimension/fact model for analysis (all DIM_* and FACT_* tables)
+- **AI**: Semantic views and Cortex Search services (created by AI components, not manually)

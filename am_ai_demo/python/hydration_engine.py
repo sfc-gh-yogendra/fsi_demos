@@ -166,13 +166,19 @@ def select_template(templates: List[Dict[str, Any]], context: Dict[str, Any]) ->
     entity_id = context.get('SECURITY_ID') or context.get('ISSUER_ID') or context.get('PORTFOLIO_ID') or 0
     doc_type = context.get('_doc_type', 'unknown')
     
-    # Sector-aware routing: try to match template sector_tags to entity sector
+    # Sector-aware routing: map SIC description to GICS sector for template matching
     entity_sector = context.get('SIC_DESCRIPTION', '')
     
-    # Filter templates matching entity sector
+    # Map SIC descriptions to GICS sectors for template matching
+    gics_sector = map_sic_to_gics(entity_sector)
+    
+    # Filter templates matching entity sector (check both SIC description and mapped GICS sector)
     sector_matched = [
         t for t in templates 
-        if entity_sector in t['metadata'].get('sector_tags', [])
+        if any([
+            entity_sector in t['metadata'].get('sector_tags', []),
+            gics_sector in t['metadata'].get('sector_tags', [])
+        ])
     ]
     
     # Use sector-matched templates if available, otherwise use all templates
@@ -183,6 +189,27 @@ def select_template(templates: List[Dict[str, Any]], context: Dict[str, Any]) ->
     selected = candidate_templates[template_index]
     
     return selected
+
+def map_sic_to_gics(sic_description: str) -> str:
+    """
+    Map SIC industry description to GICS sector for template matching.
+    Uses centralized mapping from config.SIC_TO_GICS_MAPPING.
+    
+    Args:
+        sic_description: SIC industry description from DIM_ISSUER
+    
+    Returns:
+        GICS sector name
+    """
+    sic_lower = sic_description.lower()
+    
+    # Check each GICS sector's keywords from config
+    for gics_sector, keywords in config.SIC_TO_GICS_MAPPING.items():
+        if any(keyword in sic_lower for keyword in keywords):
+            return gics_sector
+    
+    # Default to empty if no match
+    return ''
 
 def select_portfolio_review_variant(templates: List[Dict[str, Any]], context: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -673,12 +700,19 @@ def generate_provider_context(context: Dict[str, Any], doc_type: str) -> Dict[st
         provider_context['NEXT_YEAR'] = str(datetime.now().year + 1)
     
     elif doc_type == 'earnings_transcripts':
-        # Generate executive names deterministically
-        ceo_id = hash(f"{entity_id}:ceo:{config.RNG_SEED}") % 100
-        provider_context['CEO_NAME'] = f'CEO_{ceo_id:02d}'
+        # Generate realistic executive names deterministically from config
+        ceo_first_names = config.EXECUTIVE_NAMES['ceo']['first_names']
+        ceo_last_names = config.EXECUTIVE_NAMES['ceo']['last_names']
+        cfo_first_names = config.EXECUTIVE_NAMES['cfo']['first_names']
+        cfo_last_names = config.EXECUTIVE_NAMES['cfo']['last_names']
         
-        cfo_id = hash(f"{entity_id}:cfo:{config.RNG_SEED}") % 100
-        provider_context['CFO_NAME'] = f'CFO_{cfo_id:02d}'
+        ceo_first_index = hash(f"{entity_id}:ceo_first:{config.RNG_SEED}") % len(ceo_first_names)
+        ceo_last_index = hash(f"{entity_id}:ceo_last:{config.RNG_SEED}") % len(ceo_last_names)
+        provider_context['CEO_NAME'] = f'{ceo_first_names[ceo_first_index]} {ceo_last_names[ceo_last_index]}'
+        
+        cfo_first_index = hash(f"{entity_id}:cfo_first:{config.RNG_SEED}") % len(cfo_first_names)
+        cfo_last_index = hash(f"{entity_id}:cfo_last:{config.RNG_SEED}") % len(cfo_last_names)
+        provider_context['CFO_NAME'] = f'{cfo_first_names[cfo_first_index]} {cfo_last_names[cfo_last_index]}'
         
         # Add quarter-specific context
         quarter_num = int(context.get('FISCAL_QUARTER', 'Q1 2024')[1])
@@ -748,27 +782,32 @@ def generate_provider_context(context: Dict[str, Any], doc_type: str) -> Dict[st
         market_index = hash(f"{entity_id}:market:{config.RNG_SEED}") % len(market_conditions)
         provider_context['MARKET_CONDITION'] = market_conditions[market_index]
         
-        # Mechanism of action (for healthcare)
-        mechanisms = ['dual GLP-1/GIP receptor agonism', 'selective insulin receptor modulation', 'novel glucose regulation pathway']
-        mech_index = hash(f"{entity_id}:mechanism:{config.RNG_SEED}") % len(mechanisms)
-        provider_context['MECHANISM'] = mechanisms[mech_index]
+        # Get sector to generate appropriate context
+        entity_sector = context.get('SIC_DESCRIPTION', '')
         
-        # Pipeline asset names
-        pipeline_assets = ['Compound-247', 'BIO-553', 'TherapX-901']
-        pipeline_index = hash(f"{entity_id}:pipeline:{config.RNG_SEED}") % len(pipeline_assets)
-        provider_context['PIPELINE_ASSET'] = pipeline_assets[pipeline_index]
+        # Healthcare-specific placeholders (only for Health Care sector)
+        if 'Health Care' in entity_sector or 'Pharmaceuticals' in entity_sector or 'Medical' in entity_sector:
+            # Mechanism of action (for healthcare)
+            mechanisms = ['dual GLP-1/GIP receptor agonism', 'selective insulin receptor modulation', 'novel glucose regulation pathway']
+            mech_index = hash(f"{entity_id}:mechanism:{config.RNG_SEED}") % len(mechanisms)
+            provider_context['MECHANISM'] = mechanisms[mech_index]
+            
+            # Pipeline asset names
+            pipeline_assets = ['Compound-247', 'BIO-553', 'TherapX-901']
+            pipeline_index = hash(f"{entity_id}:pipeline:{config.RNG_SEED}") % len(pipeline_assets)
+            provider_context['PIPELINE_ASSET'] = pipeline_assets[pipeline_index]
+            
+            # Healthcare metrics that appear in earnings calls
+            provider_context['TARGET_PATIENTS'] = f'{random.randint(1, 10)}M'  # Format with M for millions
+            provider_context['PEAK_SHARE'] = str(random.randint(15, 35))
+            provider_context['RESPONSE_THRESHOLD'] = str(random.randint(40, 70))
+            provider_context['DIABETES_MARKET'] = str(random.randint(25, 65))
+            provider_context['PATENT_EXPIRY'] = str(random.randint(2028, 2035))
         
-        # Sustainability material
+        # Generic sustainability materials (for all sectors)
         sustainability_materials = ['100% recycled', '80% renewable', '75% sustainable']
         sustain_index = hash(f"{entity_id}:sustain:{config.RNG_SEED}") % len(sustainability_materials)
         provider_context['SUSTAINABLE_MATERIAL'] = sustainability_materials[sustain_index]
-        
-        # Healthcare metrics that appear in earnings calls
-        provider_context['TARGET_PATIENTS'] = f'{random.randint(1, 10)}M'  # Format with M for millions
-        provider_context['PEAK_SHARE'] = str(random.randint(15, 35))
-        provider_context['RESPONSE_THRESHOLD'] = str(random.randint(40, 70))
-        provider_context['DIABETES_MARKET'] = str(random.randint(25, 65))
-        provider_context['PATENT_EXPIRY'] = str(random.randint(2028, 2035))
     
     return provider_context
 

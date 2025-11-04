@@ -59,9 +59,9 @@ def generate_all_unstructured_data(session: Session) -> None:
 def generate_sec_filings(session: Session) -> None:
     """Generate SEC 10-Q filings using event-driven prompts"""
     
-    # Create table for SEC filings
+    # Create table for SEC filings corpus
     create_table_sql = """
-    CREATE OR REPLACE TABLE SEC_FILINGS_RAW (
+    CREATE OR REPLACE TABLE RAW.SEC_FILINGS_CORPUS (
         FILING_ID STRING,
         TICKER VARCHAR(10),
         FISCAL_QUARTER VARCHAR(7),
@@ -74,8 +74,8 @@ def generate_sec_filings(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get company and event data for context
-    companies = session.table("COMPANIES").collect()
-    events = session.table("MASTER_EVENT_LOG").collect()
+    companies = session.table("CURATED.DIM_COMPANY").collect()
+    events = session.table("RAW.MASTER_EVENT_LOG").collect()
     
     # Create events lookup
     events_by_ticker = {}
@@ -163,14 +163,14 @@ Instructions:
             })
     
     # Generate content using Cortex complete()
-    _generate_content_with_cortex(session, filing_prompts, "SEC_FILINGS_RAW")
+    _generate_content_with_cortex(session, filing_prompts, "RAW.SEC_FILINGS_CORPUS")
 
 
 def generate_earnings_transcripts(session: Session) -> None:
     """Generate earnings call transcripts"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE EARNINGS_CALL_TRANSCRIPTS (
+    CREATE OR REPLACE TABLE RAW.EARNINGS_TRANSCRIPTS_CORPUS (
         TRANSCRIPT_ID STRING,
         TICKER VARCHAR(10),
         FISCAL_QUARTER VARCHAR(7),
@@ -182,8 +182,8 @@ def generate_earnings_transcripts(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get data for context
-    companies = session.table("COMPANIES").collect()
-    events = session.table("MASTER_EVENT_LOG").collect()
+    companies = session.table("CURATED.DIM_COMPANY").collect()
+    events = session.table("RAW.MASTER_EVENT_LOG").collect()
     
     events_by_ticker = {}
     for event in events:
@@ -281,14 +281,14 @@ Style Guidelines:
                 "PROMPT": prompt
             })
     
-    _generate_content_with_cortex(session, transcript_prompts, "EARNINGS_CALL_TRANSCRIPTS")
+    _generate_content_with_cortex(session, transcript_prompts, "RAW.EARNINGS_TRANSCRIPTS_CORPUS")
 
 
 def generate_news_articles(session: Session) -> None:
-    """Generate news articles based on events"""
+    """Generate news articles corpus based on events"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE NEWS_ARTICLES (
+    CREATE OR REPLACE TABLE RAW.NEWS_ARTICLES_CORPUS (
         ARTICLE_ID STRING,
         AFFECTED_TICKER VARCHAR(10),
         PUBLISHED_AT TIMESTAMP_NTZ,
@@ -301,8 +301,8 @@ def generate_news_articles(session: Session) -> None:
     session.sql(create_table_sql).collect()
     
     # Get events to generate news articles
-    events = session.table("MASTER_EVENT_LOG").collect()
-    companies = {row['TICKER']: row['COMPANY_NAME'] for row in session.table("COMPANIES").collect()}
+    events = session.table("RAW.MASTER_EVENT_LOG").collect()
+    companies = {row['TICKER']: row['COMPANY_NAME'] for row in session.table("CURATED.DIM_COMPANY").collect()}
     
     news_prompts = []
     sources = ["Reuters", "Bloomberg", "Wall Street Journal", "Financial Times", "MarketWatch"]
@@ -367,14 +367,14 @@ Make the article feel authentic and well-researched."""
             "PROMPT": prompt
         })
     
-    _generate_content_with_cortex(session, news_prompts, "NEWS_ARTICLES")
+    _generate_content_with_cortex(session, news_prompts, "RAW.NEWS_ARTICLES_CORPUS")
 
 
 def generate_research_reports(session: Session) -> None:
-    """Generate internal research reports for search capabilities"""
+    """Generate internal research reports corpus for search capabilities"""
     
     create_table_sql = """
-    CREATE OR REPLACE TABLE RESEARCH_REPORTS (
+    CREATE OR REPLACE TABLE RAW.RESEARCH_REPORTS_CORPUS (
         REPORT_ID STRING,
         TITLE VARCHAR(500),
         REPORT_TYPE VARCHAR(50),
@@ -409,6 +409,24 @@ def generate_research_reports(session: Session) -> None:
             "focus": f"Analysis of bond market transparency improvements in EMEA during {current_quarter} under evolving MiFID II framework and growth of electronic trading platforms in European fixed income markets"
         },
         {
+            "title": f"Global Macro Outlook {current_quarter}: Navigating the Shifting Liquidity Landscape",
+            "type": "Global Macro Strategy",
+            "tags": f"Global Macro, Central Bank Policy, Liquidity, Economic Outlook, Investment Strategy, {current_quarter}",
+            "focus": f"Comprehensive analysis of global macroeconomic conditions in {current_quarter}, examining central bank policy shifts, liquidity conditions, and their implications for cross-asset portfolio positioning"
+        },
+        {
+            "title": "Trade Activity Indicators and Growth Forecasts: A Data-Driven Approach",
+            "type": "Global Macro Strategy",
+            "tags": "Global Trade, Shipping Volumes, Economic Growth, Leading Indicators, Manufacturing",
+            "focus": "Analysis of global trade activity and shipping volume data as leading indicators for economic growth, with investment implications across sectors"
+        },
+        {
+            "title": "Sector Rotation Strategy: Positioning for the Next Macro Regime",
+            "type": "Global Macro Strategy",
+            "tags": "Sector Rotation, Macro Strategy, Asset Allocation, Economic Cycle, Investment Strategy",
+            "focus": "Strategic sector positioning recommendations based on macroeconomic signal analysis and correlation patterns with proprietary indicators"
+        },
+        {
             "title": "Carbon Capture Technologies: Investment Opportunities in Climate Solutions",
             "type": "Thematic Research",
             "tags": "Carbon Capture, Direct Air Capture, Climate Technology",
@@ -434,7 +452,64 @@ def generate_research_reports(session: Session) -> None:
         random_days = random.randint(30, (end_date - start_date).days - 30)  # Leave some buffer
         pub_date = start_date + timedelta(days=random_days)
         
-        prompt = f"""You are a senior research analyst at Frost Markets Intelligence writing an authoritative research report.
+        # Customize prompt based on report type
+        if report['type'] == "Global Macro Strategy":
+            prompt = f"""You are a senior global macro strategist at Frost Markets Intelligence writing an authoritative research report.
+
+Report Title: {report['title']}
+Report Type: {report['type']}
+Focus Area: {report['focus']}
+
+Write a comprehensive global macro strategy report that includes:
+
+1. Executive Summary (2-3 paragraphs)
+   - Key macroeconomic findings and cross-asset investment implications
+   - Main strategic recommendations for portfolio positioning
+
+2. Global Macro Analysis (4-5 paragraphs)
+   - Analysis of our proprietary macroeconomic signals including:
+     * Frost Global Shipping Volume Index (trade activity indicator)
+     * Frost Central Bank Liquidity Indicator (monetary policy stance)
+     * Frost Manufacturing PMI Composite (economic activity gauge)
+     * Frost Consumer Sentiment Index (consumer outlook)
+     * Frost Credit Conditions Indicator (financial conditions)
+     * Frost Commodity Price Momentum (commodity trends)
+   - Central bank policy trends and implications (Fed, ECB, BOJ, PBOC)
+   - Global growth outlook and regional divergences
+   - Key macro risks and opportunities
+
+3. Sector Implications (3-4 paragraphs)
+   - Sector rotation recommendations based on macro signals
+   - Analysis of sector correlations with our proprietary indicators
+   - Technology sector outlook given capex trends
+   - Energy sector positioning given commodity dynamics
+   - Financial services outlook given credit conditions and liquidity
+   - Consumer sector views given sentiment and spending indicators
+
+4. Strategic Recommendations (2-3 paragraphs)
+   - Specific cross-asset allocation recommendations
+   - Geographic positioning (US, Europe, Emerging Markets, Asia)
+   - Hedging strategies for macro risks
+   - Tactical opportunities in current environment
+
+5. Conclusion (1-2 paragraphs)
+   - Summary of key macro themes
+   - Forward-looking perspective and key indicators to watch
+
+Style Requirements:
+- Professional, authoritative tone suitable for institutional investors
+- Reference our proprietary Frost indicators by name (e.g., "The Frost Global Shipping Volume Index declined 3.2% this quarter...")
+- Include specific data points, index levels, and trend analysis
+- Discuss macro regime shifts and investment implications
+- Use sophisticated macro and investment terminology
+- Length: 1200-1500 words
+- Make recommendations specific, actionable, and cross-asset focused
+
+This report will guide institutional clients' strategic asset allocation and macro positioning decisions."""
+        
+        else:
+            # Original prompt for non-macro reports
+            prompt = f"""You are a senior research analyst at Frost Markets Intelligence writing an authoritative research report.
 
 Report Title: {report['title']}
 Report Type: {report['type']}
@@ -487,7 +562,7 @@ Special Instructions for Market Structure Reports:
             "PROMPT": prompt
         })
     
-    _generate_content_with_cortex(session, research_prompts, "RESEARCH_REPORTS")
+    _generate_content_with_cortex(session, research_prompts, "RAW.RESEARCH_REPORTS_CORPUS")
 
 
 def _generate_content_with_cortex(session: Session, prompts_data: list, target_table: str) -> None:

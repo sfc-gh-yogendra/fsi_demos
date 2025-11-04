@@ -26,15 +26,15 @@ def create_database_schema(session):
         print("   🏗️  Setting database context...")
         session.sql("USE DATABASE MARKETS_AI_DEMO").collect()
         
-        # Create schemas
+        # Create schemas with industry-standard names
         print("   📁 Creating schemas...")
-        session.sql("CREATE SCHEMA IF NOT EXISTS RAW_DATA COMMENT = 'Raw structured and unstructured data for demo scenarios'").collect()
-        session.sql("CREATE SCHEMA IF NOT EXISTS ENRICHED_DATA COMMENT = 'AI-enriched data from Document AI and Cortex functions'").collect()
-        session.sql("CREATE SCHEMA IF NOT EXISTS ANALYTICS COMMENT = 'Semantic views, search services, and analytical objects'").collect()
+        session.sql("CREATE SCHEMA IF NOT EXISTS RAW COMMENT = 'Raw external data and unstructured documents'").collect()
+        session.sql("CREATE SCHEMA IF NOT EXISTS CURATED COMMENT = 'Industry-standard dimension/fact model for analysis'").collect()
+        session.sql("CREATE SCHEMA IF NOT EXISTS AI COMMENT = 'Semantic views, Cortex Search services, and AI components'").collect()
         
         # Set default context
         print("   🎯 Setting default context...")
-        session.sql("USE SCHEMA RAW_DATA").collect()
+        session.sql("USE SCHEMA RAW").collect()
         session.sql(f"USE WAREHOUSE {DemoConfig.COMPUTE_WAREHOUSE}").collect()
         
         print("✅ Database schemas created successfully")
@@ -86,6 +86,7 @@ def create_ai_components(session, mode):
     try:
         from ai_components.semantic_views import create_all_semantic_views
         from ai_components.search_services import create_all_search_services
+        from ai_components.agents import create_all_agents
         
         # Create semantic views
         print("  🔍 Creating semantic views...")
@@ -94,6 +95,10 @@ def create_ai_components(session, mode):
         # Create search services
         print("  🔎 Creating search services...")
         create_all_search_services(session)
+        
+        # Create Snowflake Intelligence agents
+        print("  🤖 Creating Snowflake Intelligence agents...")
+        create_all_agents(session, DemoConfig.PHASE_1_SCENARIOS + DemoConfig.PHASE_2_SCENARIOS)
         
         print("✅ AI components created successfully")
         
@@ -184,8 +189,11 @@ def main():
         print("\n🎉 Setup completed successfully!")
         print("\n📋 Next steps:")
         print("   1. Open Snowsight and navigate to Snowflake Intelligence")
-        print("   2. Configure agents using templates in src/ai_components/agents.py")
-        print("   3. Test demo scenarios")
+        print("   2. Agents are automatically created and ready to use!")
+        print("   3. Test demo scenarios with the created agents:")
+        print("      - Earnings Analysis Assistant")
+        print("      - Thematic Investment Research Assistant")
+        print("      - Global Macro Strategy Assistant")
         
     except Exception as e:
         print(f"\n❌ Setup failed: {str(e)}")

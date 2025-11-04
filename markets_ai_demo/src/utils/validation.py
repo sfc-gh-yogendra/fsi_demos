@@ -65,37 +65,60 @@ def validate_data_quality(session: Session) -> None:
     
     # Set context
     session.sql(f"USE DATABASE {DemoConfig.DATABASE_NAME}").collect()
-    session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW_DATA']}").collect()
+    session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW']}").collect()
     
-    # Check table row counts
-    expected_tables = [
+    # Check table row counts - RAW schema
+    raw_tables = [
         "MASTER_EVENT_LOG",
-        "COMPANIES", 
-        "HISTORICAL_STOCK_PRICES",
-        "CONSENSUS_ESTIMATES",
-        "CLIENT_PROFILES",
-        "CLIENT_TRADING_ACTIVITY",
-        "PORTFOLIO_HOLDINGS",
-        "FACTSET_GEO_REVENUE",
-        "SP_CREDIT_RATINGS",
-        "SEC_FILINGS_RAW",
-        "EARNINGS_CALL_TRANSCRIPTS", 
-        "NEWS_ARTICLES",
-        "RESEARCH_REPORTS"
+        "PROPRIETARY_SIGNALS",
+        "ECONOMIC_REGIONS",
+        "SECTOR_MACRO_CORRELATIONS",
+        "SEC_FILINGS_CORPUS",
+        "EARNINGS_TRANSCRIPTS_CORPUS", 
+        "NEWS_ARTICLES_CORPUS",
+        "RESEARCH_REPORTS_CORPUS"
     ]
     
-    for table in expected_tables:
+    # CURATED schema tables
+    curated_tables = [
+        "DIM_COMPANY",
+        "DIM_CLIENT",
+        "DIM_COMPANY_GEO_REVENUE",
+        "DIM_COMPANY_CREDIT_RATING",
+        "FACT_STOCK_PRICE_DAILY",
+        "FACT_CONSENSUS_ESTIMATE",
+        "FACT_CLIENT_TRADE",
+        "FACT_PORTFOLIO_HOLDING",
+        "FACT_CLIENT_ENGAGEMENT",
+        "FACT_CLIENT_DISCUSSION",
+        "FACT_EARNINGS_ACTUAL"
+    ]
+    
+    for table in raw_tables:
         try:
             # Use Snowpark table method for efficient counting
-            count = session.table(f"{DemoConfig.DATABASE_NAME}.{DemoConfig.SCHEMAS['RAW_DATA']}.{table}").count()
+            count = session.table(f"{DemoConfig.DATABASE_NAME}.{DemoConfig.SCHEMAS['RAW']}.{table}").count()
             
             if count > 0:
-                print(f"     ✅ {table}: {count} rows")
+                print(f"     ✅ RAW.{table}: {count} rows")
             else:
-                print(f"     ⚠️  {table}: No data")
+                print(f"     ⚠️  RAW.{table}: No data")
                 
         except Exception as e:
-            print(f"     ❌ {table}: Error - {str(e)}")
+            print(f"     ❌ RAW.{table}: Error - {str(e)}")
+    
+    for table in curated_tables:
+        try:
+            # Use Snowpark table method for efficient counting
+            count = session.table(f"{DemoConfig.DATABASE_NAME}.{DemoConfig.SCHEMAS['CURATED']}.{table}").count()
+            
+            if count > 0:
+                print(f"     ✅ CURATED.{table}: {count} rows")
+            else:
+                print(f"     ⚠️  CURATED.{table}: No data")
+                
+        except Exception as e:
+            print(f"     ❌ CURATED.{table}: Error - {str(e)}")
     
     # Validate event-driven correlations
     validate_event_correlations(session)
@@ -118,8 +141,8 @@ def validate_event_correlations(session: Session) -> None:
                 LAG(p.CLOSE) OVER (PARTITION BY p.TICKER ORDER BY p.PRICE_DATE) AS prev_close,
                 (p.CLOSE - LAG(p.CLOSE) OVER (PARTITION BY p.TICKER ORDER BY p.PRICE_DATE)) / 
                 LAG(p.CLOSE) OVER (PARTITION BY p.TICKER ORDER BY p.PRICE_DATE) AS actual_return
-            FROM MASTER_EVENT_LOG e
-            JOIN HISTORICAL_STOCK_PRICES p ON e.AFFECTED_TICKER = p.TICKER 
+            FROM RAW.MASTER_EVENT_LOG e
+            JOIN CURATED.FACT_STOCK_PRICE_DAILY p ON e.AFFECTED_TICKER = p.TICKER 
                 AND e.EVENT_DATE = p.PRICE_DATE
         )
         SELECT 
@@ -159,7 +182,7 @@ def validate_semantic_views(session: Session) -> None:
     
     print("   🔍 Validating semantic views...")
     
-    session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['ANALYTICS']}").collect()
+    session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['AI']}").collect()
     
     # Test all three semantic views with proper SEMANTIC_VIEW() syntax
     semantic_views = [
@@ -186,7 +209,7 @@ def validate_semantic_views(session: Session) -> None:
             # Test using proper SEMANTIC_VIEW() function syntax
             test_sql = f"""
             SELECT * FROM SEMANTIC_VIEW(
-                ANALYTICS.{view_name}
+                AI.{view_name}
                 METRICS {view_config["metrics"]}
                 DIMENSIONS {view_config["dimensions"]}
             ) LIMIT 3
@@ -263,7 +286,7 @@ def validate_earnings_scenario(session: Session) -> None:
         # Test basic functionality of semantic view
         test_sql = """
         SELECT * FROM SEMANTIC_VIEW(
-            ANALYTICS.EARNINGS_ANALYSIS_VIEW
+            AI.EARNINGS_ANALYSIS_VIEW
             METRICS TOTAL_ACTUAL
             DIMENSIONS TICKER, FISCAL_QUARTER
         ) LIMIT 3
@@ -277,7 +300,7 @@ def validate_earnings_scenario(session: Session) -> None:
             
         # Check for transcript data
         transcript_sql = """
-        SELECT COUNT(*) as cnt FROM RAW_DATA.EARNINGS_CALL_TRANSCRIPTS
+        SELECT COUNT(*) as cnt FROM RAW.EARNINGS_TRANSCRIPTS_CORPUS
         WHERE TICKER = 'NFLX'
         """
         result = session.sql(transcript_sql).collect()
@@ -299,7 +322,7 @@ def validate_thematic_scenario(session: Session) -> None:
         # Test basic functionality of semantic view
         thematic_sql = """
         SELECT * FROM SEMANTIC_VIEW(
-            ANALYTICS.THEMATIC_RESEARCH_VIEW
+            AI.THEMATIC_RESEARCH_VIEW
             METRICS AVG_PRICE
             DIMENSIONS TICKER
         ) LIMIT 3
@@ -313,7 +336,7 @@ def validate_thematic_scenario(session: Session) -> None:
             
         # Check for research reports
         research_sql = """
-        SELECT COUNT(*) as cnt FROM RAW_DATA.RESEARCH_REPORTS
+        SELECT COUNT(*) as cnt FROM RAW.RESEARCH_REPORTS_CORPUS
         WHERE THEMATIC_TAGS LIKE '%Carbon%'
         """
         result = session.sql(research_sql).collect()
@@ -333,7 +356,7 @@ def validate_market_structure_scenario(session: Session) -> None:
     try:
         # 1. Check for FICC market structure content in research reports
         search_sql = """
-        SELECT COUNT(*) as cnt FROM RAW_DATA.RESEARCH_REPORTS
+        SELECT COUNT(*) as cnt FROM RAW.RESEARCH_REPORTS_CORPUS
         WHERE THEMATIC_TAGS LIKE '%FICC%' AND THEMATIC_TAGS LIKE '%EMIR 3.0%'
         """
         result = session.sql(search_sql).collect()
@@ -345,8 +368,8 @@ def validate_market_structure_scenario(session: Session) -> None:
         # 2. Check for client engagement data for asset managers on EMIR 3.0
         engagement_sql = """
         SELECT COUNT(e.CLIENT_ID) as cnt
-        FROM RAW_DATA.CLIENT_ENGAGEMENT e
-        JOIN RAW_DATA.CLIENT_PROFILES cp ON e.CLIENT_ID = cp.CLIENT_ID
+        FROM CURATED.FACT_CLIENT_ENGAGEMENT e
+        JOIN CURATED.DIM_CLIENT cp ON e.CLIENT_ID = cp.CLIENT_ID
         WHERE cp.CLIENT_TYPE = 'Asset Manager' AND e.CONTENT_ID = 'RPT_001' -- Assuming RPT_001 is EMIR 3.0
         """
         result = session.sql(engagement_sql).collect()
@@ -359,9 +382,9 @@ def validate_market_structure_scenario(session: Session) -> None:
         # This is a simplified check, the actual agent logic is more complex
         client_outreach_sql = """
         SELECT COUNT(DISTINCT ce.CLIENT_ID) as cnt
-        FROM RAW_DATA.CLIENT_ENGAGEMENT ce
-        JOIN RAW_DATA.CLIENT_PROFILES cp ON ce.CLIENT_ID = cp.CLIENT_ID
-        LEFT JOIN RAW_DATA.CLIENT_DISCUSSIONS cd ON ce.CLIENT_ID = cd.CLIENT_ID
+        FROM CURATED.FACT_CLIENT_ENGAGEMENT ce
+        JOIN CURATED.DIM_CLIENT cp ON ce.CLIENT_ID = cp.CLIENT_ID
+        LEFT JOIN CURATED.FACT_CLIENT_DISCUSSION cd ON ce.CLIENT_ID = cd.CLIENT_ID
             AND cd.DISCUSSION_DATE >= DATEADD(month, -3, CURRENT_DATE()) -- Discussions in last 3 months
         WHERE cp.CLIENT_TYPE = 'Asset Manager'
             AND ce.CONTENT_ID = 'RPT_001' -- Engaged with EMIR 3.0 report
@@ -376,7 +399,7 @@ def validate_market_structure_scenario(session: Session) -> None:
         # 4. Test CLIENT_MARKET_IMPACT_VIEW functionality
         test_view_sql = """
         SELECT * FROM SEMANTIC_VIEW(
-            ANALYTICS.CLIENT_MARKET_IMPACT_VIEW
+            AI.CLIENT_MARKET_IMPACT_VIEW
             METRICS ENGAGEMENT_COUNT
             DIMENSIONS CLIENT_NAME, ENGAGEMENT_TYPE
         ) LIMIT 5
@@ -403,17 +426,21 @@ def generate_validation_report(session: Session) -> str:
     
     # Data summary
     try:
-        session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW_DATA']}").collect()
+        session.sql(f"USE SCHEMA {DemoConfig.SCHEMAS['RAW']}").collect()
         
         tables = [
-            "COMPANIES", "MASTER_EVENT_LOG", "HISTORICAL_STOCK_PRICES",
-            "CONSENSUS_ESTIMATES", "CLIENT_PROFILES", "NEWS_ARTICLES"
+            ("RAW", "MASTER_EVENT_LOG"),
+            ("RAW", "SEC_FILINGS_CORPUS"),
+            ("RAW", "NEWS_ARTICLES_CORPUS"),
+            ("CURATED", "DIM_COMPANY"),
+            ("CURATED", "FACT_STOCK_PRICE_DAILY"),
+            ("CURATED", "DIM_CLIENT")
         ]
         
         report.append("## Data Summary")
-        for table in tables:
+        for schema, table in tables:
             try:
-                count = session.table(f"{DemoConfig.DATABASE_NAME}.{DemoConfig.SCHEMAS['RAW_DATA']}.{table}").count()
+                count = session.table(f"{DemoConfig.DATABASE_NAME}.{DemoConfig.SCHEMAS[schema]}.{table}").count()
                 report.append(f"- {table}: {count:,} rows")
             except:
                 report.append(f"- {table}: Error")
@@ -437,7 +464,7 @@ def generate_validation_report(session: Session) -> str:
         try:
             session.sql(f"""
                 SELECT * FROM SEMANTIC_VIEW(
-                    ANALYTICS.{view_name}
+                    AI.{view_name}
                     METRICS {view_config["metrics"]}
                     DIMENSIONS {view_config["dimensions"]}
                 ) LIMIT 1

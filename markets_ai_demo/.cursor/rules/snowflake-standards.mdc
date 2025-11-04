@@ -37,10 +37,33 @@ cursor.execute(sql)
 
 ## Naming Conventions
 - **Database**: MARKETS_AI_DEMO
-- **Schemas**: RAW_DATA, ENRICHED_DATA, ANALYTICS
+- **Schemas**: RAW, CURATED, AI
 - **Tables**: UPPER_CASE with underscores
+  - Dimension tables: `DIM_` prefix (e.g., `DIM_COMPANY`, `DIM_CLIENT`)
+  - Fact tables: `FACT_` prefix (e.g., `FACT_STOCK_PRICE_DAILY`, `FACT_CLIENT_TRADE`)
+  - Unstructured documents: `_CORPUS` suffix (e.g., `SEC_FILINGS_CORPUS`, `NEWS_ARTICLES_CORPUS`)
+  - Reference/lookup tables: No prefix (e.g., `MASTER_EVENT_LOG`, `ECONOMIC_REGIONS`)
 - **Columns**: Follow Snowflake identifier syntax (no spaces, special chars)
 - **Company**: "Frost Markets Intelligence" throughout
+
+## Schema Organization
+
+### RAW Schema
+Purpose: Store raw external data and unstructured documents
+- Event/reference data: `MASTER_EVENT_LOG`, `PROPRIETARY_SIGNALS`, `ECONOMIC_REGIONS`, `SECTOR_MACRO_CORRELATIONS`
+- Unstructured corpus: `SEC_FILINGS_CORPUS`, `EARNINGS_TRANSCRIPTS_CORPUS`, `NEWS_ARTICLES_CORPUS`, `RESEARCH_REPORTS_CORPUS`
+
+### CURATED Schema
+Purpose: Industry-standard dimensional model for analysis
+- Dimension tables (DIM_): Company, client, and reference data
+- Fact tables (FACT_): Transactional and time-series data
+- Example: `CURATED.DIM_COMPANY`, `CURATED.FACT_STOCK_PRICE_DAILY`, `CURATED.FACT_CLIENT_TRADE`
+
+### AI Schema
+Purpose: AI components (semantic views, search services, agents)
+- Semantic views: `EARNINGS_ANALYSIS_VIEW`, `THEMATIC_RESEARCH_VIEW`, `CLIENT_MARKET_IMPACT_VIEW`, `GLOBAL_MACRO_SIGNALS_VIEW`
+- Search services: `EARNINGS_TRANSCRIPTS_SEARCH`, `RESEARCH_REPORTS_SEARCH`, `NEWS_ARTICLES_SEARCH`
+- Note: Agents themselves are not stored in schemas but reference these components
 
 ## AI Component Structure
 - **Semantic Views**: Business function based (earnings_analysis, portfolio_exposure, client_activity) - see semantic-views.mdc

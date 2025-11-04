@@ -20,9 +20,9 @@ def generate_master_event_log(session: Session) -> None:
     This ensures realistic relationships between prices, news, and filings.
     """
     
-    # Create the master event log table
+    # Create the master event log table in RAW schema
     create_table_sql = """
-    CREATE OR REPLACE TABLE MASTER_EVENT_LOG (
+    CREATE OR REPLACE TABLE RAW.MASTER_EVENT_LOG (
         EVENT_ID STRING,
         EVENT_DATE DATE,
         AFFECTED_TICKER VARCHAR(10),
@@ -64,12 +64,12 @@ def generate_master_event_log(session: Session) -> None:
     
     # Create DataFrame and save to Snowflake
     events_df = session.create_dataframe(events)
-    events_df.write.mode("overwrite").save_as_table("MASTER_EVENT_LOG")
+    events_df.write.mode("overwrite").save_as_table("RAW.MASTER_EVENT_LOG")
     
     print(f"   ✅ Generated {len(events)} major market events")
     
     # Display sample events
-    sample_events = session.table("MASTER_EVENT_LOG").limit(3).collect()
+    sample_events = session.table("RAW.MASTER_EVENT_LOG").limit(3).collect()
     print("   📋 Sample events:")
     for event in sample_events:
         print(f"      {event['EVENT_DATE']} - {event['AFFECTED_TICKER']}: {event['EVENT_DESCRIPTION'][:60]}...")
