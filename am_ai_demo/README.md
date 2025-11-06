@@ -4,6 +4,8 @@ A comprehensive demonstration of Snowflake Intelligence for asset management cus
 
 Focus is to showcase Snowflake Intelligence/Cortex Agents using a number of scenarios that all use Agents.
 
+**Be aware that the majority of the data is generated and that this should be seen as a n example**
+
 ## Available Scenarios by Role
 
 ### Portfolio Manager
