@@ -27,6 +27,7 @@ from datetime import datetime
 from config import (
     DEFAULT_CONNECTION_NAME, 
     AVAILABLE_SCENARIOS,
+    SCENARIO_AGENTS,
     SCENARIO_DATA_REQUIREMENTS,
     DATABASE,
     WAREHOUSES
@@ -234,6 +235,13 @@ def main():
         end_time = datetime.now()
         duration = end_time - start_time
         
+        # Get list of agents created based on validated scenarios (from config.SCENARIO_AGENTS)
+        agents_created = [
+            (SCENARIO_AGENTS[s]['agent_name'], SCENARIO_AGENTS[s]['description']) 
+            for s in validated_scenarios 
+            if s in SCENARIO_AGENTS
+        ]
+        
         print()
         print("=" * 60)
         print("SAM Demo Environment Build Complete")
@@ -243,18 +251,16 @@ def main():
         print(f"Scenarios: {', '.join(validated_scenarios)}")
         print()
         print("Next steps:")
-        print("1. Agents created in SNOWFLAKE_INTELLIGENCE.AGENTS (7 total)")
+        print(f"1. Agents created in SNOWFLAKE_INTELLIGENCE.AGENTS ({len(agents_created)} total)")
         print("2. Test demo scenarios in Snowflake Intelligence UI (see docs/demo_scenarios.md)")
         print("3. Run validation checks (see docs/runbooks.md)")
         print()
-        print("Available Agents:")
-        print("  - portfolio_copilot: Portfolio analytics and benchmarking")
-        print("  - research_copilot: Document research and analysis")
-        print("  - thematic_macro_advisor: Thematic investment strategy")
-        print("  - esg_guardian: ESG risk monitoring")
-        print("  - compliance_advisor: Mandate monitoring")
-        print("  - sales_advisor: Client reporting")
-        print("  - quant_analyst: Factor analysis")
+        if agents_created:
+            print("Agents Created:")
+            for agent_name, description in agents_created:
+                print(f"  - {agent_name}: {description}")
+        else:
+            print("No agents were created (--scope may have excluded AI components)")
         
     except ImportError as e:
         print(f"ERROR: Missing module: {e}")

@@ -457,6 +457,50 @@ AVAILABLE_SCENARIOS = [
     'middle_office_copilot'
 ]
 
+# Scenario to agent mapping with descriptions
+SCENARIO_AGENTS = {
+    'portfolio_copilot': {
+        'agent_name': 'AM_portfolio_copilot',
+        'display_name': 'Portfolio Co-Pilot',
+        'description': 'Portfolio analytics and benchmarking'
+    },
+    'research_copilot': {
+        'agent_name': 'AM_research_copilot',
+        'display_name': 'Research Co-Pilot',
+        'description': 'Document research and analysis'
+    },
+    'thematic_macro_advisor': {
+        'agent_name': 'AM_thematic_macro_advisor',
+        'display_name': 'Thematic Macro Advisor',
+        'description': 'Thematic investment strategy'
+    },
+    'esg_guardian': {
+        'agent_name': 'AM_esg_guardian',
+        'display_name': 'ESG Guardian',
+        'description': 'ESG risk monitoring'
+    },
+    'compliance_advisor': {
+        'agent_name': 'AM_compliance_advisor',
+        'display_name': 'Compliance Advisor',
+        'description': 'Mandate monitoring'
+    },
+    'sales_advisor': {
+        'agent_name': 'AM_sales_advisor',
+        'display_name': 'Sales Advisor',
+        'description': 'Client reporting'
+    },
+    'quant_analyst': {
+        'agent_name': 'AM_quant_analyst',
+        'display_name': 'Quant Analyst',
+        'description': 'Factor analysis'
+    },
+    'middle_office_copilot': {
+        'agent_name': 'AM_middle_office_copilot',
+        'display_name': 'Middle Office Co-Pilot',
+        'description': 'Operations monitoring and NAV calculation'
+    }
+}
+
 SCENARIO_DATA_REQUIREMENTS = {
     'portfolio_copilot': ['broker_research', 'earnings_transcripts', 'press_releases', 'macro_events', 'report_templates'],
     'research_copilot': ['broker_research', 'earnings_transcripts'],
