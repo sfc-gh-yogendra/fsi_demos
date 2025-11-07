@@ -13,10 +13,29 @@ from dataclasses import dataclass
 import logging
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
+from snowflake.snowpark.types import StructType, StructField, StringType, IntegerType, FloatType, DateType, TimestampType
 
 import config
 
 logger = logging.getLogger(__name__)
+
+
+def _get_snowpark_schema(schema_config: dict) -> StructType:
+    """Convert config schema definition to Snowpark StructType."""
+    type_mapping = {
+        'STRING': StringType(),
+        'INTEGER': IntegerType(),
+        'FLOAT': FloatType(),
+        'DATE': DateType(),
+        'TIMESTAMP': TimestampType()
+    }
+    
+    fields = []
+    for col_name, col_type in schema_config['columns'].items():
+        snowpark_type = type_mapping.get(col_type, StringType())
+        fields.append(StructField(col_name, snowpark_type))
+    
+    return StructType(fields)
 
 
 def create_database_structure(session: Session) -> None:
@@ -903,7 +922,7 @@ def generate_client_crm(session: Session, scale: str = "demo", scenarios: List[s
     
     # Get existing customers
     customers_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-    customers = customers_df.select("CUSTOMER_ID", "ENTITY_NAME").collect()
+    customers = customers_df.select("CUSTOMER_ID").collect()
     
     if not customers:
         logger.warning("No customers found, skipping CRM generation")
@@ -957,8 +976,9 @@ def generate_client_crm(session: Session, scale: str = "demo", scenarios: List[s
         }
         crm_records.append(crm_record)
     
-    # Save to table
-    crm_df = session.create_dataframe(crm_records)
+    # Save to table with schema
+    schema = _get_snowpark_schema(config.PHASE_2_SCHEMAS['client_crm'])
+    crm_df = session.create_dataframe(crm_records, schema=schema)
     crm_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM", mode="overwrite")
     
     logger.info(f"Generated {len(crm_records)} client CRM records")
@@ -1031,8 +1051,9 @@ def generate_client_opportunities(session: Session, scale: str = "demo", scenari
         }
         opportunities.append(opportunity)
     
-    # Save to table
-    opp_df = session.create_dataframe(opportunities)
+    # Save to table with schema
+    schema = _get_snowpark_schema(config.PHASE_2_SCHEMAS['client_opportunities'])
+    opp_df = session.create_dataframe(opportunities, schema=schema)
     opp_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES", mode="overwrite")
     
     logger.info(f"Generated {len(opportunities)} client opportunities")
@@ -1125,8 +1146,9 @@ def generate_model_portfolios(session: Session, scale: str = "demo", scenarios: 
     for portfolio in portfolios:
         portfolio['created_date'] = datetime.now() - timedelta(days=random.randint(365, 730))
     
-    # Save to table
-    portfolios_df = session.create_dataframe(portfolios)
+    # Save to table with schema
+    schema = _get_snowpark_schema(config.PHASE_2_SCHEMAS['model_portfolios'])
+    portfolios_df = session.create_dataframe(portfolios, schema=schema)
     portfolios_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS", mode="overwrite")
     
     logger.info(f"Generated {len(portfolios)} model portfolios")
@@ -1236,8 +1258,9 @@ def generate_holdings(session: Session, scale: str = "demo", scenarios: List[str
         for holding in customer_holdings:
             holding['allocation_pct'] = round((holding['current_value'] / total_value) * 100, 2)
     
-    # Save to table
-    holdings_df = session.create_dataframe(holdings)
+    # Save to table with schema
+    schema = _get_snowpark_schema(config.PHASE_2_SCHEMAS['holdings'])
+    holdings_df = session.create_dataframe(holdings, schema=schema)
     holdings_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS", mode="overwrite")
     
     logger.info(f"Generated {len(holdings)} holdings for {wealth_client_count} wealth clients")
@@ -1334,8 +1357,9 @@ def generate_wealth_client_profiles(session: Session, scale: str = "demo", scena
         }
         profiles.append(profile)
     
-    # Save to table
-    profiles_df = session.create_dataframe(profiles)
+    # Save to table with schema
+    schema = _get_snowpark_schema(config.PHASE_2_SCHEMAS['wealth_client_profiles'])
+    profiles_df = session.create_dataframe(profiles, schema=schema)
     profiles_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES", mode="overwrite")
     
     logger.info(f"Generated {len(profiles)} wealth client profiles")
