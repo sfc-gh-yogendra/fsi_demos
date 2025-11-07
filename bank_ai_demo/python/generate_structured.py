@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import logging
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
-from snowflake.snowpark.types import StructType, StructField, StringType, IntegerType, FloatType, DateType, TimestampType
+from snowflake.snowpark.types import StructType, StructField, StringType, IntegerType, FloatType, DateType, TimestampType, DecimalType
 
 import config
 
@@ -26,8 +26,10 @@ def _get_snowpark_schema(schema_config: dict) -> StructType:
         'STRING': StringType(),
         'INTEGER': IntegerType(),
         'FLOAT': FloatType(),
+        'NUMBER': DecimalType(38, 10),  # Snowflake NUMBER type with precision and scale
         'DATE': DateType(),
-        'TIMESTAMP': TimestampType()
+        'TIMESTAMP': TimestampType(),
+        'TIMESTAMP_NTZ': TimestampType()  # Timestamp without timezone
     }
     
     fields = []
