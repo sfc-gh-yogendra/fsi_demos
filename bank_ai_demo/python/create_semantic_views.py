@@ -66,6 +66,40 @@ def get_required_tables_for_scenarios(scenarios: List[str]) -> Set[str]:
             'CREDIT_POLICY_DOCUMENTS'
         ])
     
+    if 'transaction_monitoring' in scenarios:
+        required_tables.update([
+            'ALERTS',
+            'ALERT_DISPOSITION_HISTORY',
+            'TRANSACTIONS'
+        ])
+    
+    if 'periodic_kyc_review' in scenarios:
+        required_tables.update([
+            'TRANSACTIONS'
+        ])
+    
+    if 'network_analysis' in scenarios:
+        required_tables.update([
+            'ENTITY_RELATIONSHIPS',
+            'TRANSACTIONS'
+        ])
+    
+    # Phase 2 scenarios
+    if 'corp_relationship_manager' in scenarios:
+        required_tables.update([
+            'CLIENT_CRM',
+            'CLIENT_OPPORTUNITIES',
+            'ENTITY_RELATIONSHIPS',
+            'TRANSACTIONS'
+        ])
+    
+    if 'wealth_advisor' in scenarios:
+        required_tables.update([
+            'WEALTH_CLIENT_PROFILES',
+            'HOLDINGS',
+            'MODEL_PORTFOLIOS'
+        ])
+    
     return required_tables
 
 
@@ -98,8 +132,27 @@ def create_all_semantic_views(session: Session, scenarios: List[str] = None) -> 
     
     # Create cross-domain intelligence semantic view for ecosystem analysis
     # This supports both AML and credit scenarios
-    if any(scenario in scenarios for scenario in ['aml_kyc_edd', 'credit_analysis']):
+    if any(scenario in scenarios for scenario in ['aml_kyc_edd', 'credit_analysis', 'network_analysis']):
         create_cross_domain_intelligence_semantic_view(session)
+    
+    # Create transaction monitoring semantic view
+    if 'transaction_monitoring' in scenarios:
+        create_alert_summary_view(session)
+        create_transaction_monitoring_semantic_view(session)
+    
+    # Create network analysis semantic view
+    if 'network_analysis' in scenarios:
+        create_entity_network_analysis_view(session)
+        create_network_analysis_semantic_view(session)
+    
+    # Phase 2: Create corporate client 360 semantic view
+    if 'corp_relationship_manager' in scenarios:
+        create_corporate_client_360_view(session)
+        create_corporate_client_360_semantic_view(session)
+    
+    # Phase 2: Create wealth client semantic view
+    if 'wealth_advisor' in scenarios:
+        create_wealth_client_sv(session)
     
     logger.info("All semantic views created successfully")
 
@@ -240,6 +293,18 @@ def create_aml_kyc_risk_semantic_view(session: Session) -> None:
             customer_risk.CUSTOMER_TYPE AS customer_type
                 WITH SYNONYMS=('client type', 'customer classification')
                 COMMENT='Type of customer relationship',
+            
+            customer_risk.LAST_REVIEW_DATE AS last_review_date
+                WITH SYNONYMS=('previous review date', 'last KYC review')
+                COMMENT='Date of the most recent KYC review',
+            
+            customer_risk.NEXT_REVIEW_DATE AS next_review_date
+                WITH SYNONYMS=('upcoming review date', 'scheduled review')
+                COMMENT='Date when next periodic KYC review is due',
+            
+            customer_risk.REVIEW_FREQUENCY_MONTHS AS review_frequency_months
+                WITH SYNONYMS=('review cycle', 'review interval')
+                COMMENT='Review frequency in months based on risk rating (HIGH=6, MEDIUM=12, LOW=24)',
             
             transaction_summary.latest_large_transaction_date AS latest_large_transaction_date
                 WITH SYNONYMS=('recent large transaction date', 'latest high value transaction')
@@ -404,6 +469,587 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
     """).collect()
     
     logger.info("Cross-domain intelligence semantic view created successfully")
+
+
+def create_alert_summary_view(session: Session) -> None:
+    """Create alert summary view for transaction monitoring semantic view."""
+    logger.info("Creating alert summary view...")
+    
+    # Validate required tables exist
+    validate_required_tables(session, ['ALERTS', 'CUSTOMERS'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.alert_summary_view AS
+        SELECT 
+            a.ALERT_ID,
+            a.CUSTOMER_ID,
+            c.ENTITY_NAME,
+            c.RISK_RATING as customer_risk_rating,
+            a.ALERT_TYPE,
+            a.ALERT_DATE,
+            a.ALERT_STATUS,
+            a.PRIORITY_SCORE,
+            a.ASSIGNED_TO,
+            a.RESOLUTION_DATE,
+            a.DISPOSITION,
+            a.ALERT_DESCRIPTION,
+            a.FLAGGED_TRANSACTION_COUNT,
+            a.TOTAL_FLAGGED_AMOUNT,
+            DATEDIFF(day, a.ALERT_DATE, COALESCE(a.RESOLUTION_DATE, CURRENT_DATE())) as days_open,
+            CASE 
+                WHEN a.RESOLUTION_DATE IS NOT NULL THEN DATEDIFF(hour, a.ALERT_DATE, a.RESOLUTION_DATE)
+                ELSE NULL 
+            END as investigation_hours,
+            a.CREATED_DATE
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.ALERTS a
+        JOIN {config.SNOWFLAKE['database']}.CURATED_DATA.customer_risk_view c ON a.CUSTOMER_ID = c.CUSTOMER_ID
+    """).collect()
+    
+    logger.info("Alert summary view created successfully")
+
+
+def create_transaction_monitoring_semantic_view(session: Session) -> None:
+    """Create transaction monitoring semantic view for alert triage and investigation."""
+    logger.info("Creating transaction monitoring semantic view...")
+    
+    session.sql(f"""
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.transaction_monitoring_sv
+        TABLES (
+            alerts AS {config.SNOWFLAKE['database']}.CURATED_DATA.alert_summary_view
+                PRIMARY KEY (ALERT_ID)
+                COMMENT='Transaction monitoring alerts with customer risk context',
+            
+            disposition_history AS {config.SNOWFLAKE['database']}.RAW_DATA.ALERT_DISPOSITION_HISTORY
+                PRIMARY KEY (DISPOSITION_ID)
+                COMMENT='Historical alert disposition outcomes for ML training'
+        )
+        FACTS (
+            alerts.PRIORITY_SCORE AS priority_score
+                WITH SYNONYMS=('alert priority', 'suspicion score', 'risk score')
+                COMMENT='ML-based priority score for alert triage (0-1 scale)',
+            
+            alerts.FLAGGED_TRANSACTION_COUNT AS flagged_transaction_count
+                WITH SYNONYMS=('transaction count', 'number of transactions')
+                COMMENT='Number of transactions flagged in this alert',
+            
+            alerts.TOTAL_FLAGGED_AMOUNT AS total_flagged_amount
+                WITH SYNONYMS=('flagged amount', 'suspicious amount')
+                COMMENT='Total amount of flagged transactions in {config.CURRENCY}',
+            
+            alerts.DAYS_OPEN AS days_open
+                WITH SYNONYMS=('alert age', 'days pending', 'open duration')
+                COMMENT='Number of days alert has been open',
+            
+            alerts.INVESTIGATION_HOURS AS investigation_hours
+                WITH SYNONYMS=('time spent', 'investigation time')
+                COMMENT='Hours spent investigating the alert',
+            
+            disposition_history.INVESTIGATION_HOURS AS historical_investigation_hours
+                WITH SYNONYMS=('past investigation time', 'typical hours')
+                COMMENT='Historical investigation hours for completed alerts'
+        )
+        DIMENSIONS (
+            alerts.ALERT_ID AS alert_id
+                WITH SYNONYMS=('alert number', 'alert identifier')
+                COMMENT='Unique alert identifier',
+            
+            alerts.CUSTOMER_ID AS customer_id
+                WITH SYNONYMS=('client id', 'customer identifier')
+                COMMENT='Customer identifier associated with alert',
+            
+            alerts.ENTITY_NAME AS entity_name
+                WITH SYNONYMS=('customer name', 'company name')
+                COMMENT='Legal entity name of the customer',
+            
+            alerts.CUSTOMER_RISK_RATING AS customer_risk_rating
+                WITH SYNONYMS=('risk level', 'customer risk')
+                COMMENT='Customer risk rating (LOW, MEDIUM, HIGH)',
+            
+            alerts.ALERT_TYPE AS alert_type
+                WITH SYNONYMS=('alert category', 'scenario type')
+                COMMENT='Type of alert: Structuring, Large Cash, Rapid Movement, High Risk Country, Unusual Pattern',
+            
+            alerts.ALERT_STATUS AS alert_status
+                WITH SYNONYMS=('status', 'alert state')
+                COMMENT='Current status: OPEN, UNDER_INVESTIGATION, CLOSED',
+            
+            alerts.ASSIGNED_TO AS assigned_to
+                WITH SYNONYMS=('analyst', 'investigator', 'assigned analyst')
+                COMMENT='Name of analyst assigned to the alert',
+            
+            alerts.DISPOSITION AS disposition
+                WITH SYNONYMS=('outcome', 'final disposition', 'resolution')
+                COMMENT='Final disposition: SAR_FILED, FALSE_POSITIVE, CLEARED',
+            
+            alerts.ALERT_DATE AS alert_date
+                WITH SYNONYMS=('alert generated date', 'trigger date')
+                COMMENT='Date when alert was generated',
+            
+            alerts.RESOLUTION_DATE AS resolution_date
+                WITH SYNONYMS=('closed date', 'completion date')
+                COMMENT='Date when alert was resolved',
+            
+            disposition_history.FINAL_DISPOSITION AS historical_disposition
+                WITH SYNONYMS=('past outcome', 'historical result')
+                COMMENT='Historical disposition outcomes: SAR_FILED, FALSE_POSITIVE, CLEARED',
+            
+            disposition_history.ANALYST_NAME AS historical_analyst
+                WITH SYNONYMS=('past analyst', 'historical investigator')
+                COMMENT='Analyst who investigated historical alerts'
+        )
+        COMMENT='Transaction monitoring view for alert triage with ML-based priority scoring and historical disposition data'
+    """).collect()
+    
+    logger.info("Transaction monitoring semantic view created successfully")
+
+
+def create_entity_network_analysis_view(session: Session) -> None:
+    """Create entity network analysis view for network analysis semantic view."""
+    logger.info("Creating entity network analysis view...")
+    
+    # Validate required tables exist
+    validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.entity_network_analysis_view AS
+        SELECT 
+            e.ENTITY_ID,
+            e.ENTITY_NAME,
+            e.COUNTRY_CODE,
+            e.INDUSTRY_SECTOR,
+            e.INCORPORATION_DATE,
+            COUNT(DISTINCT r.RELATIONSHIP_ID) as total_relationships,
+            COUNT(DISTINCT CASE WHEN r.RELATIONSHIP_TYPE = 'VENDOR' THEN r.RELATIONSHIP_ID END) as vendor_relationships,
+            COUNT(DISTINCT CASE WHEN r.SHARED_DIRECTOR_NAME IS NOT NULL THEN r.RELATIONSHIP_ID END) as shared_director_relationships,
+            COUNT(DISTINCT CASE WHEN r.SHARED_ADDRESS_FLAG = TRUE THEN r.RELATIONSHIP_ID END) as shared_address_relationships,
+            MAX(r.SHARED_DIRECTOR_NAME) as primary_shared_director,
+            MAX(r.SHARED_ADDRESS) as primary_shared_address,
+            AVG(r.RISK_IMPACT_SCORE) as avg_relationship_risk_score,
+            MAX(r.RISK_IMPACT_SCORE) as max_relationship_risk_score
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r 
+            ON e.ENTITY_ID = r.PRIMARY_ENTITY_ID OR e.ENTITY_ID = r.RELATED_ENTITY_ID
+        GROUP BY 
+            e.ENTITY_ID, e.ENTITY_NAME, e.COUNTRY_CODE, 
+            e.INDUSTRY_SECTOR, e.INCORPORATION_DATE
+    """).collect()
+    
+    logger.info("Entity network analysis view created successfully")
+
+
+def create_network_analysis_semantic_view(session: Session) -> None:
+    """Create network analysis semantic view for shell company and TBML detection."""
+    logger.info("Creating network analysis semantic view...")
+    
+    session.sql(f"""
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.network_analysis_sv
+        TABLES (
+            entities AS {config.SNOWFLAKE['database']}.CURATED_DATA.entity_network_analysis_view
+                PRIMARY KEY (ENTITY_ID)
+                COMMENT='Entity profiles with network relationship metrics',
+            
+            relationships AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS
+                PRIMARY KEY (RELATIONSHIP_ID)
+                COMMENT='Entity relationships with shared characteristic indicators'
+        )
+        RELATIONSHIPS (
+            relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
+        )
+        FACTS (
+            entities.TOTAL_RELATIONSHIPS AS total_relationships
+                WITH SYNONYMS=('relationship count', 'connection count')
+                COMMENT='Total number of relationships for the entity',
+            
+            entities.VENDOR_RELATIONSHIPS AS vendor_relationships
+                WITH SYNONYMS=('supplier count', 'vendor count')
+                COMMENT='Number of vendor relationships',
+            
+            entities.SHARED_DIRECTOR_RELATIONSHIPS AS shared_director_relationships
+                WITH SYNONYMS=('common director count', 'director overlap')
+                COMMENT='Number of relationships with shared directors',
+            
+            entities.SHARED_ADDRESS_RELATIONSHIPS AS shared_address_relationships
+                WITH SYNONYMS=('common address count', 'address overlap')
+                COMMENT='Number of relationships with shared addresses',
+            
+            entities.AVG_RELATIONSHIP_RISK_SCORE AS avg_relationship_risk_score
+                WITH SYNONYMS=('average risk', 'mean risk score')
+                COMMENT='Average risk score across all relationships (0-1 scale)',
+            
+            entities.MAX_RELATIONSHIP_RISK_SCORE AS max_relationship_risk_score
+                WITH SYNONYMS=('highest risk', 'peak risk score')
+                COMMENT='Maximum risk score among relationships (0-1 scale)',
+            
+            relationships.RISK_IMPACT_SCORE AS risk_impact_score
+                WITH SYNONYMS=('relationship risk', 'connection risk')
+                COMMENT='Risk impact score of individual relationship (0-1 scale)',
+            
+            relationships.INCORPORATION_PROXIMITY_DAYS AS incorporation_proximity_days
+                WITH SYNONYMS=('incorporation timing', 'formation proximity')
+                COMMENT='Days between entity incorporations (shell company indicator)'
+        )
+        DIMENSIONS (
+            entities.ENTITY_ID AS entity_id
+                WITH SYNONYMS=('company id', 'entity identifier')
+                COMMENT='Unique entity identifier',
+            
+            entities.ENTITY_NAME AS entity_name
+                WITH SYNONYMS=('company name', 'organization name')
+                COMMENT='Legal entity name',
+            
+            entities.COUNTRY_CODE AS country_code
+                WITH SYNONYMS=('country', 'jurisdiction', 'location')
+                COMMENT='Country code where entity is incorporated',
+            
+            entities.INDUSTRY_SECTOR AS industry_sector
+                WITH SYNONYMS=('industry', 'business sector')
+                COMMENT='Industry classification of the entity',
+            
+            entities.PRIMARY_SHARED_DIRECTOR AS primary_shared_director
+                WITH SYNONYMS=('common director', 'shared director name')
+                COMMENT='Name of primary shared director across relationships',
+            
+            entities.PRIMARY_SHARED_ADDRESS AS primary_shared_address
+                WITH SYNONYMS=('common address', 'shared address')
+                COMMENT='Primary shared address across relationships',
+            
+            relationships.RELATIONSHIP_TYPE AS relationship_type
+                WITH SYNONYMS=('connection type', 'business relationship')
+                COMMENT='Type of relationship: VENDOR, CUSTOMER, SUBSIDIARY, etc.',
+            
+            relationships.RELATED_ENTITY_ID AS related_entity_id
+                WITH SYNONYMS=('connected entity', 'relationship target')
+                COMMENT='Entity ID of the related entity',
+            
+            relationships.SHARED_DIRECTOR_NAME AS shared_director_name
+                WITH SYNONYMS=('common director name', 'director overlap')
+                COMMENT='Name of shared director between entities',
+            
+            relationships.SHARED_ADDRESS_FLAG AS shared_address_flag
+                WITH SYNONYMS=('common address indicator', 'address overlap flag')
+                COMMENT='Indicator that entities share the same address',
+            
+            relationships.SHARED_ADDRESS AS shared_address
+                WITH SYNONYMS=('common address', 'shared location')
+                COMMENT='The actual shared address between entities'
+        )
+        COMMENT='Network analysis view for shell company detection and TBML typology identification with shared characteristic tracking'
+    """).collect()
+    
+    logger.info("Network analysis semantic view created successfully")
+
+
+# =============================================================================
+# PHASE 2 SEMANTIC VIEWS
+# =============================================================================
+
+def create_corporate_client_360_view(session: Session) -> None:
+    """Create curated view aggregating client CRM, opportunities, and relationships for Corporate RM."""
+    logger.info("Creating corporate client 360 curated view...")
+    
+    session.sql(f"""
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.corporate_client_360_view AS
+        SELECT 
+            c.CUSTOMER_ID,
+            c.ENTITY_NAME as client_name,
+            c.COUNTRY_CODE as country,
+            c.INDUSTRY_SECTOR as industry,
+            c.RISK_RATING as risk_rating,
+            crm.RELATIONSHIP_MANAGER,
+            crm.LAST_CONTACT_DATE,
+            crm.ACCOUNT_STATUS,
+            crm.ACCOUNT_TIER,
+            crm.RISK_OPPORTUNITIES_COUNT,
+            -- Opportunity metrics
+            COUNT(DISTINCT opp.OPPORTUNITY_ID) as total_opportunities,
+            COUNT(DISTINCT CASE WHEN opp.STATUS = 'OPEN' THEN opp.OPPORTUNITY_ID END) as open_opportunities,
+            SUM(CASE WHEN opp.STATUS IN ('OPEN', 'IN_PROGRESS') THEN opp.POTENTIAL_VALUE ELSE 0 END) as pipeline_value,
+            -- Relationship metrics
+            COUNT(DISTINCT r.RELATIONSHIP_ID) as vendor_relationship_count,
+            AVG(r.RISK_IMPACT_SCORE) as avg_vendor_risk_score,
+            -- Transaction metrics
+            COUNT(DISTINCT t.TRANSACTION_ID) as transaction_count_90d,
+            SUM(t.AMOUNT_EUR) as transaction_volume_90d
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS c
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM crm ON c.CUSTOMER_ID = crm.CUSTOMER_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES opp ON c.CUSTOMER_ID = opp.CUSTOMER_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r ON c.CUSTOMER_ID = r.PRIMARY_ENTITY_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.TRANSACTIONS t 
+            ON c.CUSTOMER_ID = t.ENTITY_ID 
+            AND t.TRANSACTION_DATE >= DATEADD(day, -90, CURRENT_DATE())
+        GROUP BY 
+            c.CUSTOMER_ID, c.ENTITY_NAME, c.COUNTRY_CODE, c.INDUSTRY_SECTOR, c.RISK_RATING,
+            crm.RELATIONSHIP_MANAGER, crm.LAST_CONTACT_DATE, crm.ACCOUNT_STATUS, 
+            crm.ACCOUNT_TIER, crm.RISK_OPPORTUNITIES_COUNT
+    """).collect()
+    
+    logger.info("Corporate client 360 curated view created successfully")
+
+
+def create_corporate_client_360_semantic_view(session: Session) -> None:
+    """Create corporate_client_360_sv for relationship manager scenario."""
+    logger.info("Creating corporate_client_360_sv semantic view...")
+    
+    session.sql(f"""
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.corporate_client_360_sv
+        TABLES (
+            clients AS {config.SNOWFLAKE['database']}.CURATED_DATA.corporate_client_360_view
+                PRIMARY KEY (CUSTOMER_ID)
+                COMMENT='Corporate client 360-degree view with CRM, opportunities, and relationships',
+            
+            opportunities AS {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES
+                PRIMARY KEY (OPPORTUNITY_ID)
+                COMMENT='Client opportunities with potential revenue impact'
+        )
+        FACTS (
+            clients.TOTAL_OPPORTUNITIES AS total_opportunities
+                WITH UNITS=('count')
+                COMMENT='Total number of opportunities identified for this client',
+            
+            clients.OPEN_OPPORTUNITIES AS open_opportunities
+                WITH UNITS=('count')
+                COMMENT='Number of opportunities currently open or in progress',
+            
+            clients.PIPELINE_VALUE AS pipeline_value
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Total potential value of open and in-progress opportunities',
+            
+            clients.VENDOR_RELATIONSHIP_COUNT AS vendor_relationship_count
+                WITH UNITS=('count')
+                COMMENT='Number of vendor relationships this client has',
+            
+            clients.AVG_VENDOR_RISK_SCORE AS avg_vendor_risk_score
+                WITH RANGE=(0, 1)
+                COMMENT='Average risk impact score of vendor relationships',
+            
+            clients.TRANSACTION_COUNT_90D AS transaction_count_90d
+                WITH UNITS=('count')
+                COMMENT='Number of transactions in last 90 days',
+            
+            clients.TRANSACTION_VOLUME_90D AS transaction_volume_90d
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Total transaction volume in EUR over last 90 days',
+            
+            opportunities.POTENTIAL_VALUE AS opportunity_potential_value
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Estimated revenue impact of this opportunity'
+        )
+        DIMENSIONS (
+            clients.CUSTOMER_ID AS customer_id
+                COMMENT='Unique customer identifier',
+            
+            clients.CLIENT_NAME AS client_name
+                WITH SYNONYMS=('customer name', 'entity name', 'company name')
+                COMMENT='Legal name of the client entity',
+            
+            clients.COUNTRY AS country
+                WITH SYNONYMS=('country code', 'jurisdiction', 'domicile')
+                COMMENT='Country where client is domiciled',
+            
+            clients.INDUSTRY AS industry
+                WITH SYNONYMS=('sector', 'industry sector', 'business sector')
+                COMMENT='Industry classification of the client',
+            
+            clients.RISK_RATING AS risk_rating
+                WITH SYNONYMS=('risk level', 'client risk')
+                COMMENT='Overall risk rating (LOW, MEDIUM, HIGH)',
+            
+            clients.RELATIONSHIP_MANAGER AS relationship_manager
+                WITH SYNONYMS=('RM', 'account manager', 'relationship banker')
+                COMMENT='Name of the relationship manager assigned to this client',
+            
+            clients.LAST_CONTACT_DATE AS last_contact_date
+                WITH SYNONYMS=('last call date', 'last interaction')
+                COMMENT='Date of most recent client contact',
+            
+            clients.ACCOUNT_STATUS AS account_status
+                WITH SYNONYMS=('client status', 'relationship status')
+                COMMENT='Status of the account (ACTIVE, PROSPECT, INACTIVE)',
+            
+            clients.ACCOUNT_TIER AS account_tier
+                WITH SYNONYMS=('tier', 'service level', 'client tier')
+                COMMENT='Account tier classification (PREMIUM, STANDARD, BASIC)',
+            
+            opportunities.OPPORTUNITY_ID AS opportunity_id
+                COMMENT='Unique opportunity identifier',
+            
+            opportunities.OPPORTUNITY_TYPE AS opportunity_type
+                WITH SYNONYMS=('opp type', 'product type')
+                COMMENT='Type of opportunity (CROSS_SELL, UPSELL, RISK_MITIGATION, etc.)',
+            
+            opportunities.OPPORTUNITY_DESCRIPTION AS opportunity_description
+                WITH SYNONYMS=('opportunity details', 'product description')
+                COMMENT='Detailed description of the opportunity',
+            
+            opportunities.SOURCE_TYPE AS opportunity_source
+                WITH SYNONYMS=('source', 'origin', 'how identified')
+                COMMENT='How opportunity was identified (call_note, internal_email, news, etc.)',
+            
+            opportunities.PRIORITY AS opportunity_priority
+                WITH SYNONYMS=('urgency', 'importance')
+                COMMENT='Priority level (HIGH, MEDIUM, LOW)',
+            
+            opportunities.STATUS AS opportunity_status
+                WITH SYNONYMS=('opp status', 'stage')
+                COMMENT='Current status (OPEN, IN_PROGRESS, CLOSED_WON, CLOSED_LOST)',
+            
+            opportunities.CREATED_DATE AS opportunity_created_date
+                WITH SYNONYMS=('opportunity date', 'identified date')
+                COMMENT='Date when opportunity was first identified'
+        )
+        COMMENT='Corporate client 360 view for relationship manager with opportunities and cross-entity intelligence'
+    """).collect()
+    
+    logger.info("Corporate client 360 semantic view created successfully")
+
+
+def create_wealth_client_sv(session: Session) -> None:
+    """Create wealth_client_sv for wealth advisor scenario."""
+    logger.info("Creating wealth_client_sv semantic view...")
+    
+    session.sql(f"""
+        CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.wealth_client_sv
+        TABLES (
+            profiles AS {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES
+                PRIMARY KEY (PROFILE_ID)
+                COMMENT='Wealth client profiles with model portfolio assignments',
+            
+            holdings AS {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS
+                PRIMARY KEY (HOLDING_ID)
+                COMMENT='Individual investment holdings',
+            
+            models AS {config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS
+                PRIMARY KEY (MODEL_ID)
+                COMMENT='Model portfolio definitions with target allocations'
+        )
+        FACTS (
+            profiles.TOTAL_AUM AS total_aum
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Total assets under management for this client',
+            
+            profiles.CONCENTRATION_THRESHOLD_PCT AS concentration_threshold
+                WITH UNITS=('percent')
+                COMMENT='Alert threshold if any single holding exceeds this percentage',
+            
+            profiles.REBALANCE_TRIGGER_PCT AS rebalance_trigger
+                WITH UNITS=('percent')
+                COMMENT='Trigger rebalance if allocation deviates by this percentage',
+            
+            holdings.CURRENT_VALUE AS holding_value
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Current market value of this holding',
+            
+            holdings.COST_BASIS AS holding_cost_basis
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Original cost basis for tax calculations',
+            
+            holdings.UNREALIZED_GAIN_LOSS AS unrealized_gain_loss
+                WITH UNITS=('EUR', 'currency')
+                COMMENT='Unrealized gain or loss on this holding',
+            
+            holdings.ALLOCATION_PCT AS current_allocation
+                WITH UNITS=('percent')
+                COMMENT='Percentage of total portfolio this holding represents',
+            
+            holdings.QUANTITY AS holding_quantity
+                WITH UNITS=('shares')
+                COMMENT='Number of shares or units held',
+            
+            models.TARGET_EQUITY_PCT AS target_equity_allocation
+                WITH UNITS=('percent')
+                COMMENT='Target equity allocation for this model portfolio',
+            
+            models.TARGET_BOND_PCT AS target_bond_allocation
+                WITH UNITS=('percent')
+                COMMENT='Target bond allocation for this model portfolio',
+            
+            models.TARGET_ALTERNATIVE_PCT AS target_alternative_allocation
+                WITH UNITS=('percent')
+                COMMENT='Target alternative investment allocation',
+            
+            models.TARGET_CASH_PCT AS target_cash_allocation
+                WITH UNITS=('percent')
+                COMMENT='Target cash allocation',
+            
+            models.EXPECTED_ANNUAL_RETURN_PCT AS expected_return
+                WITH UNITS=('percent')
+                COMMENT='Expected annual return for this model portfolio',
+            
+            models.EXPECTED_VOLATILITY_PCT AS expected_volatility
+                WITH UNITS=('percent')
+                COMMENT='Expected volatility (standard deviation) for this model'
+        )
+        DIMENSIONS (
+            profiles.PROFILE_ID AS profile_id
+                COMMENT='Unique wealth client profile identifier',
+            
+            profiles.CUSTOMER_ID AS customer_id
+                WITH SYNONYMS=('client id', 'account id')
+                COMMENT='Link to customer master data',
+            
+            profiles.WEALTH_ADVISOR AS wealth_advisor
+                WITH SYNONYMS=('advisor', 'advisor name', 'portfolio manager')
+                COMMENT='Name of the wealth advisor managing this client',
+            
+            profiles.RISK_TOLERANCE AS risk_tolerance
+                WITH SYNONYMS=('risk appetite', 'risk profile')
+                COMMENT='Client risk tolerance (CONSERVATIVE, MODERATE, AGGRESSIVE)',
+            
+            profiles.TAX_STATUS AS tax_status
+                WITH SYNONYMS=('tax treatment', 'account type')
+                COMMENT='Tax status of the account (STANDARD, TAX_DEFERRED, TAX_EXEMPT)',
+            
+            profiles.INVESTMENT_OBJECTIVES AS investment_objectives
+                WITH SYNONYMS=('investment goals', 'objectives', 'financial goals')
+                COMMENT='Primary investment objectives (GROWTH, INCOME, PRESERVATION, BALANCED)',
+            
+            profiles.LAST_REBALANCE_DATE AS last_rebalance_date
+                WITH SYNONYMS=('previous rebalance', 'last portfolio adjustment')
+                COMMENT='Date of most recent portfolio rebalancing',
+            
+            profiles.NEXT_REVIEW_DATE AS next_review_date
+                WITH SYNONYMS=('upcoming review', 'scheduled review date')
+                COMMENT='Date when next portfolio review is scheduled',
+            
+            holdings.ASSET_TYPE AS asset_type
+                WITH SYNONYMS=('asset category', 'investment type')
+                COMMENT='Broad asset type (EQUITY, BOND, ALTERNATIVE, CASH)',
+            
+            holdings.ASSET_CLASS AS asset_class
+                WITH SYNONYMS=('sub-asset class', 'specific asset type')
+                COMMENT='Specific asset class (DOMESTIC_EQUITY, INTL_EQUITY, GOVT_BOND, etc.)',
+            
+            holdings.ASSET_NAME AS asset_name
+                WITH SYNONYMS=('holding name', 'security name', 'investment name')
+                COMMENT='Full name of the asset or security',
+            
+            holdings.TICKER_SYMBOL AS ticker
+                WITH SYNONYMS=('ticker symbol', 'symbol', 'stock symbol')
+                COMMENT='Trading symbol for this asset',
+            
+            holdings.AS_OF_DATE AS holdings_as_of_date
+                WITH SYNONYMS=('valuation date', 'pricing date')
+                COMMENT='Date of current valuation',
+            
+            models.MODEL_ID AS model_portfolio_id
+                COMMENT='Unique model portfolio identifier',
+            
+            models.MODEL_NAME AS model_name
+                WITH SYNONYMS=('model portfolio name', 'portfolio model')
+                COMMENT='Name of the model portfolio',
+            
+            models.RISK_PROFILE AS model_risk_profile
+                WITH SYNONYMS=('model risk level')
+                COMMENT='Risk profile of this model (LOW, MODERATE, HIGH)',
+            
+            models.DESCRIPTION AS model_description
+                WITH SYNONYMS=('model summary', 'portfolio description')
+                COMMENT='Detailed description of the model portfolio strategy'
+        )
+        COMMENT='Wealth client view for portfolio analysis with model alignment and concentration monitoring'
+    """).collect()
+    
+    logger.info("Wealth client semantic view created successfully")
 
 
 def main():

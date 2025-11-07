@@ -68,6 +68,7 @@ PHASE_1 = {
 SCALES = {
     "mini": {
         "description": "Fast testing scale",
+        # Phase 1 data
         "entities": 50,
         "entity_relationships": 100,
         "customers": 25,
@@ -76,9 +77,20 @@ SCALES = {
         "loan_applications": 5,
         "historical_loans": 150,
         "news_articles": 150,
+        "alerts": 50,
+        "alert_disposition_history": 500,
+        # Phase 2 data
+        "client_crm_records": 20,
+        "client_opportunities": 40,
+        "client_documents": 60,  # call notes, emails, news
+        "holdings": 100,  # holdings across all wealth clients
+        "model_portfolios": 3,  # conservative, balanced, growth
+        "wealth_clients": 10,  # subset of customers with wealth profiles
+        "wealth_meeting_notes": 30,
     },
     "demo": {
         "description": "Balanced demo scale - optimal for agent responses",
+        # Phase 1 data
         "entities": 500,
         "entity_relationships": 1200,
         "customers": 200,
@@ -87,6 +99,16 @@ SCALES = {
         "loan_applications": 25,
         "historical_loans": 1500,
         "news_articles": 1200,
+        "alerts": 250,
+        "alert_disposition_history": 2500,
+        # Phase 2 data
+        "client_crm_records": 150,
+        "client_opportunities": 300,
+        "client_documents": 450,  # call notes, emails, news
+        "holdings": 600,  # holdings across all wealth clients
+        "model_portfolios": 5,  # conservative, balanced, growth, aggressive, income
+        "wealth_clients": 50,  # subset of customers with wealth profiles
+        "wealth_meeting_notes": 200,
     }
 }
 
@@ -132,6 +154,70 @@ KEY_ENTITIES = {
         "country": "GBR",
         "industry": "Logistics & Transportation",
         "risk_profile": "HIGH"
+    },
+    # Shell company network for network analysis scenario
+    "shell_network_1": {
+        "entity_id": "SHELL_NET_001",
+        "name": "Baltic Trade Ltd",
+        "country": "GIB",
+        "industry": "Import/Export",
+        "esg_rating": "D"
+    },
+    "shell_network_2": {
+        "entity_id": "SHELL_NET_002",
+        "name": "Nordic Commerce S.A.",
+        "country": "GIB",
+        "industry": "Import/Export",
+        "esg_rating": "D"
+    },
+    "shell_network_3": {
+        "entity_id": "SHELL_NET_003",
+        "name": "Alpine Export GmbH",
+        "country": "GIB",
+        "industry": "Import/Export",
+        "esg_rating": "D"
+    },
+    "shell_network_4": {
+        "entity_id": "SHELL_NET_004",
+        "name": "Adriatic Import Ltd",
+        "country": "GIB",
+        "industry": "Import/Export",
+        "esg_rating": "D"
+    },
+    "shell_network_5": {
+        "entity_id": "SHELL_NET_005",
+        "name": "Aegean Trade S.A.",
+        "country": "GIB",
+        "industry": "Import/Export",
+        "esg_rating": "D"
+    },
+    # Phase 2 key entities
+    "primary_rm_client": {
+        "entity_id": "EAG_FR_001",
+        "name": "European Automotive Group S.A.",
+        "country": "FRA",
+        "industry": "Automotive Manufacturing",
+        "esg_rating": "B",
+        "relationship_manager": "Claire Dubois",
+        "account_status": "ACTIVE"
+    },
+    "primary_wealth_client": {
+        "entity_id": "HTF_LUX_001",
+        "name": "Heritage Trust Fund",
+        "country": "LUX",
+        "industry": "Private Investment",
+        "esg_rating": "A",
+        "wealth_advisor": "Marcus Weber",
+        "risk_tolerance": "MODERATE",
+        "aum": 50000000  # €50M assets under management
+    },
+    "opportunity_target": {
+        "entity_id": "RES_IT_001",
+        "name": "Renewable Energy Solutions Italia",
+        "country": "ITA",
+        "industry": "Renewable Energy",
+        "esg_rating": "A+",
+        "relationship_status": "PROSPECT"
     }
 }
 
@@ -245,7 +331,175 @@ SCENARIOS = {
         "required_data": ["loan_applications", "historical_loans", "credit_policy_documents"],
         "required_services": ["credit_policy_search_svc", "loan_documents_search_svc"],
         "required_views": ["credit_risk_sv"]
+    },
+    "transaction_monitoring": {
+        "name": "Intelligent Transaction Monitoring & Alert Triage",
+        "description": "AI-powered alert triage with ML-based false positive reduction and network analysis",
+        "required_data": ["alerts", "alert_disposition_history", "customers", "transactions"],
+        "required_services": ["compliance_docs_search_svc", "news_research_search_svc"],
+        "required_views": ["transaction_monitoring_sv", "aml_kyc_risk_sv"]
+    },
+    "periodic_kyc_review": {
+        "name": "Streamlined Periodic KYC Reviews",
+        "description": "Automated periodic KYC review with change detection and low-touch processing",
+        "required_data": ["customers", "transactions", "compliance_documents"],
+        "required_services": ["compliance_docs_search_svc", "news_research_search_svc"],
+        "required_views": ["aml_kyc_risk_sv"]
+    },
+    "network_analysis": {
+        "name": "Trade-Based Money Laundering Network Detection",
+        "description": "Graph-based network analysis for shell company detection and TBML typology identification",
+        "required_data": ["entities", "entity_relationships", "transactions", "customers"],
+        "required_services": ["compliance_docs_search_svc"],
+        "required_views": ["network_analysis_sv", "cross_domain_intelligence_sv"]
+    },
+    # Phase 2 Scenarios
+    "corp_relationship_manager": {
+        "name": "Corporate Relationship Manager - Client Intelligence",
+        "description": "Proactive opportunity sourcing and client intelligence with cross-entity reasoning",
+        "required_data": ["customers", "transactions", "entity_relationships", "client_crm", "client_opportunities", "client_documents"],
+        "required_services": ["client_documents_search_svc"],
+        "required_views": ["corporate_client_360_sv"]
+    },
+    "wealth_advisor": {
+        "name": "Wealth Advisor - Portfolio Alignment & Rebalancing",
+        "description": "Portfolio alignment analysis and what-if rebalancing with tax impact and risk calculations",
+        "required_data": ["customers", "holdings", "model_portfolios", "wealth_client_profiles", "wealth_meeting_notes"],
+        "required_services": ["wealth_notes_search_svc"],
+        "required_views": ["wealth_client_sv"],
+        "custom_tools": ["portfolio_modeler"]
     }
+}
+
+# =============================================================================
+# PHASE 2 DATA SCHEMAS
+# =============================================================================
+
+PHASE_2_SCHEMAS = {
+    "client_crm": {
+        "table_name": "CLIENT_CRM",
+        "schema": "RAW_DATA",
+        "columns": {
+            "CRM_ID": "STRING",  # Primary key
+            "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
+            "RELATIONSHIP_MANAGER": "STRING",
+            "LAST_CONTACT_DATE": "DATE",
+            "ACCOUNT_STATUS": "STRING",  # ACTIVE, PROSPECT, INACTIVE
+            "ACCOUNT_TIER": "STRING",  # PREMIUM, STANDARD, BASIC
+            "NOTES_SUMMARY": "STRING",  # Brief summary of recent interactions
+            "RISK_OPPORTUNITIES_COUNT": "NUMBER",
+            "CREATED_DATE": "TIMESTAMP_NTZ"
+        },
+        "constraints": {
+            "primary_key": ["CRM_ID"],
+            "foreign_keys": [{"column": "CUSTOMER_ID", "references": "CUSTOMERS(CUSTOMER_ID)"}]
+        }
+    },
+    "client_opportunities": {
+        "table_name": "CLIENT_OPPORTUNITIES",
+        "schema": "RAW_DATA",
+        "columns": {
+            "OPPORTUNITY_ID": "STRING",  # Primary key
+            "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
+            "OPPORTUNITY_TYPE": "STRING",  # CROSS_SELL, UPSELL, RISK_MITIGATION, NEW_PRODUCT
+            "OPPORTUNITY_DESCRIPTION": "STRING",
+            "POTENTIAL_VALUE": "NUMBER",  # Estimated revenue impact
+            "SOURCE_TYPE": "STRING",  # call_note, internal_email, news, transaction_pattern
+            "SOURCE_DOCUMENT_ID": "STRING",  # Reference to originating document
+            "PRIORITY": "STRING",  # HIGH, MEDIUM, LOW
+            "STATUS": "STRING",  # OPEN, IN_PROGRESS, CLOSED_WON, CLOSED_LOST
+            "CREATED_DATE": "TIMESTAMP_NTZ",
+            "LAST_UPDATED_DATE": "TIMESTAMP_NTZ"
+        },
+        "constraints": {
+            "primary_key": ["OPPORTUNITY_ID"],
+            "foreign_keys": [{"column": "CUSTOMER_ID", "references": "CUSTOMERS(CUSTOMER_ID)"}]
+        }
+    },
+    "holdings": {
+        "table_name": "HOLDINGS",
+        "schema": "RAW_DATA",
+        "columns": {
+            "HOLDING_ID": "STRING",  # Primary key
+            "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
+            "ASSET_TYPE": "STRING",  # EQUITY, BOND, ALTERNATIVE, CASH
+            "ASSET_CLASS": "STRING",  # DOMESTIC_EQUITY, INTL_EQUITY, GOVT_BOND, CORP_BOND, REAL_ESTATE, etc.
+            "ASSET_NAME": "STRING",
+            "TICKER_SYMBOL": "STRING",
+            "QUANTITY": "NUMBER",
+            "CURRENT_VALUE": "NUMBER",  # in EUR
+            "COST_BASIS": "NUMBER",  # for tax calculations
+            "UNREALIZED_GAIN_LOSS": "NUMBER",
+            "ALLOCATION_PCT": "NUMBER",  # percentage of total portfolio
+            "AS_OF_DATE": "DATE",
+            "LAST_UPDATED_DATE": "TIMESTAMP_NTZ"
+        },
+        "constraints": {
+            "primary_key": ["HOLDING_ID"],
+            "foreign_keys": [{"column": "CUSTOMER_ID", "references": "CUSTOMERS(CUSTOMER_ID)"}]
+        }
+    },
+    "model_portfolios": {
+        "table_name": "MODEL_PORTFOLIOS",
+        "schema": "RAW_DATA",
+        "columns": {
+            "MODEL_ID": "STRING",  # Primary key
+            "MODEL_NAME": "STRING",  # CONSERVATIVE, BALANCED, GROWTH, AGGRESSIVE, INCOME
+            "RISK_PROFILE": "STRING",  # LOW, MODERATE, HIGH
+            "TARGET_EQUITY_PCT": "NUMBER",
+            "TARGET_BOND_PCT": "NUMBER",
+            "TARGET_ALTERNATIVE_PCT": "NUMBER",
+            "TARGET_CASH_PCT": "NUMBER",
+            "EXPECTED_ANNUAL_RETURN_PCT": "NUMBER",
+            "EXPECTED_VOLATILITY_PCT": "NUMBER",  # Standard deviation
+            "DESCRIPTION": "STRING",
+            "REBALANCE_FREQUENCY_DAYS": "NUMBER",  # 90, 180, 365
+            "CREATED_DATE": "TIMESTAMP_NTZ"
+        },
+        "constraints": {
+            "primary_key": ["MODEL_ID"]
+        }
+    },
+    "wealth_client_profiles": {
+        "table_name": "WEALTH_CLIENT_PROFILES",
+        "schema": "RAW_DATA",
+        "columns": {
+            "PROFILE_ID": "STRING",  # Primary key
+            "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
+            "MODEL_PORTFOLIO_ID": "STRING",  # Foreign key to MODEL_PORTFOLIOS
+            "WEALTH_ADVISOR": "STRING",
+            "RISK_TOLERANCE": "STRING",  # CONSERVATIVE, MODERATE, AGGRESSIVE
+            "TAX_STATUS": "STRING",  # STANDARD, TAX_DEFERRED, TAX_EXEMPT
+            "INVESTMENT_OBJECTIVES": "STRING",  # GROWTH, INCOME, PRESERVATION, BALANCED
+            "TOTAL_AUM": "NUMBER",  # Assets under management in EUR
+            "CONCENTRATION_THRESHOLD_PCT": "NUMBER",  # Alert if any single holding exceeds this %
+            "REBALANCE_TRIGGER_PCT": "NUMBER",  # Trigger rebalance if deviation exceeds this %
+            "LAST_REBALANCE_DATE": "DATE",
+            "NEXT_REVIEW_DATE": "DATE",
+            "CREATED_DATE": "TIMESTAMP_NTZ",
+            "LAST_UPDATED_DATE": "TIMESTAMP_NTZ"
+        },
+        "constraints": {
+            "primary_key": ["PROFILE_ID"],
+            "foreign_keys": [
+                {"column": "CUSTOMER_ID", "references": "CUSTOMERS(CUSTOMER_ID)"},
+                {"column": "MODEL_PORTFOLIO_ID", "references": "MODEL_PORTFOLIOS(MODEL_ID)"}
+            ]
+        }
+    }
+}
+
+PHASE_2_DOCUMENT_TYPES = {
+    "client_documents": [
+        {"type": "call_note", "weight": 0.4, "description": "Relationship manager call notes from client meetings"},
+        {"type": "internal_email", "weight": 0.3, "description": "Internal emails about client strategy and risks"},
+        {"type": "client_news", "weight": 0.3, "description": "News articles about client companies"}
+    ],
+    "wealth_meeting_notes": [
+        {"type": "portfolio_review", "weight": 0.4, "description": "Quarterly portfolio review meeting notes"},
+        {"type": "investment_strategy", "weight": 0.3, "description": "Investment strategy discussion notes"},
+        {"type": "rebalancing_decision", "weight": 0.3, "description": "Portfolio rebalancing decision documentation"}
+    ]
 }
 
 # =============================================================================

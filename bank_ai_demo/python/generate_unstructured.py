@@ -8,6 +8,7 @@ Includes compliance documents, credit policies, loan documents, and news article
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Any
 import logging
+import random
 from snowflake.snowpark import Session
 
 import config
@@ -16,10 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 def generate_all_unstructured_data(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate all unstructured data for Phase 1."""
+    """Generate all unstructured data for Phase 1 and Phase 2."""
     logger.info("Starting unstructured data generation...")
     
-    # Generate unstructured documents using Cortex Complete pipeline
+    # Determine which phases to generate based on scenarios
+    phase_2_scenarios = ['corp_relationship_manager', 'wealth_advisor']
+    include_phase_2 = scenarios and any(s in phase_2_scenarios for s in scenarios) if scenarios != ["all"] else False
+    
+    # Phase 1 unstructured documents using Cortex Complete pipeline
     generate_compliance_documents(session, scale, scenarios)
     generate_credit_policy_documents(session, scale, scenarios)
     generate_loan_documents(session, scale, scenarios)
@@ -27,6 +32,12 @@ def generate_all_unstructured_data(session: Session, scale: str = "demo", scenar
     
     # Always generate document templates as they're used by agent framework
     generate_document_templates(session, scale, scenarios)
+    
+    # Phase 2 unstructured documents (if Phase 2 scenarios requested or "all")
+    if include_phase_2 or scenarios == ["all"] or not scenarios:
+        logger.info("Generating Phase 2 unstructured data...")
+        generate_client_documents(session, scale, scenarios)
+        generate_wealth_meeting_notes(session, scale, scenarios)
     
     logger.info("Unstructured data generation completed successfully")
 
@@ -721,6 +732,441 @@ The template should be ready for customization with investigation-specific findi
     })
     
     return prompts
+
+
+# =============================================================================
+# PHASE 2 UNSTRUCTURED DATA GENERATION FUNCTIONS
+# =============================================================================
+
+def generate_client_documents(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
+    """Generate client documents (call notes, emails, news) for relationship manager scenario."""
+    logger.info("Generating client documents...")
+    
+    scale_config = config.get_scale_config(scale)
+    target_count = scale_config.get('client_documents', 0)
+    
+    if target_count == 0:
+        logger.info("Skipping client documents generation (not in scale config)")
+        return
+    
+    # Get CRM records and opportunities for context
+    try:
+        crm_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM")
+        crm_records = crm_df.collect()
+        
+        opportunities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES")
+        opportunities = opportunities_df.collect()
+    except:
+        logger.warning("No CRM data found, skipping client documents generation")
+        return
+    
+    # Get entity names for realistic references
+    try:
+        entities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES")
+        entities = entities_df.select("ENTITY_ID", "ENTITY_NAME", "INDUSTRY_SECTOR").collect()
+        entity_map = {e['ENTITY_ID']: {'name': e['ENTITY_NAME'], 'industry': e['INDUSTRY_SECTOR']} for e in entities}
+    except:
+        entity_map = {}
+    
+    # Generate prompts for different document types
+    prompts = []
+    doc_types = config.PHASE_2_DOCUMENT_TYPES['client_documents']
+    
+    # Distribute documents across types based on weights
+    for doc_type_info in doc_types:
+        doc_type = doc_type_info['type']
+        weight = doc_type_info['weight']
+        type_count = int(target_count * weight)
+        
+        for i in range(type_count):
+            crm_record = crm_records[i % len(crm_records)]
+            customer_id = crm_record['CUSTOMER_ID']
+            entity_info = entity_map.get(customer_id, {'name': f'Customer {customer_id}', 'industry': 'Various'})
+            
+            # Find related opportunities for this customer
+            customer_opps = [o for o in opportunities if o['CUSTOMER_ID'] == customer_id]
+            
+            if doc_type == 'call_note':
+                prompt_data = _create_call_note_prompt(customer_id, entity_info, crm_record, customer_opps)
+            elif doc_type == 'internal_email':
+                prompt_data = _create_internal_email_prompt(customer_id, entity_info, crm_record, customer_opps)
+            elif doc_type == 'client_news':
+                prompt_data = _create_client_news_prompt(customer_id, entity_info)
+            else:
+                continue
+            
+            prompts.append(prompt_data)
+    
+    # Store prompts and generate content
+    if prompts:
+        prompts_df = session.create_dataframe(prompts)
+        prompts_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENT_PROMPTS", mode="overwrite")
+        
+        # Generate content using Cortex Complete
+        session.sql(f"""
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS AS
+            SELECT 
+                PROMPT_ID AS ID,
+                DOCUMENT_TITLE AS TITLE,
+                SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', PROMPT_TEXT) AS CONTENT,
+                CUSTOMER_ID AS CLIENT_NAME,
+                SOURCE_TYPE,
+                PUBLISH_DATE,
+                CREATED_DATE
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENT_PROMPTS
+            WHERE PROMPT_TEXT IS NOT NULL
+        """).collect()
+        
+        # Validate
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        doc_count = result[0]['CNT']
+        logger.info(f"Generated {doc_count} client documents using Cortex Complete")
+    else:
+        logger.warning("No prompts generated for client documents")
+
+
+def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
+    """Generate wealth advisor meeting notes."""
+    logger.info("Generating wealth meeting notes...")
+    
+    scale_config = config.get_scale_config(scale)
+    target_count = scale_config.get('wealth_meeting_notes', 0)
+    
+    if target_count == 0:
+        logger.info("Skipping wealth meeting notes generation (not in scale config)")
+        return
+    
+    # Get wealth client profiles for context
+    try:
+        profiles_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES")
+        profiles = profiles_df.collect()
+        
+        # Get model portfolio info
+        portfolios_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS")
+        portfolios = portfolios_df.collect()
+        portfolio_map = {p['MODEL_ID']: p for p in portfolios}
+        
+        # Get holdings for context
+        holdings_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS")
+        all_holdings = holdings_df.collect()
+    except:
+        logger.warning("No wealth data found, skipping meeting notes generation")
+        return
+    
+    # Generate prompts for meeting notes
+    prompts = []
+    note_types = config.PHASE_2_DOCUMENT_TYPES['wealth_meeting_notes']
+    
+    for note_type_info in note_types:
+        note_type = note_type_info['type']
+        weight = note_type_info['weight']
+        type_count = int(target_count * weight)
+        
+        for i in range(type_count):
+            profile = profiles[i % len(profiles)]
+            customer_id = profile['CUSTOMER_ID']
+            
+            # Get customer holdings
+            customer_holdings = [h for h in all_holdings if h['CUSTOMER_ID'] == customer_id]
+            
+            # Get model portfolio info
+            model_portfolio = portfolio_map.get(profile['MODEL_PORTFOLIO_ID'], {})
+            
+            if note_type == 'portfolio_review':
+                prompt_data = _create_portfolio_review_prompt(profile, model_portfolio, customer_holdings)
+            elif note_type == 'investment_strategy':
+                prompt_data = _create_investment_strategy_prompt(profile, model_portfolio)
+            elif note_type == 'rebalancing_decision':
+                prompt_data = _create_rebalancing_decision_prompt(profile, model_portfolio, customer_holdings)
+            else:
+                continue
+            
+            prompts.append(prompt_data)
+    
+    # Store prompts and generate content
+    if prompts:
+        prompts_df = session.create_dataframe(prompts)
+        prompts_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTE_PROMPTS", mode="overwrite")
+        
+        # Generate content using Cortex Complete
+        session.sql(f"""
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES AS
+            SELECT 
+                PROMPT_ID AS ID,
+                DOCUMENT_TITLE AS TITLE,
+                SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', PROMPT_TEXT) AS CONTENT,
+                CUSTOMER_ID AS CLIENT_NAME,
+                ADVISOR_NAME,
+                MEETING_DATE,
+                CREATED_DATE
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTE_PROMPTS
+            WHERE PROMPT_TEXT IS NOT NULL
+        """).collect()
+        
+        # Validate
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        doc_count = result[0]['CNT']
+        logger.info(f"Generated {doc_count} wealth meeting notes using Cortex Complete")
+    else:
+        logger.warning("No prompts generated for wealth meeting notes")
+
+
+# =============================================================================
+# PHASE 2 PROMPT GENERATION HELPER FUNCTIONS
+# =============================================================================
+
+def _create_call_note_prompt(customer_id: str, entity_info: Dict, crm_record: Dict, opportunities: List[Dict]) -> Dict[str, Any]:
+    """Create prompt for relationship manager call note."""
+    entity_name = entity_info['name']
+    industry = entity_info['industry']
+    rm_name = crm_record['RELATIONSHIP_MANAGER']
+    
+    # Select opportunity to discuss if available
+    opp_context = ""
+    if opportunities:
+        opp = opportunities[0]
+        opp_context = f"Discussed opportunity: {opp['OPPORTUNITY_DESCRIPTION']} (potential value: €{opp['POTENTIAL_VALUE']:,.0f})"
+    
+    prompt = f"""Write a professional relationship manager call note for {entity_name}, a {industry} client.
+
+Context:
+- Relationship Manager: {rm_name}
+- Account Status: {crm_record['ACCOUNT_STATUS']}
+- Account Tier: {crm_record['ACCOUNT_TIER']}
+{opp_context}
+
+Generate a 200-300 word call note covering:
+1. Purpose of the call and key discussion topics
+2. Client's current business situation and any concerns raised
+3. Opportunities or risks identified during the conversation
+4. Action items and next steps
+5. Overall client sentiment
+
+Use professional banking language with European tone. Include specific details that would be useful for future client interactions."""
+    
+    return {
+        'PROMPT_ID': f"CLN_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"Call Note: {entity_name} - {rm_name}",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'SOURCE_TYPE': 'call_note',
+        'PUBLISH_DATE': date.today() - timedelta(days=random.randint(1, 60)),
+        'CREATED_DATE': datetime.now()
+    }
+
+
+def _create_internal_email_prompt(customer_id: str, entity_info: Dict, crm_record: Dict, opportunities: List[Dict]) -> Dict[str, Any]:
+    """Create prompt for internal email about client strategy."""
+    entity_name = entity_info['name']
+    industry = entity_info['industry']
+    rm_name = crm_record['RELATIONSHIP_MANAGER']
+    
+    # Determine email focus
+    if crm_record['ACCOUNT_TIER'] == 'PREMIUM':
+        focus = "strategic expansion opportunities and revenue growth"
+    elif crm_record['ACCOUNT_STATUS'] == 'PROSPECT':
+        focus = "onboarding strategy and initial product suite"
+    else:
+        focus = "risk mitigation and relationship deepening"
+    
+    prompt = f"""Write an internal email from {rm_name} to the Commercial Banking team regarding {entity_name}, a {industry} client.
+
+Context:
+- Account Tier: {crm_record['ACCOUNT_TIER']}
+- Account Status: {crm_record['ACCOUNT_STATUS']}
+- Email Focus: {focus}
+
+Generate a 200-250 word professional email with:
+1. Subject line
+2. Brief situation summary
+3. Strategic recommendation with specific products/services
+4. Risk considerations or potential challenges
+5. Request for team input or approval
+
+Use internal banking communication style. Include actionable recommendations."""
+    
+    return {
+        'PROMPT_ID': f"EML_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"Internal Email: {entity_name} Strategy",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'SOURCE_TYPE': 'internal_email',
+        'PUBLISH_DATE': date.today() - timedelta(days=random.randint(1, 45)),
+        'CREATED_DATE': datetime.now()
+    }
+
+
+def _create_client_news_prompt(customer_id: str, entity_info: Dict) -> Dict[str, Any]:
+    """Create prompt for news article about client company."""
+    entity_name = entity_info['name']
+    industry = entity_info['industry']
+    
+    # Select news topic based on industry
+    topics = {
+        'Automotive Manufacturing': 'announces new electric vehicle production facility',
+        'Software Services': 'secures major enterprise software contract',
+        'Logistics & Transportation': 'expands European distribution network',
+        'Renewable Energy': 'wins government contract for solar energy project',
+        'International Trade': 'expands into Asian markets',
+        'Private Investment': 'announces new fund focused on sustainable infrastructure'
+    }
+    
+    topic = topics.get(industry, 'announces strategic business expansion')
+    
+    prompt = f"""Write a neutral business news article about {entity_name}, a {industry} company.
+
+Headline: "{entity_name} {topic}"
+
+Generate a 250-300 word news article with:
+1. Lead paragraph summarizing the key announcement
+2. Financial or operational details of the initiative
+3. Quote from company leadership
+4. Market context and industry implications
+5. Future outlook
+
+Use neutral journalism style appropriate for European financial press. Include specific numbers and timelines."""
+    
+    return {
+        'PROMPT_ID': f"NWS_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"News: {entity_name} {topic[:50]}...",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'SOURCE_TYPE': 'client_news',
+        'PUBLISH_DATE': date.today() - timedelta(days=random.randint(1, 90)),
+        'CREATED_DATE': datetime.now()
+    }
+
+
+def _create_portfolio_review_prompt(profile: Dict, model_portfolio: Dict, holdings: List[Dict]) -> Dict[str, Any]:
+    """Create prompt for quarterly portfolio review meeting note."""
+    customer_id = profile['CUSTOMER_ID']
+    advisor = profile['WEALTH_ADVISOR']
+    total_aum = profile['TOTAL_AUM']
+    risk_tolerance = profile['RISK_TOLERANCE']
+    
+    # Calculate current allocation
+    equity_holdings = [h for h in holdings if h['ASSET_TYPE'] == 'EQUITY']
+    bond_holdings = [h for h in holdings if h['ASSET_TYPE'] == 'BOND']
+    
+    equity_value = sum(h['CURRENT_VALUE'] for h in equity_holdings) if equity_holdings else 0
+    bond_value = sum(h['CURRENT_VALUE'] for h in bond_holdings) if bond_holdings else 0
+    total_value = sum(h['CURRENT_VALUE'] for h in holdings) if holdings else total_aum
+    
+    equity_pct = (equity_value / total_value * 100) if total_value > 0 else 0
+    bond_pct = (bond_value / total_value * 100) if total_value > 0 else 0
+    
+    target_equity = model_portfolio.get('TARGET_EQUITY_PCT', 50)
+    target_bond = model_portfolio.get('TARGET_BOND_PCT', 40)
+    
+    prompt = f"""Write a quarterly portfolio review meeting note for a wealth management client.
+
+Meeting Details:
+- Wealth Advisor: {advisor}
+- Client Risk Tolerance: {risk_tolerance}
+- Total AUM: €{total_aum:,.0f}
+
+Portfolio Performance:
+- Current Equity Allocation: {equity_pct:.1f}% (Target: {target_equity:.1f}%)
+- Current Bond Allocation: {bond_pct:.1f}% (Target: {target_bond:.1f}%)
+- Model Portfolio: {model_portfolio.get('MODEL_NAME', 'Balanced')}
+
+Generate a 300-350 word meeting note with:
+1. Portfolio performance summary vs. benchmarks
+2. Current allocation vs. target allocation analysis
+3. Market environment discussion and outlook
+4. Client questions or concerns addressed
+5. Recommendations and agreed action items
+
+Use professional wealth advisory tone. Include specific performance figures and actionable recommendations."""
+    
+    return {
+        'PROMPT_ID': f"PFR_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"Quarterly Portfolio Review - {customer_id}",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'ADVISOR_NAME': advisor,
+        'MEETING_DATE': date.today() - timedelta(days=random.randint(1, 90)),
+        'CREATED_DATE': datetime.now()
+    }
+
+
+def _create_investment_strategy_prompt(profile: Dict, model_portfolio: Dict) -> Dict[str, Any]:
+    """Create prompt for investment strategy discussion note."""
+    customer_id = profile['CUSTOMER_ID']
+    advisor = profile['WEALTH_ADVISOR']
+    investment_objectives = profile['INVESTMENT_OBJECTIVES']
+    risk_tolerance = profile['RISK_TOLERANCE']
+    
+    prompt = f"""Write an investment strategy discussion meeting note for a wealth management client.
+
+Client Profile:
+- Wealth Advisor: {advisor}
+- Investment Objectives: {investment_objectives}
+- Risk Tolerance: {risk_tolerance}
+- Current Model: {model_portfolio.get('MODEL_NAME', 'Balanced Portfolio')}
+- Expected Return: {model_portfolio.get('EXPECTED_ANNUAL_RETURN_PCT', 6.5):.1f}%
+
+Generate a 250-300 word meeting note with:
+1. Discussion of client's long-term financial goals
+2. Review of investment time horizon and liquidity needs
+3. Tax optimization strategies discussed
+4. Asset allocation philosophy and diversification approach
+5. Agreement on investment guidelines and rebalancing triggers
+
+Use consultative wealth advisory language. Focus on strategic planning and long-term objectives."""
+    
+    return {
+        'PROMPT_ID': f"INV_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"Investment Strategy Discussion - {customer_id}",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'ADVISOR_NAME': advisor,
+        'MEETING_DATE': date.today() - timedelta(days=random.randint(30, 180)),
+        'CREATED_DATE': datetime.now()
+    }
+
+
+def _create_rebalancing_decision_prompt(profile: Dict, model_portfolio: Dict, holdings: List[Dict]) -> Dict[str, Any]:
+    """Create prompt for portfolio rebalancing decision note."""
+    customer_id = profile['CUSTOMER_ID']
+    advisor = profile['WEALTH_ADVISOR']
+    
+    # Calculate drift from target
+    total_value = sum(h['CURRENT_VALUE'] for h in holdings) if holdings else profile['TOTAL_AUM']
+    
+    equity_value = sum(h['CURRENT_VALUE'] for h in holdings if h['ASSET_TYPE'] == 'EQUITY')
+    current_equity_pct = (equity_value / total_value * 100) if total_value > 0 else 0
+    target_equity_pct = model_portfolio.get('TARGET_EQUITY_PCT', 50)
+    equity_drift = current_equity_pct - target_equity_pct
+    
+    prompt = f"""Write a portfolio rebalancing decision meeting note for a wealth management client.
+
+Rebalancing Context:
+- Wealth Advisor: {advisor}
+- Total Portfolio Value: €{total_value:,.0f}
+- Model Portfolio: {model_portfolio.get('MODEL_NAME', 'Balanced')}
+- Current Equity: {current_equity_pct:.1f}% (Target: {target_equity_pct:.1f}%)
+- Drift: {equity_drift:+.1f}%
+- Rebalancing Trigger: {profile.get('REBALANCE_TRIGGER_PCT', 10.0):.0f}%
+
+Generate a 250-300 word rebalancing decision note with:
+1. Trigger for rebalancing (threshold exceeded or calendar-based)
+2. Specific trades recommended to restore target allocation
+3. Tax considerations and wash sale rules
+4. Expected transaction costs
+5. Client approval and execution timeline
+
+Use decisive, action-oriented wealth advisory language. Include specific trade recommendations."""
+    
+    return {
+        'PROMPT_ID': f"REB_{customer_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        'DOCUMENT_TITLE': f"Rebalancing Decision - {customer_id}",
+        'PROMPT_TEXT': prompt,
+        'CUSTOMER_ID': customer_id,
+        'ADVISOR_NAME': advisor,
+        'MEETING_DATE': date.today() - timedelta(days=random.randint(1, 60)),
+        'CREATED_DATE': datetime.now()
+    }
 
 
 def main():

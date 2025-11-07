@@ -59,6 +59,13 @@ def get_required_tables_for_search_services(scenarios: List[str]) -> Set[str]:
             'LOAN_DOCUMENTS'
         ])
     
+    # Phase 2 scenarios
+    if 'corp_relationship_manager' in scenarios:
+        required_tables.add('CLIENT_DOCUMENTS')
+    
+    if 'wealth_advisor' in scenarios:
+        required_tables.add('WEALTH_MEETING_NOTES')
+    
     # Always include news and research (used by multiple scenarios)
     required_tables.add('NEWS_AND_RESEARCH')
     
@@ -125,6 +132,13 @@ def create_all_search_services(session: Session, scenarios: List[str] = None) ->
     
     # Create document templates search service for agent framework
     create_document_templates_search_service(session)
+    
+    # Phase 2: Create search services for relationship manager and wealth advisor scenarios
+    if 'corp_relationship_manager' in scenarios:
+        create_client_documents_search_service(session)
+    
+    if 'wealth_advisor' in scenarios:
+        create_wealth_meeting_notes_search_service(session)
     
     # Validate all search services were created successfully
     validate_search_services(session)
@@ -347,6 +361,64 @@ def refresh_search_service(session: Session, service_name: str) -> None:
         
     except Exception as e:
         logger.warning(f"Could not refresh search service {service_name}: {e}")
+
+
+# =============================================================================
+# PHASE 2 SEARCH SERVICES
+# =============================================================================
+
+def create_client_documents_search_service(session: Session) -> None:
+    """Create Cortex Search service for client documents (Corporate RM scenario)."""
+    logger.info("Creating client documents search service...")
+    
+    # Validate required table exists
+    validate_required_tables(session, ['CLIENT_DOCUMENTS'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.client_documents_search_svc
+            ON CONTENT
+            ATTRIBUTES ID, TITLE, CLIENT_NAME, SOURCE_TYPE, PUBLISH_DATE
+            WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
+            TARGET_LAG = '5 minutes'
+            AS 
+            SELECT 
+                ID,
+                TITLE,
+                CONTENT,
+                CLIENT_NAME,
+                SOURCE_TYPE,
+                PUBLISH_DATE
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS
+    """).collect()
+    
+    logger.info("Client documents search service created successfully")
+
+
+def create_wealth_meeting_notes_search_service(session: Session) -> None:
+    """Create Cortex Search service for wealth advisor meeting notes."""
+    logger.info("Creating wealth meeting notes search service...")
+    
+    # Validate required table exists
+    validate_required_tables(session, ['WEALTH_MEETING_NOTES'])
+    
+    session.sql(f"""
+        CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.wealth_meeting_notes_search_svc
+            ON CONTENT
+            ATTRIBUTES ID, TITLE, CLIENT_NAME, ADVISOR_NAME, MEETING_DATE
+            WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
+            TARGET_LAG = '5 minutes'
+            AS 
+            SELECT 
+                ID,
+                TITLE,
+                CONTENT,
+                CLIENT_NAME,
+                ADVISOR_NAME,
+                MEETING_DATE
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES
+    """).collect()
+    
+    logger.info("Wealth meeting notes search service created successfully")
 
 
 def main():

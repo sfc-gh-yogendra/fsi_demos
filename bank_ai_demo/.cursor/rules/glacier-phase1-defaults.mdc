@@ -7,10 +7,15 @@ alwaysApply: false
 ## Overview
 This rule defines Phase 1 specific standards and patterns. All configuration values are in `config.py` - this rule provides the standards and patterns unique to Phase 1.
 
-## Phase 1 Scope
-- **Scenarios**: AML/KYC Enhanced Due Diligence + Credit Risk Analysis
-- **Integration Focus**: Cross-domain intelligence through shared vendor relationships
-- **Demonstration Goal**: Show AI-powered analysis with multi-step reasoning
+## Phase 1 Scope (Extended)
+- **Scenarios**: 
+  1. AML/KYC Enhanced Due Diligence
+  2. Credit Risk Analysis
+  3. Transaction Monitoring & Alert Triage
+  4. Periodic KYC Reviews
+  5. Network Analysis for TBML Detection
+- **Integration Focus**: Cross-domain intelligence through shared vendor relationships, ML-based triage, and graph-based network analysis
+- **Demonstration Goal**: Show comprehensive AI-powered financial crime compliance across the complete AML/KYC lifecycle with quantified efficiency gains
 
 ## Demo Flow Standards
 - **Story Structure**: 3-4 conversational turns per scenario
@@ -62,27 +67,52 @@ Phase 1 uses EU/EBA-style thresholds (defined in config.py):
 
 See patterns in respective implementation guides.
 
-## Phase 1 Acceptance Criteria
+## Phase 1 Acceptance Criteria (Extended)
 
 ### Functional Requirements
-- [ ] Both scenarios complete 3-4 turn demo flow
-- [ ] Tool orchestration works correctly
+- [ ] All 5 scenarios complete 3-4 turn demo flow
+- [ ] Tool orchestration works correctly across all scenarios
 - [ ] Cross-domain intelligence demonstrated
+- [ ] ML-based alert triage operational (Scenario 3)
+- [ ] Automated change detection working (Scenario 4)
+- [ ] Network analysis identifies shell companies (Scenario 5)
 
 ### Data Quality
 - [ ] Citations include source and date
-- [ ] Thresholds flagged with severity
+- [ ] Thresholds flagged with severity (⚠️/🚨)
 - [ ] Currency and time periods stated
+- [ ] Alert data includes priority scores and disposition history
+- [ ] Entity relationships include shared directors and addresses
+- [ ] Customer review dates properly calculated
 
 ### Technical Validation  
 - [ ] Search services return relevant results
-- [ ] Semantic views aggregate correctly
+- [ ] Semantic views aggregate correctly (5 views total)
+  - [ ] aml_kyc_risk_sv with review date dimensions
+  - [ ] credit_risk_sv
+  - [ ] transaction_monitoring_sv with ML priority scores
+  - [ ] network_analysis_sv with shared characteristics
+  - [ ] Supporting curated views
 - [ ] Agent audit trail available
-- [ ] Performance within demo targets
+- [ ] Performance within demo targets (<15 min per scenario)
 
 ### Demo Readiness
-- [ ] Compelling "wow moments" identified
-- [ ] Smooth narrative flow
-- [ ] Clear value proposition
+- [ ] Compelling "wow moments" identified for all 5 scenarios
+- [ ] Smooth narrative flow across extended scope
+- [ ] Clear value proposition with quantified efficiency gains
+  - [ ] EDD: 4-6 hrs → 15-20 mins
+  - [ ] Credit: 2-3 days → 2-3 hrs
+  - [ ] Alert Investigation: 4-6 hrs → 30-45 mins
+  - [ ] Periodic Reviews: 45-60 mins → <1 min (6-7x multiplier)
+  - [ ] Network Analysis: weeks → hours
 - [ ] No technical hiccups
+
+### New Scenario-Specific Validation
+- [ ] **Transaction Monitoring**: ALERT_STRUCT_001 exists with 95% priority score
+- [ ] **Transaction Monitoring**: Network connection to Global Parts LLC identified
+- [ ] **Periodic Reviews**: 15 customers due, 12 low-touch, 3 manual
+- [ ] **Periodic Reviews**: Nordic Industries S.A. has no material changes
+- [ ] **Network Analysis**: 5-entity shell network with Anya Sharma as shared director
+- [ ] **Network Analysis**: Gibraltar address shared across all 5 entities
+- [ ] **Network Analysis**: Circular vendor relationships formed
 
