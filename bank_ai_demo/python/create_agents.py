@@ -723,7 +723,7 @@ Meeting Discussion Agenda:
 3. Discuss vendor concentration risk → position treasury/working capital solutions
 4. Confirm next quarterly business review date
 5. Ask about expansion plans (potential for additional financing)"
-```
+"""
         },
         
         'wealth_advisor': {

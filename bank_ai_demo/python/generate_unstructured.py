@@ -85,7 +85,7 @@ def generate_compliance_documents(session: Session, scale: str = "demo", scenari
         """).collect()
         
         # Validate generated content
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.COMPLIANCE_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.COMPLIANCE_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} compliance documents using Cortex Complete")
     else:
@@ -122,7 +122,7 @@ def generate_credit_policy_documents(session: Session, scale: str = "demo", scen
         """).collect()
         
         # Validate generated content
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.CREDIT_POLICY_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.CREDIT_POLICY_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} credit policy documents using Cortex Complete")
     else:
@@ -170,7 +170,7 @@ def generate_loan_documents(session: Session, scale: str = "demo", scenarios: Li
         """).collect()
         
         # Validate generated content
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.LOAN_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} loan documents using Cortex Complete")
     else:
@@ -211,7 +211,7 @@ def generate_news_and_research(session: Session, scale: str = "demo", scenarios:
         """).collect()
         
         # Validate generated content
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.NEWS_AND_RESEARCH WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.NEWS_AND_RESEARCH WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} news and research documents using Cortex Complete")
     else:
@@ -261,7 +261,7 @@ def generate_document_templates(session: Session, scale: str = "demo", scenarios
         """).collect()
         
         # Validate generated content
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES WHERE TEMPLATE_CONTENT IS NOT NULL AND LENGTH(TEMPLATE_CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.DOCUMENT_TEMPLATES WHERE TEMPLATE_CONTENT IS NOT NULL AND LENGTH(TEMPLATE_CONTENT) > 100").collect()
         template_count = result[0]['CNT']
         logger.info(f"Generated {template_count} document templates using Cortex Complete")
     else:
@@ -810,7 +810,7 @@ def generate_client_documents(session: Session, scale: str = "demo", scenarios: 
         crm_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM")
         crm_records = crm_df.collect()
         
-        opportunities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES")
+        opportunities_df = session.table(f"{config.SNOWFLAKE['database']}.CURATED.CLIENT_OPPORTUNITIES")
         opportunities = opportunities_df.collect()
     except:
         logger.warning("No CRM data found, skipping client documents generation")
@@ -874,7 +874,7 @@ def generate_client_documents(session: Session, scale: str = "demo", scenarios: 
         """).collect()
         
         # Validate
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.CLIENT_DOCUMENTS WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} client documents using Cortex Complete")
     else:
@@ -894,16 +894,16 @@ def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenari
     
     # Get wealth client profiles for context
     try:
-        profiles_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES")
+        profiles_df = session.table(f"{config.SNOWFLAKE['database']}.CURATED.WEALTH_CLIENT_PROFILES")
         profiles = profiles_df.collect()
         
         # Get model portfolio info
-        portfolios_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS")
+        portfolios_df = session.table(f"{config.SNOWFLAKE['database']}.CURATED.MODEL_PORTFOLIOS")
         portfolios = portfolios_df.collect()
         portfolio_map = {p['MODEL_ID']: p for p in portfolios}
         
         # Get holdings for context
-        holdings_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS")
+        holdings_df = session.table(f"{config.SNOWFLAKE['database']}.CURATED.HOLDINGS")
         all_holdings = holdings_df.collect()
     except:
         logger.warning("No wealth data found, skipping meeting notes generation")
@@ -960,7 +960,7 @@ def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenari
         """).collect()
         
         # Validate
-        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
+        result = session.sql(f"SELECT COUNT(*) as cnt FROM {config.SNOWFLAKE['database']}.CURATED.WEALTH_MEETING_NOTES WHERE CONTENT IS NOT NULL AND LENGTH(CONTENT) > 100").collect()
         doc_count = result[0]['CNT']
         logger.info(f"Generated {doc_count} wealth meeting notes using Cortex Complete")
     else:

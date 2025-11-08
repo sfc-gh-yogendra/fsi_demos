@@ -6,7 +6,7 @@ Each semantic view is defined in its own function for better modularity.
 """
 
 import logging
-from typing import List, Set
+from typing import List, Set, Dict
 from snowflake.snowpark import Session
 
 import config
@@ -32,11 +32,16 @@ def validate_table_exists(session: Session, table_name: str, schema: str = "RAW_
         return False
 
 
-def validate_required_tables(session: Session, required_tables: List[str], schema: str = "RAW_DATA") -> None:
-    """Validate that all required tables exist, raise error if any are missing."""
+def validate_required_tables(session: Session, required_tables: dict) -> None:
+    """Validate that all required tables exist, raise error if any are missing.
+    
+    Args:
+        session: Snowpark session
+        required_tables: Dict mapping table_name to schema
+    """
     missing_tables = []
     
-    for table_name in required_tables:
+    for table_name, schema in required_tables.items():
         if not validate_table_exists(session, table_name, schema):
             missing_tables.append(f"{schema}.{table_name}")
     
@@ -46,59 +51,63 @@ def validate_required_tables(session: Session, required_tables: List[str], schem
                          f"Please run data generation first with --scope data or --scope all")
 
 
-def get_required_tables_for_scenarios(scenarios: List[str]) -> Set[str]:
-    """Get the set of required tables for the given scenarios."""
-    required_tables = set()
+def get_required_tables_for_scenarios(scenarios: List[str]) -> Dict[str, str]:
+    """Get the set of required tables for the given scenarios.
+    Returns dict mapping table_name to schema."""
+    required_tables = {}
     
-    # Base tables needed for all scenarios
-    required_tables.update(['ENTITIES', 'CUSTOMERS'])
+    # Base tables needed for all scenarios (in RAW_DATA)
+    required_tables.update({
+        'ENTITIES': 'RAW_DATA',
+        'CUSTOMERS': 'RAW_DATA'
+    })
     
     if 'aml_kyc_edd' in scenarios:
-        required_tables.update([
-            'TRANSACTIONS',
-            'COMPLIANCE_DOCUMENTS'
-        ])
+        required_tables.update({
+            'TRANSACTIONS': 'RAW_DATA',
+            'COMPLIANCE_DOCUMENTS': 'CURATED'
+        })
     
     if 'credit_analysis' in scenarios:
-        required_tables.update([
-            'LOAN_APPLICATIONS',
-            'HISTORICAL_LOANS',
-            'CREDIT_POLICY_DOCUMENTS'
-        ])
+        required_tables.update({
+            'LOAN_APPLICATIONS': 'RAW_DATA',
+            'HISTORICAL_LOANS': 'RAW_DATA',
+            'CREDIT_POLICY_DOCUMENTS': 'CURATED'
+        })
     
     if 'transaction_monitoring' in scenarios:
-        required_tables.update([
-            'ALERTS',
-            'ALERT_DISPOSITION_HISTORY',
-            'TRANSACTIONS'
-        ])
+        required_tables.update({
+            'ALERTS': 'RAW_DATA',
+            'ALERT_DISPOSITION_HISTORY': 'RAW_DATA',
+            'TRANSACTIONS': 'RAW_DATA'
+        })
     
     if 'periodic_kyc_review' in scenarios:
-        required_tables.update([
-            'TRANSACTIONS'
-        ])
+        required_tables.update({
+            'TRANSACTIONS': 'RAW_DATA'
+        })
     
     if 'network_analysis' in scenarios:
-        required_tables.update([
-            'ENTITY_RELATIONSHIPS',
-            'TRANSACTIONS'
-        ])
+        required_tables.update({
+            'ENTITY_RELATIONSHIPS': 'CURATED',
+            'TRANSACTIONS': 'RAW_DATA'
+        })
     
     # Phase 2 scenarios
     if 'corp_relationship_manager' in scenarios:
-        required_tables.update([
-            'CLIENT_CRM',
-            'CLIENT_OPPORTUNITIES',
-            'ENTITY_RELATIONSHIPS',
-            'TRANSACTIONS'
-        ])
+        required_tables.update({
+            'CLIENT_CRM': 'RAW_DATA',
+            'CLIENT_OPPORTUNITIES': 'CURATED',
+            'ENTITY_RELATIONSHIPS': 'CURATED',
+            'TRANSACTIONS': 'RAW_DATA'
+        })
     
     if 'wealth_advisor' in scenarios:
-        required_tables.update([
-            'WEALTH_CLIENT_PROFILES',
-            'HOLDINGS',
-            'MODEL_PORTFOLIOS'
-        ])
+        required_tables.update({
+            'WEALTH_CLIENT_PROFILES': 'CURATED',
+            'HOLDINGS': 'CURATED',
+            'MODEL_PORTFOLIOS': 'CURATED'
+        })
     
     return required_tables
 
@@ -113,9 +122,9 @@ def create_all_semantic_views(session: Session, scenarios: List[str] = None) -> 
     
     # Validate required tables exist before creating semantic views
     scenarios = scenarios or config.get_all_scenarios()
-    required_tables = list(get_required_tables_for_scenarios(scenarios))
+    required_tables = get_required_tables_for_scenarios(scenarios)
     
-    logger.info(f"Validating required tables: {required_tables}")
+    logger.info(f"Validating required tables: {list(required_tables.keys())}")
     validate_required_tables(session, required_tables)
     logger.info("Table validation completed successfully")
     
@@ -162,7 +171,7 @@ def create_customer_risk_view(session: Session) -> None:
     logger.info("Creating customer risk view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['CUSTOMERS', 'ENTITIES'])
+    validate_required_tables(session, {'CUSTOMERS': 'RAW_DATA', 'ENTITIES': 'RAW_DATA'})
     
     session.sql(f"""
         CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.customer_risk_view AS
@@ -192,7 +201,7 @@ def create_customer_transaction_summary_view(session: Session) -> None:
     logger.info("Creating customer transaction summary view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['TRANSACTIONS'])
+    validate_required_tables(session, {'TRANSACTIONS': 'RAW_DATA'})
     
     session.sql(f"""
         CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.customer_transaction_summary_view AS
@@ -326,7 +335,7 @@ def create_credit_risk_semantic_view(session: Session) -> None:
     logger.info("Creating credit risk semantic view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['LOAN_APPLICATIONS'])
+    validate_required_tables(session, {'LOAN_APPLICATIONS': 'RAW_DATA'})
     
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.credit_risk_sv
@@ -396,7 +405,7 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
     logger.info("Creating cross-domain intelligence semantic view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
+    validate_required_tables(session, {'ENTITIES': 'RAW_DATA', 'ENTITY_RELATIONSHIPS': 'CURATED'})
     
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.cross_domain_intelligence_sv
@@ -453,7 +462,7 @@ def create_alert_summary_view(session: Session) -> None:
     logger.info("Creating alert summary view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['ALERTS', 'CUSTOMERS'])
+    validate_required_tables(session, {'ALERTS': 'RAW_DATA', 'CUSTOMERS': 'RAW_DATA'})
     
     session.sql(f"""
         CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.alert_summary_view AS
@@ -569,7 +578,7 @@ def create_entity_network_analysis_view(session: Session) -> None:
     logger.info("Creating entity network analysis view...")
     
     # Validate required tables exist
-    validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
+    validate_required_tables(session, {'ENTITIES': 'RAW_DATA', 'ENTITY_RELATIONSHIPS': 'CURATED'})
     
     session.sql(f"""
         CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.entity_network_analysis_view AS

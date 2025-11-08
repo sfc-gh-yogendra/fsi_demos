@@ -212,7 +212,7 @@ def create_loan_documents_search_service(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE CORTEX SEARCH SERVICE {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.loan_documents_search_svc
             ON CONTENT
-            ATTRIBUTES ID, TITLE, APPLICANT_NAME, DOC_TYPE, DOCUMENT_SECTION, PROCESSING_STATUS
+            ATTRIBUTES ID, TITLE, ENTITY_ID, DOC_TYPE, DOCUMENT_SECTION, PROCESSING_STATUS
             WAREHOUSE = {config.SNOWFLAKE['search_warehouse']}
             TARGET_LAG = '5 minutes'
             AS 
@@ -220,7 +220,7 @@ def create_loan_documents_search_service(session: Session) -> None:
                 ID,
                 TITLE,
                 CONTENT,
-                APPLICANT_NAME,
+                ENTITY_ID,
                 DOC_TYPE,
                 DOCUMENT_SECTION,
                 PROCESSING_STATUS

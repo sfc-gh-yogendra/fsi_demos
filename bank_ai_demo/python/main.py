@@ -177,7 +177,7 @@ def create_pdf_generator(session: Session) -> None:
         # First create the stages
         logger.info("Creating stages for PDF generation...")
         session.sql(f'''
-            CREATE STAGE IF NOT EXISTS {config.SNOWFLAKE['database']}.CURATED_DATA.GLACIER_REPORTS_STAGE
+            CREATE STAGE IF NOT EXISTS {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.GLACIER_REPORTS_STAGE
             ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
             DIRECTORY = (ENABLE = TRUE)
             COMMENT = 'Stage for storing AI-generated PDF reports'
@@ -311,7 +311,8 @@ def create_pdf_generator(session: Session) -> None:
                 
                 # Upload to secure stage (get database name from current context)
                 database_name = session.sql("SELECT CURRENT_DATABASE() AS db").collect()[0]['DB']
-                stage_path = f"@{database_name}.CURATED_DATA.GLACIER_REPORTS_STAGE"
+                ai_schema = session.sql("SELECT CURRENT_SCHEMA() AS sch").collect()[0]['SCH']
+                stage_path = f"@{database_name}.{config.SNOWFLAKE['ai_schema']}.GLACIER_REPORTS_STAGE"
                 session.file.put(pdf_path, stage_path, overwrite=True, auto_compress=False)
                 
                 # Generate presigned URL for download
@@ -390,13 +391,13 @@ def deploy(connection_name: str, scenarios: List[str], scope: str, scale: str = 
             logger.info("Step 4: Creating search services...")
             create_search_services_wrapper(session, scenarios)
         
-        if scope in ['all', 'agents']:
-            logger.info("Step 5: Creating Snowflake Intelligence agents...")
-            create_agents_wrapper(session, scenarios)
-        
         if scope == 'all':
-            logger.info("Step 6: Creating PDF generation tool...")
+            logger.info("Step 5: Creating PDF generation tool...")
             create_pdf_generator(session)
+        
+        if scope in ['all', 'agents']:
+            logger.info("Step 6: Creating Snowflake Intelligence agents...")
+            create_agents_wrapper(session, scenarios)
         
         # Validation
         if validate:
