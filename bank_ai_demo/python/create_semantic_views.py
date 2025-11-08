@@ -176,6 +176,7 @@ def create_customer_risk_view(session: Session) -> None:
             c.KYC_STATUS,
             c.LAST_REVIEW_DATE,
             c.NEXT_REVIEW_DATE,
+            c.REVIEW_FREQUENCY_MONTHS,
             c.RELATIONSHIP_MANAGER,
             c.AML_FLAGS,
             c.CREATED_DATE
@@ -233,84 +234,84 @@ def create_aml_kyc_risk_semantic_view(session: Session) -> None:
             customer_to_transactions AS customer_risk(CUSTOMER_ID) REFERENCES transaction_summary(CUSTOMER_ID)
         )
         FACTS (
-            customer_risk.AML_FLAGS AS aml_flags
+            customer_risk.AmlFlags AS AML_FLAGS
                 WITH SYNONYMS=('aml flag count', 'risk flags', 'suspicious flags')
                 COMMENT='Number of AML risk flags raised (0-5 scale)',
             
-            transaction_summary.total_transactions AS total_transactions
+            transaction_summary.TotalTransactions AS total_transactions
                 WITH SYNONYMS=('transaction count', 'number of transactions')
                 COMMENT='Total number of transactions for the customer',
             
-            transaction_summary.suspicious_transactions AS suspicious_transactions
+            transaction_summary.SuspiciousTransactions AS suspicious_transactions
                 WITH SYNONYMS=('flagged transactions', 'suspicious activity count')
                 COMMENT='Number of transactions flagged for suspicious activity',
             
-            transaction_summary.largest_transaction_amount AS largest_transaction_amount
+            transaction_summary.LargestTransactionAmount AS largest_transaction_amount
                 WITH SYNONYMS=('biggest transaction', 'maximum amount', 'largest deposit')
                 COMMENT='Largest single transaction amount in {config.CURRENCY}',
             
-            transaction_summary.largest_suspicious_amount AS largest_suspicious_amount
+            transaction_summary.LargestSuspiciousAmount AS largest_suspicious_amount
                 WITH SYNONYMS=('biggest suspicious transaction', 'largest flagged amount')
                 COMMENT='Largest suspicious transaction amount in {config.CURRENCY}',
             
-            transaction_summary.large_transactions_count AS large_transactions_count
+            transaction_summary.LargeTransactionsCount AS large_transactions_count
                 WITH SYNONYMS=('large transaction count', 'high value transactions')
                 COMMENT='Number of transactions over €1M threshold',
             
-            transaction_summary.recent_transactions_count AS recent_transactions_count
+            transaction_summary.RecentTransactionsCount AS recent_transactions_count
                 WITH SYNONYMS=('recent activity count', 'current month transactions')
                 COMMENT='Number of transactions in the last 30 days',
             
-            transaction_summary.recent_deposits_total AS recent_deposits_total
+            transaction_summary.RecentDepositsTotal AS recent_deposits_total
                 WITH SYNONYMS=('recent deposit amount', 'current deposits', 'latest funding')
                 COMMENT='Total amount of deposits received in the last 30 days in {config.CURRENCY}',
             
-            transaction_summary.avg_risk_score AS avg_risk_score
+            transaction_summary.AvgRiskScore AS avg_risk_score
                 WITH SYNONYMS=('average risk', 'transaction risk level')
                 COMMENT='Average risk score across all transactions (0-1 scale)'
         )
         DIMENSIONS (
-            customer_risk.CUSTOMER_ID AS customer_id
+            customer_risk.CustomerId AS CUSTOMER_ID
                 WITH SYNONYMS=('client id', 'customer identifier')
                 COMMENT='Unique customer identifier',
             
-            customer_risk.ENTITY_NAME AS entity_name
+            customer_risk.EntityName AS ENTITY_NAME
                 WITH SYNONYMS=('company name', 'organization name', 'client name')
                 COMMENT='Legal entity name for customer identification',
             
-            customer_risk.ENTITY_ID AS entity_id
+            customer_risk.EntityId AS ENTITY_ID
                 WITH SYNONYMS=('entity identifier', 'company id')
                 COMMENT='Associated entity identifier',
             
-            customer_risk.RISK_RATING AS risk_rating
+            customer_risk.RiskRating AS RISK_RATING
                 WITH SYNONYMS=('risk level', 'customer risk', 'aml rating')
                 COMMENT='Customer risk rating (LOW, MEDIUM, HIGH)',
             
-            customer_risk.KYC_STATUS AS kyc_status
+            customer_risk.KycStatus AS KYC_STATUS
                 WITH SYNONYMS=('kyc state', 'due diligence status')
                 COMMENT='KYC completion status: COMPLETE (standard DD completed), PENDING (documentation in progress), REQUIRES_EDD (Enhanced Due Diligence needed)',
             
-            customer_risk.CUSTOMER_TYPE AS customer_type
+            customer_risk.CustomerType AS CUSTOMER_TYPE
                 WITH SYNONYMS=('client type', 'customer classification')
                 COMMENT='Type of customer relationship',
             
-            customer_risk.LAST_REVIEW_DATE AS last_review_date
+            customer_risk.LastReviewDate AS LAST_REVIEW_DATE
                 WITH SYNONYMS=('previous review date', 'last KYC review')
                 COMMENT='Date of the most recent KYC review',
             
-            customer_risk.NEXT_REVIEW_DATE AS next_review_date
+            customer_risk.NextReviewDate AS NEXT_REVIEW_DATE
                 WITH SYNONYMS=('upcoming review date', 'scheduled review')
                 COMMENT='Date when next periodic KYC review is due',
             
-            customer_risk.REVIEW_FREQUENCY_MONTHS AS review_frequency_months
+            customer_risk.ReviewFrequencyMonths AS REVIEW_FREQUENCY_MONTHS
                 WITH SYNONYMS=('review cycle', 'review interval')
                 COMMENT='Review frequency in months based on risk rating (HIGH=6, MEDIUM=12, LOW=24)',
             
-            transaction_summary.latest_large_transaction_date AS latest_large_transaction_date
+            transaction_summary.LatestLargeTransactionDate AS latest_large_transaction_date
                 WITH SYNONYMS=('recent large transaction date', 'latest high value transaction')
                 COMMENT='Date of the most recent transaction over €1M',
             
-            transaction_summary.latest_suspicious_transaction_date AS latest_suspicious_transaction_date
+            transaction_summary.LatestSuspiciousTransactionDate AS latest_suspicious_transaction_date
                 WITH SYNONYMS=('recent suspicious activity date', 'latest flagged transaction')
                 COMMENT='Date of the most recent suspicious transaction'
         )
@@ -335,78 +336,54 @@ def create_credit_risk_semantic_view(session: Session) -> None:
                 COMMENT='Current loan applications under review'
         )
         FACTS (
-            loan_apps.REQUESTED_AMOUNT AS requested_amount 
+            loan_apps.RequestedAmount AS REQUESTED_AMOUNT 
                 WITH SYNONYMS=('loan amount', 'credit amount', 'funding request')
                 COMMENT='Amount of credit requested in {config.CURRENCY}',
             
-            loan_apps.ANNUAL_REVENUE AS annual_revenue
-                WITH SYNONYMS=('yearly revenue', 'company revenue', 'turnover')
-                COMMENT='Applicant annual revenue in {config.CURRENCY}',
-                
-            loan_apps.TOTAL_ASSETS AS total_assets
-                WITH SYNONYMS=('company assets', 'total balance sheet assets')
-                COMMENT='Total assets of the applicant in {config.CURRENCY}',
-                
-            loan_apps.TOTAL_LIABILITIES AS total_liabilities
-                WITH SYNONYMS=('company debt', 'total debt', 'liabilities')
-                COMMENT='Total liabilities of the applicant in {config.CURRENCY}',
-                
-            loan_apps.EBITDA AS ebitda
-                WITH SYNONYMS=('earnings before interest tax depreciation amortization', 'operating income')
-                COMMENT='EBITDA of the applicant in {config.CURRENCY}',
-                
-            loan_apps.DEBT_SERVICE_COVERAGE_RATIO AS debt_service_coverage_ratio
-                WITH SYNONYMS=('DSCR', 'debt coverage ratio', 'cash flow coverage')
+            loan_apps.DSCR AS DSCR
+                WITH SYNONYMS=('debt service coverage ratio', 'debt coverage ratio', 'cash flow coverage')
                 COMMENT='Debt Service Coverage Ratio (cash flow / debt service)',
             
-            loan_apps.DEBT_TO_EQUITY_RATIO AS debt_to_equity_ratio
+            loan_apps.DebtToEquity AS DEBT_TO_EQUITY
                 WITH SYNONYMS=('D/E ratio', 'leverage ratio', 'debt equity ratio')
                 COMMENT='Debt-to-Equity ratio (total debt / equity)',
             
-            loan_apps.CURRENT_RATIO AS current_ratio
+            loan_apps.CurrentRatio AS CURRENT_RATIO
                 WITH SYNONYMS=('liquidity ratio', 'working capital ratio')
                 COMMENT='Current ratio for liquidity assessment (current assets / current liabilities)',
                 
-            loan_apps.SINGLE_CLIENT_CONCENTRATION_PCT AS single_client_concentration_pct
+            loan_apps.ClientConcentration AS CLIENT_CONCENTRATION
                 WITH SYNONYMS=('client concentration', 'customer concentration percentage', 'revenue concentration')
-                COMMENT='Percentage of revenue from largest client (concentration risk)',
-                
-            loan_apps.TERM_MONTHS AS term_months
-                WITH SYNONYMS=('loan term', 'maturity period', 'repayment period')
-                COMMENT='Loan term in months'
+                COMMENT='Percentage of revenue from largest client (concentration risk)'
         )
         DIMENSIONS (
-            loan_apps.APPLICATION_ID AS application_id
+            loan_apps.ApplicationId AS APPLICATION_ID
                 WITH SYNONYMS=('app id', 'application number', 'loan application id')
                 COMMENT='Unique loan application identifier',
                 
-            loan_apps.CUSTOMER_ID AS customer_id
-                WITH SYNONYMS=('client id', 'borrower id')
+            loan_apps.CustomerId AS CUSTOMER_ID
+                WITH SYNONYMS=('borrower id', 'applicant id')
                 COMMENT='Customer identifier for the applicant',
             
-            loan_apps.APPLICANT_NAME AS applicant_name
-                WITH SYNONYMS=('borrower name', 'company name', 'client name')
-                COMMENT='Name of the loan applicant',
+            loan_apps.EntityId AS ENTITY_ID
+                WITH SYNONYMS=('borrower entity', 'applicant entity', 'entity identifier')
+                COMMENT='Entity ID of the loan applicant',
             
-            loan_apps.INDUSTRY_SECTOR AS industry_sector
-                WITH SYNONYMS=('industry', 'business sector', 'sector classification')
+            loan_apps.Industry AS INDUSTRY
+                WITH SYNONYMS=('industry sector', 'business sector', 'sector classification')
                 COMMENT='Industry classification of the applicant',
                 
-            loan_apps.APPLICATION_STATUS AS application_status
+            loan_apps.ApplicationStatus AS APPLICATION_STATUS
                 WITH SYNONYMS=('loan status', 'application state', 'review status')
                 COMMENT='Current status of the loan application',
                 
-            loan_apps.LOAN_PURPOSE AS loan_purpose
-                WITH SYNONYMS=('use of funds', 'funding purpose', 'credit purpose')
-                COMMENT='Intended use of the loan proceeds',
-                
-            loan_apps.APPLICATION_DATE AS application_date
+            loan_apps.ApplicationDate AS APPLICATION_DATE
                 WITH SYNONYMS=('submission date', 'application submission date')
                 COMMENT='Date when the loan application was submitted',
-                
-            loan_apps.CURRENCY AS currency
-                WITH SYNONYMS=('loan currency', 'currency code')
-                COMMENT='Currency of the loan request'
+            
+            loan_apps.RiskRating AS RISK_RATING
+                WITH SYNONYMS=('credit risk level', 'applicant risk rating')
+                COMMENT='Overall risk rating of the application (LOW, MEDIUM, HIGH)'
         )
         COMMENT='Credit risk analysis view for loan applications with financial ratios and risk metrics'
     """).collect()
@@ -436,32 +413,32 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
             relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
         )
         FACTS (
-            relationships.RISK_IMPACT_SCORE AS risk_impact_score
+            relationships.RiskImpactScore AS RISK_IMPACT_SCORE
                 WITH SYNONYMS=('risk impact', 'relationship risk', 'contagion risk')
                 COMMENT='Risk impact score of the relationship (0-1 scale)'
         )
         DIMENSIONS (
-            entities.ENTITY_ID AS entity_id
+            entities.EntityId AS ENTITY_ID
                 WITH SYNONYMS=('company id', 'entity identifier')
                 COMMENT='Unique entity identifier',
             
-            entities.ENTITY_NAME AS entity_name
+            entities.EntityName AS ENTITY_NAME
                 WITH SYNONYMS=('company name', 'organization name')
                 COMMENT='Legal entity name',
             
-            entities.INDUSTRY_SECTOR AS industry_sector
+            entities.IndustrySector AS INDUSTRY_SECTOR
                 WITH SYNONYMS=('industry', 'business sector', 'sector')
                 COMMENT='Industry classification of the entity',
             
-            entities.COUNTRY_CODE AS country_code
+            entities.CountryCode AS COUNTRY_CODE
                 WITH SYNONYMS=('country', 'jurisdiction', 'location')
                 COMMENT='Country code where entity is incorporated',
             
-            relationships.RELATIONSHIP_TYPE AS relationship_type
+            relationships.RelationshipType AS RELATIONSHIP_TYPE
                 WITH SYNONYMS=('connection type', 'business relationship')
                 COMMENT='Type of business relationship (SUPPLIER, CUSTOMER, VENDOR, etc.)',
             
-            relationships.RELATED_ENTITY_ID AS related_entity_id
+            relationships.RelatedEntityId AS RELATED_ENTITY_ID
                 WITH SYNONYMS=('connected entity', 'relationship target')
                 COMMENT='Entity ID of the related entity in the relationship'
         )
@@ -517,87 +494,71 @@ def create_transaction_monitoring_semantic_view(session: Session) -> None:
         TABLES (
             alerts AS {config.SNOWFLAKE['database']}.CURATED_DATA.alert_summary_view
                 PRIMARY KEY (ALERT_ID)
-                COMMENT='Transaction monitoring alerts with customer risk context',
-            
-            disposition_history AS {config.SNOWFLAKE['database']}.RAW_DATA.ALERT_DISPOSITION_HISTORY
-                PRIMARY KEY (DISPOSITION_ID)
-                COMMENT='Historical alert disposition outcomes for ML training'
+                COMMENT='Transaction monitoring alerts with customer risk context'
         )
         FACTS (
-            alerts.PRIORITY_SCORE AS priority_score
+            alerts.PriorityScore AS PRIORITY_SCORE
                 WITH SYNONYMS=('alert priority', 'suspicion score', 'risk score')
                 COMMENT='ML-based priority score for alert triage (0-1 scale)',
             
-            alerts.FLAGGED_TRANSACTION_COUNT AS flagged_transaction_count
+            alerts.FlaggedTransactionCount AS FLAGGED_TRANSACTION_COUNT
                 WITH SYNONYMS=('transaction count', 'number of transactions')
                 COMMENT='Number of transactions flagged in this alert',
             
-            alerts.TOTAL_FLAGGED_AMOUNT AS total_flagged_amount
+            alerts.TotalFlaggedAmount AS TOTAL_FLAGGED_AMOUNT
                 WITH SYNONYMS=('flagged amount', 'suspicious amount')
                 COMMENT='Total amount of flagged transactions in {config.CURRENCY}',
             
-            alerts.DAYS_OPEN AS days_open
+            alerts.DaysOpen AS days_open
                 WITH SYNONYMS=('alert age', 'days pending', 'open duration')
                 COMMENT='Number of days alert has been open',
             
-            alerts.INVESTIGATION_HOURS AS investigation_hours
+            alerts.InvestigationHours AS investigation_hours
                 WITH SYNONYMS=('time spent', 'investigation time')
-                COMMENT='Hours spent investigating the alert',
-            
-            disposition_history.INVESTIGATION_HOURS AS historical_investigation_hours
-                WITH SYNONYMS=('past investigation time', 'typical hours')
-                COMMENT='Historical investigation hours for completed alerts'
+                COMMENT='Hours spent investigating the alert'
         )
         DIMENSIONS (
-            alerts.ALERT_ID AS alert_id
+            alerts.AlertId AS ALERT_ID
                 WITH SYNONYMS=('alert number', 'alert identifier')
                 COMMENT='Unique alert identifier',
             
-            alerts.CUSTOMER_ID AS customer_id
-                WITH SYNONYMS=('client id', 'customer identifier')
+            alerts.CustomerId AS CUSTOMER_ID
+                WITH SYNONYMS=('alert client id', 'customer identifier')
                 COMMENT='Customer identifier associated with alert',
             
-            alerts.ENTITY_NAME AS entity_name
-                WITH SYNONYMS=('customer name', 'company name')
+            alerts.EntityName AS ENTITY_NAME
+                WITH SYNONYMS=('alert entity name', 'customer name')
                 COMMENT='Legal entity name of the customer',
             
-            alerts.CUSTOMER_RISK_RATING AS customer_risk_rating
-                WITH SYNONYMS=('risk level', 'customer risk')
+            alerts.CustomerRiskRating AS customer_risk_rating
+                WITH SYNONYMS=('alert risk level', 'alert customer risk')
                 COMMENT='Customer risk rating (LOW, MEDIUM, HIGH)',
             
-            alerts.ALERT_TYPE AS alert_type
+            alerts.AlertType AS ALERT_TYPE
                 WITH SYNONYMS=('alert category', 'scenario type')
                 COMMENT='Type of alert: Structuring, Large Cash, Rapid Movement, High Risk Country, Unusual Pattern',
             
-            alerts.ALERT_STATUS AS alert_status
+            alerts.AlertStatus AS ALERT_STATUS
                 WITH SYNONYMS=('status', 'alert state')
                 COMMENT='Current status: OPEN, UNDER_INVESTIGATION, CLOSED',
             
-            alerts.ASSIGNED_TO AS assigned_to
+            alerts.AssignedTo AS ASSIGNED_TO
                 WITH SYNONYMS=('analyst', 'investigator', 'assigned analyst')
                 COMMENT='Name of analyst assigned to the alert',
             
-            alerts.DISPOSITION AS disposition
+            alerts.Disposition AS DISPOSITION
                 WITH SYNONYMS=('outcome', 'final disposition', 'resolution')
                 COMMENT='Final disposition: SAR_FILED, FALSE_POSITIVE, CLEARED',
             
-            alerts.ALERT_DATE AS alert_date
+            alerts.AlertDate AS ALERT_DATE
                 WITH SYNONYMS=('alert generated date', 'trigger date')
                 COMMENT='Date when alert was generated',
             
-            alerts.RESOLUTION_DATE AS resolution_date
+            alerts.ResolutionDate AS RESOLUTION_DATE
                 WITH SYNONYMS=('closed date', 'completion date')
-                COMMENT='Date when alert was resolved',
-            
-            disposition_history.FINAL_DISPOSITION AS historical_disposition
-                WITH SYNONYMS=('past outcome', 'historical result')
-                COMMENT='Historical disposition outcomes: SAR_FILED, FALSE_POSITIVE, CLEARED',
-            
-            disposition_history.ANALYST_NAME AS historical_analyst
-                WITH SYNONYMS=('past analyst', 'historical investigator')
-                COMMENT='Analyst who investigated historical alerts'
+                COMMENT='Date when alert was resolved'
         )
-        COMMENT='Transaction monitoring view for alert triage with ML-based priority scoring and historical disposition data'
+        COMMENT='Transaction monitoring view for alert triage with ML-based priority scoring'
     """).collect()
     
     logger.info("Transaction monitoring semantic view created successfully")
@@ -656,80 +617,80 @@ def create_network_analysis_semantic_view(session: Session) -> None:
             relationships_to_entities AS relationships(PRIMARY_ENTITY_ID) REFERENCES entities(ENTITY_ID)
         )
         FACTS (
-            entities.TOTAL_RELATIONSHIPS AS total_relationships
+            entities.TotalRelationships AS total_relationships
                 WITH SYNONYMS=('relationship count', 'connection count')
                 COMMENT='Total number of relationships for the entity',
             
-            entities.VENDOR_RELATIONSHIPS AS vendor_relationships
+            entities.VendorRelationships AS vendor_relationships
                 WITH SYNONYMS=('supplier count', 'vendor count')
                 COMMENT='Number of vendor relationships',
             
-            entities.SHARED_DIRECTOR_RELATIONSHIPS AS shared_director_relationships
-                WITH SYNONYMS=('common director count', 'director overlap')
+            entities.SharedDirectorRelationships AS shared_director_relationships
+                WITH SYNONYMS=('common director count', 'shared director count')
                 COMMENT='Number of relationships with shared directors',
             
-            entities.SHARED_ADDRESS_RELATIONSHIPS AS shared_address_relationships
-                WITH SYNONYMS=('common address count', 'address overlap')
+            entities.SharedAddressRelationships AS shared_address_relationships
+                WITH SYNONYMS=('common address count', 'shared address count')
                 COMMENT='Number of relationships with shared addresses',
             
-            entities.AVG_RELATIONSHIP_RISK_SCORE AS avg_relationship_risk_score
+            entities.AvgRelationshipRiskScore AS avg_relationship_risk_score
                 WITH SYNONYMS=('average risk', 'mean risk score')
                 COMMENT='Average risk score across all relationships (0-1 scale)',
             
-            entities.MAX_RELATIONSHIP_RISK_SCORE AS max_relationship_risk_score
+            entities.MaxRelationshipRiskScore AS max_relationship_risk_score
                 WITH SYNONYMS=('highest risk', 'peak risk score')
                 COMMENT='Maximum risk score among relationships (0-1 scale)',
             
-            relationships.RISK_IMPACT_SCORE AS risk_impact_score
+            relationships.RiskImpactScore AS RISK_IMPACT_SCORE
                 WITH SYNONYMS=('relationship risk', 'connection risk')
                 COMMENT='Risk impact score of individual relationship (0-1 scale)',
             
-            relationships.INCORPORATION_PROXIMITY_DAYS AS incorporation_proximity_days
+            relationships.IncorporationProximityDays AS INCORPORATION_PROXIMITY_DAYS
                 WITH SYNONYMS=('incorporation timing', 'formation proximity')
                 COMMENT='Days between entity incorporations (shell company indicator)'
         )
         DIMENSIONS (
-            entities.ENTITY_ID AS entity_id
+            entities.EntityId AS ENTITY_ID
                 WITH SYNONYMS=('company id', 'entity identifier')
                 COMMENT='Unique entity identifier',
             
-            entities.ENTITY_NAME AS entity_name
+            entities.EntityName AS ENTITY_NAME
                 WITH SYNONYMS=('company name', 'organization name')
                 COMMENT='Legal entity name',
             
-            entities.COUNTRY_CODE AS country_code
+            entities.CountryCode AS COUNTRY_CODE
                 WITH SYNONYMS=('country', 'jurisdiction', 'location')
                 COMMENT='Country code where entity is incorporated',
             
-            entities.INDUSTRY_SECTOR AS industry_sector
+            entities.IndustrySector AS INDUSTRY_SECTOR
                 WITH SYNONYMS=('industry', 'business sector')
                 COMMENT='Industry classification of the entity',
             
-            entities.PRIMARY_SHARED_DIRECTOR AS primary_shared_director
+            entities.PrimarySharedDirector AS primary_shared_director
                 WITH SYNONYMS=('common director', 'shared director name')
                 COMMENT='Name of primary shared director across relationships',
             
-            entities.PRIMARY_SHARED_ADDRESS AS primary_shared_address
+            entities.PrimarySharedAddress AS primary_shared_address
                 WITH SYNONYMS=('common address', 'shared address')
                 COMMENT='Primary shared address across relationships',
             
-            relationships.RELATIONSHIP_TYPE AS relationship_type
+            relationships.RelationshipType AS RELATIONSHIP_TYPE
                 WITH SYNONYMS=('connection type', 'business relationship')
                 COMMENT='Type of relationship: VENDOR, CUSTOMER, SUBSIDIARY, etc.',
             
-            relationships.RELATED_ENTITY_ID AS related_entity_id
+            relationships.RelatedEntityId AS RELATED_ENTITY_ID
                 WITH SYNONYMS=('connected entity', 'relationship target')
                 COMMENT='Entity ID of the related entity',
             
-            relationships.SHARED_DIRECTOR_NAME AS shared_director_name
+            relationships.SharedDirectorName AS SHARED_DIRECTOR_NAME
                 WITH SYNONYMS=('common director name', 'director overlap')
                 COMMENT='Name of shared director between entities',
             
-            relationships.SHARED_ADDRESS_FLAG AS shared_address_flag
+            relationships.SharedAddressFlag AS SHARED_ADDRESS_FLAG
                 WITH SYNONYMS=('common address indicator', 'address overlap flag')
                 COMMENT='Indicator that entities share the same address',
             
-            relationships.SHARED_ADDRESS AS shared_address
+            relationships.SharedAddress AS SHARED_ADDRESS
                 WITH SYNONYMS=('common address', 'shared location')
                 COMMENT='The actual shared address between entities'
         )
@@ -751,9 +712,9 @@ def create_corporate_client_360_view(session: Session) -> None:
         CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.corporate_client_360_view AS
         SELECT 
             c.CUSTOMER_ID,
-            c.ENTITY_NAME as client_name,
-            c.COUNTRY_CODE as country,
-            c.INDUSTRY_SECTOR as industry,
+            e.ENTITY_NAME as client_name,
+            e.COUNTRY_CODE as country,
+            e.INDUSTRY_SECTOR as industry,
             c.RISK_RATING as risk_rating,
             crm.RELATIONSHIP_MANAGER,
             crm.LAST_CONTACT_DATE,
@@ -769,16 +730,17 @@ def create_corporate_client_360_view(session: Session) -> None:
             AVG(r.RISK_IMPACT_SCORE) as avg_vendor_risk_score,
             -- Transaction metrics
             COUNT(DISTINCT t.TRANSACTION_ID) as transaction_count_90d,
-            SUM(t.AMOUNT_EUR) as transaction_volume_90d
+            SUM(t.AMOUNT) as transaction_volume_90d
         FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS c
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e ON c.ENTITY_ID = e.ENTITY_ID
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM crm ON c.CUSTOMER_ID = crm.CUSTOMER_ID
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES opp ON c.CUSTOMER_ID = opp.CUSTOMER_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r ON c.CUSTOMER_ID = r.PRIMARY_ENTITY_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r ON c.ENTITY_ID = r.PRIMARY_ENTITY_ID
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.TRANSACTIONS t 
-            ON c.CUSTOMER_ID = t.ENTITY_ID 
+            ON c.CUSTOMER_ID = t.CUSTOMER_ID 
             AND t.TRANSACTION_DATE >= DATEADD(day, -90, CURRENT_DATE())
         GROUP BY 
-            c.CUSTOMER_ID, c.ENTITY_NAME, c.COUNTRY_CODE, c.INDUSTRY_SECTOR, c.RISK_RATING,
+            c.CUSTOMER_ID, e.ENTITY_NAME, e.COUNTRY_CODE, e.INDUSTRY_SECTOR, c.RISK_RATING,
             crm.RELATIONSHIP_MANAGER, crm.LAST_CONTACT_DATE, crm.ACCOUNT_STATUS, 
             crm.ACCOUNT_TIER, crm.RISK_OPPORTUNITIES_COUNT
     """).collect()
@@ -802,98 +764,98 @@ def create_corporate_client_360_semantic_view(session: Session) -> None:
                 COMMENT='Client opportunities with potential revenue impact'
         )
         FACTS (
-            clients.TOTAL_OPPORTUNITIES AS total_opportunities
-                WITH UNITS=('count')
+            clients.TotalOpportunities AS total_opportunities
+                WITH SYNONYMS=('opportunity count', 'number of opportunities')
                 COMMENT='Total number of opportunities identified for this client',
             
-            clients.OPEN_OPPORTUNITIES AS open_opportunities
-                WITH UNITS=('count')
+            clients.OpenOpportunities AS open_opportunities
+                WITH SYNONYMS=('active opportunities', 'in progress opportunities')
                 COMMENT='Number of opportunities currently open or in progress',
             
-            clients.PIPELINE_VALUE AS pipeline_value
-                WITH UNITS=('EUR', 'currency')
+            clients.PipelineValue AS pipeline_value
+                WITH SYNONYMS=('pipeline amount', 'opportunity value', 'potential revenue')
                 COMMENT='Total potential value of open and in-progress opportunities',
             
-            clients.VENDOR_RELATIONSHIP_COUNT AS vendor_relationship_count
-                WITH UNITS=('count')
+            clients.VendorRelationshipCount AS vendor_relationship_count
+                WITH SYNONYMS=('supplier count', 'vendor count')
                 COMMENT='Number of vendor relationships this client has',
             
-            clients.AVG_VENDOR_RISK_SCORE AS avg_vendor_risk_score
-                WITH RANGE=(0, 1)
+            clients.AvgVendorRiskScore AS avg_vendor_risk_score
+                WITH SYNONYMS=('average vendor risk', 'mean supplier risk')
                 COMMENT='Average risk impact score of vendor relationships',
             
-            clients.TRANSACTION_COUNT_90D AS transaction_count_90d
-                WITH UNITS=('count')
+            clients.TransactionCount90d AS transaction_count_90d
+                WITH SYNONYMS=('recent transaction count', 'quarterly transactions')
                 COMMENT='Number of transactions in last 90 days',
             
-            clients.TRANSACTION_VOLUME_90D AS transaction_volume_90d
-                WITH UNITS=('EUR', 'currency')
+            clients.TransactionVolume90d AS transaction_volume_90d
+                WITH SYNONYMS=('transaction volume', 'quarterly volume', 'recent volume')
                 COMMENT='Total transaction volume in EUR over last 90 days',
             
-            opportunities.POTENTIAL_VALUE AS opportunity_potential_value
-                WITH UNITS=('EUR', 'currency')
+            opportunities.OpportunityPotentialValue AS POTENTIAL_VALUE
+                WITH SYNONYMS=('opportunity value', 'estimated revenue', 'potential value')
                 COMMENT='Estimated revenue impact of this opportunity'
         )
         DIMENSIONS (
-            clients.CUSTOMER_ID AS customer_id
+            clients.CustomerId AS CUSTOMER_ID
                 COMMENT='Unique customer identifier',
             
-            clients.CLIENT_NAME AS client_name
+            clients.ClientName AS client_name
                 WITH SYNONYMS=('customer name', 'entity name', 'company name')
                 COMMENT='Legal name of the client entity',
             
-            clients.COUNTRY AS country
+            clients.Country AS country
                 WITH SYNONYMS=('country code', 'jurisdiction', 'domicile')
                 COMMENT='Country where client is domiciled',
             
-            clients.INDUSTRY AS industry
+            clients.Industry AS industry
                 WITH SYNONYMS=('sector', 'industry sector', 'business sector')
                 COMMENT='Industry classification of the client',
             
-            clients.RISK_RATING AS risk_rating
+            clients.RiskRating AS risk_rating
                 WITH SYNONYMS=('risk level', 'client risk')
                 COMMENT='Overall risk rating (LOW, MEDIUM, HIGH)',
             
-            clients.RELATIONSHIP_MANAGER AS relationship_manager
+            clients.RelationshipManager AS RELATIONSHIP_MANAGER
                 WITH SYNONYMS=('RM', 'account manager', 'relationship banker')
                 COMMENT='Name of the relationship manager assigned to this client',
             
-            clients.LAST_CONTACT_DATE AS last_contact_date
+            clients.LastContactDate AS LAST_CONTACT_DATE
                 WITH SYNONYMS=('last call date', 'last interaction')
                 COMMENT='Date of most recent client contact',
             
-            clients.ACCOUNT_STATUS AS account_status
+            clients.AccountStatus AS ACCOUNT_STATUS
                 WITH SYNONYMS=('client status', 'relationship status')
                 COMMENT='Status of the account (ACTIVE, PROSPECT, INACTIVE)',
             
-            clients.ACCOUNT_TIER AS account_tier
+            clients.AccountTier AS ACCOUNT_TIER
                 WITH SYNONYMS=('tier', 'service level', 'client tier')
                 COMMENT='Account tier classification (PREMIUM, STANDARD, BASIC)',
             
-            opportunities.OPPORTUNITY_ID AS opportunity_id
+            opportunities.OpportunityId AS OPPORTUNITY_ID
                 COMMENT='Unique opportunity identifier',
             
-            opportunities.OPPORTUNITY_TYPE AS opportunity_type
+            opportunities.OpportunityType AS OPPORTUNITY_TYPE
                 WITH SYNONYMS=('opp type', 'product type')
                 COMMENT='Type of opportunity (CROSS_SELL, UPSELL, RISK_MITIGATION, etc.)',
             
-            opportunities.OPPORTUNITY_DESCRIPTION AS opportunity_description
+            opportunities.OpportunityDescription AS OPPORTUNITY_DESCRIPTION
                 WITH SYNONYMS=('opportunity details', 'product description')
                 COMMENT='Detailed description of the opportunity',
             
-            opportunities.SOURCE_TYPE AS opportunity_source
+            opportunities.OpportunitySource AS SOURCE_TYPE
                 WITH SYNONYMS=('source', 'origin', 'how identified')
                 COMMENT='How opportunity was identified (call_note, internal_email, news, etc.)',
             
-            opportunities.PRIORITY AS opportunity_priority
+            opportunities.OpportunityPriority AS PRIORITY
                 WITH SYNONYMS=('urgency', 'importance')
                 COMMENT='Priority level (HIGH, MEDIUM, LOW)',
             
-            opportunities.STATUS AS opportunity_status
+            opportunities.OpportunityStatus AS STATUS
                 WITH SYNONYMS=('opp status', 'stage')
                 COMMENT='Current status (OPEN, IN_PROGRESS, CLOSED_WON, CLOSED_LOST)',
             
-            opportunities.CREATED_DATE AS opportunity_created_date
+            opportunities.OpportunityCreatedDate AS CREATED_DATE
                 WITH SYNONYMS=('opportunity date', 'identified date')
                 COMMENT='Date when opportunity was first identified'
         )
@@ -923,126 +885,126 @@ def create_wealth_client_sv(session: Session) -> None:
                 COMMENT='Model portfolio definitions with target allocations'
         )
         FACTS (
-            profiles.TOTAL_AUM AS total_aum
-                WITH UNITS=('EUR', 'currency')
+            profiles.TotalAUM AS TOTAL_AUM
+                WITH SYNONYMS=('assets under management', 'portfolio value', 'total assets')
                 COMMENT='Total assets under management for this client',
             
-            profiles.CONCENTRATION_THRESHOLD_PCT AS concentration_threshold
-                WITH UNITS=('percent')
+            profiles.ConcentrationThreshold AS CONCENTRATION_THRESHOLD_PCT
+                WITH SYNONYMS=('concentration limit', 'position limit')
                 COMMENT='Alert threshold if any single holding exceeds this percentage',
             
-            profiles.REBALANCE_TRIGGER_PCT AS rebalance_trigger
-                WITH UNITS=('percent')
+            profiles.RebalanceTrigger AS REBALANCE_TRIGGER_PCT
+                WITH SYNONYMS=('rebalance threshold', 'drift threshold')
                 COMMENT='Trigger rebalance if allocation deviates by this percentage',
             
-            holdings.CURRENT_VALUE AS holding_value
-                WITH UNITS=('EUR', 'currency')
+            holdings.HoldingValue AS CURRENT_VALUE
+                WITH SYNONYMS=('market value', 'position value', 'holding amount')
                 COMMENT='Current market value of this holding',
             
-            holdings.COST_BASIS AS holding_cost_basis
-                WITH UNITS=('EUR', 'currency')
+            holdings.HoldingCostBasis AS COST_BASIS
+                WITH SYNONYMS=('original cost', 'purchase price', 'tax basis')
                 COMMENT='Original cost basis for tax calculations',
             
-            holdings.UNREALIZED_GAIN_LOSS AS unrealized_gain_loss
-                WITH UNITS=('EUR', 'currency')
+            holdings.UnrealizedGainLoss AS UNREALIZED_GAIN_LOSS
+                WITH SYNONYMS=('paper gain', 'unrealized profit', 'mark to market gain')
                 COMMENT='Unrealized gain or loss on this holding',
             
-            holdings.ALLOCATION_PCT AS current_allocation
-                WITH UNITS=('percent')
+            holdings.CurrentAllocation AS ALLOCATION_PCT
+                WITH SYNONYMS=('portfolio percentage', 'weight', 'allocation weight')
                 COMMENT='Percentage of total portfolio this holding represents',
             
-            holdings.QUANTITY AS holding_quantity
-                WITH UNITS=('shares')
+            holdings.HoldingQuantity AS QUANTITY
+                WITH SYNONYMS=('shares', 'units', 'position size')
                 COMMENT='Number of shares or units held',
             
-            models.TARGET_EQUITY_PCT AS target_equity_allocation
-                WITH UNITS=('percent')
+            models.TargetEquityAllocation AS TARGET_EQUITY_PCT
+                WITH SYNONYMS=('equity target', 'stock allocation target')
                 COMMENT='Target equity allocation for this model portfolio',
             
-            models.TARGET_BOND_PCT AS target_bond_allocation
-                WITH UNITS=('percent')
+            models.TargetBondAllocation AS TARGET_BOND_PCT
+                WITH SYNONYMS=('bond target', 'fixed income target')
                 COMMENT='Target bond allocation for this model portfolio',
             
-            models.TARGET_ALTERNATIVE_PCT AS target_alternative_allocation
-                WITH UNITS=('percent')
+            models.TargetAlternativeAllocation AS TARGET_ALTERNATIVE_PCT
+                WITH SYNONYMS=('alternative target', 'alts target')
                 COMMENT='Target alternative investment allocation',
             
-            models.TARGET_CASH_PCT AS target_cash_allocation
-                WITH UNITS=('percent')
+            models.TargetCashAllocation AS TARGET_CASH_PCT
+                WITH SYNONYMS=('cash target', 'liquidity target')
                 COMMENT='Target cash allocation',
             
-            models.EXPECTED_ANNUAL_RETURN_PCT AS expected_return
-                WITH UNITS=('percent')
+            models.ExpectedReturn AS EXPECTED_ANNUAL_RETURN_PCT
+                WITH SYNONYMS=('expected return', 'target return', 'projected return')
                 COMMENT='Expected annual return for this model portfolio',
             
-            models.EXPECTED_VOLATILITY_PCT AS expected_volatility
-                WITH UNITS=('percent')
+            models.ExpectedVolatility AS EXPECTED_VOLATILITY_PCT
+                WITH SYNONYMS=('risk level', 'standard deviation', 'volatility')
                 COMMENT='Expected volatility (standard deviation) for this model'
         )
         DIMENSIONS (
-            profiles.PROFILE_ID AS profile_id
+            profiles.ProfileId AS PROFILE_ID
                 COMMENT='Unique wealth client profile identifier',
             
-            profiles.CUSTOMER_ID AS customer_id
+            profiles.CustomerId AS CUSTOMER_ID
                 WITH SYNONYMS=('client id', 'account id')
                 COMMENT='Link to customer master data',
             
-            profiles.WEALTH_ADVISOR AS wealth_advisor
+            profiles.WealthAdvisor AS WEALTH_ADVISOR
                 WITH SYNONYMS=('advisor', 'advisor name', 'portfolio manager')
                 COMMENT='Name of the wealth advisor managing this client',
             
-            profiles.RISK_TOLERANCE AS risk_tolerance
+            profiles.RiskTolerance AS RISK_TOLERANCE
                 WITH SYNONYMS=('risk appetite', 'risk profile')
                 COMMENT='Client risk tolerance (CONSERVATIVE, MODERATE, AGGRESSIVE)',
             
-            profiles.TAX_STATUS AS tax_status
+            profiles.TaxStatus AS TAX_STATUS
                 WITH SYNONYMS=('tax treatment', 'account type')
                 COMMENT='Tax status of the account (STANDARD, TAX_DEFERRED, TAX_EXEMPT)',
             
-            profiles.INVESTMENT_OBJECTIVES AS investment_objectives
+            profiles.InvestmentObjectives AS INVESTMENT_OBJECTIVES
                 WITH SYNONYMS=('investment goals', 'objectives', 'financial goals')
                 COMMENT='Primary investment objectives (GROWTH, INCOME, PRESERVATION, BALANCED)',
             
-            profiles.LAST_REBALANCE_DATE AS last_rebalance_date
+            profiles.LastRebalanceDate AS LAST_REBALANCE_DATE
                 WITH SYNONYMS=('previous rebalance', 'last portfolio adjustment')
                 COMMENT='Date of most recent portfolio rebalancing',
             
-            profiles.NEXT_REVIEW_DATE AS next_review_date
+            profiles.NextReviewDate AS NEXT_REVIEW_DATE
                 WITH SYNONYMS=('upcoming review', 'scheduled review date')
                 COMMENT='Date when next portfolio review is scheduled',
             
-            holdings.ASSET_TYPE AS asset_type
+            holdings.AssetType AS ASSET_TYPE
                 WITH SYNONYMS=('asset category', 'investment type')
                 COMMENT='Broad asset type (EQUITY, BOND, ALTERNATIVE, CASH)',
             
-            holdings.ASSET_CLASS AS asset_class
+            holdings.AssetClass AS ASSET_CLASS
                 WITH SYNONYMS=('sub-asset class', 'specific asset type')
                 COMMENT='Specific asset class (DOMESTIC_EQUITY, INTL_EQUITY, GOVT_BOND, etc.)',
             
-            holdings.ASSET_NAME AS asset_name
+            holdings.AssetName AS ASSET_NAME
                 WITH SYNONYMS=('holding name', 'security name', 'investment name')
                 COMMENT='Full name of the asset or security',
             
-            holdings.TICKER_SYMBOL AS ticker
+            holdings.Ticker AS TICKER_SYMBOL
                 WITH SYNONYMS=('ticker symbol', 'symbol', 'stock symbol')
                 COMMENT='Trading symbol for this asset',
             
-            holdings.AS_OF_DATE AS holdings_as_of_date
+            holdings.HoldingsAsOfDate AS AS_OF_DATE
                 WITH SYNONYMS=('valuation date', 'pricing date')
                 COMMENT='Date of current valuation',
             
-            models.MODEL_ID AS model_portfolio_id
+            models.ModelPortfolioId AS MODEL_ID
                 COMMENT='Unique model portfolio identifier',
             
-            models.MODEL_NAME AS model_name
+            models.ModelName AS MODEL_NAME
                 WITH SYNONYMS=('model portfolio name', 'portfolio model')
                 COMMENT='Name of the model portfolio',
             
-            models.RISK_PROFILE AS model_risk_profile
+            models.ModelRiskProfile AS RISK_PROFILE
                 WITH SYNONYMS=('model risk level')
                 COMMENT='Risk profile of this model (LOW, MODERATE, HIGH)',
             
-            models.DESCRIPTION AS model_description
+            models.ModelDescription AS DESCRIPTION
                 WITH SYNONYMS=('model summary', 'portfolio description')
                 COMMENT='Detailed description of the model portfolio strategy'
         )
