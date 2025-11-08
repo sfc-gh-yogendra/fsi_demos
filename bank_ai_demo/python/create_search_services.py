@@ -14,7 +14,7 @@ import config
 logger = logging.getLogger(__name__)
 
 
-def validate_table_exists(session: Session, table_name: str, schema: str = "RAW_DATA") -> bool:
+def validate_table_exists(session: Session, table_name: str, schema: str = "CURATED") -> bool:
     """Check if a specific table exists in the database."""
     try:
         result = session.sql(f"""
@@ -32,7 +32,7 @@ def validate_table_exists(session: Session, table_name: str, schema: str = "RAW_
         return False
 
 
-def validate_required_tables(session: Session, required_tables: List[str], schema: str = "RAW_DATA") -> None:
+def validate_required_tables(session: Session, required_tables: List[str], schema: str = "CURATED") -> None:
     """Validate that all required tables exist, raise error if any are missing."""
     missing_tables = []
     
@@ -75,7 +75,7 @@ def get_required_tables_for_search_services(scenarios: List[str]) -> Set[str]:
     return required_tables
 
 
-def validate_table_has_data(session: Session, table_name: str, schema: str = "RAW_DATA") -> bool:
+def validate_table_has_data(session: Session, table_name: str, schema: str = "CURATED") -> bool:
     """Check if a table exists and has data."""
     if not validate_table_exists(session, table_name, schema):
         return False
@@ -168,7 +168,7 @@ def create_compliance_documents_search_service(session: Session) -> None:
                 DOC_TYPE,
                 PUBLISH_DATE,
                 RISK_SIGNAL
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.COMPLIANCE_DOCUMENTS
+            FROM {config.SNOWFLAKE['database']}.CURATED.COMPLIANCE_DOCUMENTS
     """).collect()
     
     logger.info("Compliance documents search service created successfully")
@@ -196,7 +196,7 @@ def create_credit_policy_search_service(session: Session) -> None:
                 EFFECTIVE_DATE,
                 VERSION,
                 REGULATORY_FRAMEWORK
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CREDIT_POLICY_DOCUMENTS
+            FROM {config.SNOWFLAKE['database']}.CURATED.CREDIT_POLICY_DOCUMENTS
     """).collect()
     
     logger.info("Credit policy search service created successfully")
@@ -224,7 +224,7 @@ def create_loan_documents_search_service(session: Session) -> None:
                 DOC_TYPE,
                 DOCUMENT_SECTION,
                 PROCESSING_STATUS
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_DOCUMENTS
+            FROM {config.SNOWFLAKE['database']}.CURATED.LOAN_DOCUMENTS
     """).collect()
     
     logger.info("Loan documents search service created successfully")
@@ -256,7 +256,7 @@ def create_news_research_search_service(session: Session) -> None:
                 CASE WHEN ESG_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS ESG_RELEVANCE,
                 CASE WHEN SUPPLY_CHAIN_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS SUPPLY_CHAIN_RELEVANCE,
                 CASE WHEN INFLATION_RELEVANCE = TRUE THEN 'YES' ELSE 'NO' END AS INFLATION_RELEVANCE
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.NEWS_AND_RESEARCH
+            FROM {config.SNOWFLAKE['database']}.CURATED.NEWS_AND_RESEARCH
     """).collect()
     
     logger.info("News and research search service created successfully")
@@ -285,7 +285,7 @@ def create_document_templates_search_service(session: Session) -> None:
                 USE_CASE,
                 REGULATORY_FRAMEWORK,
                 REQUIRED_VARIABLES
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES
+            FROM {config.SNOWFLAKE['database']}.CURATED.DOCUMENT_TEMPLATES
     """).collect()
     
     logger.info("Document templates search service created successfully")
@@ -388,7 +388,7 @@ def create_client_documents_search_service(session: Session) -> None:
                 CLIENT_NAME,
                 SOURCE_TYPE,
                 PUBLISH_DATE
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS
+            FROM {config.SNOWFLAKE['database']}.CURATED.CLIENT_DOCUMENTS
     """).collect()
     
     logger.info("Client documents search service created successfully")
@@ -415,7 +415,7 @@ def create_wealth_meeting_notes_search_service(session: Session) -> None:
                 CLIENT_NAME,
                 ADVISOR_NAME,
                 MEETING_DATE
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES
+            FROM {config.SNOWFLAKE['database']}.CURATED.WEALTH_MEETING_NOTES
     """).collect()
     
     logger.info("Wealth meeting notes search service created successfully")

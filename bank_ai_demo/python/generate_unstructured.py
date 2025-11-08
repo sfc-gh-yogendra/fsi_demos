@@ -67,7 +67,7 @@ def generate_compliance_documents(session: Session, scale: str = "demo", scenari
         
         # Step 3-5: Generate content using Cortex Complete and save final documents
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.COMPLIANCE_DOCUMENTS AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.COMPLIANCE_DOCUMENTS AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
@@ -106,7 +106,7 @@ def generate_credit_policy_documents(session: Session, scale: str = "demo", scen
         
         # Step 3-5: Generate content using Cortex Complete and save final documents
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CREDIT_POLICY_DOCUMENTS AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.CREDIT_POLICY_DOCUMENTS AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
@@ -153,7 +153,7 @@ def generate_loan_documents(session: Session, scale: str = "demo", scenarios: Li
         
         # Step 3-5: Generate content using Cortex Complete and save final documents
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_DOCUMENTS AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.LOAN_DOCUMENTS AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
@@ -191,7 +191,7 @@ def generate_news_and_research(session: Session, scale: str = "demo", scenarios:
         
         # Step 3-5: Generate content using Cortex Complete and save final documents
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.NEWS_AND_RESEARCH AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.NEWS_AND_RESEARCH AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
@@ -244,7 +244,7 @@ def generate_document_templates(session: Session, scale: str = "demo", scenarios
         
         # Step 3-5: Generate content using Cortex Complete and save final templates
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.DOCUMENT_TEMPLATES AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.DOCUMENT_TEMPLATES AS
             SELECT 
                 PROMPT_ID AS TEMPLATE_ID,
                 TEMPLATE_NAME,
@@ -860,7 +860,7 @@ def generate_client_documents(session: Session, scale: str = "demo", scenarios: 
         
         # Generate content using Cortex Complete
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_DOCUMENTS AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.CLIENT_DOCUMENTS AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
@@ -946,7 +946,7 @@ def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenari
         
         # Generate content using Cortex Complete
         session.sql(f"""
-            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_MEETING_NOTES AS
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.WEALTH_MEETING_NOTES AS
             SELECT 
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,

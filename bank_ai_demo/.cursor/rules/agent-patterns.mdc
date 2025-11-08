@@ -39,7 +39,7 @@ def configure_analyst_tool(semantic_view: str, purpose: str) -> Dict:
     return {
         "tool_name": f"{semantic_view}_tool",
         "type": "Cortex Analyst",
-        "semantic_view": f"{config.SNOWFLAKE['database']}.SEMANTIC_LAYER.{semantic_view}",
+        "semantic_view": f"{config.SNOWFLAKE['database']}.AI.{semantic_view}",
         "description": f"Analyzes {purpose} using structured data. "
                       f"Use for quantitative questions about metrics, ratios, and cohorts.",
         "when_to_use": "Questions requiring calculations, aggregations, or filtering"
@@ -400,7 +400,7 @@ def configure_analyst_tool(semantic_view: str, purpose: str) -> Dict:
     return {
         "tool_name": f"{semantic_view}_tool",
         "type": "Cortex Analyst",
-        "semantic_view": f"{config.SNOWFLAKE['database']}.SEMANTIC_LAYER.{semantic_view}",
+        "semantic_view": f"{config.SNOWFLAKE['database']}.AI.{semantic_view}",
         "description": f"Analyzes {purpose} using structured data. "
                       f"Use for quantitative questions about metrics, ratios, and cohorts.",
         "when_to_use": "Questions requiring calculations, aggregations, or filtering"

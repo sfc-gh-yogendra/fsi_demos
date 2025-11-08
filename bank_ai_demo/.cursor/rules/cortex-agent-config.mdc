@@ -1,62 +1,709 @@
 ---
-description: Snowflake Cortex Agents Setup Instructions Patterns and Best Practices
+description: Snowflake Intelligence Agent Creation - SQL-Based Configuration Guide
 alwaysApply: false
 ---
-# Snowflake Cortex Agent Setup Instructions Standards
+# Cortex Agent Configuration Guide - Glacier First Bank
 
-## Agent Architecture
-- **Separate agents**: One per demo scenario for maximum modularity
-- **Multiple tools per agent**: Combine Cortex Analyst + Cortex Search as needed
-- **Deterministic behavior**: Use specific tool descriptions and when-to-use rules
+Complete guide for creating and configuring Snowflake Intelligence agents using SQL `CREATE AGENT` statements.
 
-## Agent Naming Pattern
-- Scenario-based names: "Earnings_Analysis_Agent", "Thematic_Research_Agent", etc.
-- Display names: User-friendly versions for the UI
-- Descriptions: Clear business context and capabilities
+**Related Rules**: 
+- @agent-patterns.mdc - For agent architecture patterns
+- @semantic-views.mdc - For underlying semantic views
+- @troubleshooting.mdc - For troubleshooting agent issues
 
-## Standard Agent Template
+## Overview
+
+This guide provides the exact patterns and procedures for creating Snowflake Intelligence agents using SQL `CREATE AGENT` statements. All agents should be automatically created via `python/create_agents.py` during the build process.
+
+**Agent Creation Method:**
+- ✅ **SQL-Based**: All agents created using `CREATE OR REPLACE AGENT` statements
+- ✅ **Automated**: Executed automatically via `python main.py`
+- ✅ **Centralized**: All agent creation logic in `python/create_agents.py`
+- ✅ **Properly Formatted**: Instructions use YAML escaping (`\n` for newlines, `\"` for quotes)
+
+## Step 1: Prerequisites and Preparation
+
+### 1.1 Verify AI Components
+Before configuring agents, verify all required AI components exist:
+
+```python
+def verify_ai_components_for_agent(session: Session, required_services: List[str]):
+    """Verify semantic view and search services exist"""
+    
+    # Check semantic view exists
+    try:
+        session.sql(f"DESCRIBE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.aml_kyc_risk_sv").collect()
+        print("✅ Semantic view exists")
+    except Exception as e:
+        print(f"❌ Semantic view missing: {e}")
+        return False
+    
+    # Check search services exist
+    services = session.sql(f"SHOW CORTEX SEARCH SERVICES IN {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}").collect()
+    existing_services = [service['name'] for service in services]
+    
+    for required_service in required_services:
+        if required_service in existing_services:
+            print(f"✅ Search service: {required_service}")
+        else:
+            print(f"❌ Missing search service: {required_service}")
+            return False
+    
+    return True
 ```
-Agent Name: {scenario_name}_agent
-Display Name: {User Friendly Name}
-Description: {Business context and capabilities}
-Response Instructions: {Tone, format, and output guidelines}
 
+### 1.2 Validate Data Readiness
+Ensure data is ready for agent testing:
 
-Tools:
-  - {semantic_view_name} (Cortex Analyst)
-  - search_{document_type} (Cortex Search)
-
-Orchestration Model: Claude 4
-Planning Instructions: {Specific tool selection logic with when-to-use rules}
+```python
+def validate_agent_data_readiness(session: Session):
+    """Validate data quality and completeness for agents"""
+    
+    # Check customer data
+    customers = session.sql(f"SELECT COUNT(*) as count FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS").collect()
+    print(f"✅ Customers: {customers[0]['COUNT']}")
+    
+    # Check entity data
+    entities = session.sql(f"SELECT COUNT(*) as count FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES").collect()
+    print(f"✅ Entities: {entities[0]['COUNT']}")
+    
+    # Check document corpus (if applicable)
+    for corpus in ['ONBOARDING_DOCUMENTS_CORPUS', 'POLICIES_CORPUS', 'NEWS_CORPUS']:
+        try:
+            doc_count = session.sql(f"SELECT COUNT(*) as count FROM {config.SNOWFLAKE['database']}.CURATED_DATA.{corpus}").collect()[0]['COUNT']
+            print(f"✅ {corpus}: {doc_count} documents")
+        except:
+            print(f"⚠️  {corpus}: Not found (may not be needed)")
+    
+    return True
 ```
 
-## Tool Description Requirements
-- **Cortex Analyst tools**: Specify exactly what data/metrics are available and for what type of analysis it can be used
-- **Cortex Search tools**: Specify document types and search capabilities
-- **When-to-use rules**: Clear conditions for tool selection
+## Step 2: SQL-Based Agent Creation
 
-## Instruction Guidelines
-- **Planning Instructions**: Focus on tool selection logic
-- **Response Instructions**: Define tone, format, citation requirements
-- **Deterministic logic**: Avoid ambiguous guidance, use explicit decision trees
-- **Demo-ready**: Instructions should ensure consistent, impressive response
+### 2.1 Automated Agent Creation via SQL
 
-## Tool Configuration Patterns
+**Implementation**: Use `python/create_agents.py`
 
-### Cortex Analyst Tool Pattern
-```
-Tool Name: {analyst_tool_name} 
-Type: Cortex Analyst
-Semantic View: {DATABAS_NAME}].{SCHEMA}.{SEMANTIC_VIEW_NAME} 
-Description: "{Specify exactly what data/metrics are available and for what type of analysis it can be used}."
+**Key Components:**
+
+1. **Agent Creation Functions**: One function per agent (e.g., `create_aml_officer_agent()`)
+2. **Instruction Helpers**: Functions that return properly formatted instructions
+3. **YAML Formatting**: Helper function `format_instructions_for_yaml()` that escapes instructions for SQL
+
+**Example Pattern:**
+```python
+def create_aml_officer_agent(session: Session):
+    """Create AML Officer agent with full instructions."""
+    database_name = config.SNOWFLAKE['database']
+    ai_schema = config.SNOWFLAKE['ai_schema']
+    
+    # Get instructions from helper functions
+    instructions = get_agent_instructions()['aml_officer']
+    response_formatted = format_instructions_for_yaml(instructions['response'])
+    orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.aml_officer_agent
+  COMMENT = 'Expert AI assistant for AML/KYC enhanced due diligence...'
+  PROFILE = '{{"display_name": "AML Compliance Officer"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: claude-sonnet-4-5
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "aml_kyc_analyzer"
+        description: "Analyzes customer risk profiles and transaction patterns..."
+  tool_resources:
+    aml_kyc_analyzer:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{config.SNOWFLAKE['compute_warehouse']}"
+      semantic_view: "{database_name}.{ai_schema}.aml_kyc_risk_sv"
+  $$;
+"""
+    
+    session.sql(sql).collect()
+    print("✅ Created agent: aml_officer_agent")
 ```
 
-### Cortex Search Tool Pattern
+### 2.2 Critical Formatting Rules for SQL Agent Creation
+
+**YAML Escaping Requirements:**
+- **Line breaks**: Convert actual newlines to `\n` 
+- **Double quotes**: Escape with `\"`
+- **Single quotes**: Escape with `''` (double single quote for SQL)
+
+**Helper Function:**
+```python
+def format_instructions_for_yaml(text: str) -> str:
+    """
+    Format multi-line instructions for YAML specification within SQL.
+    - Replace actual line breaks with \n
+    - Escape double quotes with \"
+    - Escape single quotes with ''
+    """
+    formatted = text.replace('\n', '\\n')
+    formatted = formatted.replace('"', '\\"')
+    formatted = formatted.replace("'", "''")
+    return formatted
 ```
-Tool Name: search_{document_type}
-Type: Cortex Search
-Service: {DATABAS_NAME}.{SCHEMA}.{DOCUMENT_TYPE}         # e.g., SAM_BROKER_RESEARCH, SAM_POLICY_DOCS
-ID Column: {ID column in the cortex search service source table}
-Title Column: {Title column in the cortex search service source table}
-Description: "{Specify document types and search capabilities}."
+
+**Example Input/Output:**
+```python
+# Input (Python multi-line string):
+"""Style:
+- Tone: Professional compliance officer
+- Example: "This customer requires EDD"
+User: "What is the risk rating?"
+Response: "Customer has HIGH risk rating"
+"""
+
+# Output (YAML-ready string):
+"Style:\n- Tone: Professional compliance officer\n- Example: \"This customer requires EDD\"\nUser: \"What is the risk rating?\"\nResponse: \"Customer has HIGH risk rating\""
 ```
+
+### 2.3 Agent Creation Workflow
+
+**When you run `python main.py`:**
+1. Build process creates semantic views and search services
+2. `main.py` calls `create_agents.create_all_agents()`
+3. Each agent creation function executes its `CREATE AGENT` SQL
+4. Agents appear in `SNOWFLAKE_INTELLIGENCE.AGENTS` schema
+5. Agents are immediately available in Snowflake Intelligence UI
+
+**Manual Agent Creation (if needed):**
+```bash
+# Create all agents
+python main.py --connection-name my_connection --scope agents
+
+# Or full deployment
+python main.py --connection-name my_connection  # Includes agents in 'all' scope
+```
+
+### 2.4 Tool Configuration Patterns
+
+#### Cortex Analyst Tool - Comprehensive Description Pattern
+
+**CRITICAL**: Tool descriptions must be comprehensive to guide agent tool selection.
+
+```yaml
+tools:
+  - tool_spec:
+      type: "cortex_analyst_text_to_sql"
+      name: "aml_kyc_analyzer"
+      description: "Analyzes customer AML/KYC risk profiles and transaction patterns.
+
+Data Coverage:
+- Customer Risk Profiles: 500+ corporate clients with risk ratings (LOW, MEDIUM, HIGH)
+- Transaction History: 12 months of transaction data with suspicious activity flags
+- KYC Status: Due diligence completion status (COMPLETE, PENDING, REQUIRES_EDD)
+- AML Flags: Risk indicator counts (0-5 scale)
+- Entity Information: Legal names, jurisdictions, industry sectors
+
+Semantic Model Contents:
+- Customer Dimensions: Customer ID, Entity Name, Risk Rating, KYC Status, Customer Type
+- Transaction Metrics: Transaction counts, suspicious transaction counts, flagged amounts
+- Time Dimensions: Review dates, next review dates, transaction dates
+- Risk Metrics: AML flags, average risk scores, large transaction counts
+
+When to Use:
+- Questions about customer risk ratings or KYC status
+- Queries requiring transaction counts or flagged amounts
+- Analysis of suspicious activity patterns or trends
+- Cohort analysis by risk rating or customer type
+
+When NOT to Use (use alternative tools):
+- Document content from onboarding files → use search_onboarding_docs
+- Policy text or regulatory requirements → use search_policies
+- News articles or adverse media → use search_news
+- Real-time transaction monitoring (data is T+1 day lag)
+
+Query Best Practices:
+1. Be specific with customer identifiers:
+   ✅ 'Customer XYZ123' or 'Innovate GmbH'
+   ❌ 'the customer' (ambiguous)
+
+2. Filter to specific risk ratings when relevant:
+   ✅ 'HIGH risk customers'
+   ❌ 'risky customers' (use exact rating values)
+
+3. Use exact status values:
+   ✅ 'REQUIRES_EDD status'
+   ❌ 'needs enhanced due diligence' (use system status)"
+```
+
+#### Cortex Search Tool - Comprehensive Description Pattern
+
+```yaml
+tools:
+  - tool_spec:
+      type: "cortex_search"
+      name: "search_onboarding_docs"
+      description: "Searches customer onboarding documentation including UBO declarations, compliance questionnaires, and KYC forms.
+
+Data Sources:
+- Corporate onboarding documents (PDF, DOCX formats)
+- UBO (Ultimate Beneficial Owner) declarations
+- KYC compliance questionnaires
+- Business registration certificates
+- Average 3-5 documents per customer
+
+When to Use:
+- Questions about specific document content or UBO information
+- Verification of beneficial ownership structures
+- Review of compliance questionnaire responses
+- Document-based due diligence requirements
+
+When NOT to Use (use alternative tools):
+- Customer risk ratings or transaction counts → use aml_kyc_analyzer
+- Policy requirements or regulatory guidance → use search_policies  
+- Recent news or adverse media → use search_news
+
+Search Query Best Practices:
+1. Include customer name and document type:
+   ✅ 'Innovate GmbH UBO declaration beneficial owners'
+   ❌ 'UBO information' (too generic)
+
+2. Use specific terminology from documents:
+   ✅ 'compliance questionnaire PEP exposure politically exposed'
+   ❌ 'political connections' (use exact terms)
+
+3. Handle low relevance (<0.5):
+   Rephrase with synonyms, broader terms, or check document availability"
+```
+
+## Step 3: Agent Instructions
+
+### 3.1 Orchestration Instructions Templates
+
+**Following Snowflake Best Practices**, orchestration instructions guide tool selection and workflow execution.
+
+#### 3.1.1 Business Context Pattern
+
+Provide explicit business context to help the agent understand domain-specific terminology and rules:
+
+```yaml
+Business Context:
+
+Organization Context:
+- Glacier First Bank is a pan-European universal bank
+- Operates across 15 EU countries with €45B in assets
+- Subject to EU AML directives (4AMLD, 5AMLD, 6AMLD)
+- Data refreshes daily at midnight UTC with T+1 day lag
+
+Key Business Terms:
+- Enhanced Due Diligence (EDD): Required for HIGH risk customers per 4AMLD Article 18
+- Ultimate Beneficial Owner (UBO): Individual owning >25% per EU regulations
+- Politically Exposed Person (PEP): High-risk individual per EU sanctions lists
+- Request for Information (RFI): Formal document request to customer for KYC remediation
+
+Risk Rating Categories:
+- HIGH: PEP exposure, high-risk jurisdiction, adverse media, complex structure
+- MEDIUM: Standard commercial client with normal transaction patterns
+- LOW: Low-risk jurisdiction, transparent ownership, no adverse findings
+
+# Example: AML Officer Business Context
+Business Context:
+
+Organization Context:
+- Glacier First Bank is a pan-European universal bank operating across 15 EU countries
+- €45B in assets under management with 500+ corporate banking clients
+- Subject to EU AML directives (4AMLD, 5AMLD, 6AMLD) and national regulations
+- Data refreshes daily at midnight UTC with T+1 day lag for transaction monitoring
+
+Key Business Terms:
+- Enhanced Due Diligence (EDD): Heightened scrutiny required for HIGH risk customers per 4AMLD Article 18
+- Ultimate Beneficial Owner (UBO): Individual owning >25% or exercising control per EU Directive 2015/849
+- Politically Exposed Person (PEP): Current or former high-ranking official per EU sanctions framework
+- Request for Information (RFI): Formal remediation request to customer with 30-day response period
+- Suspicious Activity Report (SAR): Mandatory filing to FIU for transactions >€10,000 with ML indicators
+
+Risk Rating Methodology:
+- HIGH: PEP exposure, high-risk jurisdiction (FATF list), adverse media, complex ownership, cash-intensive
+- MEDIUM: Standard commercial client, moderate transaction volumes, transparent structure
+- LOW: Low-risk jurisdiction (EU/EEA), simple ownership, established business relationship
+```
+
+#### 3.1.2 Complete Workflow Examples
+
+Provide concrete multi-step workflow examples:
+
+```yaml
+Complete Workflow Examples:
+
+Workflow 1: Enhanced Due Diligence Investigation
+Trigger: User asks "Investigate Innovate GmbH for EDD purposes"
+
+Step-by-Step Execution:
+1. Retrieve Customer Risk Profile
+   Tool: aml_kyc_analyzer
+   Query: "Show risk profile for Innovate GmbH including risk rating, AML flags, KYC status"
+   Extract: Risk rating, AML flag count, KYC status, transaction metrics
+   Why: Establishes baseline risk context
+
+2. Review Onboarding Documentation
+   Tool: search_onboarding_docs
+   Search: "Innovate GmbH UBO declaration beneficial owners shareholders"
+   Extract: UBO names, ownership percentages, control structure
+   Why: Verifies beneficial ownership per EU regulations
+
+3. Screen for Adverse Media
+   Tool: search_news
+   Search: "Innovate GmbH sanctions investigation fraud compliance"
+   Extract: Any negative news, regulatory actions, investigations
+   Why: Identifies reputational or regulatory risks
+
+4. Synthesize EDD Assessment:
+   - Risk Summary: From Step 1 (quantitative risk metrics)
+   - Ownership Structure: From Step 2 (UBO verification)
+   - Adverse Findings: From Step 3 (media screening results)
+   - Format as: EDD report with risk rating justification
+   - Include: Specific recommendations (approve/reject/request additional info)
+
+Example Complete Interaction:
+User: "Perform EDD on Innovate GmbH"
+Response: "Enhanced Due Diligence Assessment for Innovate GmbH:
+
+Risk Profile (as of [date]):
+- Risk Rating: HIGH
+- AML Flags: 3 (suspicious transaction patterns, high-risk jurisdiction)
+- KYC Status: REQUIRES_EDD
+
+Ownership Structure (from UBO declaration):
+- Primary UBO: Hans Schmidt (60% ownership)
+- Secondary UBO: Maria Weber (30% ownership)
+- No PEP exposure identified
+
+Adverse Media Screening:
+- 2 articles found regarding regulatory inquiry in Q3 2024
+- Investigation by BaFin for export control compliance
+- No sanctions or criminal proceedings
+
+Recommendation: APPROVE with conditions
+- Complete BaFin investigation review before onboarding
+- Obtain additional documentation on export control framework
+- Set enhanced monitoring (monthly transaction review)
+- Issue RFI for export control compliance attestation"
+```
+
+#### 3.1.3 Error Handling Patterns
+
+Provide explicit guidance for common error scenarios:
+
+```yaml
+Error Handling and Edge Cases:
+
+Scenario 1: Customer Not Found
+Detection: Query returns no results for specified customer name
+Recovery Steps:
+  1. Try alternative spellings, check for legal entity suffix (GmbH, Ltd, SA)
+  2. If still not found, query list of all customers matching partial name
+  3. Present alternatives to user
+User Message: "I couldn't find a customer named '[name]'. Did you mean one of these: [list]?"
+Alternative: Suggest using customer ID if known
+
+Scenario 2: Document Search Returns No Results
+Detection: Search query returns no documents with relevance >0.3
+Recovery Steps:
+  1. Rephrase query with broader terms, fewer keywords
+  2. Try alternative document types (onboarding vs policies)
+  3. If still no results, state limitation explicitly
+User Message: "I couldn't find documents for [customer] on [topic]. This may indicate incomplete documentation. Should I search [alternative] instead?"
+Alternative: Suggest checking document availability in source system
+
+Scenario 3: Missing UBO Information
+Detection: Onboarding documents exist but contain no UBO data
+Recovery Steps:
+  1. State clearly that UBO information is missing
+  2. Check KYC status (should be PENDING or REQUIRES_EDD)
+  3. Generate RFI recommendation
+User Message: "UBO information not found in onboarding documents for [customer]. KYC status is PENDING. Recommend issuing RFI for UBO declaration per EU Directive 2015/849."
+Alternative: Provide template RFI text
+
+Scenario 4: Data Currency Concern
+Detection: User asks about "current" or "latest" information
+Recovery Steps:
+  1. Always include data freshness timestamp in response
+  2. State T+1 day lag explicitly
+  3. Warn if data may be outdated for time-sensitive decisions
+User Message: "Analysis based on data as of [date] midnight UTC (T+1 day lag). For real-time monitoring, consult transaction monitoring system."
+Alternative: Direct to alternative real-time systems
+
+Scenario 5: Ambiguous Risk Assessment
+Detection: Query requires interpretation of complex risk factors
+Recovery Steps:
+  1. Present quantitative risk metrics clearly
+  2. Explain which factors elevate risk rating
+  3. State confidence level and recommend human review if borderline
+User Message: "Risk assessment: MEDIUM-HIGH borderline. Elevated factors: [list]. Recommend compliance officer review before final determination."
+Alternative: Suggest additional investigation steps
+```
+
+### 3.2 Response Instructions Template
+
+#### 3.2.1 Structured Response Instructions
+
+Structure response instructions with explicit style, presentation, and format guidance:
+
+```yaml
+Response Instructions:
+
+Style:
+- Tone: Professional compliance officer, authoritative but accessible
+- Lead With: Direct risk assessment, then supporting evidence
+- Terminology: EU banking regulations (4AMLD, 5AMLD, UBO, EDD, SAR, RFI, PEP)
+- Precision: Risk ratings as exact system values (HIGH/MEDIUM/LOW), percentages to 1 decimal
+- Limitations: State data currency (T+1 lag), missing documentation clearly
+
+Presentation:
+- Tables: Use for customer lists (>3 customers), risk metric comparisons, UBO structures
+- Flags: Use ⚠️ for MEDIUM risk, 🚨 for HIGH risk, ✅ for LOW risk or compliant
+- Citations: Include document type, date, and source (e.g., "per UBO declaration dated 2024-03-15")
+- Data Freshness: Always include "as of [date] midnight UTC"
+
+Response Structure for Risk Assessment Questions:
+Template: "[Risk rating with flag] + [Key risk factors table] + [Supporting evidence with citations] + [Recommendation]"
+
+Example:
+User: "What is the risk rating for Innovate GmbH?"
+Response: "🚨 HIGH Risk Customer - Innovate GmbH
+
+Key Risk Factors (as of 2024-12-31):
+| Factor | Value | Threshold |
+|--------|-------|-----------|
+| AML Flags | 3 | >2 indicates HIGH risk |
+| Suspicious Transactions | 12 | >5 requires review |
+| Jurisdiction | Cyprus | High-risk per FATF |
+| KYC Status | REQUIRES_EDD | Enhanced DD needed |
+
+Supporting Evidence:
+- Transaction patterns show structuring behavior (per transaction analysis 2024-Q4)
+- Cyprus jurisdiction flagged per FATF high-risk list
+- No adverse media found (news search completed 2024-12-30)
+
+Recommendation: Complete Enhanced Due Diligence within 30 days per 4AMLD Article 18. Issue RFI for transaction explanation and updated UBO declaration."
+
+Response Structure for Document Questions:
+Template: "[Summary of findings] + [Quoted excerpts with citations] + [Compliance assessment]"
+
+Example:
+User: "Who are the beneficial owners of TechVenture SA?"
+Response: "Beneficial Ownership Structure - TechVenture SA
+
+Per UBO Declaration (dated 2024-06-15):
+- Primary UBO: Jean Dupont (55% ownership)
+  Address: Paris, France
+  PEP Status: No
+  
+- Secondary UBO: Marie Laurent (30% ownership)
+  Address: Lyon, France
+  PEP Status: No
+
+Compliance Assessment: ✅ UBO disclosure meets EU Directive 2015/849 requirements (>25% threshold documented). No PEP exposure identified. Last verification: 2024-06-15 (valid for 12 months)."
+```
+
+## Step 4: Agent Testing and Validation
+
+### 4.1 Systematic Testing Approach
+**Testing Strategy:**
+1. **Component Testing**: Verify each tool works independently
+2. **Integration Testing**: Test tool combinations for mixed queries
+3. **Business Scenario Testing**: Test with actual demo conversation flows
+4. **Edge Case Testing**: Test with missing data, complex queries, error conditions
+
+### 4.2 Component Testing Pattern
+```python
+def test_agent_components(session: Session, agent_name: str, semantic_view: str):
+    """Test each agent tool independently"""
+    
+    # Test Cortex Analyst tool
+    try:
+        result = session.sql(f"""
+            SELECT * FROM SEMANTIC_VIEW(
+                {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.{semantic_view}
+                METRICS total_transactions
+                DIMENSIONS customer_id
+            ) LIMIT 5
+        """).collect()
+        print(f"✅ Cortex Analyst tool test passed: {len(result)} results")
+    except Exception as e:
+        print(f"❌ Cortex Analyst tool test failed: {e}")
+    
+    # Test Cortex Search tools (if applicable)
+    services = session.sql(f"SHOW CORTEX SEARCH SERVICES IN {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}").collect()
+    print(f"✅ Search services available: {len(services)}")
+    
+    return True
+```
+
+### 4.3 Business Scenario Testing
+Test with queries appropriate for your agent's capabilities:
+
+**Example Test Queries by Agent:**
+```python
+# AML Officer Agent
+"What is the risk profile for customer XYZ123?"
+"Show me HIGH risk customers requiring EDD"
+"Who are the beneficial owners of Innovate GmbH?"
+
+# Credit Analyst Agent
+"Analyze the credit application for Innovate GmbH"
+"What is the average DSCR for software companies?"
+"Compare this applicant to the approved cohort"
+
+# Cross-Domain Intelligence Agent
+"Map the supplier relationships for customer XYZ"
+"Identify concentration risk in our customer ecosystem"
+"Show entities with shared directors or addresses"
+```
+
+### 4.4 Validation Checklist
+- [ ] All required AI components exist (semantic views and search services)
+- [ ] Data quality validated (appropriate row counts, no nulls in key columns)
+- [ ] Each configured tool works independently
+- [ ] Tool combinations work correctly (for multi-tool agents)
+- [ ] Business scenario queries return expected results
+- [ ] Error handling works appropriately
+- [ ] Performance is acceptable for demo use
+- [ ] Agent responds appropriately when tools have no data
+
+## Step 5: Troubleshooting
+
+For comprehensive troubleshooting of agent setup, query issues, performance problems, and live demo testing issues, see @troubleshooting.mdc.
+
+**Quick Reference for Common Issues:**
+- **Agent not responding**: Verify AI components exist (semantic views, search services)
+- **Tool not found**: Check service names and column configurations match exactly
+- **No search results**: Verify document corpus exists and has content
+- **Customer not found**: Use exact legal names or customer IDs in test queries
+- **Performance issues**: Check warehouse size and optimize query patterns
+
+**Critical Demo Testing Queries:**
+```
+"What is the risk rating for customer XYZ123?"
+"Show me customers requiring enhanced due diligence"
+"Analyze the credit application for Innovate GmbH"
+"Map the supplier relationships for TechVenture SA"
+```
+
+## Step 6: Agent Archetypes and Patterns
+
+### 6.1 Agent Archetypes
+
+**Single-Domain Analytics Agents (Single Cortex Analyst):**
+- **Use Cases**: Focused analysis within specific domain (AML risk, credit assessment)
+- **Tool Configuration**: Single Cortex Analyst tool with domain-specific semantic view
+- **Planning Focus**: Deep analytical capabilities within domain, query optimization
+- **Examples**: AML Officer, Credit Analyst, Transaction Monitoring Analyst
+
+**Multi-Domain Analytics Agents (Multiple Cortex Analysts):**
+- **Use Cases**: Comprehensive analysis across different data domains
+- **Tool Configuration**: Multiple Cortex Analyst tools with different semantic views
+- **Planning Focus**: Domain-specific tool selection, cross-domain synthesis
+- **Examples**: Cross-Domain Intelligence Agent (uses multiple semantic views)
+
+**Research-Focused Agents (Cortex Search Only):**
+- **Use Cases**: Document synthesis, policy research, compliance checking
+- **Tool Configuration**: Multiple Cortex Search tools for different document types
+- **Planning Focus**: Document search, content synthesis, citation management
+- **Examples**: Policy Research Agent, Document Librarian
+
+**Hybrid Agents (Analyst + Search):**
+- **Use Cases**: Investment decisions, comprehensive analysis, client advisory
+- **Tool Configuration**: Cortex Analyst tool(s) + multiple Cortex Search tools
+- **Planning Focus**: Complex tool selection logic, data-to-document workflows
+- **Examples**: AML Officer (analyst + search), Credit Analyst (analyst + search)
+
+### 6.2 Configuration Best Practices
+
+**Tool Ordering:**
+- List most frequently used tools first
+- Group similar tools together (all search tools together)
+- Consider tool execution time in ordering
+
+**Description Clarity:**
+- Clearly define when to use each tool
+- Avoid overlapping use cases between tools
+- Include specific examples of appropriate queries
+
+**Planning Instructions:**
+- Provide explicit tool selection logic
+- Handle edge cases (no data, multiple tools applicable)
+- Include synthesis guidance for multi-tool responses
+- Include specific flagging and threshold logic
+
+**CRITICAL PRINCIPLE: Flagging Logic Placement**
+- **Agent Instructions**: All flagging, thresholds, and highlighting behaviors
+- **Cortex Analyst**: Only data calculations and SQL generation
+- **Never**: Put business rule flagging in semantic view custom instructions
+
+### 6.3 Tool Configuration Pitfalls
+
+**Following Snowflake Best Practices**, avoid these common mistakes:
+
+❌ **Generic, Vague Descriptions**
+```yaml
+Bad: "Gets data from the database"
+Bad: "Searches documents for information"
+```
+Why it fails: Agent can't distinguish between tools
+
+✅ **Specific, Detailed Descriptions**
+```yaml
+Good: "Analyzes customer AML risk profiles with 500+ corporate clients, 12 months transaction history, suspicious activity flags. Use for risk rating queries, transaction analysis, KYC status checks."
+```
+Why it works: Agent understands exact capabilities and appropriate use cases
+
+---
+
+❌ **Missing "When NOT to Use"**
+```yaml
+Bad: Tool description only lists capabilities
+```
+Why it fails: Agent doesn't know alternatives
+
+✅ **Explicit Anti-Patterns with Alternatives**
+```yaml
+Good: "When NOT to Use:
+- Document content (use search_onboarding_docs)
+- Policy text (use search_policies)
+- Real-time monitoring (data is T+1 day lag)"
+```
+Why it works: Directs agent to correct tool
+
+---
+
+❌ **No Query Guidance for Cortex Analyst**
+```yaml
+Bad: "Use this tool for data analysis"
+```
+Why it fails: Agent doesn't know how to formulate queries
+
+✅ **Concrete Good/Bad Query Examples**
+```yaml
+Good: "Query Best Practices:
+1. Be specific with identifiers:
+   ✅ 'Customer XYZ123' or 'Innovate GmbH'
+   ❌ 'the customer' (ambiguous)
+2. Use exact rating values:
+   ✅ 'HIGH risk customers'
+   ❌ 'risky customers'"
+```
+Why it works: Agent learns from examples
+
+## Summary
+
+This guide provides a complete workflow for creating SQL-based Snowflake Intelligence agents that work reliably with Glacier First Bank data. Follow the patterns for tool descriptions, instructions, and testing to ensure consistent agent behavior.
+
+**Key Takeaways:**
+1. Use comprehensive tool descriptions with Data Coverage, When to Use/NOT, Best Practices
+2. Provide explicit business context and workflow examples in orchestration instructions
+3. Define structured response templates with style, presentation, and format rules
+4. Test systematically (components, integration, business scenarios, edge cases)
+5. Follow YAML escaping rules for SQL CREATE AGENT statements

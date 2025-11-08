@@ -397,7 +397,7 @@ PHASE_2_SCHEMAS = {
     },
     "client_opportunities": {
         "table_name": "CLIENT_OPPORTUNITIES",
-        "schema": "RAW_DATA",
+        "schema": "CURATED",
         "columns": {
             "OPPORTUNITY_ID": "STRING",  # Primary key
             "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
@@ -418,7 +418,7 @@ PHASE_2_SCHEMAS = {
     },
     "holdings": {
         "table_name": "HOLDINGS",
-        "schema": "RAW_DATA",
+        "schema": "CURATED",
         "columns": {
             "HOLDING_ID": "STRING",  # Primary key
             "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS
@@ -441,7 +441,7 @@ PHASE_2_SCHEMAS = {
     },
     "model_portfolios": {
         "table_name": "MODEL_PORTFOLIOS",
-        "schema": "RAW_DATA",
+        "schema": "CURATED",
         "columns": {
             "MODEL_ID": "STRING",  # Primary key
             "MODEL_NAME": "STRING",  # CONSERVATIVE, BALANCED, GROWTH, AGGRESSIVE, INCOME
@@ -462,7 +462,7 @@ PHASE_2_SCHEMAS = {
     },
     "wealth_client_profiles": {
         "table_name": "WEALTH_CLIENT_PROFILES",
-        "schema": "RAW_DATA",
+        "schema": "CURATED",
         "columns": {
             "PROFILE_ID": "STRING",  # Primary key
             "CUSTOMER_ID": "STRING",  # Foreign key to CUSTOMERS

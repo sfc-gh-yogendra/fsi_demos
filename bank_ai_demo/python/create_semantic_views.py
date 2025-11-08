@@ -165,7 +165,7 @@ def create_customer_risk_view(session: Session) -> None:
     validate_required_tables(session, ['CUSTOMERS', 'ENTITIES'])
     
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.customer_risk_view AS
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.customer_risk_view AS
         SELECT 
             c.CUSTOMER_ID,
             c.ENTITY_ID,
@@ -195,7 +195,7 @@ def create_customer_transaction_summary_view(session: Session) -> None:
     validate_required_tables(session, ['TRANSACTIONS'])
     
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.customer_transaction_summary_view AS
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.customer_transaction_summary_view AS
         SELECT 
             t.CUSTOMER_ID,
             COUNT(*) AS total_transactions,
@@ -222,11 +222,11 @@ def create_aml_kyc_risk_semantic_view(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.aml_kyc_risk_sv
         TABLES (
-            customer_risk AS {config.SNOWFLAKE['database']}.CURATED_DATA.customer_risk_view
+            customer_risk AS {config.SNOWFLAKE['database']}.CURATED.customer_risk_view
                 PRIMARY KEY (CUSTOMER_ID)
                 COMMENT='Customer AML risk profiles with entity names',
             
-            transaction_summary AS {config.SNOWFLAKE['database']}.CURATED_DATA.customer_transaction_summary_view
+            transaction_summary AS {config.SNOWFLAKE['database']}.CURATED.customer_transaction_summary_view
                 PRIMARY KEY (CUSTOMER_ID)
                 COMMENT='Customer transaction activity summary for AML monitoring'
         )
@@ -405,7 +405,7 @@ def create_cross_domain_intelligence_semantic_view(session: Session) -> None:
                 PRIMARY KEY (ENTITY_ID)
                 COMMENT='Core entity information for cross-domain analysis',
             
-            relationships AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS
+            relationships AS {config.SNOWFLAKE['database']}.CURATED.ENTITY_RELATIONSHIPS
                 PRIMARY KEY (RELATIONSHIP_ID)
                 COMMENT='Entity relationships for ecosystem analysis'
         )
@@ -456,7 +456,7 @@ def create_alert_summary_view(session: Session) -> None:
     validate_required_tables(session, ['ALERTS', 'CUSTOMERS'])
     
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.alert_summary_view AS
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.alert_summary_view AS
         SELECT 
             a.ALERT_ID,
             a.CUSTOMER_ID,
@@ -479,7 +479,7 @@ def create_alert_summary_view(session: Session) -> None:
             END as investigation_hours,
             a.CREATED_DATE
         FROM {config.SNOWFLAKE['database']}.RAW_DATA.ALERTS a
-        JOIN {config.SNOWFLAKE['database']}.CURATED_DATA.customer_risk_view c ON a.CUSTOMER_ID = c.CUSTOMER_ID
+        JOIN {config.SNOWFLAKE['database']}.CURATED.customer_risk_view c ON a.CUSTOMER_ID = c.CUSTOMER_ID
     """).collect()
     
     logger.info("Alert summary view created successfully")
@@ -492,7 +492,7 @@ def create_transaction_monitoring_semantic_view(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.transaction_monitoring_sv
         TABLES (
-            alerts AS {config.SNOWFLAKE['database']}.CURATED_DATA.alert_summary_view
+            alerts AS {config.SNOWFLAKE['database']}.CURATED.alert_summary_view
                 PRIMARY KEY (ALERT_ID)
                 COMMENT='Transaction monitoring alerts with customer risk context'
         )
@@ -572,7 +572,7 @@ def create_entity_network_analysis_view(session: Session) -> None:
     validate_required_tables(session, ['ENTITIES', 'ENTITY_RELATIONSHIPS'])
     
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.entity_network_analysis_view AS
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.entity_network_analysis_view AS
         SELECT 
             e.ENTITY_ID,
             e.ENTITY_NAME,
@@ -588,7 +588,7 @@ def create_entity_network_analysis_view(session: Session) -> None:
             AVG(r.RISK_IMPACT_SCORE) as avg_relationship_risk_score,
             MAX(r.RISK_IMPACT_SCORE) as max_relationship_risk_score
         FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r 
+        LEFT JOIN {config.SNOWFLAKE['database']}.CURATED.ENTITY_RELATIONSHIPS r 
             ON e.ENTITY_ID = r.PRIMARY_ENTITY_ID OR e.ENTITY_ID = r.RELATED_ENTITY_ID
         GROUP BY 
             e.ENTITY_ID, e.ENTITY_NAME, e.COUNTRY_CODE, 
@@ -605,11 +605,11 @@ def create_network_analysis_semantic_view(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.network_analysis_sv
         TABLES (
-            entities AS {config.SNOWFLAKE['database']}.CURATED_DATA.entity_network_analysis_view
+            entities AS {config.SNOWFLAKE['database']}.CURATED.entity_network_analysis_view
                 PRIMARY KEY (ENTITY_ID)
                 COMMENT='Entity profiles with network relationship metrics',
             
-            relationships AS {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS
+            relationships AS {config.SNOWFLAKE['database']}.CURATED.ENTITY_RELATIONSHIPS
                 PRIMARY KEY (RELATIONSHIP_ID)
                 COMMENT='Entity relationships with shared characteristic indicators'
         )
@@ -709,7 +709,7 @@ def create_corporate_client_360_view(session: Session) -> None:
     logger.info("Creating corporate client 360 curated view...")
     
     session.sql(f"""
-        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED_DATA.corporate_client_360_view AS
+        CREATE OR REPLACE VIEW {config.SNOWFLAKE['database']}.CURATED.corporate_client_360_view AS
         SELECT 
             c.CUSTOMER_ID,
             e.ENTITY_NAME as client_name,
@@ -734,8 +734,8 @@ def create_corporate_client_360_view(session: Session) -> None:
         FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS c
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e ON c.ENTITY_ID = e.ENTITY_ID
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM crm ON c.CUSTOMER_ID = crm.CUSTOMER_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES opp ON c.CUSTOMER_ID = opp.CUSTOMER_ID
-        LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS r ON c.ENTITY_ID = r.PRIMARY_ENTITY_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.CURATED.CLIENT_OPPORTUNITIES opp ON c.CUSTOMER_ID = opp.CUSTOMER_ID
+        LEFT JOIN {config.SNOWFLAKE['database']}.CURATED.ENTITY_RELATIONSHIPS r ON c.ENTITY_ID = r.PRIMARY_ENTITY_ID
         LEFT JOIN {config.SNOWFLAKE['database']}.RAW_DATA.TRANSACTIONS t 
             ON c.CUSTOMER_ID = t.CUSTOMER_ID 
             AND t.TRANSACTION_DATE >= DATEADD(day, -90, CURRENT_DATE())
@@ -755,11 +755,11 @@ def create_corporate_client_360_semantic_view(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.corporate_client_360_sv
         TABLES (
-            clients AS {config.SNOWFLAKE['database']}.CURATED_DATA.corporate_client_360_view
+            clients AS {config.SNOWFLAKE['database']}.CURATED.corporate_client_360_view
                 PRIMARY KEY (CUSTOMER_ID)
                 COMMENT='Corporate client 360-degree view with CRM, opportunities, and relationships',
             
-            opportunities AS {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES
+            opportunities AS {config.SNOWFLAKE['database']}.CURATED.CLIENT_OPPORTUNITIES
                 PRIMARY KEY (OPPORTUNITY_ID)
                 COMMENT='Client opportunities with potential revenue impact'
         )
@@ -872,15 +872,15 @@ def create_wealth_client_sv(session: Session) -> None:
     session.sql(f"""
         CREATE OR REPLACE SEMANTIC VIEW {config.SNOWFLAKE['database']}.{config.SNOWFLAKE['ai_schema']}.wealth_client_sv
         TABLES (
-            profiles AS {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES
+            profiles AS {config.SNOWFLAKE['database']}.CURATED.WEALTH_CLIENT_PROFILES
                 PRIMARY KEY (PROFILE_ID)
                 COMMENT='Wealth client profiles with model portfolio assignments',
             
-            holdings AS {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS
+            holdings AS {config.SNOWFLAKE['database']}.CURATED.HOLDINGS
                 PRIMARY KEY (HOLDING_ID)
                 COMMENT='Individual investment holdings',
             
-            models AS {config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS
+            models AS {config.SNOWFLAKE['database']}.CURATED.MODEL_PORTFOLIOS
                 PRIMARY KEY (MODEL_ID)
                 COMMENT='Model portfolio definitions with target allocations'
         )

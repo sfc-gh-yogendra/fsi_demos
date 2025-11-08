@@ -57,8 +57,8 @@ def create_database_structure(session: Session) -> None:
         
         # Create schemas
         schemas = [
-            ('RAW_DATA', 'Raw data tables for entities, transactions, documents'),
-            ('CURATED_DATA', 'Curated and processed data for analytics'),
+            ('RAW_DATA', 'Raw/temporary working tables for data generation'),
+            ('CURATED', 'Curated dimension/fact tables and unstructured document corpus'),
             (config.SNOWFLAKE['ai_schema'], 'Unified AI schema for Cortex Search services, Semantic Views, and Custom Tools')
         ]
         
@@ -279,7 +279,7 @@ def generate_entity_relationships(session: Session, scale: str = "demo", scenari
     additional_count = scale_config['entity_relationships'] - key_count
     
     create_relationships_sql = f"""
-    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS AS
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.ENTITY_RELATIONSHIPS AS
     WITH
     -- Key demo relationships and shell network
     key_relationships AS (
@@ -1404,7 +1404,7 @@ def generate_client_opportunities(session: Session, scale: str = "demo", scenari
         return
     
     create_opportunities_sql = f"""
-    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES AS
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.CLIENT_OPPORTUNITIES AS
     SELECT 
         'OPP_' || LPAD(ROW_SEQ::STRING, 6, '0') AS OPPORTUNITY_ID,
         CUSTOMER_ID,
@@ -1530,7 +1530,7 @@ def generate_model_portfolios(session: Session, scale: str = "demo", scenarios: 
     # Save to database using SQL to avoid quoted identifiers
     portfolios_df.create_or_replace_temp_view("temp_model_portfolios")
     session.sql(f"""
-        CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS
+        CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.MODEL_PORTFOLIOS
         AS SELECT * FROM temp_model_portfolios
     """).collect()
     
@@ -1552,7 +1552,7 @@ def generate_holdings(session: Session, scale: str = "demo", scenarios: List[str
     holdings_per_client = total_holdings // wealth_client_count if wealth_client_count > 0 else 0
     
     create_holdings_sql = f"""
-    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS AS
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.HOLDINGS AS
     WITH
     -- Sample wealth clients from customers
     wealth_clients AS (
@@ -1673,21 +1673,21 @@ def generate_wealth_client_profiles(session: Session, scale: str = "demo", scena
     
     # Check if holdings and model portfolios exist
     try:
-        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS").count()
-        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS").count()
+        session.table(f"{config.SNOWFLAKE['database']}.CURATED.HOLDINGS").count()
+        session.table(f"{config.SNOWFLAKE['database']}.CURATED.MODEL_PORTFOLIOS").count()
     except:
         logger.warning("No holdings or model portfolios found, skipping wealth profiles generation")
         return
     
     create_wealth_profiles_sql = f"""
-    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES AS
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.CURATED.WEALTH_CLIENT_PROFILES AS
     WITH
     -- Calculate total AUM per customer from holdings
     wealth_customers_aum AS (
         SELECT 
             CUSTOMER_ID,
             SUM(CURRENT_VALUE) AS TOTAL_AUM
-        FROM {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS
+        FROM {config.SNOWFLAKE['database']}.CURATED.HOLDINGS
         GROUP BY CUSTOMER_ID
     ),
     -- Assign profiles

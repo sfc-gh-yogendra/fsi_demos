@@ -237,7 +237,7 @@ SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS;
 
 -- Test simple semantic view query
 SELECT * FROM SEMANTIC_VIEW(
-    BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
+    BANK_AI_DEMO.AI.credit_risk_sv
     METRICS requested_amount
     DIMENSIONS applicant_name
 ) LIMIT 5;
@@ -322,7 +322,7 @@ ORDER BY start_time DESC;
 SELECT *
 FROM TABLE(GET_OBJECT_REFERENCES(
     DATABASE_NAME => 'BANK_AI_DEMO',
-    SCHEMA_NAME => 'SEMANTIC_LAYER',
+    SCHEMA_NAME => 'AI',
     OBJECT_NAME => 'credit_risk_sv'
 ));
 ```
@@ -590,7 +590,7 @@ SELECT COUNT(*) FROM BANK_AI_DEMO.RAW_DATA.LOAN_APPLICATIONS;
 
 -- Test simple semantic view query
 SELECT * FROM SEMANTIC_VIEW(
-    BANK_AI_DEMO.SEMANTIC_LAYER.credit_risk_sv
+    BANK_AI_DEMO.AI.credit_risk_sv
     METRICS requested_amount
     DIMENSIONS applicant_name
 ) LIMIT 5;
@@ -675,7 +675,7 @@ ORDER BY start_time DESC;
 SELECT *
 FROM TABLE(GET_OBJECT_REFERENCES(
     DATABASE_NAME => 'BANK_AI_DEMO',
-    SCHEMA_NAME => 'SEMANTIC_LAYER',
+    SCHEMA_NAME => 'AI',
     OBJECT_NAME => 'credit_risk_sv'
 ));
 ```

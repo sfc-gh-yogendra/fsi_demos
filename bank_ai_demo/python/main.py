@@ -22,6 +22,7 @@ import generate_structured
 import generate_unstructured
 import create_semantic_views
 import create_search_services
+import create_agents
 
 # Configure logging
 logging.basicConfig(
@@ -149,6 +150,22 @@ def create_search_services_wrapper(session: Session, scenarios: List[str]) -> No
         
     except Exception as e:
         logger.error(f"Search services creation failed: {e}")
+        raise
+
+
+def create_agents_wrapper(session: Session, scenarios: List[str]) -> None:
+    """Create Snowflake Intelligence agents for specified scenarios."""
+    logger.info(f"Creating agents for scenarios: {scenarios}")
+    
+    if not session:
+        raise RuntimeError("Snowflake session not initialized")
+    
+    try:
+        create_agents.create_all_agents(session, scenarios)
+        logger.info("Agents creation completed")
+        
+    except Exception as e:
+        logger.error(f"Agents creation failed: {e}")
         raise
 
 
@@ -357,7 +374,7 @@ def deploy(connection_name: str, scenarios: List[str], scope: str, scale: str = 
         session = create_snowflake_session(connection_name)
         
         # Step 2: Setup based on scope
-        if scope in ['all', 'data', 'semantic', 'search']:
+        if scope in ['all', 'data', 'semantic', 'search', 'agents']:
             logger.info("Step 1: Setting up database infrastructure...")
             generate_structured.create_database_structure(session)
         
@@ -373,13 +390,17 @@ def deploy(connection_name: str, scenarios: List[str], scope: str, scale: str = 
             logger.info("Step 4: Creating search services...")
             create_search_services_wrapper(session, scenarios)
         
+        if scope in ['all', 'agents']:
+            logger.info("Step 5: Creating Snowflake Intelligence agents...")
+            create_agents_wrapper(session, scenarios)
+        
         if scope == 'all':
-            logger.info("Step 5: Creating PDF generation tool...")
+            logger.info("Step 6: Creating PDF generation tool...")
             create_pdf_generator(session)
         
         # Validation
         if validate:
-            logger.info("Step 6: Running validation...")
+            logger.info("Step 7: Running validation...")
             validation_passed = validate_setup(session, scenarios)
             if not validation_passed:
                 logger.error("Setup validation failed")
@@ -452,8 +473,8 @@ Examples:
     # Optional arguments
     parser.add_argument('--scenarios', default='all',
                        help='Comma-separated list of scenarios to build, or "all" for all scenarios (default: all)')
-    parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search'], default='all',
-                       help='Scope of build: all=everything, data=structured+unstructured, semantic=views only, search=services only (default: all)')
+    parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search', 'agents'], default='all',
+                       help='Scope of build: all=everything, data=structured+unstructured, semantic=views only, search=services only, agents=agents only (default: all)')
     parser.add_argument('--scale', choices=['mini', 'demo'], default='demo',
                        help='Data generation scale (default: demo)')
     parser.add_argument('--no-validate', action='store_true',
@@ -493,9 +514,9 @@ Examples:
         if success:
             if not args.quiet:
                 print("\n🚀 Ready to demo! Next steps:")
-                print("   1. Configure AI agents in Snowflake Intelligence")
-                print("   2. Review agent instructions in docs/")
-                print("   3. Test scenarios with realistic business queries")
+                print("   1. Access Snowflake Intelligence to interact with AI agents")
+                print("   2. Test agents with realistic business queries")
+                print("   3. Review agent responses and tool selection")
                 print("   4. Monitor performance and adjust as needed")
             sys.exit(0)
         else:
