@@ -1,8 +1,8 @@
 """
 Glacier First Bank Demo - Structured Data Generator
 
-Generates realistic structured data for Phase 1 scenarios using Snowpark save_as_table.
-Includes entities, relationships, customers, transactions, and loan applications.
+Generates realistic structured data for Phase 1 and Phase 2 scenarios using pure SQL.
+Includes entities, relationships, customers, transactions, loan applications, and wealth management data.
 """
 
 import uuid
@@ -11,8 +11,7 @@ from datetime import datetime, date, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 import logging
-from snowflake.snowpark import Session, Window
-from snowflake.snowpark.functions import col
+from snowflake.snowpark import Session
 from snowflake.snowpark.types import StructType, StructField, StringType, IntegerType, FloatType, DateType, TimestampType, DecimalType
 
 import config
@@ -103,6 +102,23 @@ def generate_all_structured_data(session: Session, scale: str = "demo", scenario
     # Set random seed for reproducible generation
     random.seed(config.GENERATION_SEED)
     
+    # Drop all existing tables to ensure clean slate with unquoted identifiers
+    logger.info("Dropping existing tables to ensure clean slate...")
+    tables_to_drop = [
+        "ENTITIES", "ENTITY_RELATIONSHIPS", "CUSTOMERS", "TRANSACTIONS",
+        "LOAN_APPLICATIONS", "HISTORICAL_LOANS", "ALERTS", "ALERT_DISPOSITION_HISTORY",
+        "SP_GLOBAL_COMPANY_FINANCIALS", "CLIENT_CRM", "CLIENT_OPPORTUNITIES",
+        "MODEL_PORTFOLIOS", "HOLDINGS", "WEALTH_CLIENT_PROFILES"
+    ]
+    
+    for table in tables_to_drop:
+        try:
+            session.sql(f"DROP TABLE IF EXISTS {config.SNOWFLAKE['database']}.RAW_DATA.{table}").collect()
+        except Exception as e:
+            logger.debug(f"Could not drop table {table}: {e}")
+    
+    logger.info("Clean slate established - all tables dropped")
+    
     # Determine which phases to generate based on scenarios
     phase_2_scenarios = ['corp_relationship_manager', 'wealth_advisor']
     include_phase_2 = scenarios and any(s in phase_2_scenarios for s in scenarios) if scenarios != ["all"] else False
@@ -131,16 +147,14 @@ def generate_all_structured_data(session: Session, scale: str = "demo", scenario
 
 
 def generate_entities(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate entities with key demo entities guaranteed using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list, random_date_in_past, generate_id_from_prefix
-    
-    logger.info("Generating entities (server-side)...")
+    """Generate entities with key demo entities guaranteed using pure SQL."""
+    logger.info("Generating entities (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     key_entities = config.KEY_ENTITIES
+    additional_count = scale_config['entities'] - len(key_entities)
     
-    # Build SQL for key entities using UNION ALL
+    # Build key entities SQL
     key_entity_selects = []
     for entity_key, entity_spec in key_entities.items():
         incorporation_days_ago = random.randint(1500, 5000)  # ~4-13 years ago
@@ -158,93 +172,117 @@ def generate_entities(session: Session, scale: str = "demo", scenarios: List[str
                 CURRENT_TIMESTAMP() AS LAST_UPDATED
         """)
     
-    key_entities_sql = " UNION ALL ".join(key_entity_selects)
-    key_entities_df = session.sql(key_entities_sql)
+    key_entities_union = " UNION ALL ".join(key_entity_selects)
     
-    # Generate additional entities server-side
-    additional_count = scale_config['entities'] - len(key_entities)
-    
-    if additional_count > 0:
-        # Define lists for random selection
-        countries = ['DEU', 'FRA', 'NLD', 'BEL', 'LUX', 'ITA', 'ESP', 'GBR']
-        industries = [
-            'Software Services', 'Manufacturing', 'Financial Services',
-            'Healthcare', 'Retail', 'Construction', 'Energy', 'Transportation'
-        ]
-        esg_ratings = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D']
-        statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'UNDER_REVIEW']  # Weighted toward ACTIVE
-        
-        prefixes = ['Euro', 'Global', 'Advanced', 'Innovative', 'Strategic', 'Dynamic', 'Premier']
-        roots = ['Tech', 'Solutions', 'Systems', 'Industries', 'Services', 'Group', 'Holdings']
-        suffixes = ['GmbH', 'S.A.', 'Ltd', 'B.V.', 'S.p.A.', 'AG']
-        
-        # Generate additional entities using generator
-        additional_df = (
-            session.generator(F.seq4(), rowcount=additional_count)
-            .with_column("SEQ_NUM", F.row_number().over(Window.order_by(F.seq4())))
-            .with_column(
-                "ENTITY_ID",
-                F.concat(
-                    F.lit("ENT_"),
-                    F.substr(F.call_builtin('UUID_STRING'), 1, 8)
-                )
-            )
-            .with_column(
-                "ENTITY_NAME",
-                F.concat(
-                    random_choice_from_list(prefixes, F.seq4()),
-                    F.lit(" "),
-                    random_choice_from_list(roots, F.seq4() + 1),
-                    F.lit(" "),
-                    random_choice_from_list(suffixes, F.seq4() + 2)
-                )
-            )
-            .with_column("ENTITY_TYPE", F.lit("CORPORATE"))
-            .with_column("COUNTRY_CODE", random_choice_from_list(countries, F.seq4() + 3))
-            .with_column("INDUSTRY_SECTOR", random_choice_from_list(industries, F.seq4() + 4))
-            .with_column(
-                "INCORPORATION_DATE",
-                F.dateadd("day", -F.uniform(1500, 5000, F.seq4() + 5), F.current_date())
-            )
-            .with_column("REGULATORY_STATUS", random_choice_from_list(statuses, F.seq4() + 6))
-            .with_column("ESG_RATING", random_choice_from_list(esg_ratings, F.seq4() + 7))
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .with_column("LAST_UPDATED", F.current_timestamp())
-            .select(
-                "ENTITY_ID", "ENTITY_NAME", "ENTITY_TYPE", "COUNTRY_CODE",
-                "INDUSTRY_SECTOR", "INCORPORATION_DATE", "REGULATORY_STATUS",
-                "ESG_RATING", "CREATED_DATE", "LAST_UPDATED"
-            )
+    create_entities_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES AS
+    WITH
+    -- Key entities for demo scenarios
+    key_entities AS (
+        {key_entities_union}
+    ),
+    -- Additional entities
+    additional_entities AS (
+        SELECT 
+            'ENT_' || SUBSTR(UUID_STRING(), 1, 8) AS ENTITY_ID,
+            CASE UNIFORM(0, 6, ROW_SEQ)
+                WHEN 0 THEN 'Euro'
+                WHEN 1 THEN 'Global'
+                WHEN 2 THEN 'Advanced'
+                WHEN 3 THEN 'Innovative'
+                WHEN 4 THEN 'Strategic'
+                WHEN 5 THEN 'Dynamic'
+                ELSE 'Premier'
+            END || ' ' ||
+            CASE UNIFORM(0, 6, ROW_SEQ + 1)
+                WHEN 0 THEN 'Tech'
+                WHEN 1 THEN 'Solutions'
+                WHEN 2 THEN 'Systems'
+                WHEN 3 THEN 'Industries'
+                WHEN 4 THEN 'Services'
+                WHEN 5 THEN 'Group'
+                ELSE 'Holdings'
+            END || ' ' ||
+            CASE UNIFORM(0, 5, ROW_SEQ + 2)
+                WHEN 0 THEN 'GmbH'
+                WHEN 1 THEN 'S.A.'
+                WHEN 2 THEN 'Ltd'
+                WHEN 3 THEN 'B.V.'
+                WHEN 4 THEN 'S.p.A.'
+                ELSE 'AG'
+            END AS ENTITY_NAME,
+            'CORPORATE' AS ENTITY_TYPE,
+            CASE UNIFORM(0, 7, ROW_SEQ + 3)
+                WHEN 0 THEN 'DEU'
+                WHEN 1 THEN 'FRA'
+                WHEN 2 THEN 'NLD'
+                WHEN 3 THEN 'BEL'
+                WHEN 4 THEN 'LUX'
+                WHEN 5 THEN 'ITA'
+                WHEN 6 THEN 'ESP'
+                ELSE 'GBR'
+            END AS COUNTRY_CODE,
+            CASE UNIFORM(0, 7, ROW_SEQ + 4)
+                WHEN 0 THEN 'Software Services'
+                WHEN 1 THEN 'Manufacturing'
+                WHEN 2 THEN 'Financial Services'
+                WHEN 3 THEN 'Healthcare'
+                WHEN 4 THEN 'Retail'
+                WHEN 5 THEN 'Construction'
+                WHEN 6 THEN 'Energy'
+                ELSE 'Transportation'
+            END AS INDUSTRY_SECTOR,
+            DATEADD(day, -UNIFORM(1500, 5000, ROW_SEQ + 5), CURRENT_DATE()) AS INCORPORATION_DATE,
+            CASE MOD(UNIFORM(0, 3, ROW_SEQ + 6), 4)
+                WHEN 0 THEN 'ACTIVE'
+                WHEN 1 THEN 'ACTIVE'
+                WHEN 2 THEN 'ACTIVE'
+                ELSE 'UNDER_REVIEW'
+            END AS REGULATORY_STATUS,
+            CASE UNIFORM(0, 6, ROW_SEQ + 7)
+                WHEN 0 THEN 'A+'
+                WHEN 1 THEN 'A'
+                WHEN 2 THEN 'B+'
+                WHEN 3 THEN 'B'
+                WHEN 4 THEN 'C+'
+                WHEN 5 THEN 'C'
+                ELSE 'D'
+            END AS ESG_RATING,
+            CURRENT_TIMESTAMP() AS CREATED_DATE,
+            CURRENT_TIMESTAMP() AS LAST_UPDATED
+        FROM (
+            SELECT ROW_NUMBER() OVER (ORDER BY SEQ4()) AS ROW_SEQ
+            FROM TABLE(GENERATOR(ROWCOUNT => {additional_count}))
         )
-        
-        # Combine key entities with additional entities
-        entities_df = key_entities_df.union_all(additional_df)
-    else:
-        entities_df = key_entities_df
-    
-    # Save to table
-    entities_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES", 
-        mode="overwrite"
     )
+    -- Combine key and additional entities
+    SELECT * FROM key_entities
+    UNION ALL
+    SELECT * FROM additional_entities
+    """
     
-    logger.info(f"Generated {scale_config['entities']} entities ({len(key_entities)} key entities) using server-side operations")
+    session.sql(create_entities_sql).collect()
+    
+    logger.info(f"Generated {scale_config['entities']} entities ({len(key_entities)} key entities) using pure SQL")
 
 
 def generate_entity_relationships(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate entity relationships for cross-domain intelligence using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list, random_date_in_past
-    
-    logger.info("Generating entity relationships (server-side)...")
+    """Generate entity relationships for cross-domain intelligence using pure SQL."""
+    logger.info("Generating entity relationships (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     
     # Define key relationships and shell network as SQL
     shared_director_name = 'Anya Sharma'
     shared_address = '42 Mailbox Lane, Virtual Office Complex, Gibraltar'
+    key_count = 8  # 3 key relationships + 5 shell network relationships
+    additional_count = scale_config['entity_relationships'] - key_count
     
-    key_relationships_sql = f"""
+    create_relationships_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS AS
+    WITH
+    -- Key demo relationships and shell network
+    key_relationships AS (
         -- Northern Supply Chain as shared vendor for Global Trade Ventures
         SELECT 
             UUID_STRING() AS RELATIONSHIP_ID,
@@ -304,109 +342,98 @@ def generate_entity_relationships(session: Session, scale: str = "demo", scenari
             DATEADD(day, -UNIFORM(180, 365, RANDOM()), CURRENT_DATE()),
             NULL, 0.92, '{shared_director_name}', TRUE, '{shared_address}',
             UNIFORM(1, 45, RANDOM()), CURRENT_TIMESTAMP()
+    ),
+    -- Random entity pairs for additional relationships
+    entity_pairs AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY SEQ4()) AS PAIR_SEQ,
+            PRIMARY_ENTITY_ID,
+            RELATED_ENTITY_ID
+        FROM (
+            SELECT 
+                e1.ENTITY_ID AS PRIMARY_ENTITY_ID,
+                e2.ENTITY_ID AS RELATED_ENTITY_ID,
+                ROW_NUMBER() OVER (ORDER BY RANDOM()) AS RN
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e1
+            CROSS JOIN {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES e2
+            WHERE e1.ENTITY_ID != e2.ENTITY_ID
+            ORDER BY RANDOM()
+            LIMIT {additional_count}
+        )
+    ),
+    -- Additional relationships
+    additional_relationships AS (
+        SELECT 
+            UUID_STRING() AS RELATIONSHIP_ID,
+            PRIMARY_ENTITY_ID,
+            RELATED_ENTITY_ID,
+            CASE UNIFORM(0, 3, PAIR_SEQ)
+                WHEN 0 THEN 'VENDOR'
+                WHEN 1 THEN 'CUSTOMER'
+                WHEN 2 THEN 'COMPETITOR'
+                ELSE 'SUBSIDIARY'
+            END AS RELATIONSHIP_TYPE,
+            CASE UNIFORM(0, 2, PAIR_SEQ + 1)
+                WHEN 0 THEN 'PRIMARY'
+                WHEN 1 THEN 'SECONDARY'
+                ELSE 'INDIRECT'
+            END AS RELATIONSHIP_STRENGTH,
+            DATEADD(day, -UNIFORM(365, 1095, PAIR_SEQ + 2), CURRENT_DATE()) AS EFFECTIVE_DATE,
+            NULL AS END_DATE,
+            UNIFORM(10, 90, PAIR_SEQ + 3) / 100.0 AS RISK_IMPACT_SCORE,
+            CASE 
+                WHEN UNIFORM(0, 100, PAIR_SEQ + 4) < 10 THEN
+                    CASE UNIFORM(0, 4, PAIR_SEQ + 5)
+                        WHEN 0 THEN 'John Smith'
+                        WHEN 1 THEN 'Maria Garcia'
+                        WHEN 2 THEN 'Hans Mueller'
+                        WHEN 3 THEN 'Sophie Dubois'
+                        ELSE 'Marco Rossi'
+                    END
+                ELSE NULL
+            END AS SHARED_DIRECTOR_NAME,
+            (UNIFORM(0, 100, PAIR_SEQ + 4) < 10) AS SHARED_ADDRESS_FLAG,
+            CASE 
+                WHEN UNIFORM(0, 100, PAIR_SEQ + 4) < 10 THEN 'Virtual Office, Business Center'
+                ELSE NULL
+            END AS SHARED_ADDRESS,
+            CASE 
+                WHEN UNIFORM(0, 100, PAIR_SEQ + 4) < 10 THEN UNIFORM(1, 90, PAIR_SEQ + 6)
+                ELSE NULL
+            END AS INCORPORATION_PROXIMITY_DAYS,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM entity_pairs
+    )
+    -- Combine key and additional relationships
+    SELECT * FROM key_relationships
+    UNION ALL
+    SELECT * FROM additional_relationships
     """
     
-    key_relationships_df = session.sql(key_relationships_sql)
-    key_count = 8  # 3 key relationships + 5 shell network relationships
+    session.sql(create_relationships_sql).collect()
     
-    # Generate additional random relationships using self-join pattern
-    additional_count = scale_config['entity_relationships'] - key_count
-    
-    if additional_count > 0:
-        relationship_types = ['VENDOR', 'CUSTOMER', 'COMPETITOR', 'SUBSIDIARY']
-        relationship_strengths = ['PRIMARY', 'SECONDARY', 'INDIRECT']
-        director_names = ['John Smith', 'Maria Garcia', 'Hans Mueller', 'Sophie Dubois', 'Marco Rossi']
-        
-        # Create random relationships by sampling entities twice and joining
-        entities_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES")
-        
-        additional_df = (
-            session.generator(F.seq4(), rowcount=additional_count)
-            .with_column("SEQ_NUM", F.row_number().over(Window.order_by(F.seq4())))
-            .with_column("RAND_SEED_1", F.seq4())
-            .with_column("RAND_SEED_2", F.seq4() + 1000000)
-            .join(
-                entities_df.select(
-                    F.col("ENTITY_ID").alias("PRIMARY_ENTITY_ID")
-                ).order_by(F.random()).limit(additional_count),
-                on=(F.lit(1) == F.lit(1)),  # Cross join trick
-                how="cross"
-            )
-            .with_column("ROW_NUM_PRIMARY", F.row_number().over(Window.partition_by("SEQ_NUM").order_by(F.random())))
-            .filter(F.col("ROW_NUM_PRIMARY") == 1)
-            .join(
-                entities_df.select(
-                    F.col("ENTITY_ID").alias("RELATED_ENTITY_ID")
-                ).order_by(F.random()).limit(additional_count),
-                on=(F.lit(1) == F.lit(1)),  # Cross join trick
-                how="cross"
-            )
-            .with_column("ROW_NUM_RELATED", F.row_number().over(Window.partition_by("SEQ_NUM", "PRIMARY_ENTITY_ID").order_by(F.random())))
-            .filter(F.col("ROW_NUM_RELATED") == 1)
-            .filter(F.col("PRIMARY_ENTITY_ID") != F.col("RELATED_ENTITY_ID"))  # Avoid self-relationships
-            .with_column("RELATIONSHIP_ID", F.call_builtin('UUID_STRING'))
-            .with_column("RELATIONSHIP_TYPE", random_choice_from_list(relationship_types, F.col("RAND_SEED_1")))
-            .with_column("RELATIONSHIP_STRENGTH", random_choice_from_list(relationship_strengths, F.col("RAND_SEED_1") + 1))
-            .with_column("EFFECTIVE_DATE", F.dateadd("day", -F.uniform(365, 1095, F.col("RAND_SEED_1") + 2), F.current_date()))
-            .with_column("END_DATE", F.lit(None).cast("date"))
-            .with_column("RISK_IMPACT_SCORE", F.uniform(10, 90, F.col("RAND_SEED_1") + 3) / F.lit(100.0))
-            .with_column("HAS_SHARED_CHARS", F.uniform(0, 100, F.col("RAND_SEED_1") + 4) < 10)  # 10% chance
-            .with_column(
-                "SHARED_DIRECTOR_NAME",
-                F.when(F.col("HAS_SHARED_CHARS"), random_choice_from_list(director_names, F.col("RAND_SEED_1") + 5))
-                 .otherwise(F.lit(None))
-            )
-            .with_column("SHARED_ADDRESS_FLAG", F.col("HAS_SHARED_CHARS"))
-            .with_column(
-                "SHARED_ADDRESS",
-                F.when(F.col("HAS_SHARED_CHARS"), F.lit("Virtual Office, Business Center"))
-                 .otherwise(F.lit(None))
-            )
-            .with_column(
-                "INCORPORATION_PROXIMITY_DAYS",
-                F.when(F.col("HAS_SHARED_CHARS"), F.uniform(1, 90, F.col("RAND_SEED_1") + 6))
-                 .otherwise(F.lit(None).cast("int"))
-            )
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .select(
-                "RELATIONSHIP_ID", "PRIMARY_ENTITY_ID", "RELATED_ENTITY_ID",
-                "RELATIONSHIP_TYPE", "RELATIONSHIP_STRENGTH", "EFFECTIVE_DATE",
-                "END_DATE", "RISK_IMPACT_SCORE", "SHARED_DIRECTOR_NAME",
-                "SHARED_ADDRESS_FLAG", "SHARED_ADDRESS", "INCORPORATION_PROXIMITY_DAYS",
-                "CREATED_DATE"
-            )
-        )
-        
-        # Combine key relationships with additional random ones
-        relationships_df = key_relationships_df.union_all(additional_df)
-    else:
-        relationships_df = key_relationships_df
-    
-    # Save to database
-    relationships_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITY_RELATIONSHIPS", 
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {scale_config['entity_relationships']} entity relationships using server-side operations")
+    logger.info(f"Generated {scale_config['entity_relationships']} entity relationships using pure SQL")
 
 
 def generate_customers(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate customer profiles linked to entities using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating customers (server-side)...")
+    """Generate customer profiles linked to entities using pure SQL."""
+    logger.info("Generating customers (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     key_entities = config.KEY_ENTITIES
     
     # Get key entity IDs
     key_entity_ids = [spec['entity_id'] for spec in key_entities.values()]
+    key_entity_ids_sql = "'" + "','".join(key_entity_ids) + "'"
     
-    # Define key customers with specific characteristics as SQL
-    key_customers_sql = """
-        -- Global Trade Ventures (HIGH risk, REQUIRES_EDD)
+    additional_count = scale_config['customers'] - 3  # 3 key customers
+    
+    # Build complete SQL using CTEs for clarity
+    create_customers_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS AS
+    WITH
+    -- Key customers with specific characteristics
+    key_customers AS (
         SELECT 
             'CUST_GTV_SA_001' AS CUSTOMER_ID,
             'GTV_SA_001' AS ENTITY_ID,
@@ -421,120 +448,125 @@ def generate_customers(session: Session, scale: str = "demo", scenarios: List[st
             2 AS AML_FLAGS,
             CURRENT_TIMESTAMP() AS CREATED_DATE
         UNION ALL
-        -- Innovate GmbH (MEDIUM risk, COMPLETE)
         SELECT 
-            'CUST_INN_DE_001', 'INN_DE_001', 'CORPORATE',
-            DATEADD(year, -8, CURRENT_DATE()), 'MEDIUM', 'COMPLETE',
-            DATEADD(month, -6, CURRENT_DATE()), DATEADD(month, 6, CURRENT_DATE()),
-            12, 'James Wilson', 0, CURRENT_TIMESTAMP()
+            'CUST_INN_DE_001' AS CUSTOMER_ID,
+            'INN_DE_001' AS ENTITY_ID,
+            'CORPORATE' AS CUSTOMER_TYPE,
+            DATEADD(year, -8, CURRENT_DATE()) AS ONBOARDING_DATE,
+            'MEDIUM' AS RISK_RATING,
+            'COMPLETE' AS KYC_STATUS,
+            DATEADD(month, -6, CURRENT_DATE()) AS LAST_REVIEW_DATE,
+            DATEADD(month, 6, CURRENT_DATE()) AS NEXT_REVIEW_DATE,
+            12 AS REVIEW_FREQUENCY_MONTHS,
+            'James Wilson' AS RELATIONSHIP_MANAGER,
+            0 AS AML_FLAGS,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
         UNION ALL
-        -- Northern Supply Chain (for cross-domain scenario)
         SELECT 
-            'CUST_NSC_UK_001', 'NSC_UK_001', 'CORPORATE',
-            DATEADD(year, -10, CURRENT_DATE()), 'MEDIUM', 'COMPLETE',
-            DATEADD(month, -4, CURRENT_DATE()), DATEADD(month, 8, CURRENT_DATE()),
-            12, 'Michael Brown', 0, CURRENT_TIMESTAMP()
+            'CUST_NSC_UK_001' AS CUSTOMER_ID,
+            'NSC_UK_001' AS ENTITY_ID,
+            'CORPORATE' AS CUSTOMER_TYPE,
+            DATEADD(year, -10, CURRENT_DATE()) AS ONBOARDING_DATE,
+            'MEDIUM' AS RISK_RATING,
+            'COMPLETE' AS KYC_STATUS,
+            DATEADD(month, -4, CURRENT_DATE()) AS LAST_REVIEW_DATE,
+            DATEADD(month, 8, CURRENT_DATE()) AS NEXT_REVIEW_DATE,
+            12 AS REVIEW_FREQUENCY_MONTHS,
+            'Michael Brown' AS RELATIONSHIP_MANAGER,
+            0 AS AML_FLAGS,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+    ),
+    -- Additional customers from entities
+    additional_customers AS (
+        SELECT 
+            'CUST_' || ENTITY_ID AS CUSTOMER_ID,
+            ENTITY_ID,
+            'CORPORATE' AS CUSTOMER_TYPE,
+            DATEADD(day, -UNIFORM(365, 1680, ROW_SEQ), CURRENT_DATE()) AS ONBOARDING_DATE,
+            CASE UNIFORM(0, 4, ROW_SEQ + 1)
+                WHEN 0 THEN 'LOW'
+                WHEN 1 THEN 'LOW'
+                WHEN 2 THEN 'MEDIUM'
+                WHEN 3 THEN 'MEDIUM'
+                ELSE 'HIGH'
+            END AS RISK_RATING,
+            CASE UNIFORM(0, 4, ROW_SEQ + 2)
+                WHEN 0 THEN 'COMPLETE'
+                WHEN 1 THEN 'COMPLETE'
+                WHEN 2 THEN 'COMPLETE'
+                WHEN 3 THEN 'PENDING'
+                ELSE 'REQUIRES_EDD'
+            END AS KYC_STATUS,
+            DATEADD(day, -UNIFORM(30, 365, ROW_SEQ + 5), CURRENT_DATE()) AS LAST_REVIEW_DATE,
+            CASE 
+                WHEN UNIFORM(0, 4, ROW_SEQ + 1) IN (2, 3) AND MOD(ROW_SEQ, 3) < 2 
+                THEN DATEADD(day, UNIFORM(1, 30, ROW_SEQ + 7), CURRENT_DATE())  -- 8 MEDIUM customers due soon
+                ELSE DATEADD(month, 
+                    CASE UNIFORM(0, 4, ROW_SEQ + 1)
+                        WHEN 0 THEN 24  -- LOW
+                        WHEN 1 THEN 24  -- LOW
+                        WHEN 2 THEN 12  -- MEDIUM
+                        WHEN 3 THEN 12  -- MEDIUM
+                        ELSE 6  -- HIGH
+                    END,
+                    DATEADD(day, -UNIFORM(30, 365, ROW_SEQ + 5), CURRENT_DATE())
+                )
+            END AS NEXT_REVIEW_DATE,
+            CASE UNIFORM(0, 4, ROW_SEQ + 1)
+                WHEN 0 THEN 24  -- LOW
+                WHEN 1 THEN 24  -- LOW
+                WHEN 2 THEN 12  -- MEDIUM
+                WHEN 3 THEN 12  -- MEDIUM
+                ELSE 6  -- HIGH
+            END AS REVIEW_FREQUENCY_MONTHS,
+            CASE UNIFORM(0, 7, ROW_SEQ + 6)
+                WHEN 0 THEN 'James Wilson'
+                WHEN 1 THEN 'Sarah Mitchell'
+                WHEN 2 THEN 'Michael Brown'
+                WHEN 3 THEN 'Emma Thompson'
+                WHEN 4 THEN 'David Chen'
+                WHEN 5 THEN 'Lisa Anderson'
+                WHEN 6 THEN 'Robert Garcia'
+                ELSE 'Anna Mueller'
+            END AS RELATIONSHIP_MANAGER,
+            CASE 
+                WHEN UNIFORM(0, 4, ROW_SEQ + 1) = 4 THEN UNIFORM(0, 3, ROW_SEQ + 3)  -- HIGH risk
+                WHEN UNIFORM(0, 4, ROW_SEQ + 1) IN (2, 3) THEN UNIFORM(0, 1, ROW_SEQ + 4)  -- MEDIUM risk
+                ELSE 0
+            END AS AML_FLAGS,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM (
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY RANDOM()) AS ROW_SEQ,
+                *
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES
+            WHERE ENTITY_TYPE = 'CORPORATE'
+              AND ENTITY_ID NOT IN ({key_entity_ids_sql})
+            ORDER BY RANDOM()
+            LIMIT {additional_count}
+        )
+    )
+    -- Combine key and additional customers
+    SELECT * FROM key_customers
+    UNION ALL
+    SELECT * FROM additional_customers
     """
     
-    key_customers_df = session.sql(key_customers_sql)
-    key_count = 3  # Number of key customers
+    session.sql(create_customers_sql).collect()
     
-    # Generate additional customers from entities
-    additional_count = scale_config['customers'] - key_count
-    
-    if additional_count > 0:
-        risk_ratings = ['LOW', 'LOW', 'MEDIUM', 'MEDIUM', 'HIGH']  # Weighted distribution
-        kyc_statuses = ['COMPLETE', 'COMPLETE', 'COMPLETE', 'PENDING', 'REQUIRES_EDD']
-        rm_names = ['James Wilson', 'Sarah Mitchell', 'Michael Brown', 'Emma Thompson', 
-                    'David Chen', 'Lisa Anderson', 'Robert Garcia', 'Anna Mueller']
-        
-        # Sample additional customers from entities
-        additional_df = (
-            session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.ENTITIES")
-            .filter(F.col("ENTITY_TYPE") == "CORPORATE")
-            .filter(~F.col("ENTITY_ID").isin(key_entity_ids))  # Exclude key entities
-            .order_by(F.random())
-            .limit(additional_count)
-            .with_column("SEQ", F.row_number().over(Window.order_by(F.random())))
-            .with_column("CUSTOMER_ID", F.concat(F.lit("CUST_"), F.col("ENTITY_ID")))
-            .with_column("CUSTOMER_TYPE", F.lit("CORPORATE"))
-            .with_column(
-                "ONBOARDING_DATE",
-                F.dateadd("day", -F.uniform(365, 1680, F.col("SEQ")), F.current_date())  # 1-4.6 years ago
-            )
-            .with_column("RISK_RATING", random_choice_from_list(risk_ratings, F.col("SEQ") + 1))
-            .with_column("KYC_STATUS", random_choice_from_list(kyc_statuses, F.col("SEQ") + 2))
-            .with_column(
-                "AML_FLAGS",
-                F.when(F.col("RISK_RATING") == "HIGH", F.uniform(0, 3, F.col("SEQ") + 3))
-                 .when(F.col("RISK_RATING") == "MEDIUM", F.uniform(0, 1, F.col("SEQ") + 4))
-                 .otherwise(F.lit(0))
-            )
-            .with_column(
-                "REVIEW_FREQUENCY_MONTHS",
-                F.when(F.col("RISK_RATING") == "HIGH", F.lit(6))
-                 .when(F.col("RISK_RATING") == "MEDIUM", F.lit(12))
-                 .otherwise(F.lit(24))
-            )
-            .with_column(
-                "LAST_REVIEW_DATE",
-                F.dateadd("day", -F.uniform(30, 365, F.col("SEQ") + 5), F.current_date())
-            )
-            .with_column(
-                "NEXT_REVIEW_DATE",
-                F.dateadd(
-                    "month",
-                    F.col("REVIEW_FREQUENCY_MONTHS"),
-                    F.col("LAST_REVIEW_DATE")
-                )
-            )
-            .with_column(
-                "RELATIONSHIP_MANAGER",
-                random_choice_from_list(rm_names, F.col("SEQ") + 6)
-            )
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .select(
-                "CUSTOMER_ID", "ENTITY_ID", "CUSTOMER_TYPE", "ONBOARDING_DATE",
-                "RISK_RATING", "KYC_STATUS", "LAST_REVIEW_DATE", "NEXT_REVIEW_DATE",
-                "REVIEW_FREQUENCY_MONTHS", "RELATIONSHIP_MANAGER", "AML_FLAGS", "CREATED_DATE"
-            )
-        )
-        
-        # Override next_review_date for first 8 MEDIUM risk customers to be due soon (periodic review scenario)
-        additional_df = additional_df.with_column(
-            "ROW_NUM",
-            F.row_number().over(Window.partition_by(F.col("RISK_RATING") == "MEDIUM").order_by(F.col("SEQ")))
-        ).with_column(
-            "NEXT_REVIEW_DATE",
-            F.when(
-                (F.col("RISK_RATING") == "MEDIUM") & (F.col("ROW_NUM") <= 8),
-                F.dateadd("day", F.uniform(1, 30, F.col("SEQ") + 7), F.current_date())
-            ).otherwise(F.col("NEXT_REVIEW_DATE"))
-        ).drop("ROW_NUM")
-        
-        # Combine key and additional customers
-        customers_df = key_customers_df.union_all(additional_df)
-    else:
-        customers_df = key_customers_df
-    
-    # Save to database
-    customers_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS", 
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {scale_config['customers']} customers using server-side operations")
+    logger.info(f"Generated {scale_config['customers']} customers using pure SQL")
 
 
 def generate_transactions(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate transaction history for customers using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
+    """Generate transaction history for customers using pure SQL."""
+    logger.info("Generating transactions (pure SQL)...")
     
-    logger.info("Generating transactions (server-side)...")
-    
-    # Define key transaction for GTV (€5M deposit for EDD scenario)
-    key_transaction_sql = """
+    # Use pure SQL with cross join and GENERATOR
+    create_transactions_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.TRANSACTIONS AS
+    WITH
+    -- Key transaction for GTV (€5M deposit for EDD scenario)
+    key_transaction AS (
         SELECT 
             'TXN_CUST_GTV_SA_001_LARGE_001' AS TRANSACTION_ID,
             'CUST_GTV_SA_001' AS CUSTOMER_ID,
@@ -548,118 +580,86 @@ def generate_transactions(session: Session, scale: str = "demo", scenarios: List
             0.85 AS RISK_SCORE,
             TRUE AS SUSPICIOUS_ACTIVITY_FLAG,
             CURRENT_TIMESTAMP() AS CREATED_DATE
+    ),
+    -- Regular transactions via cross join
+    regular_transactions AS (
+        SELECT 
+            'TXN_' || CUSTOMER_ID || '_' || LPAD(TXN_SEQ::STRING, 4, '0') AS TRANSACTION_ID,
+            CUSTOMER_ID,
+            DATEADD(day, -UNIFORM(1, 365, SEQ8()), CURRENT_TIMESTAMP()) AS TRANSACTION_DATE,
+            UNIFORM(1000, 100000, SEQ8() + 1)::DECIMAL(18,2) AS AMOUNT,
+            'EUR' AS CURRENCY,
+            CASE UNIFORM(0, 2, SEQ8() + 2)
+                WHEN 0 THEN 'CREDIT'
+                WHEN 1 THEN 'DEBIT'
+                ELSE 'TRANSFER'
+            END AS TRANSACTION_TYPE,
+            CASE UNIFORM(0, 4, SEQ8() + 3)
+                WHEN 0 THEN 'European Trading Co'
+                WHEN 1 THEN 'Nordic Logistics Ltd'
+                WHEN 2 THEN 'Baltic Import/Export'
+                WHEN 3 THEN 'Swiss Finance AG'
+                ELSE 'Amsterdam Trade House'
+            END AS COUNTERPARTY_NAME,
+            CASE UNIFORM(0, 5, SEQ8() + 4)
+                WHEN 0 THEN 'DEU'
+                WHEN 1 THEN 'FRA'
+                WHEN 2 THEN 'NLD'
+                WHEN 3 THEN 'BEL'
+                WHEN 4 THEN 'CHE'
+                ELSE 'AUT'
+            END AS COUNTERPARTY_COUNTRY,
+            CASE UNIFORM(0, 4, SEQ8() + 5)
+                WHEN 0 THEN 'Trade settlement'
+                WHEN 1 THEN 'Service payment'
+                WHEN 2 THEN 'Equipment purchase'
+                WHEN 3 THEN 'Consulting fees'
+                ELSE 'Supply chain payment'
+            END AS DESCRIPTION,
+            CASE 
+                WHEN RISK_RATING = 'HIGH' THEN UNIFORM(10, 80, SEQ8() + 6) / 100.0
+                ELSE UNIFORM(10, 40, SEQ8() + 7) / 100.0
+            END AS RISK_SCORE,
+            (UNIFORM(0, 100, SEQ8() + 8) < 5) AS SUSPICIOUS_ACTIVITY_FLAG,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM (
+            SELECT 
+                CUSTOMER_ID,
+                RISK_RATING,
+                TXN_SEQ
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+            CROSS JOIN (
+                SELECT ROW_NUMBER() OVER (ORDER BY SEQ8()) AS TXN_SEQ
+                FROM TABLE(GENERATOR(ROWCOUNT => 100))  -- Max transactions per customer
+            )
+            WHERE (RISK_RATING = 'HIGH' AND TXN_SEQ <= 100)
+               OR (RISK_RATING = 'MEDIUM' AND TXN_SEQ <= 60)
+               OR (RISK_RATING = 'LOW' AND TXN_SEQ <= 30)
+        )
+    )
+    -- Combine key and regular transactions
+    SELECT * FROM key_transaction
+    UNION ALL
+    SELECT * FROM regular_transactions
     """
     
-    key_transaction_df = session.sql(key_transaction_sql)
+    session.sql(create_transactions_sql).collect()
     
-    # Generate regular transactions for all customers via cross join
-    transaction_types = ['CREDIT', 'DEBIT', 'TRANSFER']
-    counterparty_names = ['European Trading Co', 'Nordic Logistics Ltd', 'Baltic Import/Export', 
-                          'Swiss Finance AG', 'Amsterdam Trade House']
-    counterparty_countries = ['DEU', 'FRA', 'NLD', 'BEL', 'CHE', 'AUT']
-    descriptions = ['Trade settlement', 'Service payment', 'Equipment purchase', 
-                    'Consulting fees', 'Supply chain payment']
-    
-    # Calculate transaction counts per risk level
-    # HIGH: 80-120, MEDIUM: 40-80, LOW: 20-40
-    # We'll use a simple average and generate via cross join
-    avg_txn_per_customer = 60  # Average across risk levels
-    
-    regular_transactions_df = (
-        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-        .select("CUSTOMER_ID", "RISK_RATING")
-        # Cross join with generator to create multiple transactions per customer
-        .cross_join(
-            session.generator(F.seq4(), rowcount=avg_txn_per_customer)
-            .with_column("TXN_SEQ", F.row_number().over(Window.order_by(F.seq4())))
-        )
-        # Filter based on risk rating to get correct transaction count per customer
-        .with_column(
-            "KEEP_TXN",
-            F.when(F.col("RISK_RATING") == "HIGH", F.col("TXN_SEQ") <= 100)  # ~80-120 range
-             .when(F.col("RISK_RATING") == "MEDIUM", F.col("TXN_SEQ") <= 60)  # ~40-80 range
-             .otherwise(F.col("TXN_SEQ") <= 30)  # ~20-40 range for LOW
-        )
-        .filter(F.col("KEEP_TXN"))
-        .with_column(
-            "TRANSACTION_ID",
-            F.concat(
-                F.lit("TXN_"),
-                F.col("CUSTOMER_ID"),
-                F.lit("_"),
-                F.lpad(F.col("TXN_SEQ").cast("string"), 4, "0")
-            )
-        )
-        .with_column(
-            "TRANSACTION_DATE",
-            F.dateadd("day", -F.uniform(1, 365, F.seq4()), F.current_timestamp())
-        )
-        .with_column(
-            "AMOUNT",
-            F.uniform(1000, 100000, F.seq4() + 1).cast("DECIMAL(18,2)")
-        )
-        .with_column("CURRENCY", F.lit(config.CURRENCY))
-        .with_column(
-            "TRANSACTION_TYPE",
-            random_choice_from_list(transaction_types, F.seq4() + 2)
-        )
-        .with_column(
-            "COUNTERPARTY_NAME",
-            random_choice_from_list(counterparty_names, F.seq4() + 3)
-        )
-        .with_column(
-            "COUNTERPARTY_COUNTRY",
-            random_choice_from_list(counterparty_countries, F.seq4() + 4)
-        )
-        .with_column(
-            "DESCRIPTION",
-            random_choice_from_list(descriptions, F.seq4() + 5)
-        )
-        .with_column(
-            "RISK_SCORE",
-            F.when(
-                F.col("RISK_RATING") == "HIGH",
-                F.uniform(10, 80, F.seq4() + 6) / F.lit(100.0)
-            ).otherwise(
-                F.uniform(10, 40, F.seq4() + 7) / F.lit(100.0)
-            )
-        )
-        .with_column(
-            "SUSPICIOUS_ACTIVITY_FLAG",
-            F.uniform(0, 100, F.seq4() + 8) < 5  # 5% chance
-        )
-        .with_column("CREATED_DATE", F.current_timestamp())
-        .select(
-            "TRANSACTION_ID", "CUSTOMER_ID", "TRANSACTION_DATE", "AMOUNT",
-            "CURRENCY", "TRANSACTION_TYPE", "COUNTERPARTY_NAME", 
-            "COUNTERPARTY_COUNTRY", "DESCRIPTION", "RISK_SCORE",
-            "SUSPICIOUS_ACTIVITY_FLAG", "CREATED_DATE"
-        )
-    )
-    
-    # Combine key transaction with regular transactions
-    all_transactions_df = key_transaction_df.union_all(regular_transactions_df)
-    
-    # Save to database (no batching needed!)
-    all_transactions_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.TRANSACTIONS", 
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated transactions using server-side operations (estimated 50K-150K transactions)")
+    logger.info(f"Generated transactions using pure SQL")
 
 
 def generate_loan_applications(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate loan applications with realistic financial metrics using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating loan applications (server-side)...")
+    """Generate loan applications with realistic financial metrics using pure SQL."""
+    logger.info("Generating loan applications (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
+    additional_count = scale_config['loan_applications'] - 1
     
-    # Define key application for Innovate GmbH (credit risk scenario)
-    key_application_sql = """
+    create_loan_applications_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.LOAN_APPLICATIONS AS
+    WITH
+    -- Key application for Innovate GmbH (credit risk scenario)
+    key_application AS (
         SELECT 
             'APP_INN_DE_001' AS APPLICATION_ID,
             'CUST_INN_DE_001' AS CUSTOMER_ID,
@@ -674,214 +674,166 @@ def generate_loan_applications(session: Session, scale: str = "demo", scenarios:
             'Software Services' AS INDUSTRY,
             'MEDIUM' AS RISK_RATING,
             CURRENT_TIMESTAMP() AS CREATED_DATE
+    ),
+    -- Additional applications from customers
+    additional_applications AS (
+        SELECT 
+            'APP_' || ENTITY_ID AS APPLICATION_ID,
+            CUSTOMER_ID,
+            ENTITY_ID,
+            UNIFORM(500000, 10000000, ROW_SEQ)::DECIMAL(18,2) AS REQUESTED_AMOUNT,
+            DATEADD(day, -UNIFORM(1, 180, ROW_SEQ + 1), CURRENT_DATE()) AS APPLICATION_DATE,
+            CASE UNIFORM(0, 3, ROW_SEQ + 2)
+                WHEN 0 THEN 'PENDING'
+                WHEN 1 THEN 'UNDER_REVIEW'
+                WHEN 2 THEN 'APPROVED'
+                ELSE 'REJECTED'
+            END AS APPLICATION_STATUS,
+            UNIFORM(80, 300, ROW_SEQ + 3) / 100.0 AS DSCR,
+            UNIFORM(50, 500, ROW_SEQ + 4) / 100.0 AS DEBT_TO_EQUITY,
+            UNIFORM(80, 250, ROW_SEQ + 5) / 100.0 AS CURRENT_RATIO,
+            UNIFORM(10, 80, ROW_SEQ + 6) / 100.0 AS CLIENT_CONCENTRATION,
+            CASE UNIFORM(0, 6, ROW_SEQ + 7)
+                WHEN 0 THEN 'Software Services'
+                WHEN 1 THEN 'Manufacturing'
+                WHEN 2 THEN 'Retail'
+                WHEN 3 THEN 'Healthcare'
+                WHEN 4 THEN 'Construction'
+                WHEN 5 THEN 'Transportation'
+                ELSE 'Financial Services'
+            END AS INDUSTRY,
+            CASE 
+                WHEN (UNIFORM(80, 300, ROW_SEQ + 3) / 100.0) < 1.25 THEN 'HIGH'
+                WHEN (UNIFORM(50, 500, ROW_SEQ + 4) / 100.0) > 3.0 THEN 'HIGH'
+                WHEN (UNIFORM(80, 300, ROW_SEQ + 3) / 100.0) > 2.0 THEN 'LOW'
+                ELSE 'MEDIUM'
+            END AS RISK_RATING,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM (
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY RANDOM()) AS ROW_SEQ,
+                CUSTOMER_ID,
+                ENTITY_ID
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+            WHERE ENTITY_ID != 'INN_DE_001'
+            ORDER BY RANDOM()
+            LIMIT {additional_count}
+        )
+    )
+    -- Combine key and additional applications
+    SELECT * FROM key_application
+    UNION ALL
+    SELECT * FROM additional_applications
     """
     
-    key_application_df = session.sql(key_application_sql)
+    session.sql(create_loan_applications_sql).collect()
     
-    # Generate additional applications from customers
-    additional_count = scale_config['loan_applications'] - 1
-    
-    if additional_count > 0:
-        application_statuses = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED']
-        risk_ratings = ['LOW', 'MEDIUM', 'HIGH']
-        industries = ['Software Services', 'Manufacturing', 'Retail', 'Healthcare', 
-                     'Construction', 'Transportation', 'Financial Services']
-        
-        additional_df = (
-            session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-            .filter(F.col("ENTITY_ID") != "INN_DE_001")  # Exclude key customer
-            .order_by(F.random())
-            .limit(additional_count)
-            .with_column("SEQ", F.row_number().over(Window.order_by(F.random())))
-            .with_column(
-                "APPLICATION_ID",
-                F.concat(F.lit("APP_"), F.col("ENTITY_ID"))
-            )
-            .with_column(
-                "REQUESTED_AMOUNT",
-                F.uniform(500000, 10000000, F.col("SEQ")).cast("DECIMAL(18,2)")
-            )
-            .with_column(
-                "APPLICATION_DATE",
-                F.dateadd("day", -F.uniform(1, 180, F.col("SEQ") + 1), F.current_date())
-            )
-            .with_column(
-                "APPLICATION_STATUS",
-                random_choice_from_list(application_statuses, F.col("SEQ") + 2)
-            )
-            .with_column(
-                "DSCR",
-                F.uniform(80, 300, F.col("SEQ") + 3) / F.lit(100.0)  # 0.8 to 3.0
-            )
-            .with_column(
-                "DEBT_TO_EQUITY",
-                F.uniform(50, 500, F.col("SEQ") + 4) / F.lit(100.0)  # 0.5 to 5.0
-            )
-            .with_column(
-                "CURRENT_RATIO",
-                F.uniform(80, 250, F.col("SEQ") + 5) / F.lit(100.0)  # 0.8 to 2.5
-            )
-            .with_column(
-                "CLIENT_CONCENTRATION",
-                F.uniform(10, 80, F.col("SEQ") + 6) / F.lit(100.0)  # 0.1 to 0.8
-            )
-            .with_column(
-                "INDUSTRY",
-                random_choice_from_list(industries, F.col("SEQ") + 7)
-            )
-            .with_column(
-                "RISK_RATING",
-                F.when(F.col("DSCR") < 1.25, F.lit("HIGH"))
-                 .when(F.col("DEBT_TO_EQUITY") > 3.0, F.lit("HIGH"))
-                 .when(F.col("DSCR") > 2.0, F.lit("LOW"))
-                 .otherwise(F.lit("MEDIUM"))
-            )
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .select(
-                "APPLICATION_ID", "CUSTOMER_ID", "ENTITY_ID", "REQUESTED_AMOUNT",
-                "APPLICATION_DATE", "APPLICATION_STATUS", "DSCR", "DEBT_TO_EQUITY",
-                "CURRENT_RATIO", "CLIENT_CONCENTRATION", "INDUSTRY", "RISK_RATING",
-                "CREATED_DATE"
-            )
-        )
-        
-        # Combine key and additional applications
-        applications_df = key_application_df.union_all(additional_df)
-    else:
-        applications_df = key_application_df
-    
-    # Save to database
-    applications_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.LOAN_APPLICATIONS",
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {scale_config['loan_applications']} loan applications using server-side operations")
+    logger.info(f"Generated {scale_config['loan_applications']} loan applications using pure SQL")
 
 
 def generate_historical_loans(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate historical loan performance data for cohort analysis using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating historical loans (server-side)...")
+    """Generate historical loan performance data for cohort analysis using pure SQL."""
+    logger.info("Generating historical loans (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     
-    industries = ['Software Services', 'Manufacturing', 'Healthcare', 'Financial Services', 
-                 'Retail', 'Construction']
-    loan_statuses = ['PERFORMING', 'PERFORMING', 'PERFORMING', 'DEFAULTED']  # 75% performing
-    company_prefixes = ['Tech', 'Euro', 'Nordic', 'Baltic', 'Global']
-    company_roots = ['Solutions', 'Industries', 'Holdings', 'Services', 'Group']
-    company_suffixes = ['Ltd', 'S.A.', 'GmbH', 'B.V.']
-    
-    loans_df = (
-        session.generator(F.seq4(), rowcount=scale_config['historical_loans'])
-        .with_column("SEQ", F.row_number().over(Window.order_by(F.seq4())))
-        .with_column(
-            "LOAN_ID",
-            F.concat(F.lit("HIST_LOAN_"), F.substr(F.call_builtin('UUID_STRING'), 1, 8))
-        )
-        .with_column("CUSTOMER_ID", F.lit(None).cast("string"))  # Historical loans may not have current customer IDs
-        .with_column(
-            "APPLICANT_NAME",
-            F.concat(
-                random_choice_from_list(company_prefixes, F.col("SEQ")),
-                F.lit(" "),
-                random_choice_from_list(company_roots, F.col("SEQ") + 1),
-                F.lit(" "),
-                random_choice_from_list(company_suffixes, F.col("SEQ") + 2)
+    create_historical_loans_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.HISTORICAL_LOANS AS
+    SELECT 
+        'HIST_LOAN_' || SUBSTR(UUID_STRING(), 1, 8) AS LOAN_ID,
+        NULL AS CUSTOMER_ID,
+        CASE UNIFORM(0, 4, ROW_SEQ)
+            WHEN 0 THEN 'Tech'
+            WHEN 1 THEN 'Euro'
+            WHEN 2 THEN 'Nordic'
+            WHEN 3 THEN 'Baltic'
+            ELSE 'Global'
+        END || ' ' ||
+        CASE UNIFORM(0, 4, ROW_SEQ + 1)
+            WHEN 0 THEN 'Solutions'
+            WHEN 1 THEN 'Industries'
+            WHEN 2 THEN 'Holdings'
+            WHEN 3 THEN 'Services'
+            ELSE 'Group'
+        END || ' ' ||
+        CASE UNIFORM(0, 3, ROW_SEQ + 2)
+            WHEN 0 THEN 'Ltd'
+            WHEN 1 THEN 'S.A.'
+            WHEN 2 THEN 'GmbH'
+            ELSE 'B.V.'
+        END AS APPLICANT_NAME,
+        TO_DATE(
+            UNIFORM(2019, 2023, ROW_SEQ + 3)::STRING || '-' ||
+            LPAD(UNIFORM(1, 12, ROW_SEQ + 4)::STRING, 2, '0') || '-' ||
+            LPAD(UNIFORM(1, 28, ROW_SEQ + 5)::STRING, 2, '0')
+        ) AS ORIGINATION_DATE,
+        DATEADD(day, UNIFORM(1095, 2190, ROW_SEQ + 6), 
+            TO_DATE(
+                UNIFORM(2019, 2023, ROW_SEQ + 3)::STRING || '-' ||
+                LPAD(UNIFORM(1, 12, ROW_SEQ + 4)::STRING, 2, '0') || '-' ||
+                LPAD(UNIFORM(1, 28, ROW_SEQ + 5)::STRING, 2, '0')
             )
-        )
-        .with_column(
-            "ORIGINATION_DATE",
-            F.to_date(
-                F.concat(
-                    F.uniform(2019, 2023, F.col("SEQ") + 3).cast("string"),
-                    F.lit("-"),
-                    F.lpad(F.uniform(1, 12, F.col("SEQ") + 4).cast("string"), 2, "0"),
-                    F.lit("-"),
-                    F.lpad(F.uniform(1, 28, F.col("SEQ") + 5).cast("string"), 2, "0")
+        ) AS MATURITY_DATE,
+        UNIFORM(500000, 20000000, ROW_SEQ + 7)::DECIMAL(18,2) AS ORIGINAL_AMOUNT,
+        'EUR' AS CURRENCY,
+        CASE UNIFORM(0, 5, ROW_SEQ + 8)
+            WHEN 0 THEN 'Software Services'
+            WHEN 1 THEN 'Manufacturing'
+            WHEN 2 THEN 'Healthcare'
+            WHEN 3 THEN 'Financial Services'
+            WHEN 4 THEN 'Retail'
+            ELSE 'Construction'
+        END AS INDUSTRY_SECTOR,
+        UNIFORM(100, 500, ROW_SEQ + 9) / 100.0 AS DEBT_TO_EQUITY_AT_ORIGINATION,
+        UNIFORM(80, 250, ROW_SEQ + 10) / 100.0 AS DSCR_AT_ORIGINATION,
+        UNIFORM(80, 200, ROW_SEQ + 11) / 100.0 AS CURRENT_RATIO_AT_ORIGINATION,
+        UNIFORM(15, 85, ROW_SEQ + 12) / 1.0 AS CLIENT_CONCENTRATION_AT_ORIGINATION,
+        CASE MOD(UNIFORM(0, 3, ROW_SEQ + 13), 4)
+            WHEN 0 THEN 'PERFORMING'
+            WHEN 1 THEN 'PERFORMING'
+            WHEN 2 THEN 'PERFORMING'
+            ELSE 'DEFAULTED'
+        END AS LOAN_STATUS,
+        CASE 
+            WHEN MOD(UNIFORM(0, 3, ROW_SEQ + 13), 4) = 3 THEN
+                DATEADD(day, UNIFORM(365, 1460, ROW_SEQ + 14),
+                    TO_DATE(
+                        UNIFORM(2019, 2023, ROW_SEQ + 3)::STRING || '-' ||
+                        LPAD(UNIFORM(1, 12, ROW_SEQ + 4)::STRING, 2, '0') || '-' ||
+                        LPAD(UNIFORM(1, 28, ROW_SEQ + 5)::STRING, 2, '0')
+                    )
                 )
-            )
-        )
-        .with_column(
-            "MATURITY_DATE",
-            F.dateadd("day", F.uniform(1095, 2190, F.col("SEQ") + 6), F.col("ORIGINATION_DATE"))  # 3-6 years
-        )
-        .with_column(
-            "ORIGINAL_AMOUNT",
-            F.uniform(500000, 20000000, F.col("SEQ") + 7).cast("DECIMAL(18,2)")
-        )
-        .with_column("CURRENCY", F.lit(config.CURRENCY))
-        .with_column(
-            "INDUSTRY_SECTOR",
-            random_choice_from_list(industries, F.col("SEQ") + 8)
-        )
-        .with_column(
-            "DEBT_TO_EQUITY_AT_ORIGINATION",
-            F.uniform(100, 500, F.col("SEQ") + 9) / F.lit(100.0)  # 1.0 to 5.0
-        )
-        .with_column(
-            "DSCR_AT_ORIGINATION",
-            F.uniform(80, 250, F.col("SEQ") + 10) / F.lit(100.0)  # 0.8 to 2.5
-        )
-        .with_column(
-            "CURRENT_RATIO_AT_ORIGINATION",
-            F.uniform(80, 200, F.col("SEQ") + 11) / F.lit(100.0)  # 0.8 to 2.0
-        )
-        .with_column(
-            "CLIENT_CONCENTRATION_AT_ORIGINATION",
-            F.uniform(15, 85, F.col("SEQ") + 12) / F.lit(1.0)  # 15 to 85
-        )
-        .with_column(
-            "LOAN_STATUS",
-            random_choice_from_list(loan_statuses, F.col("SEQ") + 13)
-        )
-        .with_column(
-            "DEFAULT_DATE",
-            F.when(
-                F.col("LOAN_STATUS") == "DEFAULTED",
-                F.dateadd("day", F.uniform(365, 1460, F.col("SEQ") + 14), F.col("ORIGINATION_DATE"))
-            ).otherwise(F.lit(None).cast("date"))
-        )
-        .with_column(
-            "LOSS_AMOUNT",
-            F.when(
-                F.col("LOAN_STATUS") == "DEFAULTED",
-                (F.col("ORIGINAL_AMOUNT") * F.uniform(20, 80, F.col("SEQ") + 15) / F.lit(100.0)).cast("DECIMAL(18,2)")
-            ).otherwise(F.lit(None).cast("decimal(18,2)"))
-        )
-        .with_column("CREATED_DATE", F.current_timestamp())
-        .select(
-            "LOAN_ID", "CUSTOMER_ID", "APPLICANT_NAME", "ORIGINATION_DATE",
-            "MATURITY_DATE", "ORIGINAL_AMOUNT", "CURRENCY", "INDUSTRY_SECTOR",
-            "DEBT_TO_EQUITY_AT_ORIGINATION", "DSCR_AT_ORIGINATION",
-            "CURRENT_RATIO_AT_ORIGINATION", "CLIENT_CONCENTRATION_AT_ORIGINATION",
-            "LOAN_STATUS", "DEFAULT_DATE", "LOSS_AMOUNT", "CREATED_DATE"
-        )
+            ELSE NULL
+        END AS DEFAULT_DATE,
+        CASE 
+            WHEN MOD(UNIFORM(0, 3, ROW_SEQ + 13), 4) = 3 THEN
+                (UNIFORM(500000, 20000000, ROW_SEQ + 7) * UNIFORM(20, 80, ROW_SEQ + 15) / 100.0)::DECIMAL(18,2)
+            ELSE NULL
+        END AS LOSS_AMOUNT,
+        CURRENT_TIMESTAMP() AS CREATED_DATE
+    FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY SEQ4()) AS ROW_SEQ
+        FROM TABLE(GENERATOR(ROWCOUNT => {scale_config['historical_loans']}))
     )
+    """
     
-    # Save to database
-    loans_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.HISTORICAL_LOANS",
-        mode="overwrite"
-    )
+    session.sql(create_historical_loans_sql).collect()
     
-    logger.info(f"Generated {scale_config['historical_loans']} historical loans using server-side operations")
+    logger.info(f"Generated {scale_config['historical_loans']} historical loans using pure SQL")
 
 
 def generate_alerts(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate transaction monitoring alerts for AML investigation scenarios using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating transaction monitoring alerts (server-side)...")
+    """Generate transaction monitoring alerts for AML investigation scenarios using pure SQL."""
+    logger.info("Generating alerts (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
+    additional_count = scale_config['alerts'] - 1
     
-    # Define key structuring alert for demo scenario (GTV)
-    key_alert_sql = """
+    create_alerts_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ALERTS AS
+    WITH
+    -- Key structuring alert for demo scenario (GTV)
+    key_alert AS (
         SELECT 
             'ALERT_STRUCT_001' AS ALERT_ID,
             'CUST_GTV_SA_001' AS CUSTOMER_ID,
@@ -896,105 +848,86 @@ def generate_alerts(session: Session, scale: str = "demo", scenarios: List[str] 
             5 AS FLAGGED_TRANSACTION_COUNT,
             47500.00 AS TOTAL_FLAGGED_AMOUNT,
             CURRENT_TIMESTAMP() AS CREATED_DATE
+    ),
+    -- Additional alerts from customers
+    additional_alerts AS (
+        SELECT 
+            'ALERT_' || SUBSTR(UUID_STRING(), 1, 8) AS ALERT_ID,
+            CUSTOMER_ID,
+            CASE UNIFORM(0, 4, ROW_SEQ)
+                WHEN 0 THEN 'Structuring'
+                WHEN 1 THEN 'Large Cash'
+                WHEN 2 THEN 'Rapid Movement'
+                WHEN 3 THEN 'High Risk Country'
+                ELSE 'Unusual Pattern'
+            END AS ALERT_TYPE,
+            DATEADD(day, -UNIFORM(1, 180, ROW_SEQ + 1), CURRENT_TIMESTAMP()) AS ALERT_DATE,
+            CASE UNIFORM(0, 2, ROW_SEQ + 2)
+                WHEN 0 THEN 'OPEN'
+                WHEN 1 THEN 'UNDER_INVESTIGATION'
+                ELSE 'CLOSED'
+            END AS ALERT_STATUS,
+            CASE 
+                WHEN RISK_RATING = 'HIGH' THEN UNIFORM(70, 95, ROW_SEQ + 3) / 100.0
+                WHEN RISK_RATING = 'MEDIUM' THEN UNIFORM(40, 70, ROW_SEQ + 4) / 100.0
+                ELSE UNIFORM(10, 40, ROW_SEQ + 5) / 100.0
+            END AS PRIORITY_SCORE,
+            CASE UNIFORM(0, 4, ROW_SEQ + 6)
+                WHEN 0 THEN 'Maria Santos'
+                WHEN 1 THEN 'John Chen'
+                WHEN 2 THEN 'Sarah Mitchell'
+                WHEN 3 THEN 'David Kumar'
+                ELSE 'Emma Rodriguez'
+            END AS ASSIGNED_TO,
+            CASE 
+                WHEN UNIFORM(0, 2, ROW_SEQ + 2) = 2 THEN 
+                    DATEADD(day, UNIFORM(1, 30, ROW_SEQ + 7), 
+                        DATEADD(day, -UNIFORM(1, 180, ROW_SEQ + 1), CURRENT_TIMESTAMP()))
+                ELSE NULL
+            END AS RESOLUTION_DATE,
+            CASE 
+                WHEN UNIFORM(0, 2, ROW_SEQ + 2) = 2 THEN 
+                    CASE UNIFORM(0, 2, ROW_SEQ + 8)
+                        WHEN 0 THEN 'SAR_FILED'
+                        WHEN 1 THEN 'FALSE_POSITIVE'
+                        ELSE 'CLEARED'
+                    END
+                ELSE NULL
+            END AS DISPOSITION,
+            CASE UNIFORM(0, 4, ROW_SEQ)
+                WHEN 0 THEN 'Structuring'
+                WHEN 1 THEN 'Large Cash'
+                WHEN 2 THEN 'Rapid Movement'
+                WHEN 3 THEN 'High Risk Country'
+                ELSE 'Unusual Pattern'
+            END || ' pattern detected' AS ALERT_DESCRIPTION,
+            UNIFORM(1, 10, ROW_SEQ + 9) AS FLAGGED_TRANSACTION_COUNT,
+            UNIFORM(10000, 500000, ROW_SEQ + 10)::DECIMAL(18,2) AS TOTAL_FLAGGED_AMOUNT,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM (
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY RANDOM()) AS ROW_SEQ,
+                CUSTOMER_ID,
+                RISK_RATING
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+            ORDER BY RANDOM()
+            LIMIT {additional_count}
+        )
+    )
+    -- Combine key and additional alerts
+    SELECT * FROM key_alert
+    UNION ALL
+    SELECT * FROM additional_alerts
     """
     
-    key_alert_df = session.sql(key_alert_sql)
+    session.sql(create_alerts_sql).collect()
     
-    # Generate additional alerts by sampling customers
-    additional_count = scale_config['alerts'] - 1
-    
-    if additional_count > 0:
-        alert_types = ['Structuring', 'Large Cash', 'Rapid Movement', 'High Risk Country', 'Unusual Pattern']
-        alert_statuses = ['OPEN', 'UNDER_INVESTIGATION', 'CLOSED']
-        analyst_names = ['Maria Santos', 'John Chen', 'Sarah Mitchell', 'David Kumar', 'Emma Rodriguez']
-        dispositions = ['SAR_FILED', 'FALSE_POSITIVE', 'CLEARED']
-        
-        additional_df = (
-            session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-            .order_by(F.random())
-            .limit(additional_count)
-            .with_column("SEQ", F.row_number().over(Window.order_by(F.random())))
-            .with_column(
-                "ALERT_ID",
-                F.concat(F.lit("ALERT_"), F.substr(F.call_builtin('UUID_STRING'), 1, 8))
-            )
-            .with_column(
-                "ALERT_TYPE",
-                random_choice_from_list(alert_types, F.col("SEQ"))
-            )
-            .with_column(
-                "ALERT_DATE",
-                F.dateadd("day", -F.uniform(1, 180, F.col("SEQ") + 1), F.current_timestamp())
-            )
-            .with_column(
-                "ALERT_STATUS",
-                random_choice_from_list(alert_statuses, F.col("SEQ") + 2)
-            )
-            .with_column(
-                "PRIORITY_SCORE",
-                F.when(F.col("RISK_RATING") == "HIGH", F.uniform(70, 95, F.col("SEQ") + 3) / F.lit(100.0))
-                 .when(F.col("RISK_RATING") == "MEDIUM", F.uniform(40, 70, F.col("SEQ") + 4) / F.lit(100.0))
-                 .otherwise(F.uniform(10, 40, F.col("SEQ") + 5) / F.lit(100.0))
-            )
-            .with_column(
-                "ASSIGNED_TO",
-                random_choice_from_list(analyst_names, F.col("SEQ") + 6)
-            )
-            .with_column(
-                "RESOLUTION_DATE",
-                F.when(
-                    F.col("ALERT_STATUS") == "CLOSED",
-                    F.dateadd("day", F.uniform(1, 30, F.col("SEQ") + 7), F.col("ALERT_DATE"))
-                ).otherwise(F.lit(None).cast("timestamp"))
-            )
-            .with_column(
-                "DISPOSITION",
-                F.when(
-                    F.col("ALERT_STATUS") == "CLOSED",
-                    random_choice_from_list(dispositions, F.col("SEQ") + 8)
-                ).otherwise(F.lit(None).cast("string"))
-            )
-            .with_column(
-                "ALERT_DESCRIPTION",
-                F.concat(F.col("ALERT_TYPE"), F.lit(" pattern detected"))
-            )
-            .with_column(
-                "FLAGGED_TRANSACTION_COUNT",
-                F.uniform(1, 10, F.col("SEQ") + 9)
-            )
-            .with_column(
-                "TOTAL_FLAGGED_AMOUNT",
-                F.uniform(10000, 500000, F.col("SEQ") + 10).cast("DECIMAL(18,2)")
-            )
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .select(
-                "ALERT_ID", "CUSTOMER_ID", "ALERT_TYPE", "ALERT_DATE",
-                "ALERT_STATUS", "PRIORITY_SCORE", "ASSIGNED_TO", "RESOLUTION_DATE",
-                "DISPOSITION", "ALERT_DESCRIPTION", "FLAGGED_TRANSACTION_COUNT",
-                "TOTAL_FLAGGED_AMOUNT", "CREATED_DATE"
-            )
-        )
-        
-        # Combine key and additional alerts
-        alerts_df = key_alert_df.union_all(additional_df)
-    else:
-        alerts_df = key_alert_df
-    
-    # Save to database
-    alerts_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.ALERTS",
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {scale_config['alerts']} transaction monitoring alerts using server-side operations")
+    logger.info(f"Generated {scale_config['alerts']} transaction monitoring alerts using pure SQL")
 
 
 def generate_alert_disposition_history(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate historical alert disposition data for ML model training using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating alert disposition history (server-side)...")
+    """Generate historical alert disposition data for ML model training using pure SQL."""
+    logger.info("Generating alert disposition history (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     
@@ -1005,63 +938,42 @@ def generate_alert_disposition_history(session: Session, scale: str = "demo", sc
         logger.warning(f"No alerts table found. Skipping disposition history generation: {e}")
         return
     
-    analyst_names = ['Maria Santos', 'John Chen', 'Sarah Mitchell', 'David Kumar', 'Emma Rodriguez']
-    
-    # Generate dispositions with 75% false positive rate
-    # We use UNIFORM to generate a random value 0-100, then map to dispositions
-    dispositions_df = (
-        session.generator(F.seq4(), rowcount=scale_config['alert_disposition_history'])
-        .with_column("SEQ", F.row_number().over(Window.order_by(F.seq4())))
-        .with_column("DISPOSITION_ID", F.call_builtin('UUID_STRING'))
-        .with_column(
-            "ALERT_ID",
-            F.concat(F.lit("HIST_ALERT_"), F.substr(F.call_builtin('UUID_STRING'), 1, 8))
-        )
-        .with_column("RAND_VAL", F.uniform(0, 100, F.col("SEQ")))  # 0-100 for distribution
-        .with_column(
-            "FINAL_DISPOSITION",
-            F.when(F.col("RAND_VAL") < 75, F.lit("FALSE_POSITIVE"))  # 75%
-             .when(F.col("RAND_VAL") < 95, F.lit("CLEARED"))          # 20%
-             .otherwise(F.lit("SAR_FILED"))                            # 5%
-        )
-        .with_column(
-            "INVESTIGATION_NOTES",
-            F.when(
-                F.col("FINAL_DISPOSITION") == "FALSE_POSITIVE",
-                F.lit("Transaction pattern consistent with normal business activity. No suspicious indicators found.")
-            ).when(
-                F.col("FINAL_DISPOSITION") == "CLEARED",
-                F.lit("Customer provided satisfactory documentation. Activity verified as legitimate.")
-            ).otherwise(
-                F.lit("Suspicious activity identified. SAR filed with FinCEN/relevant authority.")
-            )
-        )
-        .with_column(
-            "ANALYST_NAME",
-            random_choice_from_list(analyst_names, F.col("SEQ") + 1)
-        )
-        .with_column(
-            "INVESTIGATION_HOURS",
-            F.uniform(50, 800, F.col("SEQ") + 2) / F.lit(100.0)  # 0.5 to 8.0 hours
-        )
-        .with_column(
-            "CLOSED_DATE",
-            F.dateadd("day", -F.uniform(30, 730, F.col("SEQ") + 3), F.current_timestamp())
-        )
-        .with_column("CREATED_DATE", F.current_timestamp())
-        .select(
-            "DISPOSITION_ID", "ALERT_ID", "FINAL_DISPOSITION", "INVESTIGATION_NOTES",
-            "ANALYST_NAME", "INVESTIGATION_HOURS", "CLOSED_DATE", "CREATED_DATE"
-        )
+    create_disposition_history_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.ALERT_DISPOSITION_HISTORY AS
+    SELECT 
+        UUID_STRING() AS DISPOSITION_ID,
+        'HIST_ALERT_' || SUBSTR(UUID_STRING(), 1, 8) AS ALERT_ID,
+        CASE 
+            WHEN RAND_VAL < 75 THEN 'FALSE_POSITIVE'
+            WHEN RAND_VAL < 95 THEN 'CLEARED'
+            ELSE 'SAR_FILED'
+        END AS FINAL_DISPOSITION,
+        CASE 
+            WHEN RAND_VAL < 75 THEN 'Transaction pattern consistent with normal business activity. No suspicious indicators found.'
+            WHEN RAND_VAL < 95 THEN 'Customer provided satisfactory documentation. Activity verified as legitimate.'
+            ELSE 'Suspicious activity identified. SAR filed with FinCEN/relevant authority.'
+        END AS INVESTIGATION_NOTES,
+        CASE UNIFORM(0, 4, ROW_SEQ + 1)
+            WHEN 0 THEN 'Maria Santos'
+            WHEN 1 THEN 'John Chen'
+            WHEN 2 THEN 'Sarah Mitchell'
+            WHEN 3 THEN 'David Kumar'
+            ELSE 'Emma Rodriguez'
+        END AS ANALYST_NAME,
+        UNIFORM(50, 800, ROW_SEQ + 2) / 100.0 AS INVESTIGATION_HOURS,
+        DATEADD(day, -UNIFORM(30, 730, ROW_SEQ + 3), CURRENT_TIMESTAMP()) AS CLOSED_DATE,
+        CURRENT_TIMESTAMP() AS CREATED_DATE
+    FROM (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY SEQ4()) AS ROW_SEQ,
+            UNIFORM(0, 100, SEQ4()) AS RAND_VAL
+        FROM TABLE(GENERATOR(ROWCOUNT => {scale_config['alert_disposition_history']}))
     )
+    """
     
-    # Save to database
-    dispositions_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.ALERT_DISPOSITION_HISTORY",
-        mode="overwrite"
-    )
+    session.sql(create_disposition_history_sql).collect()
     
-    logger.info(f"Generated {scale_config['alert_disposition_history']} historical alert dispositions (75% false positive rate) using server-side operations")
+    logger.info(f"Generated {scale_config['alert_disposition_history']} historical alert dispositions (75% false positive rate) using pure SQL")
 
 
 def generate_external_data_simulation(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
@@ -1248,7 +1160,11 @@ def _generate_sp_global_financials(session: Session) -> None:
     
     if financials:
         financials_df = session.create_dataframe(financials)
-        financials_df.write.save_as_table(f"{config.SNOWFLAKE['database']}.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS", mode="overwrite")
+        financials_df.create_or_replace_temp_view("temp_sp_financials")
+        session.sql(f"""
+            CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.SP_GLOBAL_COMPANY_FINANCIALS
+            AS SELECT * FROM temp_sp_financials
+        """).collect()
 
 
 def _entity_to_dict(entity: EntityProfile) -> Dict[str, Any]:
@@ -1372,11 +1288,8 @@ def _generate_director_name() -> str:
 # =============================================================================
 
 def generate_client_crm(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate client CRM records for relationship manager scenario using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating client CRM records (server-side)...")
+    """Generate client CRM records for relationship manager scenario using pure SQL."""
+    logger.info("Generating client CRM records (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     target_count = scale_config.get('client_crm_records', 0)
@@ -1385,112 +1298,96 @@ def generate_client_crm(session: Session, scale: str = "demo", scenarios: List[s
         logger.info("Skipping client CRM generation (not in scale config)")
         return
     
-    relationship_managers = [
-        'Claire Dubois', 'Marcus Weber', 'Sofia Rossi', 'Hans Schmidt', 'Emma Johnson',
-        'Pierre Lefebvre', 'Anna Müller', 'Giovanni Bianchi', 'Laura Martinez', 'Thomas Anderson'
-    ]
-    
-    account_statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'PROSPECT', 'PROSPECT', 'INACTIVE']  # 70/20/10 split
-    account_tiers = ['PREMIUM', 'PREMIUM', 'STANDARD', 'STANDARD', 'STANDARD', 'STANDARD', 'STANDARD', 'BASIC', 'BASIC', 'BASIC']  # 20/50/30 split
-    opportunity_counts = ['0', '0', '0', '1', '1', '1', '2', '2', '3', '4']  # Weighted distribution
-    
     # Check if primary RM client exists
     primary_rm_client = config.KEY_ENTITIES.get('primary_rm_client')
     
-    # Define key CRM record for primary RM client
     if primary_rm_client:
-        key_crm_sql = f"""
+        key_crm_union = f"""
             SELECT 
                 'CRM_00001' AS CRM_ID,
                 '{primary_rm_client['entity_id']}' AS CUSTOMER_ID,
                 '{primary_rm_client['relationship_manager']}' AS RELATIONSHIP_MANAGER,
-                DATEADD(day, -UNIFORM(1, 60, SEQ4()), CURRENT_DATE()) AS LAST_CONTACT_DATE,
+                DATEADD(day, -UNIFORM(1, 60, RANDOM()), CURRENT_DATE()) AS LAST_CONTACT_DATE,
                 '{primary_rm_client['account_status']}' AS ACCOUNT_STATUS,
                 'PREMIUM' AS ACCOUNT_TIER,
                 'Strategic account. Multiple cross-sell opportunities identified.' AS NOTES_SUMMARY,
                 3 AS RISK_OPPORTUNITIES_COUNT,
                 CURRENT_TIMESTAMP() AS CREATED_DATE
         """
-        key_crm_df = session.sql(key_crm_sql)
         additional_count = target_count - 1
     else:
-        key_crm_df = None
+        key_crm_union = ""
         additional_count = target_count
     
-    # Generate additional CRM records by sampling customers
-    if additional_count > 0:
-        additional_df = (
-            session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-            .order_by(F.random())
-            .limit(additional_count)
-            .with_column("SEQ", F.row_number().over(Window.order_by(F.random())))
-            .with_column(
-                "CRM_ID",
-                F.concat(F.lit("CRM_"), F.lpad((F.col("SEQ") + (1 if primary_rm_client else 0)).cast("string"), 5, "0"))
-            )
-            .with_column(
-                "RELATIONSHIP_MANAGER",
-                random_choice_from_list(relationship_managers, F.col("SEQ"))
-            )
-            .with_column(
-                "LAST_CONTACT_DATE",
-                F.dateadd("day", -F.uniform(1, 60, F.col("SEQ") + 1), F.current_date())
-            )
-            .with_column(
-                "ACCOUNT_STATUS",
-                random_choice_from_list(account_statuses, F.col("SEQ") + 2)
-            )
-            .with_column(
-                "ACCOUNT_TIER",
-                random_choice_from_list(account_tiers, F.col("SEQ") + 3)
-            )
-            .with_column(
-                "RISK_OPPORTUNITIES_COUNT",
-                random_choice_from_list(opportunity_counts, F.col("SEQ") + 4).cast("int")
-            )
-            .with_column(
-                "NOTES_SUMMARY",
-                F.concat(
-                    F.lit("Last contact: "),
-                    F.to_char(F.col("LAST_CONTACT_DATE"), "YYYY-MM-DD"),
-                    F.lit(". Account tier: "),
-                    F.col("ACCOUNT_TIER"),
-                    F.lit(". "),
-                    F.col("RISK_OPPORTUNITIES_COUNT").cast("string"),
-                    F.lit(" opportunities identified.")
-                )
-            )
-            .with_column("CREATED_DATE", F.current_timestamp())
-            .select(
-                "CRM_ID", "CUSTOMER_ID", "RELATIONSHIP_MANAGER", "LAST_CONTACT_DATE",
-                "ACCOUNT_STATUS", "ACCOUNT_TIER", "NOTES_SUMMARY", 
-                "RISK_OPPORTUNITIES_COUNT", "CREATED_DATE"
-            )
+    create_crm_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM AS
+    WITH
+    {"key_crm AS (" + key_crm_union + ")," if key_crm_union else ""}
+    -- Additional CRM records
+    additional_crm AS (
+        SELECT 
+            'CRM_' || LPAD(ROW_SEQ::STRING, 5, '0') AS CRM_ID,
+            CUSTOMER_ID,
+            CASE UNIFORM(0, 9, ROW_SEQ)
+                WHEN 0 THEN 'Claire Dubois'
+                WHEN 1 THEN 'Marcus Weber'
+                WHEN 2 THEN 'Sofia Rossi'
+                WHEN 3 THEN 'Hans Schmidt'
+                WHEN 4 THEN 'Emma Johnson'
+                WHEN 5 THEN 'Pierre Lefebvre'
+                WHEN 6 THEN 'Anna Müller'
+                WHEN 7 THEN 'Giovanni Bianchi'
+                WHEN 8 THEN 'Laura Martinez'
+                ELSE 'Thomas Anderson'
+            END AS RELATIONSHIP_MANAGER,
+            DATEADD(day, -UNIFORM(1, 60, ROW_SEQ + 1), CURRENT_DATE()) AS LAST_CONTACT_DATE,
+            CASE MOD(UNIFORM(0, 9, ROW_SEQ + 2), 10)
+                WHEN 0 THEN 'ACTIVE' WHEN 1 THEN 'ACTIVE' WHEN 2 THEN 'ACTIVE'
+                WHEN 3 THEN 'ACTIVE' WHEN 4 THEN 'ACTIVE' WHEN 5 THEN 'ACTIVE'
+                WHEN 6 THEN 'ACTIVE' WHEN 7 THEN 'PROSPECT' WHEN 8 THEN 'PROSPECT'
+                ELSE 'INACTIVE'
+            END AS ACCOUNT_STATUS,
+            CASE MOD(UNIFORM(0, 9, ROW_SEQ + 3), 10)
+                WHEN 0 THEN 'PREMIUM' WHEN 1 THEN 'PREMIUM'
+                WHEN 2 THEN 'STANDARD' WHEN 3 THEN 'STANDARD' WHEN 4 THEN 'STANDARD'
+                WHEN 5 THEN 'STANDARD' WHEN 6 THEN 'STANDARD'
+                WHEN 7 THEN 'BASIC' WHEN 8 THEN 'BASIC'
+                ELSE 'BASIC'
+            END AS ACCOUNT_TIER,
+            UNIFORM(0, 4, ROW_SEQ + 4) AS RISK_OPPORTUNITIES_COUNT,
+            'Last contact: ' || TO_CHAR(DATEADD(day, -UNIFORM(1, 60, ROW_SEQ + 1), CURRENT_DATE()), 'YYYY-MM-DD') || 
+            '. Account tier: ' || 
+            CASE MOD(UNIFORM(0, 9, ROW_SEQ + 3), 10)
+                WHEN 0 THEN 'PREMIUM' WHEN 1 THEN 'PREMIUM'
+                WHEN 2 THEN 'STANDARD' WHEN 3 THEN 'STANDARD' WHEN 4 THEN 'STANDARD'
+                WHEN 5 THEN 'STANDARD' WHEN 6 THEN 'STANDARD'
+                WHEN 7 THEN 'BASIC' WHEN 8 THEN 'BASIC'
+                ELSE 'BASIC'
+            END || '. ' || 
+            UNIFORM(0, 4, ROW_SEQ + 4)::STRING || ' opportunities identified.' AS NOTES_SUMMARY,
+            CURRENT_TIMESTAMP() AS CREATED_DATE
+        FROM (
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY RANDOM()) + {1 if primary_rm_client else 0} AS ROW_SEQ,
+                CUSTOMER_ID
+            FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+            ORDER BY RANDOM()
+            LIMIT {additional_count}
         )
-        
-        # Combine key and additional records
-        if key_crm_df:
-            crm_df = key_crm_df.union_all(additional_df)
-        else:
-            crm_df = additional_df
-    else:
-        crm_df = key_crm_df
-    
-    # Save to database
-    crm_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM",
-        mode="overwrite"
     )
+    -- Combine
+    {"SELECT * FROM key_crm UNION ALL BY NAME" if key_crm_union else ""}
+    SELECT * FROM additional_crm
+    """
     
-    logger.info(f"Generated {target_count} client CRM records using server-side operations")
+    session.sql(create_crm_sql).collect()
+    
+    logger.info(f"Generated {target_count} client CRM records using pure SQL")
 
 
 def generate_client_opportunities(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate client opportunities for relationship manager scenario using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating client opportunities (server-side)...")
+    """Generate client opportunities for relationship manager scenario using pure SQL."""
+    logger.info("Generating client opportunities (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     target_count = scale_config.get('client_opportunities', 0)
@@ -1501,101 +1398,83 @@ def generate_client_opportunities(session: Session, scale: str = "demo", scenari
     
     # Check if CRM table exists
     try:
-        crm_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM")
-        crm_df.count()
+        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM").count()
     except:
         logger.warning("No CRM records found, skipping opportunities generation")
         return
     
-    opportunity_types = [
-        'CROSS_SELL', 'UPSELL', 'RISK_MITIGATION', 'NEW_PRODUCT', 
-        'INVESTMENT_ADVISORY', 'TRADE_FINANCE', 'FX_HEDGING'
-    ]
-    
-    source_types = ['call_note', 'internal_email', 'news', 'transaction_pattern', 'market_intelligence']
-    priorities = ['HIGH', 'HIGH', 'MEDIUM', 'MEDIUM', 'MEDIUM', 'MEDIUM', 'MEDIUM', 'LOW', 'LOW', 'LOW']  # 20/50/30 split
-    statuses = ['OPEN', 'OPEN', 'OPEN', 'OPEN', 'IN_PROGRESS', 'IN_PROGRESS', 'IN_PROGRESS', 'CLOSED_WON', 'CLOSED_WON', 'CLOSED_LOST']  # 40/30/20/10
-    potential_values = [50000, 100000, 250000, 500000, 1000000, 2500000]
-    
-    # Generate opportunities by sampling CRM records
-    opportunities_df = (
-        crm_df
-        .order_by(F.random())
-        .limit(target_count)
-        .with_column("SEQ", F.row_number().over(Window.order_by(F.random())))
-        .with_column(
-            "OPPORTUNITY_ID",
-            F.concat(F.lit("OPP_"), F.lpad(F.col("SEQ").cast("string"), 6, "0"))
-        )
-        .with_column(
-            "OPPORTUNITY_TYPE",
-            random_choice_from_list(opportunity_types, F.col("SEQ"))
-        )
-        .with_column(
-            "OPPORTUNITY_DESCRIPTION",
-            F.when(F.col("OPPORTUNITY_TYPE") == "CROSS_SELL", 
-                   F.lit("Cross-sell FX hedging products to protect against currency fluctuation"))
-             .when(F.col("OPPORTUNITY_TYPE") == "UPSELL",
-                   F.lit("Upsell to premium banking tier for expanded trade finance limits"))
-             .when(F.col("OPPORTUNITY_TYPE") == "RISK_MITIGATION",
-                   F.lit("Address concentration risk through supplier diversification advisory"))
-             .when(F.col("OPPORTUNITY_TYPE") == "NEW_PRODUCT",
-                   F.lit("Introduce sustainable finance solutions aligned with ESG goals"))
-             .when(F.col("OPPORTUNITY_TYPE") == "INVESTMENT_ADVISORY",
-                   F.lit("Offer treasury optimization services for excess cash management"))
-             .when(F.col("OPPORTUNITY_TYPE") == "TRADE_FINANCE",
-                   F.lit("Expand documentary credit facilities for international expansion"))
-             .otherwise(F.lit("Implement forward contracts to hedge EUR/USD exposure"))
-        )
-        .with_column(
-            "POTENTIAL_VALUE",
-            random_choice_from_list([str(v) for v in potential_values], F.col("SEQ") + 1).cast("decimal(18,2)")
-        )
-        .with_column(
-            "SOURCE_TYPE",
-            random_choice_from_list(source_types, F.col("SEQ") + 2)
-        )
-        .with_column(
-            "SOURCE_DOCUMENT_ID",
-            F.concat(F.lit("DOC_"), F.uniform(1000, 9999, F.col("SEQ") + 3).cast("string"))
-        )
-        .with_column(
-            "PRIORITY",
-            random_choice_from_list(priorities, F.col("SEQ") + 4)
-        )
-        .with_column(
-            "STATUS",
-            random_choice_from_list(statuses, F.col("SEQ") + 5)
-        )
-        .with_column(
-            "CREATED_DATE",
-            F.dateadd("day", -F.uniform(1, 90, F.col("SEQ") + 6), F.current_timestamp())
-        )
-        .with_column(
-            "LAST_UPDATED_DATE",
-            F.dateadd("day", -F.uniform(0, 30, F.col("SEQ") + 7), F.current_timestamp())
-        )
-        .select(
-            "OPPORTUNITY_ID", "CUSTOMER_ID", "OPPORTUNITY_TYPE", "OPPORTUNITY_DESCRIPTION",
-            "POTENTIAL_VALUE", "SOURCE_TYPE", "SOURCE_DOCUMENT_ID", "PRIORITY", 
-            "STATUS", "CREATED_DATE", "LAST_UPDATED_DATE"
-        )
+    create_opportunities_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES AS
+    SELECT 
+        'OPP_' || LPAD(ROW_SEQ::STRING, 6, '0') AS OPPORTUNITY_ID,
+        CUSTOMER_ID,
+        CASE UNIFORM(0, 6, ROW_SEQ)
+            WHEN 0 THEN 'CROSS_SELL'
+            WHEN 1 THEN 'UPSELL'
+            WHEN 2 THEN 'RISK_MITIGATION'
+            WHEN 3 THEN 'NEW_PRODUCT'
+            WHEN 4 THEN 'INVESTMENT_ADVISORY'
+            WHEN 5 THEN 'TRADE_FINANCE'
+            ELSE 'FX_HEDGING'
+        END AS OPPORTUNITY_TYPE,
+        CASE UNIFORM(0, 6, ROW_SEQ)
+            WHEN 0 THEN 'Cross-sell FX hedging products to protect against currency fluctuation'
+            WHEN 1 THEN 'Upsell to premium banking tier for expanded trade finance limits'
+            WHEN 2 THEN 'Address concentration risk through supplier diversification advisory'
+            WHEN 3 THEN 'Introduce sustainable finance solutions aligned with ESG goals'
+            WHEN 4 THEN 'Offer treasury optimization services for excess cash management'
+            WHEN 5 THEN 'Expand documentary credit facilities for international expansion'
+            ELSE 'Implement forward contracts to hedge EUR/USD exposure'
+        END AS OPPORTUNITY_DESCRIPTION,
+        CASE UNIFORM(0, 5, ROW_SEQ + 1)
+            WHEN 0 THEN 50000
+            WHEN 1 THEN 100000
+            WHEN 2 THEN 250000
+            WHEN 3 THEN 500000
+            WHEN 4 THEN 1000000
+            ELSE 2500000
+        END::DECIMAL(18,2) AS POTENTIAL_VALUE,
+        CASE UNIFORM(0, 4, ROW_SEQ + 2)
+            WHEN 0 THEN 'call_note'
+            WHEN 1 THEN 'internal_email'
+            WHEN 2 THEN 'news'
+            WHEN 3 THEN 'transaction_pattern'
+            ELSE 'market_intelligence'
+        END AS SOURCE_TYPE,
+        'DOC_' || UNIFORM(1000, 9999, ROW_SEQ + 3)::STRING AS SOURCE_DOCUMENT_ID,
+        CASE MOD(UNIFORM(0, 9, ROW_SEQ + 4), 10)
+            WHEN 0 THEN 'HIGH' WHEN 1 THEN 'HIGH'
+            WHEN 2 THEN 'MEDIUM' WHEN 3 THEN 'MEDIUM' WHEN 4 THEN 'MEDIUM'
+            WHEN 5 THEN 'MEDIUM' WHEN 6 THEN 'MEDIUM'
+            WHEN 7 THEN 'LOW' WHEN 8 THEN 'LOW'
+            ELSE 'LOW'
+        END AS PRIORITY,
+        CASE MOD(UNIFORM(0, 9, ROW_SEQ + 5), 10)
+            WHEN 0 THEN 'OPEN' WHEN 1 THEN 'OPEN' WHEN 2 THEN 'OPEN' WHEN 3 THEN 'OPEN'
+            WHEN 4 THEN 'IN_PROGRESS' WHEN 5 THEN 'IN_PROGRESS' WHEN 6 THEN 'IN_PROGRESS'
+            WHEN 7 THEN 'CLOSED_WON' WHEN 8 THEN 'CLOSED_WON'
+            ELSE 'CLOSED_LOST'
+        END AS STATUS,
+        DATEADD(day, -UNIFORM(1, 90, ROW_SEQ + 6), CURRENT_TIMESTAMP()) AS CREATED_DATE,
+        DATEADD(day, -UNIFORM(0, 30, ROW_SEQ + 7), CURRENT_TIMESTAMP()) AS LAST_UPDATED_DATE
+    FROM (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY RANDOM()) AS ROW_SEQ,
+            CUSTOMER_ID
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_CRM
+        ORDER BY RANDOM()
+        LIMIT {target_count}
     )
+    """
     
-    # Save to database
-    opportunities_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.CLIENT_OPPORTUNITIES",
-        mode="overwrite"
-    )
+    session.sql(create_opportunities_sql).collect()
     
-    logger.info(f"Generated {target_count} client opportunities using server-side operations")
+    logger.info(f"Generated {target_count} client opportunities using pure SQL")
 
 
 def generate_model_portfolios(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
     """Generate model portfolios for wealth advisor scenario using pure SQL."""
-    import snowflake.snowpark.functions as F
-    
-    logger.info("Generating model portfolios (server-side)...")
+    logger.info("Generating model portfolios (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     portfolio_count = scale_config.get('model_portfolios', 3)
@@ -1648,21 +1527,19 @@ def generate_model_portfolios(session: Session, scale: str = "demo", scenarios: 
     # Select only the requested number of models
     portfolios_df = session.sql(all_models_sql).limit(portfolio_count)
     
-    # Save to database
-    portfolios_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS",
-        mode="overwrite"
-    )
+    # Save to database using SQL to avoid quoted identifiers
+    portfolios_df.create_or_replace_temp_view("temp_model_portfolios")
+    session.sql(f"""
+        CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS
+        AS SELECT * FROM temp_model_portfolios
+    """).collect()
     
     logger.info(f"Generated {portfolio_count} model portfolios using server-side operations")
 
 
 def generate_holdings(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate investment holdings for wealth clients using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating holdings (server-side)...")
+    """Generate investment holdings for wealth clients using pure SQL."""
+    logger.info("Generating holdings (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     total_holdings = scale_config.get('holdings', 0)
@@ -1672,96 +1549,120 @@ def generate_holdings(session: Session, scale: str = "demo", scenarios: List[str
         logger.info("Skipping holdings generation (not in scale config)")
         return
     
-    # Sample wealth clients from customers
-    wealth_clients_df = (
-        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS")
-        .order_by(F.random())
-        .limit(wealth_client_count)
-        .select("CUSTOMER_ID")
-    )
-    
-    # Define assets as lists (will be combined for random selection)
-    asset_types = ['EQUITY', 'EQUITY', 'EQUITY', 'EQUITY', 'EQUITY', 'BOND', 'BOND', 'BOND', 'ALTERNATIVE', 'CASH']  # Weighted
-    asset_classes = ['DOMESTIC_EQUITY', 'INTL_EQUITY', 'EMERGING_MARKETS', 'GOVT_BOND', 'CORP_BOND', 
-                     'REAL_ESTATE', 'COMMODITIES', 'INFRASTRUCTURE', 'MONEY_MARKET']
-    asset_names = ['DAX 40 ETF', 'S&P 500 ETF', 'MSCI World ETF', 'MSCI EM ETF', 'German Government Bonds',
-                   'EUR Corporate Bond ETF', 'European REIT ETF', 'Gold ETF', 'EUR Money Market Fund']
-    tickers = ['EXS1.DE', 'SPY', 'IWDA.AS', 'EEM', 'BUND', 'CORP.PA', 'IQQP.AS', 'GLD', 'MMF_EUR']
-    
     holdings_per_client = total_holdings // wealth_client_count if wealth_client_count > 0 else 0
     
-    # Generate holdings via cross join (similar to transactions pattern)
-    holdings_df = (
-        wealth_clients_df
-        .cross_join(
-            session.generator(F.seq4(), rowcount=holdings_per_client)
-            .with_column("HOLDING_SEQ", F.row_number().over(Window.order_by(F.seq4())))
-        )
-        .with_column("GLOBAL_SEQ", F.row_number().over(Window.order_by(F.col("CUSTOMER_ID"), F.col("HOLDING_SEQ"))))
-        .with_column(
-            "HOLDING_ID",
-            F.concat(F.lit("HOLD_"), F.lpad(F.col("GLOBAL_SEQ").cast("string"), 6, "0"))
-        )
-        .with_column("ASSET_TYPE", random_choice_from_list(asset_types, F.col("GLOBAL_SEQ")))
-        .with_column("ASSET_CLASS", random_choice_from_list(asset_classes, F.col("GLOBAL_SEQ") + 1))
-        .with_column("ASSET_NAME", random_choice_from_list(asset_names, F.col("GLOBAL_SEQ") + 2))
-        .with_column("TICKER_SYMBOL", random_choice_from_list(tickers, F.col("GLOBAL_SEQ") + 3))
-        .with_column(
-            "QUANTITY",
-            F.uniform(100, 10000, F.col("GLOBAL_SEQ") + 4).cast("DECIMAL(18,2)")
-        )
-        .with_column(
-            "COST_BASIS_PER_UNIT",
-            F.uniform(50, 500, F.col("GLOBAL_SEQ") + 5).cast("DECIMAL(18,2)")
-        )
-        .with_column(
-            "CURRENT_PRICE_PER_UNIT",
-            (F.col("COST_BASIS_PER_UNIT") * F.uniform(80, 130, F.col("GLOBAL_SEQ") + 6) / F.lit(100.0)).cast("DECIMAL(18,2)")
-        )
-        .with_column(
-            "CURRENT_VALUE",
-            (F.col("QUANTITY") * F.col("CURRENT_PRICE_PER_UNIT")).cast("DECIMAL(18,2)")
-        )
-        .with_column(
-            "COST_BASIS",
-            (F.col("QUANTITY") * F.col("COST_BASIS_PER_UNIT")).cast("DECIMAL(18,2)")
-        )
-        .with_column(
-            "UNREALIZED_GAIN_LOSS",
-            (F.col("CURRENT_VALUE") - F.col("COST_BASIS")).cast("DECIMAL(18,2)")
-        )
-        .with_column("AS_OF_DATE", F.current_date())
-        .with_column("LAST_UPDATED_DATE", F.current_timestamp())
+    create_holdings_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS AS
+    WITH
+    -- Sample wealth clients from customers
+    wealth_clients AS (
+        SELECT CUSTOMER_ID
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.CUSTOMERS
+        ORDER BY RANDOM()
+        LIMIT {wealth_client_count}
+    ),
+    -- Generate holdings via cross join
+    holdings_with_values AS (
+        SELECT 
+            'HOLD_' || LPAD(ROW_NUMBER() OVER (ORDER BY wc.CUSTOMER_ID, gen.HOLDING_SEQ)::STRING, 6, '0') AS HOLDING_ID,
+            wc.CUSTOMER_ID,
+            CASE MOD(UNIFORM(0, 9, gen.GLOBAL_SEQ), 10)
+                WHEN 0 THEN 'EQUITY' WHEN 1 THEN 'EQUITY' WHEN 2 THEN 'EQUITY'
+                WHEN 3 THEN 'EQUITY' WHEN 4 THEN 'EQUITY'
+                WHEN 5 THEN 'BOND' WHEN 6 THEN 'BOND' WHEN 7 THEN 'BOND'
+                WHEN 8 THEN 'ALTERNATIVE'
+                ELSE 'CASH'
+            END AS ASSET_TYPE,
+            CASE UNIFORM(0, 8, gen.GLOBAL_SEQ + 1)
+                WHEN 0 THEN 'DOMESTIC_EQUITY'
+                WHEN 1 THEN 'INTL_EQUITY'
+                WHEN 2 THEN 'EMERGING_MARKETS'
+                WHEN 3 THEN 'GOVT_BOND'
+                WHEN 4 THEN 'CORP_BOND'
+                WHEN 5 THEN 'REAL_ESTATE'
+                WHEN 6 THEN 'COMMODITIES'
+                WHEN 7 THEN 'INFRASTRUCTURE'
+                ELSE 'MONEY_MARKET'
+            END AS ASSET_CLASS,
+            CASE UNIFORM(0, 8, gen.GLOBAL_SEQ + 2)
+                WHEN 0 THEN 'DAX 40 ETF'
+                WHEN 1 THEN 'S&P 500 ETF'
+                WHEN 2 THEN 'MSCI World ETF'
+                WHEN 3 THEN 'MSCI EM ETF'
+                WHEN 4 THEN 'German Government Bonds'
+                WHEN 5 THEN 'EUR Corporate Bond ETF'
+                WHEN 6 THEN 'European REIT ETF'
+                WHEN 7 THEN 'Gold ETF'
+                ELSE 'EUR Money Market Fund'
+            END AS ASSET_NAME,
+            CASE UNIFORM(0, 8, gen.GLOBAL_SEQ + 3)
+                WHEN 0 THEN 'EXS1.DE'
+                WHEN 1 THEN 'SPY'
+                WHEN 2 THEN 'IWDA.AS'
+                WHEN 3 THEN 'EEM'
+                WHEN 4 THEN 'BUND'
+                WHEN 5 THEN 'CORP.PA'
+                WHEN 6 THEN 'IQQP.AS'
+                WHEN 7 THEN 'GLD'
+                ELSE 'MMF_EUR'
+            END AS TICKER_SYMBOL,
+            UNIFORM(100, 10000, gen.GLOBAL_SEQ + 4)::DECIMAL(18,2) AS QUANTITY,
+            UNIFORM(50, 500, gen.GLOBAL_SEQ + 5)::DECIMAL(18,2) AS COST_BASIS_PER_UNIT,
+            (UNIFORM(50, 500, gen.GLOBAL_SEQ + 5) * UNIFORM(80, 130, gen.GLOBAL_SEQ + 6) / 100.0)::DECIMAL(18,2) AS CURRENT_PRICE_PER_UNIT,
+            CURRENT_DATE() AS AS_OF_DATE,
+            CURRENT_TIMESTAMP() AS LAST_UPDATED_DATE
+        FROM wealth_clients wc
+        CROSS JOIN (
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY SEQ4()) AS HOLDING_SEQ,
+                ROW_NUMBER() OVER (ORDER BY SEQ4()) AS GLOBAL_SEQ
+            FROM TABLE(GENERATOR(ROWCOUNT => {holdings_per_client}))
+        ) gen
+    ),
+    -- Calculate derived values and allocation percentages
+    holdings_with_derived AS (
+        SELECT 
+            HOLDING_ID,
+            CUSTOMER_ID,
+            ASSET_TYPE,
+            ASSET_CLASS,
+            ASSET_NAME,
+            TICKER_SYMBOL,
+            QUANTITY,
+            (QUANTITY * CURRENT_PRICE_PER_UNIT)::DECIMAL(18,2) AS CURRENT_VALUE,
+            (QUANTITY * COST_BASIS_PER_UNIT)::DECIMAL(18,2) AS COST_BASIS,
+            ((QUANTITY * CURRENT_PRICE_PER_UNIT) - (QUANTITY * COST_BASIS_PER_UNIT))::DECIMAL(18,2) AS UNREALIZED_GAIN_LOSS,
+            AS_OF_DATE,
+            LAST_UPDATED_DATE,
+            SUM(QUANTITY * CURRENT_PRICE_PER_UNIT) OVER (PARTITION BY CUSTOMER_ID) AS TOTAL_VALUE_PER_CUSTOMER
+        FROM holdings_with_values
     )
+    -- Final selection with allocation percentage
+    SELECT 
+        HOLDING_ID,
+        CUSTOMER_ID,
+        ASSET_TYPE,
+        ASSET_CLASS,
+        ASSET_NAME,
+        TICKER_SYMBOL,
+        QUANTITY,
+        CURRENT_VALUE,
+        COST_BASIS,
+        UNREALIZED_GAIN_LOSS,
+        ((CURRENT_VALUE / TOTAL_VALUE_PER_CUSTOMER) * 100.0)::DECIMAL(5,2) AS ALLOCATION_PCT,
+        AS_OF_DATE,
+        LAST_UPDATED_DATE
+    FROM holdings_with_derived
+    """
     
-    # Calculate allocation percentages using window function
-    holdings_df = holdings_df.with_column(
-        "TOTAL_VALUE_PER_CUSTOMER",
-        F.sum(F.col("CURRENT_VALUE")).over(Window.partition_by("CUSTOMER_ID"))
-    ).with_column(
-        "ALLOCATION_PCT",
-        ((F.col("CURRENT_VALUE") / F.col("TOTAL_VALUE_PER_CUSTOMER")) * F.lit(100.0)).cast("DECIMAL(5,2)")
-    ).select(
-        "HOLDING_ID", "CUSTOMER_ID", "ASSET_TYPE", "ASSET_CLASS", "ASSET_NAME",
-        "TICKER_SYMBOL", "QUANTITY", "CURRENT_VALUE", "COST_BASIS", 
-        "UNREALIZED_GAIN_LOSS", "ALLOCATION_PCT", "AS_OF_DATE", "LAST_UPDATED_DATE"
-    )
+    session.sql(create_holdings_sql).collect()
     
-    # Save to database
-    holdings_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS",
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {total_holdings} holdings for {wealth_client_count} wealth clients using server-side operations")
+    logger.info(f"Generated {total_holdings} holdings for {wealth_client_count} wealth clients using pure SQL")
 
 
 def generate_wealth_client_profiles(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate wealth client profiles linking customers to model portfolios using server-side operations."""
-    import snowflake.snowpark.functions as F
-    from snowpark_helpers import random_choice_from_list
-    
-    logger.info("Generating wealth client profiles (server-side)...")
+    """Generate wealth client profiles linking customers to model portfolios using pure SQL."""
+    logger.info("Generating wealth client profiles (pure SQL)...")
     
     scale_config = config.get_scale_config(scale)
     wealth_client_count = scale_config.get('wealth_clients', 0)
@@ -1772,85 +1673,77 @@ def generate_wealth_client_profiles(session: Session, scale: str = "demo", scena
     
     # Check if holdings and model portfolios exist
     try:
-        holdings_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS")
-        portfolios_df = session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS")
+        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS").count()
+        session.table(f"{config.SNOWFLAKE['database']}.RAW_DATA.MODEL_PORTFOLIOS").count()
     except:
         logger.warning("No holdings or model portfolios found, skipping wealth profiles generation")
         return
     
-    wealth_advisors = ['Marcus Weber', 'Sofia Rossi', 'Jean-Pierre Dubois', 'Anna Müller', 'Laura Martinez']
-    risk_tolerances = ['CONSERVATIVE', 'MODERATE', 'AGGRESSIVE']
-    tax_statuses = ['STANDARD', 'TAX_DEFERRED', 'TAX_EXEMPT']
-    investment_objectives = ['GROWTH', 'INCOME', 'PRESERVATION', 'BALANCED']
-    
-    # Get unique wealth customers from holdings and calculate their AUM
-    wealth_customers_aum = (
-        holdings_df
-        .group_by("CUSTOMER_ID")
-        .agg(F.sum("CURRENT_VALUE").alias("TOTAL_AUM"))
+    create_wealth_profiles_sql = f"""
+    CREATE OR REPLACE TABLE {config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES AS
+    WITH
+    -- Calculate total AUM per customer from holdings
+    wealth_customers_aum AS (
+        SELECT 
+            CUSTOMER_ID,
+            SUM(CURRENT_VALUE) AS TOTAL_AUM
+        FROM {config.SNOWFLAKE['database']}.RAW_DATA.HOLDINGS
+        GROUP BY CUSTOMER_ID
+    ),
+    -- Assign profiles
+    wealth_profiles AS (
+        SELECT 
+            'WCP_' || LPAD(ROW_NUMBER() OVER (ORDER BY CUSTOMER_ID)::STRING, 5, '0') AS PROFILE_ID,
+            CUSTOMER_ID,
+            CASE UNIFORM(0, 2, ROW_NUMBER() OVER (ORDER BY CUSTOMER_ID))
+                WHEN 0 THEN 'CONSERVATIVE'
+                WHEN 1 THEN 'MODERATE'
+                ELSE 'AGGRESSIVE'
+            END AS RISK_TOLERANCE,
+            TOTAL_AUM,
+            ROW_NUMBER() OVER (ORDER BY CUSTOMER_ID) AS ROW_SEQ
+        FROM wealth_customers_aum
     )
+    SELECT 
+        PROFILE_ID,
+        CUSTOMER_ID,
+        CASE RISK_TOLERANCE
+            WHEN 'CONSERVATIVE' THEN 'MODEL_CONSERVATIVE'
+            WHEN 'AGGRESSIVE' THEN 'MODEL_AGGRESSIVE'
+            ELSE 'MODEL_BALANCED'
+        END AS MODEL_PORTFOLIO_ID,
+        CASE UNIFORM(0, 4, ROW_SEQ + 1)
+            WHEN 0 THEN 'Marcus Weber'
+            WHEN 1 THEN 'Sofia Rossi'
+            WHEN 2 THEN 'Jean-Pierre Dubois'
+            WHEN 3 THEN 'Anna Müller'
+            ELSE 'Laura Martinez'
+        END AS WEALTH_ADVISOR,
+        RISK_TOLERANCE,
+        CASE UNIFORM(0, 2, ROW_SEQ + 2)
+            WHEN 0 THEN 'STANDARD'
+            WHEN 1 THEN 'TAX_DEFERRED'
+            ELSE 'TAX_EXEMPT'
+        END AS TAX_STATUS,
+        CASE UNIFORM(0, 3, ROW_SEQ + 3)
+            WHEN 0 THEN 'GROWTH'
+            WHEN 1 THEN 'INCOME'
+            WHEN 2 THEN 'PRESERVATION'
+            ELSE 'BALANCED'
+        END AS INVESTMENT_OBJECTIVES,
+        TOTAL_AUM,
+        70.0 AS CONCENTRATION_THRESHOLD_PCT,
+        10.0 AS REBALANCE_TRIGGER_PCT,
+        DATEADD(day, -UNIFORM(30, 180, ROW_SEQ + 4), CURRENT_DATE()) AS LAST_REBALANCE_DATE,
+        DATEADD(day, UNIFORM(30, 90, ROW_SEQ + 5), CURRENT_DATE()) AS NEXT_REVIEW_DATE,
+        DATEADD(day, -UNIFORM(365, 1095, ROW_SEQ + 6), CURRENT_TIMESTAMP()) AS CREATED_DATE,
+        CURRENT_TIMESTAMP() AS LAST_UPDATED_DATE
+    FROM wealth_profiles
+    """
     
-    # Assign profiles to each wealth customer
-    profiles_df = (
-        wealth_customers_aum
-        .with_column("SEQ", F.row_number().over(Window.order_by("CUSTOMER_ID")))
-        .with_column(
-            "PROFILE_ID",
-            F.concat(F.lit("WCP_"), F.lpad(F.col("SEQ").cast("string"), 5, "0"))
-        )
-        .with_column(
-            "RISK_TOLERANCE",
-            random_choice_from_list(risk_tolerances, F.col("SEQ"))
-        )
-        .with_column(
-            "MODEL_PORTFOLIO_ID",
-            # Map risk tolerance to model portfolio
-            F.when(F.col("RISK_TOLERANCE") == "CONSERVATIVE", F.lit("MODEL_CONSERVATIVE"))
-             .when(F.col("RISK_TOLERANCE") == "AGGRESSIVE", F.lit("MODEL_AGGRESSIVE"))
-             .otherwise(F.lit("MODEL_BALANCED"))  # MODERATE maps to BALANCED
-        )
-        .with_column(
-            "WEALTH_ADVISOR",
-            random_choice_from_list(wealth_advisors, F.col("SEQ") + 1)
-        )
-        .with_column(
-            "TAX_STATUS",
-            random_choice_from_list(tax_statuses, F.col("SEQ") + 2)
-        )
-        .with_column(
-            "INVESTMENT_OBJECTIVES",
-            random_choice_from_list(investment_objectives, F.col("SEQ") + 3)
-        )
-        .with_column("CONCENTRATION_THRESHOLD_PCT", F.lit(70.0))
-        .with_column("REBALANCE_TRIGGER_PCT", F.lit(10.0))
-        .with_column(
-            "LAST_REBALANCE_DATE",
-            F.dateadd("day", -F.uniform(30, 180, F.col("SEQ") + 4), F.current_date())
-        )
-        .with_column(
-            "NEXT_REVIEW_DATE",
-            F.dateadd("day", F.uniform(30, 90, F.col("SEQ") + 5), F.current_date())
-        )
-        .with_column(
-            "CREATED_DATE",
-            F.dateadd("day", -F.uniform(365, 1095, F.col("SEQ") + 6), F.current_timestamp())
-        )
-        .with_column("LAST_UPDATED_DATE", F.current_timestamp())
-        .select(
-            "PROFILE_ID", "CUSTOMER_ID", "MODEL_PORTFOLIO_ID", "WEALTH_ADVISOR",
-            "RISK_TOLERANCE", "TAX_STATUS", "INVESTMENT_OBJECTIVES", "TOTAL_AUM",
-            "CONCENTRATION_THRESHOLD_PCT", "REBALANCE_TRIGGER_PCT", 
-            "LAST_REBALANCE_DATE", "NEXT_REVIEW_DATE", "CREATED_DATE", "LAST_UPDATED_DATE"
-        )
-    )
+    session.sql(create_wealth_profiles_sql).collect()
     
-    # Save to database
-    profiles_df.write.save_as_table(
-        f"{config.SNOWFLAKE['database']}.RAW_DATA.WEALTH_CLIENT_PROFILES",
-        mode="overwrite"
-    )
-    
-    logger.info(f"Generated {wealth_client_count} wealth client profiles using server-side operations")
+    logger.info(f"Generated {wealth_client_count} wealth client profiles using pure SQL")
 
 
 def main():

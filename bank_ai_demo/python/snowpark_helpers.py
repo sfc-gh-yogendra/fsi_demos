@@ -17,7 +17,7 @@ from snowflake.snowpark import Window
 
 def random_choice_from_list(items: List[str], seed_col: Optional[Column] = None) -> Column:
     """
-    Select a random item from a list using Snowflake array indexing.
+    Select a random item from a list using CASE WHEN for compatibility.
     
     Args:
         items: List of strings to choose from
@@ -29,9 +29,18 @@ def random_choice_from_list(items: List[str], seed_col: Optional[Column] = None)
     if seed_col is None:
         seed_col = F.random()
     
-    arr = F.array_construct(*[F.lit(item) for item in items])
-    index = F.uniform(0, len(items) - 1, seed_col)
-    return arr[index]
+    # Use CASE WHEN approach to avoid array type inference issues
+    index = F.uniform(0, len(items) - 1, seed_col).cast("int")
+    
+    result = None
+    for i, item in enumerate(items):
+        condition = (index == i)
+        if result is None:
+            result = F.when(condition, F.lit(item))
+        else:
+            result = result.when(condition, F.lit(item))
+    
+    return result.otherwise(F.lit(items[0]))
 
 
 def random_date_in_past(min_days: int, max_days: int, seed_col: Optional[Column] = None) -> Column:
