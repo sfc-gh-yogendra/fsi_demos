@@ -75,20 +75,18 @@ python python/main.py --connection your_connection_name --scale mini
 
 ## Post-Deployment Setup
 
-### 1. Configure AI Agents
-All 7 agents are automatically created during deployment:
+### 1. Access AI Agents
+All 7 agents are automatically created during deployment. Access them in Snowflake Intelligence:
 - **AML Officer Agent** (Compliance & Risk) - 7 tools
 - **Credit Analyst Agent** (Credit Risk) - 6 tools
 - **Transaction Monitoring Agent** (Alert Triage) - 5 tools
 - **Cross-Domain Intelligence Agent** (Enterprise Intelligence) - 4 tools
+- **Network Analysis Agent** (TBML Detection) - 3 tools
 - **Corporate RM Agent** (Commercial Banking) - 4 tools
 - **Wealth Advisor Agent** (Wealth Management) - 2 tools
-- **Network Analysis Agent** (TBML Detection) - 3 tools
-
-📖 **See**: [docs/agent_setup.md](docs/agent_setup.md)
 
 ### 2. Run Demo Scenarios  
-Review the guided demo flows for all 7 scenarios and practice with sample queries.
+Review the guided demo flows for all 7 scenarios with sample queries and key demo entities.
 
 📖 **See**: [docs/demo_scenarios.md](docs/demo_scenarios.md)
 
@@ -98,18 +96,18 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 
 | Scenario | Agent | Key Capabilities | Business Impact |
 |----------|-------|------------------|-----------------|
-| **AML/KYC Enhanced Due Diligence** | `aml_officer_agent` | • Automated compliance analysis<br>• Beneficial ownership extraction<br>• Adverse media screening<br>• PEP identification<br>• Cross-domain risk assessment | EDD time: 4-6 hrs → 15-20 mins |
-| **Credit Risk Analysis** | `credit_analyst_agent` | • Financial ratio analysis<br>• Policy threshold flagging<br>• Historical cohort modeling<br>• Document analysis<br>• Multi-step reasoning | Credit analysis: 2-3 days → 2-3 hrs |
-| **Transaction Monitoring & Alert Triage** | `aml_officer_agent` | • ML-based priority scoring<br>• False positive reduction (50-70%)<br>• Network analysis<br>• Automated SAR generation<br>• Contextual investigation | Investigation: 4-6 hrs → 30-45 mins<br>50-70% FP reduction |
-| **Periodic KYC Reviews** | `aml_officer_agent` | • Automated change detection<br>• Low-touch processing<br>• Sanctions/PEP screening<br>• Transaction pattern analysis<br>• Review queue management | Review time: 45-60 mins → <1 min<br>Capacity: 6-7x multiplier |
-| **Network Analysis for TBML** | `aml_officer_agent` | • Shell company detection<br>• Shared director/address analysis<br>• Circular payment patterns<br>• TBML typology classification<br>• Graph-based visualization | Network analysis: weeks → hours<br>Detects coordinated schemes |
+| **AML/KYC Enhanced Due Diligence** | `BD_aml_officer_agent` | • Automated compliance analysis<br>• Beneficial ownership extraction<br>• Adverse media screening<br>• PEP identification<br>• Cross-domain risk assessment | EDD time: 4-6 hrs → 15-20 mins |
+| **Credit Risk Analysis** | `BD_credit_analyst_agent` | • Financial ratio analysis<br>• Policy threshold flagging<br>• Historical cohort modeling<br>• Document analysis<br>• Multi-step reasoning | Credit analysis: 2-3 days → 2-3 hrs |
+| **Transaction Monitoring & Alert Triage** | `BD_transaction_monitoring_agent` | • ML-based priority scoring<br>• False positive reduction (50-70%)<br>• Network analysis<br>• Automated SAR generation<br>• Contextual investigation | Investigation: 4-6 hrs → 30-45 mins<br>50-70% FP reduction |
+| **Periodic KYC Reviews** | `BD_aml_officer_agent` | • Automated change detection<br>• Low-touch processing<br>• Sanctions/PEP screening<br>• Transaction pattern analysis<br>• Review queue management | Review time: 45-60 mins → <1 min<br>Capacity: 6-7x multiplier |
+| **Network Analysis for TBML** | `BD_network_analysis_agent` | • Shell company detection<br>• Shared director/address analysis<br>• Circular payment patterns<br>• TBML typology classification<br>• Graph-based visualization | Network analysis: weeks → hours<br>Detects coordinated schemes |
 
 ### Commercial & Wealth Banking
 
 | Scenario | Agent | Key Capabilities | Business Impact |
 |----------|-------|------------------|-----------------|
-| **Corporate Relationship Manager** | `corporate_rm_agent` | • Portfolio prioritization<br>• AI-powered opportunity discovery<br>• Client intelligence synthesis<br>• Call preparation automation<br>• Cross-domain risk awareness | Opportunity discovery: 5-10x<br>Portfolio coverage: 2-3x clients<br>Revenue: Proactive engagement |
-| **Wealth Advisor** | `wealth_advisor_agent` | • Portfolio drift monitoring<br>• Model alignment analysis<br>• What-if rebalancing scenarios<br>• Tax-aware recommendations<br>• Meeting history synthesis | Portfolio analysis: 3-5x faster<br>Client preparation: automated<br>Compliance: documented suitability |
+| **Corporate Relationship Manager** | `BD_corp_rm_agent` | • Portfolio prioritization<br>• AI-powered opportunity discovery<br>• Client intelligence synthesis<br>• Call preparation automation<br>• Cross-domain risk awareness | Opportunity discovery: 5-10x<br>Portfolio coverage: 2-3x clients<br>Revenue: Proactive engagement |
+| **Wealth Advisor** | `BD_wealth_advisor_agent` | • Portfolio drift monitoring<br>• Model alignment analysis<br>• What-if rebalancing scenarios<br>• Tax-aware recommendations<br>• Meeting history synthesis | Portfolio analysis: 3-5x faster<br>Client preparation: automated<br>Compliance: documented suitability |
 
 ### Cross-Domain Intelligence (All Scenarios)
 
@@ -125,8 +123,8 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 |----------|-------|--------|
 | **M&A Target Screening** | `ma_analyst_agent` | 📋 Planned |
 | **Virtual Data Room Interrogation** | `due_diligence_agent` | 📋 Planned |
-| **Regulatory Examination Prep** | `aml_officer_agent` | 🔄 Future Enhancement |
-| **Executive AML Program Reporting** | `aml_officer_agent` | 🔄 Future Enhancement |
+| **Regulatory Examination Prep** | `BD_aml_officer_agent` | 🔄 Future Enhancement |
+| **Executive AML Program Reporting** | `BD_aml_officer_agent` | 🔄 Future Enhancement |
 
 ### Key Demo Entities
 
@@ -199,9 +197,8 @@ bank_ai_demo/
 ├── sql/                            # SQL scripts archive
 │   └── archive/                    # Reference SQL files
 ├── docs/                           # Documentation
-│   ├── agent_setup.md             # Agent configuration guide
 │   ├── demo_scenarios.md          # Demo scenario guide
-│   └── DEPLOYMENT_COMPLETE.md     # Deployment verification
+│   └── scenarios/                 # Individual scenario guides
 ├── tests/                          # Validation test suite
 │   └── test_scenarios.py          # Scenario validation tests
 ├── research/                       # Research and development notes
@@ -306,10 +303,10 @@ This demo showcases Snowflake's unique capabilities for enterprise-wide AI in fi
 
 ## Next Steps
 
-1. **Configure Agents**: Follow [docs/agent_setup.md](docs/agent_setup.md) to verify all 7 agents
-2. **Practice Scenarios**: Use [docs/demo_scenarios.md](docs/demo_scenarios.md) for guided 7-scenario demo flows
+1. **Access Agents**: Navigate to Snowflake Intelligence → Agents to access all 7 agents with "(Bank Demo)" suffix
+2. **Practice Scenarios**: Use [docs/demo_scenarios.md](docs/demo_scenarios.md) for guided demo flows with sample queries
 3. **Monitor Performance**: Check query times and search service health
-4. **Validate Coverage**: Test all 7 scenarios with validation queries
+4. **Test Coverage**: Validate all 7 scenarios with key demo entities
 5. **Explore Cross-Domain**: Demonstrate risk contagion and enterprise-wide intelligence
 
 ---

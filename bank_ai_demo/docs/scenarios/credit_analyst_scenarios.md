@@ -5,7 +5,7 @@
 This document contains demo scenarios for the **Credit Analyst** persona, demonstrating AI-powered credit risk analysis and portfolio intelligence.
 
 **Persona**: James Wilson, Senior Credit Analyst at Glacier First Bank  
-**Agent**: `credit_analyst_agent`  
+**Agent**: `BD_credit_analyst_agent`  
 **Scenarios**: 1 comprehensive credit risk workflow
 
 ---
@@ -18,7 +18,7 @@ This document contains demo scenarios for the **Credit Analyst** persona, demons
 **Business Challenge**: Credit analysts need to assess commercial loan applications against complex policy frameworks while considering historical cohort performance and cross-domain risk factors. Traditional analysis requires manual ratio calculations, policy threshold lookups, historical data analysis, and document review across multiple systems. This creates analysis delays, inconsistent risk assessment, and missed portfolio concentration risks.  
 **Value Proposition**: AI-powered credit analysis provides instant financial ratio computation, automated policy threshold flagging, historical cohort benchmarking, and cross-domain risk assessment. This reduces credit decision time from days to hours while improving risk assessment accuracy and portfolio intelligence.
 
-**Agent**: `credit_analyst_agent`  
+**Agent**: `BD_credit_analyst_agent`  
 **Data Available**: Historical loans, current applications, credit policies, business plans, financial statements, market intelligence
 
 ### Demo Flow

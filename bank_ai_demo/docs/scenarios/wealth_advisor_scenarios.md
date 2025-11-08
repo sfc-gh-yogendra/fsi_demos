@@ -4,7 +4,7 @@
 
 This document contains demo scenarios for the **Wealth Advisor** persona, demonstrating AI-powered portfolio alignment monitoring and what-if rebalancing analysis.
 
-**Phase**: 2 (Wealth Management)  
+**Category**: Wealth Management  
 **Persona**: Wealth Advisor  
 **Scenarios**: 1 comprehensive portfolio management workflow
 
@@ -12,7 +12,7 @@ This document contains demo scenarios for the **Wealth Advisor** persona, demons
 
 ## Wealth Advisor - Portfolio Alignment & What-If Rebalancing Scenario
 
-**Phase**: 2  
+**Category**: Wealth Management  
 **Persona**: Wealth Advisor  
 **Business Context**: Wealth advisors need to monitor client portfolios for drift from target allocations, identify rebalancing opportunities, conduct what-if scenario analysis, and demonstrate model portfolio alignment. This requires real-time analysis of holdings, model portfolios, tax implications, and meeting note history.
 

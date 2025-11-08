@@ -877,9 +877,9 @@ def create_aml_officer_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.aml_officer_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_aml_officer_agent
   COMMENT = 'Expert AI assistant for AML/KYC enhanced due diligence. Analyzes customer risk profiles, reviews onboarding documentation, screens for adverse media, and generates comprehensive EDD assessments for compliance officers at Glacier First Bank.'
-  PROFILE = '{{"display_name": "AML Compliance Officer"}}'
+  PROFILE = '{{"display_name": "AML Compliance Officer (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -961,9 +961,9 @@ def create_credit_analyst_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.credit_analyst_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_credit_analyst_agent
   COMMENT = 'Expert AI assistant for commercial credit risk analysis. Evaluates loan applications, calculates financial ratios, compares to policy thresholds and approved cohorts, and generates comprehensive credit recommendations for Glacier First Bank lending officers.'
-  PROFILE = '{{"display_name": "Senior Credit Analyst"}}'
+  PROFILE = '{{"display_name": "Senior Credit Analyst (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -1045,9 +1045,9 @@ def create_cross_domain_intelligence_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.cross_domain_intelligence_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_cross_domain_intelligence_agent
   COMMENT = 'Expert AI assistant for ecosystem risk and supply chain intelligence. Maps entity relationships, analyzes contagion risk, identifies concentration exposures, and provides strategic insights for Glacier First Bank enterprise risk management.'
-  PROFILE = '{{"display_name": "Ecosystem Intelligence Analyst"}}'
+  PROFILE = '{{"display_name": "Ecosystem Intelligence Analyst (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -1128,9 +1128,9 @@ def create_transaction_monitoring_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.transaction_monitoring_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_transaction_monitoring_agent
   COMMENT = 'Expert AI assistant for AML transaction monitoring and alert investigation. Triages alerts using ML-based priority scoring, analyzes suspicious activity patterns, and guides investigators through scenario-specific procedures for Glacier First Bank compliance team.'
-  PROFILE = '{{"display_name": "Transaction Monitoring Analyst"}}'
+  PROFILE = '{{"display_name": "Transaction Monitoring Analyst (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -1212,9 +1212,9 @@ def create_network_analysis_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.network_analysis_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_network_analysis_agent
   COMMENT = 'Expert AI assistant for shell company detection and TBML analysis. Identifies shared characteristic patterns (directors, addresses), analyzes incorporation timing, maps network clusters, and flags financial crime indicators for Glacier First Bank financial crime analytics team.'
-  PROFILE = '{{"display_name": "Financial Crime Network Analyst"}}'
+  PROFILE = '{{"display_name": "Financial Crime Network Analyst (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -1296,9 +1296,9 @@ def create_corporate_rm_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.corp_rm_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_corp_rm_agent
   COMMENT = 'Expert AI assistant for corporate relationship management. Provides client 360 intelligence, identifies cross-sell opportunities, prepares meeting briefs, and tracks relationship health for Glacier First Bank corporate banking relationship managers.'
-  PROFILE = '{{"display_name": "Corporate Relationship Manager"}}'
+  PROFILE = '{{"display_name": "Corporate Relationship Manager (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:
@@ -1381,9 +1381,9 @@ def create_wealth_advisor_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wealth_advisor_agent
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.BD_wealth_advisor_agent
   COMMENT = 'Expert AI assistant for private wealth portfolio management. Analyzes portfolio allocations, identifies rebalancing needs, monitors concentration risks, assesses model alignment, and provides tax-aware recommendations for Glacier First Bank wealth advisors.'
-  PROFILE = '{{"display_name": "Senior Wealth Advisor"}}'
+  PROFILE = '{{"display_name": "Senior Wealth Advisor (Bank Demo)"}}'
   FROM SPECIFICATION
   $$
   models:

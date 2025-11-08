@@ -5,7 +5,7 @@
 This document contains all demo scenarios for the **AML Officer** persona, covering the complete AML/KYC lifecycle from Enhanced Due Diligence to Network Analysis.
 
 **Persona**: Sarah Mitchell & Maria Santos, AML/KYC Compliance Officers at Glacier First Bank  
-**Agent**: `aml_officer_agent`  
+**Agent**: `BD_aml_officer_agent`  
 **Scenarios**: 4 comprehensive AML/KYC workflows
 
 ---
@@ -18,7 +18,7 @@ This document contains all demo scenarios for the **AML Officer** persona, cover
 **Business Challenge**: Compliance officers need to conduct Enhanced Due Diligence (EDD) on corporate clients with complex ownership structures and potential PEP connections. Traditional manual processes require hours of document review, cross-referencing multiple databases, and synthesising conflicting information from various sources. This creates compliance risks, delays customer onboarding, and increases operational costs.  
 **Value Proposition**: AI-powered EDD automation provides instant access to corporate structures, beneficial ownership analysis, adverse media screening, and PEP identification with complete audit trails. This reduces EDD time from hours to minutes while ensuring comprehensive compliance coverage and regulatory documentation.
 
-**Agent**: `aml_officer_agent`  
+**Agent**: `BD_aml_officer_agent`  
 **Tools Available**: 
 - Cortex Analyst (`aml_kyc_risk_sv`) - Customer risk analysis, AML flags, KYC status
 - Cortex Search (`compliance_docs_search_svc`) - Onboarding records, PEP databases, internal compliance  
@@ -202,7 +202,7 @@ This document contains all demo scenarios for the **AML Officer** persona, cover
 **Business Challenge**: AML analysts are overwhelmed by high-volume, low-accuracy transaction monitoring alerts. Legacy rule-based systems generate 90%+ false positives, creating massive manual workloads and alert fatigue. This leads to analyst burnout, increased operational costs, and the risk that genuine suspicious activity is missed in the noise. ML-based triage and network analysis can dramatically reduce false positives while improving detection of true financial crime.  
 **Value Proposition**: AI-powered alert triage with ML-based priority scoring reduces false positives by 50-70% while identifying 2-4x more confirmed suspicious activity. Automated network analysis uncovers hidden connections between seemingly unrelated alerts, enabling faster SAR generation with complete audit trails.
 
-**Agent**: `aml_officer_agent`  
+**Agent**: `BD_aml_officer_agent`  
 **Tools Available**: 
 - Cortex Analyst (`transaction_monitoring_sv`) - Alert triage, priority scoring, disposition analysis
 - Cortex Analyst (`aml_kyc_risk_sv`) - Customer risk profiles and transaction history
@@ -331,7 +331,7 @@ This document contains all demo scenarios for the **AML Officer** persona, cover
 **Business Challenge**: KYC analysts spend 85% of their time on manual data gathering for periodic customer reviews. Most reviews find no material changes, yet require hours of work to re-screen sanctions lists, check adverse media, and verify transaction patterns. This creates a massive operational burden and delays reviews for customers who genuinely need enhanced scrutiny.  
 **Value Proposition**: AI-powered change detection and automated screening enables "low-touch" processing for customers with no material changes, reducing review time from 45-60 minutes to under 1 minute. This frees analysts to focus on complex, high-risk reviews that require human judgment.
 
-**Agent**: `aml_officer_agent`  
+**Agent**: `BD_aml_officer_agent`  
 **Tools Available**: 
 - Cortex Analyst (`aml_kyc_risk_sv`) - Customer risk profiles, review schedules, transaction patterns
 - Cortex Search (`compliance_docs_search_svc`) - PEP/sanctions lists, customer documents
@@ -442,7 +442,7 @@ This document contains all demo scenarios for the **AML Officer** persona, cover
 **Business Challenge**: Traditional transaction monitoring focuses on individual customer behavior, missing coordinated schemes involving multiple seemingly unrelated entities. Trade-Based Money Laundering (TBML) and shell company networks deliberately fragment activity to evade detection. Network analysis can uncover these hidden patterns by identifying shared directors, common addresses, and circular payment flows that are invisible when reviewing customers in isolation.  
 **Value Proposition**: Graph-based network analysis identifies coordinated money laundering schemes involving multiple shell companies. By analyzing corporate structure data, relationship patterns, and payment flows simultaneously, the system detects Trade-Based Money Laundering typologies that evade traditional rule-based monitoring.
 
-**Agent**: `aml_officer_agent`  
+**Agent**: `BD_aml_officer_agent`  
 **Tools Available**: 
 - Cortex Analyst (`network_analysis_sv`) - Entity relationships, shared characteristics, network metrics
 - Cortex Analyst (`aml_kyc_risk_sv`) - Customer and transaction data

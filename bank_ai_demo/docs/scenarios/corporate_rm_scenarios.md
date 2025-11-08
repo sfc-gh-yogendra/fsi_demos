@@ -4,7 +4,7 @@
 
 This document contains demo scenarios for the **Corporate Relationship Manager** persona, demonstrating AI-powered proactive client intelligence and opportunity discovery.
 
-**Phase**: 2 (Commercial Banking)  
+**Category**: Commercial Banking  
 **Persona**: Corporate Relationship Manager  
 **Scenarios**: 1 comprehensive relationship management workflow
 
@@ -12,7 +12,7 @@ This document contains demo scenarios for the **Corporate Relationship Manager**
 
 ## Corporate Relationship Manager - Proactive Client Intelligence Scenario
 
-**Phase**: 2  
+**Category**: Commercial Banking  
 **Persona**: Corporate Relationship Manager (RM)  
 **Business Context**: Relationship managers need to proactively identify opportunities, monitor client health, and provide strategic advisory services across their corporate client portfolio. This requires synthesizing structured CRM data, unstructured call notes/emails, external news, and cross-bank intelligence to deliver personalized, timely recommendations.
 
