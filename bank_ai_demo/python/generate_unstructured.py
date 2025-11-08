@@ -140,10 +140,10 @@ def generate_loan_documents(session: Session, scale: str = "demo", scenarios: Li
     prompts = []
     
     # Generate business plan prompts for key applications
-    # Use GTV_SA_001 which has both entity and customer records (and loan applications)
-    key_applicant_id = config.KEY_ENTITIES['primary_aml_subject']['entity_id']  # GTV_SA_001
+    # Use INN_DE_001 (Innovate GmbH) which has the loan application
+    key_applicant_id = 'INN_DE_001'  # Innovate GmbH - credit risk scenario
     for app in applications:
-        if app['APPLICANT_NAME'] == key_applicant_id:  # Key demo application
+        if app['ENTITY_ID'] == key_applicant_id:  # Key demo application
             prompts.extend(_create_business_plan_prompts(app))
     
     # Step 2: Store prompts in Snowflake table
@@ -158,7 +158,7 @@ def generate_loan_documents(session: Session, scale: str = "demo", scenarios: Li
                 PROMPT_ID AS ID,
                 DOCUMENT_TITLE AS TITLE,
                 SNOWFLAKE.CORTEX.COMPLETE('{config.LLM_MODEL}', PROMPT_TEXT) AS CONTENT,
-                APPLICANT_NAME,
+                ENTITY_ID,
                 DOC_TYPE,
                 UPLOAD_DATE,
                 DOCUMENT_SECTION,
@@ -459,53 +459,109 @@ def _create_business_plan_prompts(application: Dict[str, Any]) -> List[Dict[str,
     """Create business plan document prompts for a loan application."""
     prompts = []
     
-    if application['APPLICANT_NAME'] == config.KEY_ENTITIES['primary_aml_subject']['entity_id']:  # GTV_SA_001
-        prompt_text = f"""Create a comprehensive business plan for {config.KEY_ENTITIES['primary_aml_subject']['name']}, a Luxembourg international trade company applying for a €{application['REQUESTED_AMOUNT']/1000000:.1f}M loan.
+    # INN_DE_001 is Innovate GmbH with the loan application (credit risk scenario)
+    if application['ENTITY_ID'] == 'INN_DE_001':
+        # Get entity details from config
+        entity_details = config.KEY_ENTITIES.get('credit_risk_applicant', {
+            'name': 'Innovate GmbH',
+            'industry': 'Software Services',
+            'country': 'Germany'
+        })
+        
+        # Access Row object attributes directly (not with .get())
+        requested_amount = application['REQUESTED_AMOUNT']
+        entity_id = application['ENTITY_ID']
+        application_date = application['APPLICATION_DATE']
+        
+        # Try to access optional fields with fallbacks
+        try:
+            industry = application['INDUSTRY']
+        except (KeyError, AttributeError):
+            industry = entity_details['industry']
+        
+        try:
+            application_status = application['APPLICATION_STATUS']
+        except (KeyError, AttributeError):
+            application_status = 'UNDER_REVIEW'
+        
+        try:
+            dscr = application['DSCR']
+        except (KeyError, AttributeError):
+            dscr = 1.15
+        
+        try:
+            debt_to_equity = application['DEBT_TO_EQUITY']
+        except (KeyError, AttributeError):
+            debt_to_equity = 3.2
+        
+        try:
+            current_ratio = application['CURRENT_RATIO']
+        except (KeyError, AttributeError):
+            current_ratio = 1.18
+        
+        try:
+            client_concentration = application['CLIENT_CONCENTRATION']
+        except (KeyError, AttributeError):
+            client_concentration = 0.72
+        
+        prompt_text = f"""Create a comprehensive business plan for {entity_details['name']}, a German software services company applying for a €{requested_amount/1000000:.1f}M loan.
 
 REQUIREMENTS:
 - Document type: Business Plan 2024-2029
 - Word count: 2000-4000 words
 - Language: Professional {config.LANGUAGE} business terminology
-- Application context: {application['LOAN_PURPOSE']}
+- Application context: Business expansion and working capital
 
 SPECIFIC CONTENT REQUIREMENTS:
 Company Overview:
-- Legal Name: {application['APPLICANT_NAME']}
-- Industry: {application['INDUSTRY_SECTOR']}
-- Annual Revenue: €{application['ANNUAL_REVENUE']/1000000:.1f}M
-- Total Assets: €{application['TOTAL_ASSETS']/1000000:.1f}M
-- EBITDA: €{application['EBITDA']/1000000:.1f}M
+- Legal Name: {entity_details['name']}
+- Entity ID: {entity_id}
+- Industry: {industry}
+- Loan Request: €{requested_amount/1000000:.1f}M
+- Application Status: {application_status}
 
 EXECUTIVE SUMMARY:
-{config.KEY_ENTITIES['primary_aml_subject']['name']} is a leading {config.KEY_ENTITIES['primary_aml_subject']['industry']} company specializing in cross-border trade facilitation and logistics solutions across Europe, Asia, and emerging markets.
+{entity_details['name']} is a leading {entity_details['industry']} company specializing in enterprise software solutions, digital transformation consulting, and cloud-based business applications for mid-market clients across Europe.
 
 MARKET STRATEGY:
-- Target market: Mid-market importers/exporters (€5M-€50M annual trade volume)
-- Geographic expansion: Eastern European and Asian market penetration
-- Service diversification: Digital trade finance and customs automation
-- Key differentiator: Comprehensive supply chain solutions with regulatory expertise
+- Target market: Mid-market enterprises (€10M-€100M revenue) in manufacturing and services sectors
+- Geographic expansion: Central and Eastern European market penetration
+- Service diversification: AI/ML integration, cloud migration services, and custom software development
+- Key differentiator: Industry-specific solutions with deep vertical expertise
 
 FINANCIAL PROJECTIONS:
-- Revenue growth: 25% CAGR 2024-2029
-- EBITDA margin target: 18-22%
-- Investment required: €{application['REQUESTED_AMOUNT']/1000000:.1f}M for expansion and working capital
+- Revenue growth: 20% CAGR 2024-2029
+- EBITDA margin target: 15-18%
+- Investment required: €{requested_amount/1000000:.1f}M for expansion and working capital
+- Current Financial Metrics:
+  - DSCR: {dscr}
+  - Debt-to-Equity: {debt_to_equity}
+  - Current Ratio: {current_ratio}
+  - Client Concentration: {client_concentration*100:.0f}%
 
 RISK FACTORS:
-- Client concentration: {application['SINGLE_CLIENT_CONCENTRATION_PCT']:.0f}% revenue from top 3 clients
-- Competition from larger consulting firms
-- Market volatility in {application['INDUSTRY_SECTOR']} sector
-- Dependency on key technical personnel
+- Client concentration: {client_concentration*100:.0f}% revenue from top clients (requires mitigation)
+- Competition from larger consulting firms and offshore providers
+- Technology disruption risks
+- Dependency on key technical personnel and project teams
 
-Include sections: Executive Summary, Market Strategy, Financial Projections, Key Personnel, Risk Factors, Use of Funds.
-Format as a professional business plan with clear structure and financial analysis."""
+USE OF FUNDS:
+- Business development and sales expansion: 30%
+- R&D and product development: 25%
+- Working capital for project delivery: 25%
+- Talent acquisition and retention: 15%
+- Infrastructure and systems: 5%
+
+Include sections: Executive Summary, Market Analysis, Competitive Landscape, Financial Projections, Management Team, Risk Factors, Use of Funds.
+Format as a professional business plan with clear structure and detailed financial analysis."""
 
         prompts.append({
-            'PROMPT_ID': f'GTV_SA_BUSINESS_PLAN_2024',
-            'DOCUMENT_TITLE': f'{config.KEY_ENTITIES["primary_aml_subject"]["name"]} - Business Plan 2024-2029',
+            'PROMPT_ID': f'INN_DE_BUSINESS_PLAN_2024',
+            'DOCUMENT_TITLE': f'{entity_details["name"]} - Business Plan 2024-2029',
             'PROMPT_TEXT': prompt_text,
-            'APPLICANT_NAME': application['APPLICANT_NAME'],
+            'ENTITY_ID': entity_id,
             'DOC_TYPE': 'Business Plan',
-            'UPLOAD_DATE': application['APPLICATION_DATE'],
+            'UPLOAD_DATE': application_date,
             'DOCUMENT_SECTION': 'Market Strategy',
             'PROCESSING_STATUS': 'PROCESSED',
             'LANGUAGE': f'{config.LANGUAGE}',
