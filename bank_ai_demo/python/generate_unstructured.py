@@ -1111,8 +1111,21 @@ def _create_portfolio_review_prompt(profile: Dict, model_portfolio: Dict, holdin
     equity_pct = (equity_value / total_value * 100) if total_value > 0 else 0
     bond_pct = (bond_value / total_value * 100) if total_value > 0 else 0
     
-    target_equity = model_portfolio.get('TARGET_EQUITY_PCT', 50)
-    target_bond = model_portfolio.get('TARGET_BOND_PCT', 40)
+    # Access model_portfolio fields (could be Row or dict)
+    try:
+        target_equity = model_portfolio['TARGET_EQUITY_PCT']
+    except (KeyError, TypeError):
+        target_equity = 50
+    
+    try:
+        target_bond = model_portfolio['TARGET_BOND_PCT']
+    except (KeyError, TypeError):
+        target_bond = 40
+    
+    try:
+        model_name = model_portfolio['MODEL_NAME']
+    except (KeyError, TypeError):
+        model_name = 'Balanced'
     
     prompt = f"""Write a quarterly portfolio review meeting note for a wealth management client.
 
@@ -1124,7 +1137,7 @@ Meeting Details:
 Portfolio Performance:
 - Current Equity Allocation: {equity_pct:.1f}% (Target: {target_equity:.1f}%)
 - Current Bond Allocation: {bond_pct:.1f}% (Target: {target_bond:.1f}%)
-- Model Portfolio: {model_portfolio.get('MODEL_NAME', 'Balanced')}
+- Model Portfolio: {model_name}
 
 Generate a 300-350 word meeting note with:
 1. Portfolio performance summary vs. benchmarks
@@ -1153,14 +1166,25 @@ def _create_investment_strategy_prompt(profile: Dict, model_portfolio: Dict) -> 
     investment_objectives = profile['INVESTMENT_OBJECTIVES']
     risk_tolerance = profile['RISK_TOLERANCE']
     
+    # Access model_portfolio fields (could be Row or dict)
+    try:
+        model_name = model_portfolio['MODEL_NAME']
+    except (KeyError, TypeError):
+        model_name = 'Balanced Portfolio'
+    
+    try:
+        expected_return = model_portfolio['EXPECTED_ANNUAL_RETURN_PCT']
+    except (KeyError, TypeError):
+        expected_return = 6.5
+    
     prompt = f"""Write an investment strategy discussion meeting note for a wealth management client.
 
 Client Profile:
 - Wealth Advisor: {advisor}
 - Investment Objectives: {investment_objectives}
 - Risk Tolerance: {risk_tolerance}
-- Current Model: {model_portfolio.get('MODEL_NAME', 'Balanced Portfolio')}
-- Expected Return: {model_portfolio.get('EXPECTED_ANNUAL_RETURN_PCT', 6.5):.1f}%
+- Current Model: {model_name}
+- Expected Return: {expected_return:.1f}%
 
 Generate a 250-300 word meeting note with:
 1. Discussion of client's long-term financial goals
@@ -1192,18 +1216,35 @@ def _create_rebalancing_decision_prompt(profile: Dict, model_portfolio: Dict, ho
     
     equity_value = sum(h['CURRENT_VALUE'] for h in holdings if h['ASSET_TYPE'] == 'EQUITY')
     current_equity_pct = (equity_value / total_value * 100) if total_value > 0 else 0
-    target_equity_pct = model_portfolio.get('TARGET_EQUITY_PCT', 50)
+    
+    # Access model_portfolio fields (could be Row or dict)
+    try:
+        target_equity_pct = model_portfolio['TARGET_EQUITY_PCT']
+    except (KeyError, TypeError):
+        target_equity_pct = 50
+    
+    try:
+        model_name = model_portfolio['MODEL_NAME']
+    except (KeyError, TypeError):
+        model_name = 'Balanced'
+    
     equity_drift = current_equity_pct - target_equity_pct
+    
+    # Access profile fields (could be Row or dict)
+    try:
+        rebalance_trigger = profile['REBALANCE_TRIGGER_PCT']
+    except (KeyError, TypeError):
+        rebalance_trigger = 10.0
     
     prompt = f"""Write a portfolio rebalancing decision meeting note for a wealth management client.
 
 Rebalancing Context:
 - Wealth Advisor: {advisor}
 - Total Portfolio Value: €{total_value:,.0f}
-- Model Portfolio: {model_portfolio.get('MODEL_NAME', 'Balanced')}
+- Model Portfolio: {model_name}
 - Current Equity: {current_equity_pct:.1f}% (Target: {target_equity_pct:.1f}%)
 - Drift: {equity_drift:+.1f}%
-- Rebalancing Trigger: {profile.get('REBALANCE_TRIGGER_PCT', 10.0):.0f}%
+- Rebalancing Trigger: {rebalance_trigger:.0f}%
 
 Generate a 250-300 word rebalancing decision note with:
 1. Trigger for rebalancing (threshold exceeded or calendar-based)
