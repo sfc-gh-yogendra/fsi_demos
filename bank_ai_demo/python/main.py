@@ -312,7 +312,7 @@ def create_pdf_generator(session: Session) -> None:
                 # Upload to secure stage (get database name from current context)
                 database_name = session.sql("SELECT CURRENT_DATABASE() AS db").collect()[0]['DB']
                 ai_schema = session.sql("SELECT CURRENT_SCHEMA() AS sch").collect()[0]['SCH']
-                stage_path = f"@{database_name}.{config.SNOWFLAKE['ai_schema']}.GLACIER_REPORTS_STAGE"
+                stage_path = f"@{database_name}.AI.GLACIER_REPORTS_STAGE"
                 session.file.put(pdf_path, stage_path, overwrite=True, auto_compress=False)
                 
                 # Generate presigned URL for download

@@ -7,6 +7,11 @@ alwaysApply: false
 ## Overview
 This rule provides patterns for simulating external data sources with Snowflake Marketplace attribution, enabling realistic demo scenarios without actual marketplace subscriptions.
 
+**Related Rules**:
+- @data-patterns.mdc - For general data generation patterns  
+- @unstructure-data-generation.mdc - For document generation with external attribution
+- @configuration-patterns.mdc - For provider configuration patterns
+
 ## Marketplace Attribution Pattern
 
 ### Standard Attribution Format

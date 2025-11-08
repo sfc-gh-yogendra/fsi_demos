@@ -70,7 +70,7 @@ def validate_agent_data_readiness(session: Session):
     # Check document corpus (if applicable)
     for corpus in ['ONBOARDING_DOCUMENTS_CORPUS', 'POLICIES_CORPUS', 'NEWS_CORPUS']:
         try:
-            doc_count = session.sql(f"SELECT COUNT(*) as count FROM {config.SNOWFLAKE['database']}.CURATED_DATA.{corpus}").collect()[0]['COUNT']
+            doc_count = session.sql(f"SELECT COUNT(*) as count FROM {config.SNOWFLAKE['database']}.CURATED.{corpus}").collect()[0]['COUNT']
             print(f"✅ {corpus}: {doc_count} documents")
         except:
             print(f"⚠️  {corpus}: Not found (may not be needed)")

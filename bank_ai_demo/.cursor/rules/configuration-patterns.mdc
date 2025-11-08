@@ -7,6 +7,36 @@ alwaysApply: false
 ## Overview
 This rule provides patterns for using and extending the configuration system. All actual configuration values live in `config.py` - this rule shows HOW to work with them, not WHAT they are.
 
+## Schema Usage Standards
+
+### Schema Naming Convention
+```
+RAW_DATA    → Raw/temporary working tables (not used by semantic views or search services)
+CURATED     → All tables used by semantic views or search services (both structured and unstructured)
+AI          → Semantic views, Cortex Search services, Custom Tools (stored procedures)
+```
+
+### When to Use Each Schema
+```python
+# RAW_DATA: Source tables, temporary tables, working tables
+- ENTITIES, CUSTOMERS, TRANSACTIONS (source data)
+- *_PROMPTS tables (temporary for data generation)
+- CLIENT_CRM (not used by semantic views)
+
+# CURATED: Tables consumed by AI services
+- ENTITY_RELATIONSHIPS (used by semantic views)
+- CLIENT_OPPORTUNITIES (used by semantic views)
+- HOLDINGS, MODEL_PORTFOLIOS, WEALTH_CLIENT_PROFILES (used by semantic views)
+- All document corpus: COMPLIANCE_DOCUMENTS, LOAN_DOCUMENTS, etc. (used by search services)
+- All supporting views: customer_risk_view, etc.
+
+# AI: AI infrastructure only
+- Semantic views: aml_kyc_risk_sv, credit_risk_sv, etc.
+- Search services: compliance_docs_search_svc, etc.
+- Custom tools: GENERATE_PDF_REPORT stored procedure
+- Stages: GLACIER_REPORTS_STAGE, PROC_STAGE
+```
+
 ## Configuration Architecture
 
 ### Single Source of Truth

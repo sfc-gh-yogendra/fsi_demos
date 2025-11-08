@@ -1,13 +1,13 @@
 ---
-description: Glacier First Bank Phase 1 demo defaults and guardrails
+description: Glacier First Bank demo standards and guardrails
 alwaysApply: false
 ---
-# Glacier First Bank — Phase 1 Standards
+# Glacier First Bank — Demo Standards
 
 ## Overview
-This rule defines Phase 1 specific standards and patterns. All configuration values are in `config.py` - this rule provides the standards and patterns unique to Phase 1.
+This rule defines demo-specific standards and patterns. All configuration values are in `config.py` - this rule provides the standards and patterns for demonstration scenarios.
 
-## Phase 1 Scope (Extended)
+## Demo Scope (Core Scenarios)
 - **Scenarios**: 
   1. AML/KYC Enhanced Due Diligence
   2. Credit Risk Analysis
@@ -50,7 +50,7 @@ When user implies need for visual analysis:
 - **SQL visibility** → Only on explicit user request
 
 ## Risk Threshold Standards
-Phase 1 uses EU/EBA-style thresholds (defined in config.py):
+Demo uses EU/EBA-style thresholds (defined in config.py):
 - Financial ratios with warning/breach levels
 - Concentration limits for risk management
 - Time-based monitoring requirements
@@ -67,7 +67,7 @@ Phase 1 uses EU/EBA-style thresholds (defined in config.py):
 
 See patterns in respective implementation guides.
 
-## Phase 1 Acceptance Criteria (Extended)
+## Demo Acceptance Criteria
 
 ### Functional Requirements
 - [ ] All 5 scenarios complete 3-4 turn demo flow

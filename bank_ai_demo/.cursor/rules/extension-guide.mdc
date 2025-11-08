@@ -286,7 +286,7 @@ def prepare_trend_visualization(metric: str, dimension: str) -> str:
 
 ## Phase Integration
 
-### Adding to Phase 2
+### Adding New Scenarios
 ```python
 # Update phase configuration
 PHASE_2 = {
@@ -685,7 +685,7 @@ def prepare_trend_visualization(metric: str, dimension: str) -> str:
 
 ## Phase Integration
 
-### Adding to Phase 2
+### Adding New Scenarios
 ```python
 # Update phase configuration
 PHASE_2 = {

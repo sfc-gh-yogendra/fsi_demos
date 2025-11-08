@@ -7,7 +7,7 @@ alwaysApply: false
 ## Overview
 This rule provides a quick reference of available agents in the Glacier First Bank demo. For configuration patterns and implementation details, see `agent-patterns.mdc`.
 
-## Phase 1 Agents
+## Core Agents (Implemented)
 
 ### AML Officer Agent
 - **Name**: `aml_officer_agent`
@@ -29,7 +29,7 @@ This rule provides a quick reference of available agents in the Glacier First Ba
   - Business plan summarization
 - **Primary Tools**: Semantic view analysis, policy search
 
-## Phase 2 Agents (Planned)
+## Additional Agents (Available)
 
 ### Corporate RM Agent
 - **Name**: `corp_rm_agent`
@@ -55,57 +55,11 @@ Each agent should be validated with:
 3. Cross-domain queries
 4. Error handling scenarios
 
-See `agent-patterns.mdc` for testing patterns and `demo-scenario-documentation.mdc` for example interactions.# Agent Reference - Glacier First Bank
+## Related Rules
 
-## Overview
-This rule provides a quick reference of available agents in the Glacier First Bank demo. For configuration patterns and implementation details, see `agent-patterns.mdc`.
+- **@agent-patterns.mdc** - HOW to build agents (architecture patterns)
+- **@cortex-agent-config.mdc** - Step-by-step SQL configuration guide
+- **@demo-scenario-documentaion.mdc** - Example agent interactions
+- **@troubleshooting-guide.mdc** - Troubleshooting agent issues
 
-## Phase 1 Agents
-
-### AML Officer Agent
-- **Name**: `aml_officer_agent`
-- **Purpose**: Enhanced Due Diligence for corporate clients
-- **Key Capabilities**:
-  - UBO identification from onboarding documents
-  - Adverse media and PEP/sanctions screening
-  - Risk assessment synthesis
-  - RFI generation
-- **Primary Tools**: Document search, news analysis
-
-### Credit Analyst Agent
-- **Name**: `credit_analyst_agent`
-- **Purpose**: Commercial loan application assessment
-- **Key Capabilities**:
-  - Financial ratio analysis
-  - Policy threshold comparison
-  - Historical cohort analysis
-  - Business plan summarization
-- **Primary Tools**: Semantic view analysis, policy search
-
-## Phase 2 Agents (Planned)
-
-### Corporate RM Agent
-- **Name**: `corp_rm_agent`
-- **Purpose**: Client intelligence and opportunity identification
-- **Key Capabilities**:
-  - Cross-entity risk identification
-  - Proactive opportunity sourcing
-  - Meeting preparation briefs
-
-### Wealth Advisor Agent
-- **Name**: `wealth_advisor_agent`
-- **Purpose**: Portfolio analysis and optimization
-- **Key Capabilities**:
-  - Portfolio alignment assessment
-  - Rebalancing recommendations
-  - Tax impact analysis
-
-## Agent Testing
-
-Each agent should be validated with:
-1. Basic capability queries
-2. Tool-specific queries
-3. Cross-domain queries
-4. Error handling scenarios
-
-See `agent-patterns.mdc` for testing patterns and `demo-scenario-documentation.mdc` for example interactions.
+See these rules for testing patterns, implementation details, and example interactions.

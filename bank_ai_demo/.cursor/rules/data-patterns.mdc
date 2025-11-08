@@ -7,6 +7,11 @@ alwaysApply: false
 ## Overview
 This rule provides patterns for data modeling, generation, and quality assurance using **PURE SQL** approach.
 
+**Related Rules**:
+- @unstructure-data-generation.mdc - For unstructured document generation patterns
+- @external-data-patterns.mdc - For simulating external marketplace data
+- @configuration-patterns.mdc - For schema usage standards
+
 ## CRITICAL RULES ⚠️
 
 ### 1. ALWAYS Use UNION ALL BY NAME

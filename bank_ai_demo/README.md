@@ -6,14 +6,14 @@ An enterprise-wide banking AI demo showcasing Snowflake's Cortex AI capabilities
 
 A comprehensive demonstration of AI-powered financial services intelligence, showcasing **7 end-to-end scenarios** spanning:
 
-**Phase 1 - AML/KYC Compliance & Risk (5 scenarios)**:
+**AML/KYC Compliance & Risk (5 scenarios)**:
 - **AML/KYC Enhanced Due Diligence**: Automated compliance analysis with cross-domain intelligence
 - **Credit Risk Analysis**: Sophisticated loan origination assessment with cohort analysis
 - **Transaction Monitoring & Alert Triage**: ML-based false positive reduction and priority scoring
 - **Periodic KYC Reviews**: Automated change detection and low-touch review processing
 - **Network Analysis for TBML Detection**: Graph-based shell company identification and Trade-Based Money Laundering detection
 
-**Phase 2 - Commercial & Wealth Banking (2 scenarios)**:
+**Commercial & Wealth Banking (2 scenarios)**:
 - **Corporate Relationship Manager**: Proactive client intelligence with AI-powered opportunity discovery
 - **Wealth Advisor**: Portfolio alignment monitoring with what-if rebalancing analysis  
 
@@ -40,7 +40,7 @@ account = "your-account.snowflakecomputing.com"
 user = "your-username"
 password = "your-password"  # or use SSO/key-pair/OAuth
 database = "BANK_AI_DEMO"
-schema = "RAW_DATA"
+schema = "CURATED"
 warehouse = "BANK_AI_DEMO_COMPUTE_WH"
 ```
 
@@ -73,16 +73,17 @@ python python/main.py --connection your_connection_name --scale mini
 | `mini` | 50 | 5,000 | 250 | 50 | 20/30 | 200 | Quick testing |
 | `demo` | 500 | 50,000 | 3,000 | 250 | 100/150 | 1,000 | Live demos |
 
-**Note**: Phase 2 data (CRM, opportunities, holdings, wealth profiles) is generated when Phase 2 scenarios are requested.
-
 ## Post-Deployment Setup
 
 ### 1. Configure AI Agents
-Configure all 4 agents in Snowflake Intelligence:
-- **Agent 1**: AML Officer Agent (Compliance & Risk)
-- **Agent 2**: Credit Analyst Agent (Credit Risk)
-- **Agent 3**: Corporate RM Agent (Commercial Banking) *Phase 2*
-- **Agent 4**: Wealth Advisor Agent (Wealth Management) *Phase 2*
+All 7 agents are automatically created during deployment:
+- **AML Officer Agent** (Compliance & Risk) - 7 tools
+- **Credit Analyst Agent** (Credit Risk) - 6 tools
+- **Transaction Monitoring Agent** (Alert Triage) - 5 tools
+- **Cross-Domain Intelligence Agent** (Enterprise Intelligence) - 4 tools
+- **Corporate RM Agent** (Commercial Banking) - 4 tools
+- **Wealth Advisor Agent** (Wealth Management) - 2 tools
+- **Network Analysis Agent** (TBML Detection) - 3 tools
 
 📖 **See**: [docs/agent_setup.md](docs/agent_setup.md)
 
@@ -93,7 +94,7 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 
 ## Demo Scenarios
 
-### Phase 1: AML/KYC Compliance & Credit Risk (Implemented)
+### AML/KYC Compliance & Credit Risk
 
 | Scenario | Agent | Key Capabilities | Business Impact |
 |----------|-------|------------------|-----------------|
@@ -103,7 +104,7 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 | **Periodic KYC Reviews** | `aml_officer_agent` | • Automated change detection<br>• Low-touch processing<br>• Sanctions/PEP screening<br>• Transaction pattern analysis<br>• Review queue management | Review time: 45-60 mins → <1 min<br>Capacity: 6-7x multiplier |
 | **Network Analysis for TBML** | `aml_officer_agent` | • Shell company detection<br>• Shared director/address analysis<br>• Circular payment patterns<br>• TBML typology classification<br>• Graph-based visualization | Network analysis: weeks → hours<br>Detects coordinated schemes |
 
-### Phase 2: Commercial & Wealth Banking (Implemented)
+### Commercial & Wealth Banking
 
 | Scenario | Agent | Key Capabilities | Business Impact |
 |----------|-------|------------------|-----------------|
@@ -118,18 +119,18 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 - Network analysis informs relationship management
 - Unified client view across all business lines
 
-### Planned Additional Scenarios (Phase 3)
+### Future Scenario Roadmap
 
 | Scenario | Agent | Status |
 |----------|-------|--------|
-| **M&A Target Screening** | `ma_analyst_agent` | 📋 Phase 3 Roadmap |
-| **Virtual Data Room Interrogation** | `due_diligence_agent` | 📋 Phase 3 Roadmap |
+| **M&A Target Screening** | `ma_analyst_agent` | 📋 Planned |
+| **Virtual Data Room Interrogation** | `due_diligence_agent` | 📋 Planned |
 | **Regulatory Examination Prep** | `aml_officer_agent` | 🔄 Future Enhancement |
 | **Executive AML Program Reporting** | `aml_officer_agent` | 🔄 Future Enhancement |
 
 ### Key Demo Entities
 
-**Phase 1 (AML/KYC & Credit)**:
+**AML/KYC & Credit Scenarios**:
 
 | Entity | Country | Industry | Role in Demo |
 |--------|---------|----------|--------------|
@@ -139,7 +140,7 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 | **Shell Network Entities** | Gibraltar | Import/Export | 5-entity TBML network with shared director (Anya Sharma) and common address |
 | **Nordic Industries S.A.** | Various | Manufacturing | Low-touch periodic review example; also RM client with compliance concerns |
 
-**Phase 2 (Commercial & Wealth)**:
+**Commercial & Wealth Scenarios**:
 
 | Entity/Client | Type | Role in Demo |
 |---------------|------|--------------|
@@ -150,21 +151,39 @@ Review the guided demo flows for all 7 scenarios and practice with sample querie
 
 ## Architecture
 
+### Schema Organization
+
+**RAW_DATA**: Temporary/working tables for data generation
+- Source tables: ENTITIES, CUSTOMERS, TRANSACTIONS
+- Temporary prompt tables for LLM generation
+- Tables not directly consumed by AI services
+
+**CURATED**: All tables consumed by AI services  
+- Structured analytics tables: ENTITY_RELATIONSHIPS, CLIENT_OPPORTUNITIES, HOLDINGS, etc.
+- Document corpus tables: COMPLIANCE_DOCUMENTS, LOAN_DOCUMENTS, CLIENT_DOCUMENTS, etc.
+- Supporting views: customer_risk_view, alert_summary_view, etc.
+
+**AI**: AI infrastructure components
+- 7 Semantic views (Cortex Analyst)
+- 7 Search services (Cortex Search)
+- 7 Agents (Snowflake Intelligence)
+- Custom tools (stored procedures)
+
 ### Data Model
 
-**Phase 1 (Compliance & Risk)**:
+**Compliance & Risk**:
 - **Entities & Relationships**: Companies, partnerships, ownership structures, network analysis (shared directors, addresses)
 - **Financial Data**: Loan applications, transactions, historical performance
 - **Transaction Monitoring**: Alerts with ML priority scoring, historical dispositions (75% FP rate for training)
 - **Compliance Data**: KYC documents, adverse media, regulatory filings, periodic review schedules
 
-**Phase 2 (Commercial & Wealth)**:
+**Commercial & Wealth**:
 - **CRM & Opportunities**: Relationship manager data, client opportunities with revenue potential
 - **Wealth Management**: Holdings, model portfolios, client profiles with risk tolerance
 - **Client Documents**: Call notes, internal emails, client news articles
 - **Meeting Notes**: Portfolio reviews, investment strategy discussions, rebalancing decisions
 
-**AI Services**: 7 semantic views, 6 search services, 4 agents, cross-domain intelligence, graph-based network analysis
+**AI Infrastructure**: 7 semantic views, 7 search services, 7 agents, cross-domain intelligence, graph-based network analysis
 
 ### Project Structure
 ```
@@ -175,7 +194,8 @@ bank_ai_demo/
 │   ├── generate_structured.py     # Structured data generation
 │   ├── generate_unstructured.py   # Unstructured data generation
 │   ├── create_semantic_views.py   # Cortex Analyst semantic views
-│   └── create_search_services.py  # Cortex Search services
+│   ├── create_search_services.py  # Cortex Search services
+│   └── create_agents.py            # Snowflake Intelligence agents
 ├── sql/                            # SQL scripts archive
 │   └── archive/                    # Reference SQL files
 ├── docs/                           # Documentation
@@ -252,26 +272,22 @@ ALTER CORTEX SEARCH SERVICE compliance_docs_search_svc REFRESH;
 
 ## Success Criteria
 
-**Phase 1 Deployment** is successful when:
-- ✅ All Phase 1 validation tests pass
+Deployment is successful when:
+- ✅ All validation tests pass
 - ✅ Key entities exist (Global Trade Ventures, Innovate GmbH, Northern Supply Chain, Shell Network)
 - ✅ Cross-domain relationships established
 - ✅ Transaction monitoring alerts generated (including ALERT_STRUCT_001 for GTV)
 - ✅ Shell company network created (5 entities with shared director/address)
 - ✅ Periodic review dates set (8+ medium-risk customers due within 30 days)
 - ✅ Policy breaches correctly flagged (Innovate GmbH financial ratios)
-- ✅ 5 semantic views and 4 search services operational
-- ✅ Multi-step reasoning workflows complete successfully across all 5 Phase 1 scenarios
-
-**Phase 2 Deployment** (if Phase 2 scenarios requested) adds:
+- ✅ 7 semantic views and 7 search services operational
+- ✅ 7 agents created and configured
+- ✅ Multi-step reasoning workflows complete successfully across all 7 scenarios
 - ✅ CRM data with relationship manager assignments and opportunities
 - ✅ Wealth client profiles with model portfolio assignments
 - ✅ Holdings data with allocation percentages and unrealized gains
 - ✅ Client documents (call notes, emails, news) searchable
 - ✅ Wealth meeting notes searchable
-- ✅ Corporate client 360 and wealth client semantic views operational
-- ✅ 2 additional search services (client documents, wealth meeting notes)
-- ✅ Phase 2 agents configured and validated
 
 ## Key Technical Differentiators
 
@@ -286,18 +302,14 @@ This demo showcases Snowflake's unique capabilities for enterprise-wide AI in fi
 | **Portfolio Intelligence** | Real-time drift monitoring with tax-aware rebalancing calculations | 3-5x faster portfolio analysis and what-if modeling |
 | **Enterprise Cross-Domain Intelligence** | Unified data platform connecting compliance, credit, commercial, and wealth | Risk contagion detection, revenue protection, unified client view |
 | **Complete Audit Trails** | Source attribution for every fact, regulatory framework integration | Regulatory compliance built-in (FATF, EBA, MiFID II) |
-| **Native Integration** | All AI services in Snowflake, no middleware or data movement | Simplified architecture, enterprise security, 4 agents on single platform |
+| **Native Integration** | All AI services in Snowflake, no middleware or data movement | Simplified architecture, enterprise security, 7 agents on single platform |
 
 ## Next Steps
 
-1. **Configure Agents**: Follow [docs/agent_setup.md](docs/agent_setup.md) to set up all 4 agents:
-   - Phase 1: AML Officer Agent (7 tools) + Credit Analyst Agent (6 tools)
-   - Phase 2: Corporate RM Agent (4 tools) + Wealth Advisor Agent (2 tools)
+1. **Configure Agents**: Follow [docs/agent_setup.md](docs/agent_setup.md) to verify all 7 agents
 2. **Practice Scenarios**: Use [docs/demo_scenarios.md](docs/demo_scenarios.md) for guided 7-scenario demo flows
 3. **Monitor Performance**: Check query times and search service health
-4. **Validate Coverage**: 
-   - Phase 1: Test all 5 AML/KYC scenarios with validation queries
-   - Phase 2: Test both commercial and wealth scenarios
+4. **Validate Coverage**: Test all 7 scenarios with validation queries
 5. **Explore Cross-Domain**: Demonstrate risk contagion and enterprise-wide intelligence
 
 ---
@@ -306,6 +318,6 @@ This demo showcases Snowflake's unique capabilities for enterprise-wide AI in fi
 
 *Showcasing 7 comprehensive scenarios across compliance, credit, commercial banking, and wealth management - the only unified AI platform delivering this breadth of financial services intelligence.*
 
-**Phase 1**: 5 AML/KYC scenarios (Enhanced Due Diligence, Credit Analysis, Transaction Monitoring, Periodic Reviews, Network Analysis)  
-**Phase 2**: 2 Commercial & Wealth scenarios (Relationship Manager Intelligence, Portfolio Advisory)  
+**5 AML/KYC scenarios**: Enhanced Due Diligence, Credit Analysis, Transaction Monitoring, Periodic Reviews, Network Analysis  
+**2 Commercial & Wealth scenarios**: Relationship Manager Intelligence, Portfolio Advisory  
 **Enterprise Impact**: 50-70% FP reduction | 6-7x review capacity | 5-10x opportunity discovery | 3-5x portfolio analysis speed

@@ -12,6 +12,11 @@ This rule provides patterns for generating unstructured documents (broker resear
 - Cortex Complete (LLM) access enabled
 - Understanding of document types needed for demo scenarios
 
+**Related Rules**:
+- @data-patterns.mdc - For structured data generation patterns
+- @external-data-patterns.mdc - For external data source patterns
+- @cortex-search.mdc - For creating search services on generated documents
+
 ## CRITICAL DEPLOYMENT ORDER (Snowflake-Specific)
 1. **Database/Schema/Warehouse Creation**: Must be first
 2. **Structured Data Generation**: All tables with save_as_table() mode="overwrite" 

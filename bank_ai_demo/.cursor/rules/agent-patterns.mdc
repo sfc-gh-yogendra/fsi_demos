@@ -332,21 +332,21 @@ Follow demo scenario documentation patterns to create user-facing documentation.
 
 ## Agent Evolution Pattern
 
-### Phase 1: Basic Tools
+### Level 1: Basic Tools
 ```
 - Cortex Analyst for structured queries
 - Cortex Search for document retrieval
 - Simple orchestration logic
 ```
 
-### Phase 2: Advanced Tools
+### Level 2: Advanced Tools
 ```
 - Custom calculation functions
 - Multi-step reasoning chains
 - Conditional tool flows
 ```
 
-### Phase 3: Sophisticated Orchestration
+### Level 3: Sophisticated Orchestration
 ```
 - Dynamic tool selection
 - Learning from usage patterns
@@ -693,21 +693,21 @@ Follow demo scenario documentation patterns to create user-facing documentation.
 
 ## Agent Evolution Pattern
 
-### Phase 1: Basic Tools
+### Level 1: Basic Tools
 ```
 - Cortex Analyst for structured queries
 - Cortex Search for document retrieval
 - Simple orchestration logic
 ```
 
-### Phase 2: Advanced Tools
+### Level 2: Advanced Tools
 ```
 - Custom calculation functions
 - Multi-step reasoning chains
 - Conditional tool flows
 ```
 
-### Phase 3: Sophisticated Orchestration
+### Level 3: Sophisticated Orchestration
 ```
 - Dynamic tool selection
 - Learning from usage patterns

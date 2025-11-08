@@ -124,7 +124,7 @@ def create_your_new_search_service(session: Session) -> None:
                 TITLE,
                 CONTENT_COLUMN,
                 [other_columns]
-            FROM {config.SNOWFLAKE['database']}.RAW_DATA.YOUR_TABLE
+            FROM {config.SNOWFLAKE['database']}.CURATED.YOUR_CORPUS_TABLE
     """).collect()
     
     logger.info("Your new search service created successfully")
