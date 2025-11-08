@@ -1,7 +1,7 @@
 """
 Glacier First Bank Demo - Semantic Views Creator
 
-Creates semantic views for Cortex Analyst supporting Phase 1 scenarios.
+Creates semantic views for Cortex Analyst supporting demo scenarios.
 Each semantic view is defined in its own function for better modularity.
 """
 
@@ -93,7 +93,7 @@ def get_required_tables_for_scenarios(scenarios: List[str]) -> Dict[str, str]:
             'TRANSACTIONS': 'RAW_DATA'
         })
     
-    # Phase 2 scenarios
+    # Commercial & Wealth scenarios
     if 'corp_relationship_manager' in scenarios:
         required_tables.update({
             'CLIENT_CRM': 'RAW_DATA',
@@ -154,12 +154,12 @@ def create_all_semantic_views(session: Session, scenarios: List[str] = None) -> 
         create_entity_network_analysis_view(session)
         create_network_analysis_semantic_view(session)
     
-    # Phase 2: Create corporate client 360 semantic view
+    # Commercial & Wealth: Create corporate client 360 semantic view
     if 'corp_relationship_manager' in scenarios:
         create_corporate_client_360_view(session)
         create_corporate_client_360_semantic_view(session)
     
-    # Phase 2: Create wealth client semantic view
+    # Commercial & Wealth: Create wealth client semantic view
     if 'wealth_advisor' in scenarios:
         create_wealth_client_sv(session)
     
@@ -710,7 +710,7 @@ def create_network_analysis_semantic_view(session: Session) -> None:
 
 
 # =============================================================================
-# PHASE 2 SEMANTIC VIEWS
+# COMMERCIAL & WEALTH SEMANTIC VIEWS
 # =============================================================================
 
 def create_corporate_client_360_view(session: Session) -> None:

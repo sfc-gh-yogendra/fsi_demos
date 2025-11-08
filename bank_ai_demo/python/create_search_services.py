@@ -59,7 +59,7 @@ def get_required_tables_for_search_services(scenarios: List[str]) -> Set[str]:
             'LOAN_DOCUMENTS'
         ])
     
-    # Phase 2 scenarios
+    # Commercial & Wealth scenarios
     if 'corp_relationship_manager' in scenarios:
         required_tables.add('CLIENT_DOCUMENTS')
     
@@ -133,7 +133,7 @@ def create_all_search_services(session: Session, scenarios: List[str] = None) ->
     # Create document templates search service for agent framework
     create_document_templates_search_service(session)
     
-    # Phase 2: Create search services for relationship manager and wealth advisor scenarios
+    # Commercial & Wealth: Create search services for relationship manager and wealth advisor scenarios
     if 'corp_relationship_manager' in scenarios:
         create_client_documents_search_service(session)
     
@@ -364,7 +364,7 @@ def refresh_search_service(session: Session, service_name: str) -> None:
 
 
 # =============================================================================
-# PHASE 2 SEARCH SERVICES
+# COMMERCIAL & WEALTH SEARCH SERVICES
 # =============================================================================
 
 def create_client_documents_search_service(session: Session) -> None:

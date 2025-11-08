@@ -434,7 +434,7 @@ def print_banner():
     ║                                                                  ║
     ║           🏔️  GLACIER FIRST BANK AI INTELLIGENCE DEMO           ║
     ║                                                                  ║
-    ║                    Phase 1: Foundation Deployment               ║
+    ║                  Glacier First Bank AI Demo Deployment          ║
     ║                                                                  ║
     ║    🤖 AML/KYC Enhanced Due Diligence                            ║
     ║    💰 Credit Risk Analysis & Cohort Modeling                    ║

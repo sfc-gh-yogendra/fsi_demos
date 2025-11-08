@@ -17,14 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 def generate_all_unstructured_data(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate all unstructured data for Phase 1 and Phase 2."""
+    """Generate all unstructured data for demo scenarios."""
     logger.info("Starting unstructured data generation...")
     
-    # Determine which phases to generate based on scenarios
-    phase_2_scenarios = ['corp_relationship_manager', 'wealth_advisor']
-    include_phase_2 = scenarios and any(s in phase_2_scenarios for s in scenarios) if scenarios != ["all"] else False
+    # Determine which data to generate based on scenarios
+    commercial_wealth_scenarios = {'corp_relationship_manager', 'wealth_advisor'}
+    include_commercial_wealth = (scenarios == ["all"] or not scenarios or 
+                                  any(s in commercial_wealth_scenarios for s in scenarios))
     
-    # Phase 1 unstructured documents using Cortex Complete pipeline
+    # Core unstructured documents using Cortex Complete pipeline
     generate_compliance_documents(session, scale, scenarios)
     generate_credit_policy_documents(session, scale, scenarios)
     generate_loan_documents(session, scale, scenarios)
@@ -33,9 +34,9 @@ def generate_all_unstructured_data(session: Session, scale: str = "demo", scenar
     # Always generate document templates as they're used by agent framework
     generate_document_templates(session, scale, scenarios)
     
-    # Phase 2 unstructured documents (if Phase 2 scenarios requested or "all")
-    if include_phase_2 or scenarios == ["all"] or not scenarios:
-        logger.info("Generating Phase 2 unstructured data...")
+    # Commercial & Wealth unstructured documents (if scenarios requested or "all")
+    if include_commercial_wealth:
+        logger.info("Generating Commercial & Wealth unstructured data...")
         generate_client_documents(session, scale, scenarios)
         generate_wealth_meeting_notes(session, scale, scenarios)
     
@@ -791,7 +792,7 @@ The template should be ready for customization with investigation-specific findi
 
 
 # =============================================================================
-# PHASE 2 UNSTRUCTURED DATA GENERATION FUNCTIONS
+# COMMERCIAL & WEALTH DATA GENERATION FUNCTIONS
 # =============================================================================
 
 def generate_client_documents(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
@@ -826,7 +827,7 @@ def generate_client_documents(session: Session, scale: str = "demo", scenarios: 
     
     # Generate prompts for different document types
     prompts = []
-    doc_types = config.PHASE_2_DOCUMENT_TYPES['client_documents']
+    doc_types = config.DOCUMENT_TYPES['client_documents']
     
     # Distribute documents across types based on weights
     for doc_type_info in doc_types:
@@ -911,7 +912,7 @@ def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenari
     
     # Generate prompts for meeting notes
     prompts = []
-    note_types = config.PHASE_2_DOCUMENT_TYPES['wealth_meeting_notes']
+    note_types = config.DOCUMENT_TYPES['wealth_meeting_notes']
     
     for note_type_info in note_types:
         note_type = note_type_info['type']
@@ -968,7 +969,7 @@ def generate_wealth_meeting_notes(session: Session, scale: str = "demo", scenari
 
 
 # =============================================================================
-# PHASE 2 PROMPT GENERATION HELPER FUNCTIONS
+# COMMERCIAL & WEALTH PROMPT GENERATION HELPERS
 # =============================================================================
 
 def _create_call_note_prompt(customer_id: str, entity_info: Dict, crm_record: Dict, opportunities: List[Dict]) -> Dict[str, Any]:

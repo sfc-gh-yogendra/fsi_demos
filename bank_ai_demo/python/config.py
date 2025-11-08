@@ -46,29 +46,13 @@ GENERATION_SEED = 42
 MAX_TOKENS = 4000
 
 # =============================================================================
-# PHASE CONFIGURATION
-# =============================================================================
-
-CURRENT_PHASE = 1
-PHASE_1 = {
-    "name": "Foundation - AML/KYC & Credit Analysis",
-    "scenarios": ["aml_kyc_edd", "credit_analysis"],
-    "completion_criteria": [
-        "Both scenarios work end-to-end with realistic data",
-        "Cross-domain intelligence connections demonstrable",
-        "All wow moments polished and reliable",
-        "Presenter guidance complete"
-    ]
-}
-
-# =============================================================================
 # DATA GENERATION SCALE CONFIGURATION
 # =============================================================================
 
 SCALES = {
     "mini": {
         "description": "Fast testing scale",
-        # Phase 1 data
+        # Core data
         "entities": 50,
         "entity_relationships": 100,
         "customers": 25,
@@ -79,7 +63,7 @@ SCALES = {
         "news_articles": 150,
         "alerts": 50,
         "alert_disposition_history": 500,
-        # Phase 2 data
+        # Commercial & Wealth data
         "client_crm_records": 20,
         "client_opportunities": 40,
         "client_documents": 60,  # call notes, emails, news
@@ -90,7 +74,7 @@ SCALES = {
     },
     "demo": {
         "description": "Balanced demo scale - optimal for agent responses",
-        # Phase 1 data
+        # Core data
         "entities": 500,
         "entity_relationships": 1200,
         "customers": 200,
@@ -101,7 +85,7 @@ SCALES = {
         "news_articles": 1200,
         "alerts": 250,
         "alert_disposition_history": 2500,
-        # Phase 2 data
+        # Commercial & Wealth data
         "client_crm_records": 150,
         "client_opportunities": 300,
         "client_documents": 450,  # call notes, emails, news
@@ -191,7 +175,7 @@ KEY_ENTITIES = {
         "industry": "Import/Export",
         "esg_rating": "D"
     },
-    # Phase 2 key entities
+    # Commercial & Wealth key entities
     "primary_rm_client": {
         "entity_id": "EAG_FR_001",
         "name": "European Automotive Group S.A.",
@@ -353,7 +337,7 @@ SCENARIOS = {
         "required_services": ["compliance_docs_search_svc"],
         "required_views": ["network_analysis_sv", "cross_domain_intelligence_sv"]
     },
-    # Phase 2 Scenarios
+    # Commercial & Wealth Scenarios
     "corp_relationship_manager": {
         "name": "Corporate Relationship Manager - Client Intelligence",
         "description": "Proactive opportunity sourcing and client intelligence with cross-entity reasoning",
@@ -372,10 +356,10 @@ SCENARIOS = {
 }
 
 # =============================================================================
-# PHASE 2 DATA SCHEMAS
+# TABLE SCHEMAS
 # =============================================================================
 
-PHASE_2_SCHEMAS = {
+TABLE_SCHEMAS = {
     "client_crm": {
         "table_name": "CLIENT_CRM",
         "schema": "RAW_DATA",
@@ -489,7 +473,7 @@ PHASE_2_SCHEMAS = {
     }
 }
 
-PHASE_2_DOCUMENT_TYPES = {
+DOCUMENT_TYPES = {
     "client_documents": [
         {"type": "call_note", "weight": 0.4, "description": "Relationship manager call notes from client meetings"},
         {"type": "internal_email", "weight": 0.3, "description": "Internal emails about client strategy and risks"},

@@ -1,7 +1,7 @@
 """
 Glacier First Bank Demo - Structured Data Generator
 
-Generates realistic structured data for Phase 1 and Phase 2 scenarios using pure SQL.
+Generates realistic structured data for all demo scenarios using pure SQL.
 Includes entities, relationships, customers, transactions, loan applications, and wealth management data.
 """
 
@@ -47,7 +47,7 @@ def create_database_structure(session: Session) -> None:
         # Create main database
         session.sql(f"""
             CREATE OR REPLACE DATABASE {config.SNOWFLAKE['database']}
-                COMMENT = 'Glacier First Bank AI Intelligence Demo - Phase 1 Foundation'
+                COMMENT = 'Glacier First Bank AI Intelligence Demo'
         """).collect()
         
         logger.info(f"Created database: {config.SNOWFLAKE['database']}")
@@ -96,7 +96,7 @@ class EntityProfile:
 
 
 def generate_all_structured_data(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
-    """Generate all structured data for Phase 1 and Phase 2."""
+    """Generate all structured data for demo scenarios."""
     logger.info("Starting structured data generation...")
     
     # Set random seed for reproducible generation
@@ -119,11 +119,12 @@ def generate_all_structured_data(session: Session, scale: str = "demo", scenario
     
     logger.info("Clean slate established - all tables dropped")
     
-    # Determine which phases to generate based on scenarios
-    phase_2_scenarios = ['corp_relationship_manager', 'wealth_advisor']
-    include_phase_2 = scenarios and any(s in phase_2_scenarios for s in scenarios) if scenarios != ["all"] else False
+    # Determine which data to generate based on scenarios
+    commercial_wealth_scenarios = {'corp_relationship_manager', 'wealth_advisor'}
+    include_commercial_wealth = (scenarios == ["all"] or not scenarios or 
+                                  any(s in commercial_wealth_scenarios for s in scenarios))
     
-    # Phase 1 data generation in dependency order
+    # Core data generation in dependency order
     generate_entities(session, scale, scenarios)
     generate_entity_relationships(session, scale, scenarios)
     generate_customers(session, scale, scenarios)
@@ -134,9 +135,9 @@ def generate_all_structured_data(session: Session, scale: str = "demo", scenario
     generate_alert_disposition_history(session, scale, scenarios)
     generate_external_data_simulation(session, scale, scenarios)
     
-    # Phase 2 data generation (if Phase 2 scenarios requested or "all")
-    if include_phase_2 or scenarios == ["all"] or not scenarios:
-        logger.info("Generating Phase 2 data...")
+    # Commercial & Wealth data generation (if scenarios requested or "all")
+    if include_commercial_wealth:
+        logger.info("Generating Commercial & Wealth data...")
         generate_model_portfolios(session, scale, scenarios)  # Must be before wealth profiles
         generate_client_crm(session, scale, scenarios)
         generate_client_opportunities(session, scale, scenarios)  # Depends on CRM
@@ -1284,7 +1285,7 @@ def _generate_director_name() -> str:
 
 
 # =============================================================================
-# PHASE 2 DATA GENERATION FUNCTIONS
+# COMMERCIAL & WEALTH DATA GENERATION FUNCTIONS
 # =============================================================================
 
 def generate_client_crm(session: Session, scale: str = "demo", scenarios: List[str] = None) -> None:
