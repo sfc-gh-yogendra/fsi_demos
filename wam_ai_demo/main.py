@@ -14,6 +14,7 @@ from src.generate_unstructured import generate_unstructured_data, enhance_esg_co
 from src.create_semantic_views import create_semantic_views
 from src.create_search_services import create_search_services
 from src.validate_components import validate_all_components
+from src.create_agents import create_all_agents
 
 def create_session(connection_name: str) -> Session:
     """Create Snowpark session using connections.toml"""
@@ -32,8 +33,8 @@ def main():
     parser.add_argument('--connection', required=True, help='Snowflake connection name from connections.toml')
     parser.add_argument('--scenarios', nargs='*', default=['all'],
                        help='Scenarios to build: advisor, analyst, guardian, or all (default: all)')
-    parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search'], default='all',
-                       help='Scope of build: all, data, semantic, or search (default: all)')
+    parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search', 'agents'], default='all',
+                       help='Scope of build: all, data, semantic, search, or agents (default: all)')
     parser.add_argument('--extract-real-assets', action='store_true',
                        help='Extract real asset data from Snowflake Marketplace and save to CSV')
     parser.add_argument('--validate-only', action='store_true',
@@ -111,7 +112,7 @@ def main():
             enhance_esg_content(session)
         
         # AI Services
-        if args.scope in ['all', 'semantic', 'search']:
+        if args.scope in ['all', 'semantic', 'search', 'agents']:
             print("\n🤖 AI Services Setup")
             
             if args.scope in ['all', 'semantic']:
@@ -121,6 +122,10 @@ def main():
             if args.scope in ['all', 'search']:
                 print("  → Creating search services...")
                 create_search_services(session)
+            
+            if args.scope in ['all', 'agents']:
+                print("  → Creating agents...")
+                create_all_agents(session, args.scenarios)
         
         # Validation
         print("\n✅ Component Validation")
@@ -128,7 +133,11 @@ def main():
         
         print(f"\n🎉 WAM AI Demo build completed successfully!")
         print(f"   ✅ Full demo with enhanced capabilities (watchlists, ESG analytics)")
-        print(f"   Ready for agent configuration in Snowflake Intelligence")
+        if args.scope in ['all', 'agents']:
+            print(f"   ✅ Agents created automatically using SQL-based approach")
+            print(f"   Ready for testing in Snowflake Intelligence")
+        else:
+            print(f"   Ready for agent configuration in Snowflake Intelligence")
         
     except Exception as e:
         print(f"\n❌ Build failed: {e}")

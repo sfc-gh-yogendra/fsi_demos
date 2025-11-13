@@ -26,6 +26,9 @@ def validate_all_components(session: Session):
     # Validate golden records
     validate_golden_records(session)
     
+    # Validate agents (if they exist)
+    validate_agents(session)
+    
     print("  ✅ Component validation complete")
 
 
@@ -657,9 +660,9 @@ def validate_golden_records(session: Session):
             print(f"      ❌ JPMorgan (JPM) not found in Sarah's portfolio")
             return False
             
-        # Check allocation percentages
-        v_allocation = next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'V'), 0)
-        jpm_allocation = next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'JPM'), 0)
+        # Check allocation percentages (convert to float for comparison)
+        v_allocation = float(next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'V'), 0))
+        jpm_allocation = float(next((row['PORTFOLIOWEIGHT'] for row in portfolio_check if row['PRIMARYTICKER'] == 'JPM'), 0))
         
         expected_v = config.GOLDEN_CLIENTS['sarah_johnson']['portfolio_allocations']['V']
         expected_jpm = config.GOLDEN_CLIENTS['sarah_johnson']['portfolio_allocations']['JPM']
@@ -701,3 +704,57 @@ def validate_golden_records(session: Session):
     except Exception as e:
         print(f"    ❌ Golden records validation failed: {e}")
         return False
+
+
+def validate_agents(session: Session):
+    """Validate that agents are created and accessible (optional validation)"""
+    print("    → Validating agents...")
+    
+    try:
+        # Check if agents exist in Snowflake Intelligence
+        agents_query = """
+        SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS
+        """
+        
+        try:
+            agents = session.sql(agents_query).collect()
+            agent_names = [agent['name'].lower() for agent in agents]
+            
+            expected_agents = ['wam_advisor_copilot', 'wam_analyst_copilot', 'wam_compliance_copilot', 'wam_advisor_manager_copilot']
+            found_agents = []
+            missing_agents = []
+            
+            for expected_agent in expected_agents:
+                if expected_agent in agent_names:
+                    found_agents.append(expected_agent)
+                    print(f"      ✅ Agent found: {expected_agent}")
+                else:
+                    missing_agents.append(expected_agent)
+            
+            if found_agents:
+                print(f"    ✅ Found {len(found_agents)} agents: {', '.join(found_agents)}")
+                
+                # Test agent accessibility (basic validation)
+                for agent_name in found_agents[:2]:  # Test first 2 agents to avoid too many calls
+                    try:
+                        # Basic agent info query
+                        agent_info = session.sql(f"DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}").collect()
+                        if agent_info:
+                            print(f"      ✅ Agent accessible: {agent_name}")
+                    except Exception as e:
+                        print(f"      ⚠️ Agent exists but not accessible: {agent_name} ({e})")
+            
+            if missing_agents:
+                print(f"    ⚠️ Missing agents: {', '.join(missing_agents)}")
+                print(f"      💡 Run with --scope agents to create missing agents")
+            
+            return len(found_agents) > 0
+            
+        except Exception as e:
+            print(f"    ⚠️ Cannot access agents (may not be created yet): {e}")
+            print(f"      💡 Run with --scope agents to create agents automatically")
+            return True  # Don't fail validation if agents aren't created yet
+            
+    except Exception as e:
+        print(f"    ⚠️ Agent validation failed: {e}")
+        return True  # Don't fail overall validation for agent issues

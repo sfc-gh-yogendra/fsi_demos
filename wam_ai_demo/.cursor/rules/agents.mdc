@@ -4,75 +4,175 @@ alwaysApply: true
 
 # WAM AI Demo - Agent Configuration Rules
 
+## Agent Creation Method
+
+**✅ SQL-Based Agent Creation (Current Implementation)**
+- All agents created automatically using `CREATE AGENT` SQL statements
+- Executed via `src/create_agents.py` during build process
+- Comprehensive tool descriptions following SAM demo best practices
+- YAML instruction formatting with proper escaping for SQL embedding
+
+**Agent Creation Commands:**
+```bash
+# Create all agents
+python main.py --connection YOUR_CONNECTION --scope agents
+
+# Full build with agents
+python main.py --connection YOUR_CONNECTION --scope all
+
+# Specific scenarios
+python main.py --connection YOUR_CONNECTION --scope agents --scenarios advisor analyst
+```
+
 ## Agent Naming Standards
-- **Agent Names**: Use `*_copilot` format (e.g., `advisor_copilot`)
-- **Display Names**: Use "* CoPilot" format (e.g., "Wealth Advisory CoPilot")
-- **Current Agents**:
-  - `advisor_copilot` - Display Name: "Wealth Advisory CoPilot"
-  - `analyst_copilot` - Display Name: "Portfolio Analysis CoPilot"  
-  - `compliance_copilot` - Display Name: "Compliance CoPilot"
-  - `advisor_manager_copilot` - Display Name: "Advisor Benchmarking CoPilot"
+- **Agent Names**: Use `wam_*_copilot` format (e.g., `wam_advisor_copilot`)
+- **Display Names**: Use "* CoPilot (WAM Demo)" format (e.g., "Wealth Advisory CoPilot (WAM Demo)")
+- **Current Agents** (All SQL-based):
+  - `wam_advisor_copilot` - Display Name: "Wealth Advisory CoPilot (WAM Demo)"
+  - `wam_analyst_copilot` - Display Name: "Portfolio Analysis CoPilot (WAM Demo)"  
+  - `wam_compliance_copilot` - Display Name: "Compliance CoPilot (WAM Demo)"
+  - `wam_advisor_manager_copilot` - Display Name: "Advisor Benchmarking CoPilot (WAM Demo)"
 
-## Tool Configuration Formats
+## SQL-Based Tool Configuration (Current Implementation)
 
-**CRITICAL**: Tools must be configured in this exact order:
-1. **Cortex Analyst Tools** (FIRST)
-2. **Cortex Search Tools** (SECOND)  
-3. **Custom Tools** (LAST)
+**CRITICAL**: Tools configured in SQL `CREATE AGENT` statements with comprehensive descriptions following SAM best practices.
 
-### Cortex Analyst Tools
-```markdown
-**Tool X: [Tool Name]**
-- **Semantic View**: `DATABASE.SCHEMA.VIEW_NAME`
-- **Name**: `tool_name`
-- **Description**: `When to use this tool`
+### Tool Description Pattern (SAM Section 2.2.1)
+All tools must include these sections:
+
+**Cortex Analyst Tools:**
+```yaml
+- tool_spec:
+    type: "cortex_analyst_text_to_sql"
+    name: "tool_name"
+    description: |
+      [One-sentence purpose statement]
+      
+      Data Coverage:
+      - Historical: [time range]
+      - Current: [update frequency]
+      - Sources: [underlying tables]
+      - Records: [approximate scale]
+      - Refresh: [refresh schedule with timezone]
+      
+      Semantic Model Contents:
+      - Tables: [table list with brief purpose]
+      - Key Metrics: [primary metrics available]
+      - Time Dimensions: [date columns and granularity]
+      - Common Filters: [frequently used dimension filters]
+      
+      When to Use:
+      - [Specific use case 1 with example query pattern]
+      - [Specific use case 2 with example query pattern]
+      - Questions like: "[example question 1]", "[example question 2]"
+      
+      When NOT to Use:
+      - [Anti-pattern 1 with alternative: "Use {other_tool} instead"]
+      - [Anti-pattern 2 with alternative: "Use {other_tool} instead"]
+      
+      Query Best Practices:
+      1. Be specific about time ranges:
+         ✅ "in the last 30 days" or "as of 2024-12-31"
+         ❌ "recently" or "current" (ambiguous)
+      
+      2. Use semantic metric names:
+         ✅ "total market value", "portfolio weight"
+         ❌ Raw SQL column names (model handles this)
 ```
 
-### Cortex Search Tools
-```markdown
-**Tool X: [Tool Name]**
-- **Name**: `tool_name`
-- **Description**: `When to use this tool`
-- **Search Service**: `DATABASE.SCHEMA.SEARCH_SERVICE_NAME`
-- **ID Column**: `COLUMN_NAME`
-- **Title Column**: `COLUMN_NAME`
+**Cortex Search Tools:**
+```yaml
+- tool_spec:
+    type: "cortex_search"
+    name: "search_tool_name"
+    description: |
+      [One-sentence purpose statement]
+      
+      Data Sources:
+      - Document Types: [types of documents included]
+      - Update Frequency: [how often new documents added]
+      - Historical Range: [typical age range of documents]
+      - Index Freshness: [lag between creation and searchability]
+      - Typical Count: [approximate number of documents]
+      
+      When to Use:
+      - [Specific use case 1 with example]
+      - [Specific use case 2 with example]
+      - Queries like: "[example question]"
+      
+      When NOT to Use:
+      - [Anti-pattern 1 with alternative tool]
+      - [Anti-pattern 2 with alternative tool]
+      
+      Search Query Best Practices:
+      1. Use specific company/product names:
+         ✅ "Microsoft Azure cloud computing strategy"
+         ❌ "cloud strategy" (too generic)
+      
+      2. Include multiple related keywords:
+         ✅ "artificial intelligence machine learning strategy investment"
+         ❌ "AI" (too broad, returns too many results)
 ```
 
-### Custom Tools
-```markdown
-**Tool X: [Tool Name]**
-- **Resource Type**: Function|Procedure
-- **Function Name**: `DATABASE.SCHEMA.FUNCTION_NAME` (fully qualified)
-- **Name**: `tool_name`
-- **Query Timeout**: X seconds (reasonable time for completion)
-- **Description**: `Tool purpose so agent understands when to use it`
+## SQL Agent Implementation Structure
+
+### Agent Creation Function Pattern
+```python
+def create_agent_name(session: Session):
+    """Create Agent Name with comprehensive tool descriptions"""
+    database_name = config.DATABASE_NAME
+    
+    # Get instructions from helper functions
+    instructions = get_agent_instructions()['agent_name']
+    response_formatted = format_instructions_for_yaml(instructions['response'])
+    orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_agent_name
+  COMMENT = '[2-3 sentence description: persona + capabilities + value proposition]'
+  PROFILE = '{{"display_name": "[Display Name] (WAM Demo)"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: claude-sonnet-4-5
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    [Tool specifications with comprehensive descriptions]
+  tool_resources:
+    [Tool resource configurations]
+  $$;
+"""
+    
+    session.sql(sql).collect()
+    print("✅ Created agent: wam_agent_name")
 ```
 
-## Agent Template Structure
+### Instruction Helper Functions Pattern
+```python
+def get_agent_name_response_instructions() -> str:
+    """Get response instructions following SAM Section 3.2.1 pattern"""
+    return """[Professional tone and formatting guidelines]"""
 
-### AGENT_SETUP_GUIDE.md Structure
-```markdown
-## Agent X: [agent_name] ([Persona])
+def get_agent_name_orchestration_instructions() -> str:
+    """Get orchestration instructions with business context and workflows"""
+    return f"""{get_wam_business_context()}
 
-### Basic Information
-- **Name**: `agent_name`
-- **Display Name**: `Display Name`
-- **Description**: `Full description`
+Tool Selection Strategy:
+[Detailed tool selection logic]
 
-### Response Instructions
-[Full response instructions text]
+{get_wam_error_handling_patterns()}"""
+```
 
-### Tools
-#### Cortex Analyst Tools
-[Tool configurations - ALWAYS FIRST]
-#### Cortex Search Tools  
-[Tool configurations - ALWAYS SECOND]
-#### Custom Tools
-[Tool configurations - ALWAYS LAST]
-
-### Orchestration
-- **Orchestration Model**: Claude 4 Sonnet
-- **Planning Instructions**: [Full planning instructions text]
+### YAML Formatting Helper
+```python
+def format_instructions_for_yaml(text: str) -> str:
+    """Format multi-line instructions for YAML specification within SQL"""
+    formatted = text.replace('\n', '\\n')
+    formatted = formatted.replace('"', '\\"')
+    formatted = formatted.replace("'", "''")
+    return formatted
 ```
 
 ### DEMO_SCENARIOS.md Structure
@@ -143,5 +243,52 @@ alwaysApply: true
 - Client retention and engagement analysis
 - Planning coverage and risk signal monitoring
 
+## Adding New Agents
+
+### Step-by-Step Process
+1. **Create instruction functions** in `src/create_agents.py`:
+   ```python
+   def get_new_agent_response_instructions() -> str:
+       """Response instructions with SAM best practices"""
+   
+   def get_new_agent_orchestration_instructions() -> str:
+       """Orchestration with business context and workflows"""
+   ```
+
+2. **Add to instruction registry**:
+   ```python
+   def get_agent_instructions():
+       return {
+           # ... existing agents
+           'new_agent': {
+               'response': get_new_agent_response_instructions(),
+               'orchestration': get_new_agent_orchestration_instructions()
+           }
+       }
+   ```
+
+3. **Create agent function** with comprehensive tool descriptions following SAM patterns
+
+4. **Register in create_all_agents()**:
+   ```python
+   agents_to_create = {
+       # ... existing agents
+       'new_agent': create_new_agent
+   }
+   ```
+
+5. **Test with build process**:
+   ```bash
+   python main.py --connection YOUR_CONNECTION --scope agents
+   ```
+
+### Validation Checklist
+- [ ] Use **SAM Section 2.2.1** for comprehensive tool descriptions
+- [ ] Include **Data Coverage**, **When to Use/NOT**, **Query Best Practices**
+- [ ] Add **Business Context** and **Error Handling** to orchestration
+- [ ] Follow **YAML escaping** patterns for SQL embedding
+- [ ] Test agent creation and accessibility
+
+@src/create_agents.py
 @AGENT_SETUP_GUIDE.md
 @DEMO_SCENARIOS.md

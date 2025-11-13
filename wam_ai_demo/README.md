@@ -80,6 +80,9 @@ python main.py --connection your_connection_name --scope semantic
 
 # Build only search services
 python main.py --connection your_connection_name --scope search
+
+# Build only agents (SQL-based creation)
+python main.py --connection your_connection_name --scope agents
 ```
 
 ### Optional: Extract Real Market Data
@@ -104,10 +107,11 @@ python main.py --connection your_connection_name --test-mode
 ## Next Steps
 
 ### Agent Configuration
-Configure the three AI agents in Snowflake Intelligence:
-- **Setup Guide**: See [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md) for complete step-by-step instructions
-- **GUI Configuration**: Detailed Snowflake Intelligence setup process
-- **Tool Configuration**: Exact settings for Cortex Analyst and Cortex Search tools
+The four AI agents are created automatically using SQL-based deployment:
+- **Automated Creation**: Agents created via `--scope agents` or `--scope all`
+- **No Manual Setup**: SQL-based approach eliminates manual GUI configuration
+- **Agent Names**: `wam_advisor_copilot`, `wam_analyst_copilot`, `wam_compliance_copilot`, `wam_advisor_manager_copilot`
+- **Setup Guide**: See [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md) for reference (legacy manual process)
 
 ### Run the Demo
 Execute customer demonstration scenarios:
@@ -117,27 +121,37 @@ Execute customer demonstration scenarios:
 
 ## Demo Overview
 
-This demo showcases three wealth management personas powered by Snowflake AI:
+This demo showcases four wealth management personas powered by Snowflake AI:
 
 ### Available Demo Scenarios
 
-#### advisor_ai (Wealth Manager)
+#### wam_advisor_copilot (Wealth Manager)
 - **Persona**: Client-facing wealth advisor
+- **Display Name**: "Wealth Advisory CoPilot (WAM Demo)"
 - **Capabilities**: Portfolio analytics, client relationship insights, meeting preparation
-- **Tools**: Client financials analysis, communication history, research synthesis
+- **Tools**: Client financials analysis, communication history, research synthesis, financial planning
 - **Demo Query**: *"I have a meeting with Sarah Johnson in 30 minutes. Please prepare a briefing."*
 
-#### analyst_ai (Portfolio Manager)
+#### wam_analyst_copilot (Portfolio Manager)
 - **Persona**: Investment portfolio manager
+- **Display Name**: "Portfolio Analysis CoPilot (WAM Demo)"
 - **Capabilities**: Investment research, risk analysis, performance attribution
 - **Tools**: Portfolio analytics, research analysis, market commentary
 - **Demo Query**: *"Analyze our portfolio exposure to technology sector and find recent research."*
 
-#### guardian_ai (Compliance Officer)
+#### wam_compliance_copilot (Compliance Officer)
 - **Persona**: Regulatory compliance officer
+- **Display Name**: "Compliance CoPilot (WAM Demo)"
 - **Capabilities**: Communications surveillance, regulatory analysis, risk monitoring
 - **Tools**: Communication monitoring, regulatory guidance, compliance verification
 - **Demo Query**: *"Search for any communications containing performance guarantees."*
+
+#### wam_advisor_manager_copilot (Advisor Manager)
+- **Persona**: Regional advisor manager
+- **Display Name**: "Advisor Benchmarking CoPilot (WAM Demo)"
+- **Capabilities**: TTM advisor performance analytics, peer quartile benchmarking, coaching insights
+- **Tools**: Advisor performance metrics, client retention analysis, planning coverage, departure feedback
+- **Demo Query**: *"Show me advisor performance benchmarks and identify coaching opportunities."*
 
 ### Enhanced Features
 - **Thematic Watchlists**: Carbon Negative Leaders, AI Innovation Leaders, ESG Leaders
@@ -156,7 +170,7 @@ Configuration settings are stored in `config.py`. Key defaults include:
 | `COMMS_PER_CLIENT` | `50` | Number of communications per client over lifespan |
 | `GOLDEN_TICKERS` | `["AAPL", "MSFT", "NVDA", "JPM", "V", "SAP"]` | Key securities used in demonstrations |
 | `REGION_MIX` | `{"us": 0.8, "eu": 0.2}` | Geographic distribution of securities (80% US, 20% EU) |
-| `BUILD_SCOPES` | `['all', 'data', 'semantic', 'search']` | Available build scope options |
+| `BUILD_SCOPES` | `['all', 'data', 'semantic', 'search', 'agents']` | Available build scope options |
 | `AVAILABLE_SCENARIOS` | `['advisor', 'analyst', 'guardian', 'all']` | Available demo scenarios |
 | `MODEL_BY_CORPUS` | `"llama3.1-70b"` | AI model used for document generation across all corpora |
 | `SEARCH_TARGET_LAG` | `'5 minutes'` | Refresh frequency for Cortex Search services |
@@ -183,6 +197,7 @@ wam_ai_demo/
     ├── generate_unstructured.py # Document generation
     ├── create_semantic_views.py # Semantic view creation
     ├── create_search_services.py # Search service setup
+    ├── create_agents.py       # SQL-based agent creation
     ├── extract_real_data.py   # Marketplace data extraction
     └── validate_components.py # Component validation
 ```
@@ -217,11 +232,14 @@ WAM_AI_DEMO/
 - **CLIENT_FINANCIALS_SV**: Portfolio analytics with multi-table joins
 - **CLIENT_INTERACTIONS_SV**: Communication patterns and metrics
 - **WATCHLIST_ANALYTICS_SV**: Thematic investment analysis
+- **ADVISOR_PERFORMANCE_SV**: TTM advisor performance and benchmarking metrics
 
 #### Search Services
 - **COMMUNICATIONS_SEARCH**: Client emails, calls, meeting notes
 - **RESEARCH_SEARCH**: Investment research, analyst reports, ESG content
 - **REGULATORY_SEARCH**: Compliance rules, regulatory guidance
+- **PLANNING_SEARCH**: Financial planning documents, IPS, retirement plans
+- **DEPARTURE_SEARCH**: Exit questionnaires and departure feedback
 
 ## Troubleshooting
 
@@ -283,6 +301,7 @@ python main.py --connection your_connection --validate-only
 -- Check AI components exist
 SHOW SEMANTIC VIEWS IN WAM_AI_DEMO.AI;
 SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
+SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS;
 
 -- Test semantic view
 SELECT * FROM SEMANTIC_VIEW(
