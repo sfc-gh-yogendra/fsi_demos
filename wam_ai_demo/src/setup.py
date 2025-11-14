@@ -134,6 +134,7 @@ def create_dim_issuer(session: Session):
             UltimateParentIssuerID BIGINT,
             LegalName VARCHAR(255) NOT NULL,
             LEI VARCHAR(20),
+            CIK VARCHAR(20),
             CountryOfIncorporation CHAR(2),
             GICS_Sector VARCHAR(100)
         )

@@ -27,8 +27,12 @@ Enable Snowflake Intelligence for agent configuration:
 - **Documentation**: [Snowflake Intelligence Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
 - **Required for**: Agent configuration and deployment
 
-#### (Optional): Access to "Data Financials & Economics: Enterprise" marketplace dataset
-Only required if you want to update the real_assets.csv file with fresh data
+#### SEC Filings Dataset (Required)
+Access to SEC Filings data from Snowflake Marketplace:
+- **Option 1**: [SEC Filings](https://app.snowflake.com/marketplace/listing/GZTSZAS2KH9/snowflake-public-data-products-sec-filings)
+- **Option 2**: [Snowflake Public Data (Free)](https://app.snowflake.com/marketplace/listing/GZTSZ290BV255/snowflake-public-data-products-snowflake-public-data-free)
+
+**Note**: If using Snowflake Public Data (Free), update `config.py` SECURITIES dict with correct database and schema names.
 
 ### Local Python Environment
 
@@ -83,16 +87,6 @@ python main.py --connection your_connection_name --scope search
 
 # Build only agents (SQL-based creation)
 python main.py --connection your_connection_name --scope agents
-```
-
-### Optional: Extract Real Market Data
-For enhanced demo authenticity (requires Snowflake Marketplace access):
-```bash
-# Extract real financial data from Snowflake Marketplace
-python main.py --connection your_connection_name --extract-real-assets
-
-# Then build the demo
-python main.py --connection your_connection_name
 ```
 
 ### Validation
@@ -176,7 +170,8 @@ Configuration settings are stored in `config.py`. Key defaults include:
 | `SEARCH_TARGET_LAG` | `'5 minutes'` | Refresh frequency for Cortex Search services |
 | `DATABASE_NAME` | `"WAM_AI_DEMO"` | Target database name |
 | `WAREHOUSE_PREFIX` | `"WAM_AI_"` | Prefix for created warehouses |
-| `REAL_ASSETS_CSV_PATH` | `'./data/real_assets.csv'` | Path for real asset data extraction |
+| `SECURITIES['sec_filings_database']` | `'SEC_FILINGS'` | SEC Filings database name from Marketplace |
+| `SECURITIES['sec_filings_schema']` | `'CYBERSYN'` | SEC Filings schema name |
 
 ## Project Structure
 
@@ -188,9 +183,7 @@ wam_ai_demo/
 ├── README.md                  # This file
 ├── AGENT_SETUP_GUIDE.md       # Agent configuration guide
 ├── DEMO_SCENARIOS.md          # Demo presentation guide
-├── data/                      # Real data storage (when extracted)
-│   ├── real_assets.csv        # Real securities data
-│   └── real_market_data.csv   # Real market prices
+├── data/                      # Data directory (reserved for future use)
 └── src/                       # Implementation modules
     ├── setup.py               # Database and schema setup
     ├── generate_structured.py # Structured data generation

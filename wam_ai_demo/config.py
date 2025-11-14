@@ -95,19 +95,17 @@ PORTFOLIO_WEIGHT_TOLERANCE = 0.001  # 0.1% tolerance for portfolio weight valida
 # - USE_TRANSACTION_BASED_MODEL  
 # - GENERATE_CORPORATE_HIERARCHIES, ISSUER_HIERARCHY_DEPTH
 
-# Real Asset Data Integration (REQUIRED)
-# System requires real assets CSV for enhanced demo authenticity
-# Set EXTRACT_REAL_ASSETS = True to extract from Marketplace if CSV is missing
-REAL_ASSETS_CSV_PATH = './data/real_assets.csv'
-EXTRACT_REAL_ASSETS = False  # Set to True to extract from Marketplace
+# SEC Filings Database Configuration (REQUIRED - NO FALLBACK)
+# System requires direct access to SEC Filings data from Snowflake Marketplace
+# Build will fail if database is not accessible
+SECURITIES = {
+    'sec_filings_database': 'SEC_FILINGS',
+    'sec_filings_schema': 'CYBERSYN'
+}
 
 # Market Data Generation (SYNTHETIC ONLY)
 # System uses only synthetic market data for consistent, predictable demo experience
 # This ensures deterministic results and eliminates external data dependencies
-
-# Marketplace Data Source (requires subscription)
-MARKETPLACE_DATABASE = 'FINANCIALS_ECONOMICS_ENTERPRISE'
-OPENFIGI_SCHEMA = 'CYBERSYN'
 
 # Transaction Generation, PDF Generation, and Validation Settings
 # Removed unused configuration variables:

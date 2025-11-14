@@ -357,18 +357,19 @@ Draft a 'First Take' summary for my note, including the headline numbers, the si
 
 **User Input:**
 ```
-What are the emerging trends in carbon capture technology according to recent scientific papers and patent filings?
+What are the emerging trends in carbon capture technology according to our latest research reports and industry analysis?
 ```
 
 **Expected Response:**
 - Identification of Direct Air Capture (DAC) trends
-- Analysis of patent filings and scientific developments
+- Analysis of external research synthesis including patent filings and scientific developments
 - Technical details about solid sorbents and modular designs
+- References to expert interviews and academic research
 
 **Demo Talking Points:**
-- **"The agent is analyzing scientific literature and patent data"**
-- **"This goes beyond traditional financial data sources"**
-- **"Finding investable themes from technical innovation"**
+- **"The agent is searching our internal research that synthesizes multiple external sources"**
+- **"Our research team has analyzed scientific literature, patent filings, and expert interviews"**
+- **"Finding investable themes from comprehensive thematic analysis"**
 
 **Key Features Highlighted:**
 - Alternative data source integration

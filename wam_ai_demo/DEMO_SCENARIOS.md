@@ -314,8 +314,14 @@ Portfolio managers are overwhelmed by the volume of research, market data, and a
 
 **User Query**:
 ```
+"What is our total exposure across all portfolios? Show me a breakdown by portfolio, sector, and top issuer exposures."
+```
+
+**Alternative Shorter Query**:
+```
 "What is our total exposure across all portfolios?"
 ```
+**Note**: The agent has been instructed to provide the detailed breakdown automatically, but adding explicit request for breakdown ensures consistent formatting.
 
 **Expected Agent Response**:
 ```

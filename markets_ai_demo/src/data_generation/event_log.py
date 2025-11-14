@@ -147,6 +147,34 @@ def _get_event_templates():
             "sentiment": 0.8,
             "price_impact": 0.10,
             "applicable_tickers": ["MSFT", "AMZN", "GOOGL", "CRM"]
+        },
+        {
+            "type": "Carbon Capture Contract Win",
+            "description": "{ticker} secures $500M contract for carbon capture technology deployment at major industrial facility",
+            "sentiment": 0.75,
+            "price_impact": 0.09,
+            "applicable_tickers": ["LIN", "SIEGY", "JMPLY"]
+        },
+        {
+            "type": "Carbon Capture Technology Milestone",
+            "description": "{ticker} achieves breakthrough in carbon capture efficiency, reducing costs by 25%",
+            "sentiment": 0.8,
+            "price_impact": 0.11,
+            "applicable_tickers": ["LIN", "JMPLY"]
+        },
+        {
+            "type": "Industrial Partnership Announcement",
+            "description": "{ticker} forms strategic partnership with leading energy company for carbon capture infrastructure",
+            "sentiment": 0.65,
+            "price_impact": 0.07,
+            "applicable_tickers": ["LIN", "SIEGY", "JMPLY"]
+        },
+        {
+            "type": "Catalyst Technology Setback",
+            "description": "{ticker} delays carbon capture catalyst product launch citing technical challenges and increased competition",
+            "sentiment": -0.6,
+            "price_impact": -0.08,
+            "applicable_tickers": ["JMPLY"]
         }
     ]
 

@@ -35,8 +35,6 @@ def main():
                        help='Scenarios to build: advisor, analyst, guardian, or all (default: all)')
     parser.add_argument('--scope', choices=['all', 'data', 'semantic', 'search', 'agents'], default='all',
                        help='Scope of build: all, data, semantic, search, or agents (default: all)')
-    parser.add_argument('--extract-real-assets', action='store_true',
-                       help='Extract real asset data from Snowflake Marketplace and save to CSV')
     parser.add_argument('--validate-only', action='store_true',
                        help='Only run validation without building')
     parser.add_argument('--test-mode', action='store_true', 
@@ -48,14 +46,6 @@ def main():
     session = create_session(args.connection)
     
     try:
-        # Handle extraction modes first
-        if args.extract_real_assets:
-            print("\n📊 Extracting real assets from Marketplace...")
-            from src.extract_real_data import extract_real_assets_to_csv
-            extract_real_assets_to_csv(session)
-            return
-        
-        
         print(f"\n🚀 Starting WAM AI Demo build")
         print(f"   Database: {config.DATABASE_NAME}")
         print(f"   Scenarios: {', '.join(args.scenarios)}")
@@ -66,6 +56,14 @@ def main():
             print("\n📋 Running validation only...")
             validate_all_components(session)
             return
+        
+        # Validate SEC Filings access before data generation
+        if args.scope in ['all', 'data']:
+            print("\n🔍 Prerequisites Validation")
+            from src.extract_real_data import validate_sec_filings_access
+            if not validate_sec_filings_access(session):
+                print("\n❌ Build cannot proceed without SEC Filings database access")
+                sys.exit(1)
         
         # Setup (always run for scope 'all' or 'data')
         if args.scope in ['all', 'data']:

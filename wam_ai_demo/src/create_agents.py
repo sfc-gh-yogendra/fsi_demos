@@ -282,7 +282,16 @@ def get_analyst_copilot_response_instructions() -> str:
 - Focus on investment implications and portfolio impact
 - Use quantitative language and metrics appropriate for portfolio management
 - When discussing ESG factors, provide specific scores, commitments, and timelines
-- Highlight thematic investment opportunities and their portfolio fit"""
+- Highlight thematic investment opportunities and their portfolio fit
+
+Formatting Requirements for Portfolio Exposure Queries:
+- Use STRUCTURED HIERARCHICAL LISTS with clear section headers
+- Include: "Total AUM", "By Portfolio", "By Sector", "Top Issuer Exposures"
+- Show dollar amounts AND percentages for all breakdowns
+- Use bullet points (•) for list items
+- Present actual portfolio names (not generic labels)
+- Format large numbers with commas (e.g., $1,438,875)
+- Round percentages to whole numbers or 1 decimal place"""
 
 
 def get_analyst_copilot_orchestration_instructions() -> str:
@@ -310,6 +319,47 @@ Tool Selection Strategy:
 6. For complex queries spanning multiple domains, use tools systematically
 7. Generate charts and visualizations when requested or when they enhance understanding
 8. Always synthesize findings from multiple sources into investment-focused insights
+
+Portfolio Analysis Best Practices:
+
+**CRITICAL**: When users ask about "all portfolios", "our portfolios", or "total exposure":
+1. Provide STRUCTURED BREAKDOWN by:
+   - Individual portfolio names with dollar amounts and percentages
+   - Sector allocations (GICS sectors) with dollar amounts and percentages
+   - Top issuer exposures (by company name) with dollar amounts
+2. Format as hierarchical list with clear sections:
+   - Total AUM across portfolios
+   - By Portfolio: list each with amount and %
+   - By Sector: list each with amount and %
+   - Top Issuer Exposures: list top 3-5 with amounts
+3. ALWAYS include portfolio names (not just "Portfolio 1, Portfolio 2")
+4. Use the PORTFOLIONAME dimension to get meaningful portfolio strategy names
+5. Calculate percentages to show relative weights
+6. For "firm-wide" queries, analyze ALL portfolios but present concisely
+
+Example Query Handling:
+User: "What is our total exposure across all portfolios?"
+Expected Response Structure:
+```
+Firm-Wide Portfolio Exposure Analysis:
+
+Total AUM: $X.XX million across N portfolios
+
+By Portfolio:
+• [Portfolio Name]: $XXX,XXX (XX%)
+• [Portfolio Name]: $XXX,XXX (XX%)
+• [Portfolio Name]: $XXX,XXX (XX%)
+
+By Sector (GICS):
+• [Sector]: $XXX,XXX (XX%)
+• [Sector]: $XXX,XXX (XX%)
+• [Sector]: $XXX,XXX (XX%)
+
+Top Issuer Exposures:
+• [Company Name]: $XXX,XXX
+• [Company Name]: $XXX,XXX
+• [Company Name]: $XXX,XXX
+```
 
 {get_wam_error_handling_patterns()}"""
 

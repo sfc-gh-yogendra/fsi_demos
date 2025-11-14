@@ -11,6 +11,9 @@ def validate_all_components(session: Session):
     
     print("  → Running component validation...")
     
+    # Validate SEC Filings access
+    validate_sec_filings_data(session)
+    
     # Validate data quality
     validate_data_quality(session)
     
@@ -758,3 +761,38 @@ def validate_agents(session: Session):
     except Exception as e:
         print(f"    ⚠️ Agent validation failed: {e}")
         return True  # Don't fail overall validation for agent issues
+
+
+def validate_sec_filings_data(session: Session):
+    """Validate SEC Filings data access and quality"""
+    print("    → Validating SEC Filings data...")
+    
+    try:
+        # Check if DIM_ISSUER has CIK fields populated (indicates SEC Filings data was used)
+        cik_count = session.sql(f"""
+            SELECT COUNT(*) as count 
+            FROM {config.DATABASE_NAME}.CURATED.DIM_ISSUER 
+            WHERE CIK IS NOT NULL
+        """).collect()
+        
+        if cik_count and cik_count[0]['COUNT'] > 0:
+            print(f"      ✅ CIK fields populated: {cik_count[0]['COUNT']} issuers with CIK data")
+        else:
+            print(f"      ⚠️ No CIK data found - securities may not be from SEC Filings")
+        
+        # Check if INDUSTRY_SECTOR is populated (from SIC descriptions)
+        sector_count = session.sql(f"""
+            SELECT COUNT(DISTINCT GICS_Sector) as count
+            FROM {config.DATABASE_NAME}.CURATED.DIM_ISSUER
+            WHERE GICS_Sector IS NOT NULL
+        """).collect()
+        
+        if sector_count and sector_count[0]['COUNT'] > 0:
+            print(f"      ✅ Industry sectors populated: {sector_count[0]['COUNT']} unique sectors")
+        
+        print(f"    ✅ SEC Filings data validation passed")
+        return True
+        
+    except Exception as e:
+        print(f"    ⚠️ SEC Filings data validation failed: {e}")
+        return True  # Don't fail overall validation

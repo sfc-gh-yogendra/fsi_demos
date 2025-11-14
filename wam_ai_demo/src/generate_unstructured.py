@@ -727,7 +727,7 @@ def generate_planning_corpus(session: Session, test_mode: bool = False):
     """Generate financial planning documents using Cortex Complete"""
     print("    → Generating planning corpus...")
     
-    # Get clients for planning document generation
+    # Get clients for planning document generation (exclude golden clients)
     clients_query = f"""
         SELECT 
             c.ClientID,
@@ -742,6 +742,7 @@ def generate_planning_corpus(session: Session, test_mode: bool = False):
         FROM {config.DATABASE_NAME}.CURATED.DIM_CLIENT c
         JOIN {config.DATABASE_NAME}.CURATED.DIM_ADVISOR a ON c.AdvisorID = a.AdvisorID
         WHERE c.IsActive = TRUE
+        AND NOT (c.FirstName = 'Sarah' AND c.LastName = 'Johnson')  -- Exclude golden clients
     """
     
     clients = session.sql(clients_query).collect()

@@ -8,7 +8,7 @@ from snowflake.snowpark.functions import col, lit, uniform, random, when_matched
 from snowflake.snowpark.types import StructType, StructField, StringType, IntegerType, DecimalType, DateType
 import config
 from src.setup import create_foundation_tables
-from src.extract_real_data import load_real_assets_from_csv
+from src.extract_real_data import load_real_assets_from_sec_filings
 from src.golden_records_handler import apply_golden_client_overrides, is_golden_client_record, generate_golden_portfolio_positions
 from datetime import datetime, timedelta
 import random as py_random
@@ -437,22 +437,21 @@ def generate_clients(session: Session):
     print(f"    ✅ Generated {len(clients_data)} clients")
 
 def generate_issuers_and_securities(session: Session):
-    """Generate issuers and securities based on REQUIRED real assets CSV"""
-    print("    → Generating issuers and securities from real assets...")
+    """Generate issuers and securities based on SEC Filings database query"""
+    print("    → Generating issuers and securities from SEC Filings...")
     
-    # Load real assets - this will raise an exception if file is missing
-    real_assets_df = load_real_assets_from_csv()
+    # Load real assets directly from SEC Filings database
+    real_assets_df = load_real_assets_from_sec_filings(session)
     
     # Generate from real assets data
     generate_from_real_assets(session, real_assets_df)
 
-def generate_from_real_assets(session: Session, real_assets_df: pd.DataFrame):
-    """Generate issuers and securities from real assets CSV using optimized Snowpark operations"""
+def generate_from_real_assets(session: Session, real_assets_df):
+    """Generate issuers and securities from real assets using optimized Snowpark operations"""
     print("    → Using optimized Snowpark operations for real assets data...")
     
-    # Upload to temporary table for efficient processing (will be reused by other functions)
-    real_assets_snowpark_df = session.create_dataframe(real_assets_df)
-    real_assets_snowpark_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.RAW.TEMP_REAL_ASSETS")
+    # Save to temporary table for efficient processing (input is already a Snowpark DataFrame)
+    real_assets_df.write.mode("overwrite").save_as_table(f"{config.DATABASE_NAME}.RAW.TEMP_REAL_ASSETS")
     print("    ✅ Created TEMP_REAL_ASSETS table for optimized processing")
     
     # Import required Snowpark functions
@@ -519,6 +518,7 @@ def generate_optimized_issuers(session: Session, selected_assets_df):
     # Create issuers DataFrame using optimized Snowpark operations
     issuers_df = (selected_assets_df.select(
         ifnull(col("ISSUER_NAME"), col("SECURITY_NAME")).alias("LegalName"),
+        col("CIK"),  # Include CIK from SEC Filings
         ifnull(col("COUNTRY_OF_DOMICILE"), lit("US")).alias("CountryOfIncorporation"),
         ifnull(col("INDUSTRY_SECTOR"), lit('Diversified')).alias("INDUSTRY_SECTOR")
     )
@@ -532,6 +532,7 @@ def generate_optimized_issuers(session: Session, selected_assets_df):
             lit("LEI"),
             to_varchar(abs_func(hash_func(col("LegalName"))) % lit(1000000))
         ).substr(1, 20).alias("LEI"),  # Generate LEI with proper format
+        col("CIK"),  # Pass through CIK from SEC Filings
         col("CountryOfIncorporation"),
         col("INDUSTRY_SECTOR").alias("GICS_Sector")  # Keep same column name for compatibility
     ))
@@ -542,10 +543,10 @@ def generate_optimized_issuers(session: Session, selected_assets_df):
     # Use SQL INSERT to populate DIM_ISSUER with IDENTITY column
     session.sql(f"""
         INSERT INTO {config.DATABASE_NAME}.CURATED.DIM_ISSUER (
-            UltimateParentIssuerID, LegalName, LEI, CountryOfIncorporation, GICS_Sector
+            UltimateParentIssuerID, LegalName, LEI, CIK, CountryOfIncorporation, GICS_Sector
         )
         SELECT 
-            UltimateParentIssuerID, LegalName, LEI, CountryOfIncorporation, GICS_Sector
+            UltimateParentIssuerID, LegalName, LEI, CIK, CountryOfIncorporation, GICS_Sector
         FROM {config.DATABASE_NAME}.RAW.TEMP_ISSUERS
     """).collect()
     

@@ -77,12 +77,13 @@ class DemoConfig:
     # --- Company & Market Data Configuration ---
     TICKER_LIST = [
         "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "NFLX",
-        "JNJ", "PG", "KO", "XOM", "JPM", "BAC", "WMT"
+        "JNJ", "PG", "KO", "XOM", "JPM", "BAC", "WMT",
+        "LIN", "SIEGY", "JMPLY"
     ]
     
     SECTOR_LIST = [
         "Technology", "Healthcare", "Financial Services", 
-        "Consumer Discretionary", "Energy", "Consumer Staples"
+        "Consumer Discretionary", "Energy", "Consumer Staples", "Industrials"
     ]
     
     # --- Thematic & Risk Configuration ---

@@ -50,6 +50,9 @@ def generate_all_unstructured_data(session: Session) -> None:
     print("   📰 Generating news articles...")
     generate_news_articles(session)
     
+    print("   📰 Generating carbon capture thematic news...")
+    generate_carbon_capture_news(session)
+    
     print("   📊 Generating research reports...")
     generate_research_reports(session)
     
@@ -433,6 +436,24 @@ def generate_research_reports(session: Session) -> None:
             "focus": "Direct air capture technology trends and investment opportunities"
         },
         {
+            "title": "Johnson Matthey: Competitive Position in Carbon Capture Catalysts",
+            "type": "Company Analysis",
+            "tags": "Johnson Matthey, JMPLY, Carbon Capture, Catalysts, Materials Science, Competitive Analysis",
+            "focus": "Deep dive analysis of Johnson Matthey's catalyst technology for carbon capture, market share dynamics, competitive pressures from emerging players, and balanced assessment of growth opportunities versus execution challenges"
+        },
+        {
+            "title": "Linde's Carbon Capture Infrastructure Leadership: Scale Advantages in Industrial Gases",
+            "type": "Company Analysis",
+            "tags": "Linde, LIN, Carbon Capture, Industrial Gases, Infrastructure, Market Leadership",
+            "focus": "Analysis of Linde's dominant position in carbon capture infrastructure through industrial gases expertise, operational scale advantages, global facility network, and strategic partnerships with energy companies"
+        },
+        {
+            "title": "Industrial Automation in Carbon Capture: Siemens' Strategic Opportunity",
+            "type": "Company Analysis",
+            "tags": "Siemens, SIEGY, Carbon Capture, Industrial Automation, Process Control, Growth Markets",
+            "focus": "Assessment of Siemens' role in carbon capture facility automation and process control systems, technology integration capabilities, and addressable market opportunity in the growing carbon capture sector"
+        },
+        {
             "title": "Semiconductor Supply Chain Resilience: Navigating Geopolitical Risks",
             "type": "Sector Analysis",
             "tags": "Semiconductors, Supply Chain, Geopolitical Risk",
@@ -507,6 +528,139 @@ Style Requirements:
 
 This report will guide institutional clients' strategic asset allocation and macro positioning decisions."""
         
+        elif report['type'] == "Thematic Research":
+            prompt = f"""You are a senior thematic research analyst at Frost Markets Intelligence writing an authoritative research report that synthesizes external research, expert interviews, and industry analysis.
+
+Report Title: {report['title']}
+Report Type: {report['type']}
+Focus Area: {report['focus']}
+
+Write a comprehensive thematic research report that includes:
+
+1. Executive Summary (2-3 paragraphs)
+   - Key technology trends and investment thesis
+   - Main investment opportunities and target companies
+   - Summary of research methodology (external sources analyzed)
+
+2. Technology Landscape and Innovation Trends (4-5 paragraphs)
+   - Overview of Direct Air Capture (DAC) technology evolution
+   - Key technological breakthroughs in solid sorbent materials and modular designs
+   - Reference specific external research sources, for example:
+     * "According to a recent Nature Climate Change study by researchers at ETH Zurich..."
+     * "Patent filings analysis reveals a 340% increase in solid sorbent applications (USPTO database, 2023-2024)"
+     * "Dr. Jennifer Klaus at the Carbon Capture Innovation Institute notes in a recent interview..."
+   - Comparison of DAC vs. traditional point-source capture
+   - Cost trajectory analysis and commercialization timeline
+
+3. Industry Expert Perspectives (3-4 paragraphs)
+   - Include 2-3 fictional expert interview quotes, such as:
+     * Quote from a CTO at a carbon capture technology company
+     * Quote from an academic researcher at a leading university
+     * Quote from an industry analyst or consultant
+   - Expert views on technological barriers and breakthroughs
+   - Insights on policy support and regulatory landscape
+   - Discussion of capital requirements and scaling challenges
+
+4. Company Ecosystem and Investment Opportunities (4-5 paragraphs)
+   - Publicly traded companies with significant exposure:
+     * Johnson Matthey - catalyst and materials supplier
+     * Linde - industrial gases and carbon capture infrastructure
+     * Siemens - industrial equipment and automation systems
+   - Specific roles each company plays in the DAC value chain
+   - Mention frequency of company names in patent filings and research papers
+   - Analysis of competitive positioning and technology partnerships
+   - Discussion of private market players (Climeworks, Carbon Engineering) and IPO potential
+
+5. Investment Thesis and Recommendations (2-3 paragraphs)
+   - Specific stock recommendations from the three public companies mentioned
+   - Positioning within broader climate technology portfolio
+   - Risk factors and key milestones to monitor
+   - Valuation considerations and timeline expectations
+
+6. Conclusion (1-2 paragraphs)
+   - Summary of investment opportunity
+   - Key catalysts and signposts to watch
+
+Style Requirements:
+- Professional, authoritative tone suitable for institutional investors
+- Include specific citations to external sources (academic papers, patents, expert interviews)
+- Use realistic but fictional reference examples like:
+  * "Nature Climate Change (2024), 'Advances in Solid Sorbent Materials for DAC'"
+  * "US Patent US2024-1234567, filed by Climeworks AG"
+  * "Interview with Dr. Michael Chen, Director of Carbon Capture Research, Stanford University"
+- Include specific data points, percentages, and market figures
+- Reference the three public companies (Johnson Matthey, Linde, Siemens) prominently
+- Use technical terminology appropriately (solid sorbents, temperature swing adsorption, modular DAC units)
+- Length: 1200-1500 words
+- Make recommendations specific, actionable, and backed by research synthesis
+
+This report demonstrates our research team's ability to synthesize external academic research, patent analysis, and expert interviews into actionable investment insights."""
+        
+        elif report['type'] == "Company Analysis":
+            prompt = f"""You are a senior equity research analyst at Frost Markets Intelligence writing a detailed company analysis report focused on carbon capture opportunities.
+
+Report Title: {report['title']}
+Report Type: {report['type']}
+Focus Area: {report['focus']}
+
+Write a comprehensive company analysis that includes:
+
+1. Executive Summary (2-3 paragraphs)
+   - Company's strategic position in carbon capture market
+   - Key investment thesis (both opportunities and risks)
+   - Overall assessment and recommendation
+
+2. Company Overview and Carbon Capture Strategy (3-4 paragraphs)
+   - Core business model and carbon capture segment
+   - Technology platform and competitive advantages
+   - Strategic initiatives and capital allocation
+   - Management's carbon capture vision and execution track record
+
+3. Competitive Position and Market Dynamics (4-5 paragraphs)
+   - Market share analysis in carbon capture subsegment
+   - Competitive landscape (name 2-3 specific competitors)
+   - Barriers to entry and sustainable advantages
+   - Pricing power and margin dynamics
+   - Recent competitive developments and market share shifts
+
+4. Financial Performance and Outlook (3-4 paragraphs)
+   - Revenue contribution from carbon capture activities
+   - Profitability and margin trends
+   - R&D investment levels and innovation pipeline
+   - Capital requirements for growth
+   - Financial projections and key assumptions
+
+5. Risk Factors and Challenges (2-3 paragraphs)
+   - Technology risks and execution challenges
+   - Competitive threats and market share pressure
+   - Regulatory and policy dependencies
+   - Customer concentration or supply chain risks
+   - Include specific concerns relevant to the company
+
+6. Investment Recommendation (2-3 paragraphs)
+   - Valuation assessment and target price considerations
+   - Relative positioning vs. peers
+   - Key catalysts and milestones to monitor
+   - Risk/reward balance
+
+7. Conclusion (1-2 paragraphs)
+   - Summary of balanced investment view
+   - Key monitoring points for thesis evolution
+
+Style Requirements:
+- Professional, balanced equity research tone
+- Include BOTH bullish and bearish perspectives
+- Use specific financial metrics, percentages, and market data
+- Reference industry reports, management commentary, and competitive intelligence
+- For Johnson Matthey specifically: discuss competitive pressures and execution challenges alongside technology strengths
+- For Linde specifically: emphasize scale advantages and infrastructure network
+- For Siemens specifically: focus on automation opportunity and technology integration
+- Include realistic but fictional financial projections
+- Length: 1200-1500 words
+- Provide nuanced, actionable investment analysis
+
+This report should demonstrate deep fundamental analysis of the company's carbon capture positioning with balanced assessment of opportunities and risks."""
+        
         else:
             # Original prompt for non-macro reports
             prompt = f"""You are a senior research analyst at Frost Markets Intelligence writing an authoritative research report.
@@ -565,7 +719,101 @@ Special Instructions for Market Structure Reports:
     _generate_content_with_cortex(session, research_prompts, "CURATED.RESEARCH_REPORTS_CORPUS")
 
 
-def _generate_content_with_cortex(session: Session, prompts_data: list, target_table: str) -> None:
+def generate_carbon_capture_news(session: Session) -> None:
+    """Generate thematic news articles specifically about carbon capture companies"""
+    
+    # Get dynamic date range
+    start_date, end_date = get_dynamic_date_range()
+    
+    # Define carbon capture themed news articles
+    carbon_news = [
+        {
+            "ticker": "JMPLY",
+            "company": "Johnson Matthey",
+            "headline": "Johnson Matthey Unveils Next-Generation Carbon Capture Catalyst Platform",
+            "source": "Reuters",
+            "focus": "New catalyst technology launch with improved efficiency and cost reduction claims"
+        },
+        {
+            "ticker": "LIN",
+            "company": "Linde",
+            "headline": "Linde Expands Carbon Capture Operations with New North American Facilities",
+            "source": "Bloomberg",
+            "focus": "Facility expansion announcement and capacity increase for carbon capture services"
+        },
+        {
+            "ticker": "SIEGY",
+            "company": "Siemens",
+            "headline": "Siemens Wins $300M Carbon Capture Facility Automation Contract",
+            "source": "Wall Street Journal",
+            "focus": "Major contract win for automation and control systems at carbon capture facility"
+        },
+        {
+            "ticker": "JMPLY",
+            "company": "Johnson Matthey",
+            "headline": "Johnson Matthey Faces Increased Competition in Carbon Capture Materials Market",
+            "source": "Financial Times",
+            "focus": "Analysis of competitive pressures and market share challenges from new entrants"
+        },
+        {
+            "ticker": "LIN",
+            "company": "Linde",
+            "headline": "Linde Partners with Major Oil Company on Carbon Capture Infrastructure Project",
+            "source": "MarketWatch",
+            "focus": "Strategic partnership announcement for large-scale carbon capture deployment"
+        }
+    ]
+    
+    news_prompts = []
+    
+    for i, article in enumerate(carbon_news):
+        # Generate random publication date within the date range
+        days_diff = (end_date - start_date).days
+        random_days = random.randint(30, days_diff - 30)
+        pub_date = start_date + timedelta(days=random_days)
+        pub_time = datetime.combine(pub_date, datetime.min.time().replace(hour=random.randint(9, 16), minute=random.randint(0, 59)))
+        
+        prompt = f"""You are a financial journalist writing for {article['source']}. Write a news article with the following headline: "{article['headline']}"
+
+The article must cover:
+- Company: {article['company']} ({article['ticker']})
+- Focus: {article['focus']}
+- Context: Carbon capture technology and climate solutions market
+
+Article Requirements:
+- Professional, objective financial journalism tone
+- Approximately 400-500 words
+- Include a realistic quote from the company's spokesperson or executive
+- Include a realistic quote from an industry analyst or market expert
+- Discuss the implications for the carbon capture industry
+- Provide background on the company's carbon capture strategy
+- Include specific technical or financial details that make the story credible
+- Use proper financial journalism style and terminology
+
+Structure:
+1. Lead paragraph with key facts
+2. Company statement and details
+3. Industry expert analysis
+4. Background and market context
+5. Competitive landscape implications
+6. Forward-looking perspective
+
+Make the article feel authentic, well-researched, and provide balanced coverage."""
+        
+        news_prompts.append({
+            "ARTICLE_ID": f"CARBON_NEWS_{i+1:03d}",
+            "AFFECTED_TICKER": article['ticker'],
+            "PUBLISHED_AT": pub_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "SOURCE": article['source'],
+            "HEADLINE": article['headline'],
+            "PROMPT": prompt
+        })
+    
+    # Append to existing news articles table
+    _generate_content_with_cortex(session, news_prompts, "CURATED.NEWS_ARTICLES_CORPUS", append=True)
+
+
+def _generate_content_with_cortex(session: Session, prompts_data: list, target_table: str, append: bool = False) -> None:
     """
     Generic function to generate content using Cortex complete()
     Follows the 5-step process: prompts -> table -> DataFrame -> with_column -> save
@@ -616,9 +864,11 @@ def _generate_content_with_cortex(session: Session, prompts_data: list, target_t
             raise ValueError(f"Unknown target table: {target_table}")
         
         # Step 5: Save to final destination table
-        content_df.write.mode("overwrite").save_as_table(target_table)
+        write_mode = "append" if append else "overwrite"
+        content_df.write.mode(write_mode).save_as_table(target_table)
         
-        print(f"     ✅ Generated content saved to {target_table}")
+        action = "appended to" if append else "saved to"
+        print(f"     ✅ Generated content {action} {target_table}")
         
         # Clean up temporary table
         session.sql(f"DROP TABLE IF EXISTS {temp_table}").collect()
