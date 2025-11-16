@@ -425,9 +425,9 @@ CREATE OR REPLACE SEMANTIC VIEW AI.FIRM_EXPOSURE_VIEW
 		POSITIONS.TICKER AS TICKER WITH SYNONYMS=('symbol','stock_ticker','ticker_symbol','security') COMMENT='Company stock ticker symbol',
 		POSITIONS.AS_OF_DATE AS AS_OF_DATE WITH SYNONYMS=('date','position_date','valuation_date','as_of') COMMENT='Position as-of date',
 		COMPANIES.COMPANY_NAME AS COMPANY_NAME WITH SYNONYMS=('company','firm_name','corporation','name') COMMENT='Company name',
-		COMPANIES.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector','sector_name') COMMENT='Business sector classification',
-		COMPANIES.INDUSTRY AS INDUSTRY WITH SYNONYMS=('industry_group','business_line','sub_sector') COMMENT='Industry classification',
-		GEO_REVENUE.COUNTRY AS COUNTRY WITH SYNONYMS=('geography','region','revenue_geography','geographic_exposure') COMMENT='Country for geographic revenue exposure',
+		COMPANIES.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector','sector_name') COMMENT='Business sector classification: Technology, Healthcare, Financial Services, Consumer Discretionary, Energy, Consumer Staples, Industrials',
+		COMPANIES.INDUSTRY AS INDUSTRY WITH SYNONYMS=('industry_group','business_line','sub_sector','semiconductor','semiconductors','chip_manufacturer','biotech','ecommerce','ev','electric_vehicle') COMMENT='Industry classification within sector. Examples: Semiconductors (within Technology), Biotechnology (within Healthcare), E-commerce (within Consumer Discretionary), Electric Vehicles (within Consumer Discretionary)',
+		GEO_REVENUE.COUNTRY AS COUNTRY WITH SYNONYMS=('geography','region','revenue_geography','geographic_exposure','taiwan','china','usa','europe') COMMENT='Country for geographic revenue exposure. Common values: United States, China, Taiwan, Germany, Japan, United Kingdom',
 		CREDIT_RATINGS.RATING AS RATING WITH SYNONYMS=('credit_rating','sp_rating','rating_level') COMMENT='S&P credit rating',
 		CREDIT_RATINGS.OUTLOOK AS OUTLOOK WITH SYNONYMS=('rating_outlook','credit_outlook','rating_direction') COMMENT='Credit rating outlook'
 	)

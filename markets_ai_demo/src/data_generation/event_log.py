@@ -40,19 +40,31 @@ def generate_master_event_log(session: Session) -> None:
     event_templates = _get_event_templates()
     
     # Generate events spread across the dynamic date range
+    # Use middle 80% of date range to avoid edge effects in LAG/LEAD calculations
     start_date, end_date = get_dynamic_date_range()
+    date_range_days = (end_date - start_date).days
+    safe_start = start_date + timedelta(days=int(date_range_days * 0.1))  # Skip first 10%
+    safe_end = end_date - timedelta(days=int(date_range_days * 0.1))      # Skip last 10%
+    safe_days = (safe_end - safe_start).days
     
-    for i in range(DemoConfig.NUM_MAJOR_EVENTS):
-        # Pick random date and ticker
-        random_days = random.randint(0, (end_date - start_date).days)
-        event_date = start_date + timedelta(days=random_days)
+    # First, create specific high-impact events for key demo scenarios
+    specific_events = _create_demo_scenario_events(safe_start, safe_end)
+    events.extend(specific_events)
+    event_id_counter = len(specific_events)
+    
+    # Then fill remaining slots with random events
+    remaining_events = DemoConfig.NUM_MAJOR_EVENTS - len(specific_events)
+    for i in range(remaining_events):
+        # Pick random date within safe range and ticker
+        random_days = random.randint(0, safe_days)
+        event_date = safe_start + timedelta(days=random_days)
         ticker = random.choice(DemoConfig.TICKER_LIST)
         
         # Select event template based on ticker/sector
         template = _select_event_template(ticker, event_templates)
         
         event = {
-            "EVENT_ID": f"EVT_{i+1:03d}",
+            "EVENT_ID": f"EVT_{event_id_counter + i + 1:03d}",
             "EVENT_DATE": event_date.strftime("%Y-%m-%d"),
             "AFFECTED_TICKER": ticker,
             "EVENT_TYPE": template["type"],
@@ -177,6 +189,76 @@ def _get_event_templates():
             "applicable_tickers": ["JMPLY"]
         }
     ]
+
+
+def _create_demo_scenario_events(safe_start, safe_end):
+    """
+    Create specific high-impact events for demo scenarios.
+    These ensure demo queries have clear, correlated data to work with.
+    """
+    date_range_days = (safe_end - safe_start).days
+    
+    # Calculate event dates distributed across the date range
+    # Place Taiwan earthquake in the most recent 25% of the date range
+    taiwan_earthquake_date = safe_end - timedelta(days=int(date_range_days * 0.15))
+    
+    # Other events spread throughout
+    ai_breakthrough_date = safe_start + timedelta(days=int(date_range_days * 0.3))
+    carbon_capture_date = safe_start + timedelta(days=int(date_range_days * 0.5))
+    
+    specific_events = [
+        # Taiwan Earthquake (Scenario 5 - Market Risk Analyst)
+        # This affects semiconductor companies globally
+        {
+            "EVENT_ID": "EVT_TAIWAN_EQ_001",
+            "EVENT_DATE": taiwan_earthquake_date.strftime("%Y-%m-%d"),
+            "AFFECTED_TICKER": "NVDA",
+            "EVENT_TYPE": "Natural Disaster Impact",
+            "EVENT_DESCRIPTION": "7.0 magnitude earthquake hits Taiwan, NVDA supply chain severely impacted with TSMC fab damage",
+            "EXPECTED_SENTIMENT": -0.8,
+            "EXPECTED_PRICE_IMPACT": -0.12
+        },
+        {
+            "EVENT_ID": "EVT_TAIWAN_EQ_002",
+            "EVENT_DATE": taiwan_earthquake_date.strftime("%Y-%m-%d"),
+            "AFFECTED_TICKER": "AMD",
+            "EVENT_TYPE": "Natural Disaster Impact",
+            "EVENT_DESCRIPTION": "7.0 magnitude earthquake hits Taiwan, AMD semiconductor supply chain disrupted",
+            "EXPECTED_SENTIMENT": -0.75,
+            "EXPECTED_PRICE_IMPACT": -0.10
+        },
+        {
+            "EVENT_ID": "EVT_TAIWAN_EQ_003",
+            "EVENT_DATE": taiwan_earthquake_date.strftime("%Y-%m-%d"),
+            "AFFECTED_TICKER": "AAPL",
+            "EVENT_TYPE": "Natural Disaster Impact",
+            "EVENT_DESCRIPTION": "7.0 magnitude earthquake hits Taiwan, AAPL chip suppliers affected, iPhone production at risk",
+            "EXPECTED_SENTIMENT": -0.7,
+            "EXPECTED_PRICE_IMPACT": -0.08
+        },
+        # AI Breakthrough (Scenario 2 - Thematic Research)
+        {
+            "EVENT_ID": "EVT_AI_BREAK_001",
+            "EVENT_DATE": ai_breakthrough_date.strftime("%Y-%m-%d"),
+            "AFFECTED_TICKER": "NVDA",
+            "EVENT_TYPE": "Technology Breakthrough",
+            "EVENT_DESCRIPTION": "NVDA unveils revolutionary AI chip architecture, 10x performance improvement for LLM training",
+            "EXPECTED_SENTIMENT": 0.9,
+            "EXPECTED_PRICE_IMPACT": 0.15
+        },
+        # Carbon Capture (Scenario 2 - Thematic Research)
+        {
+            "EVENT_ID": "EVT_CARBON_001",
+            "EVENT_DATE": carbon_capture_date.strftime("%Y-%m-%d"),
+            "AFFECTED_TICKER": "LIN",
+            "EVENT_TYPE": "Carbon Capture Contract Win",
+            "EVENT_DESCRIPTION": "LIN secures $800M contract for carbon capture technology deployment across 15 industrial sites",
+            "EXPECTED_SENTIMENT": 0.8,
+            "EXPECTED_PRICE_IMPACT": 0.12
+        }
+    ]
+    
+    return specific_events
 
 
 def _select_event_template(ticker, templates):

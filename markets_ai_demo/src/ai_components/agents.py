@@ -815,11 +815,21 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_RISK_AGENT
     - tool_spec:
         type: "cortex_analyst_text_to_sql"
         name: "firm_exposure_analyzer"
-        description: "Analyzes firm-wide portfolio exposure by sector, geography, and credit quality. Data Coverage: Current firm positions across all portfolios (Global Equities Fund, TMT Trading Book, Semiconductor Strategy), company sector classifications, geographic revenue exposure, and credit ratings. Use for understanding firm risk concentrations, portfolio holdings, top exposures, sector/geographic breakdowns, and exposure to specific market events or themes. When to Use: Questions about firm exposure, portfolio holdings, concentration risk, sector exposure, geographic exposure. When NOT to Use: Stress testing and VaR calculations (use calculate_portfolio_var), market news (use search_news_articles)."
+        description: "Analyzes firm-wide portfolio exposure by sector, geography, and credit quality. Data Coverage: Current firm positions across all portfolios (Global Equities Fund, TMT Trading Book, Semiconductor Strategy), company sector classifications (Technology, Healthcare, Financial Services, Consumer Discretionary, Energy, Consumer Staples, Industrials), industry classifications (Semiconductors, Biotechnology, E-commerce, Electric Vehicles, etc.), geographic revenue exposure, and credit ratings. IMPORTANT: Companies are classified by both SECTOR (broad category like 'Technology') and INDUSTRY (specific category like 'Semiconductors'). When querying for semiconductor companies, use INDUSTRY = 'Semiconductors' NOT SECTOR. When querying for geographic exposure like Taiwan or China, use COUNTRY dimension. Use for: understanding firm risk concentrations, portfolio holdings, top exposures, sector/industry/geographic breakdowns, exposure to specific countries or regions, credit quality analysis. When to Use: Questions about firm exposure, portfolio holdings, concentration risk, sector exposure, industry exposure (semiconductors, biotech, etc.), geographic exposure (Taiwan, China, etc.), country-level analysis. When NOT to Use: Stress testing and VaR calculations (use calculate_portfolio_var), market news (use search_news_articles). Query Best Practices: For industry-specific queries like 'semiconductor companies' filter by INDUSTRY not SECTOR. For country exposure like 'Taiwan' or 'China', use COUNTRY dimension. For latest positions, filter to most recent AS_OF_DATE."
     - tool_spec:
-        type: "user_function"
+        type: "generic"
         name: "calculate_portfolio_var"
-        description: "Calculates portfolio Value-at-Risk using historical simulation methodology. Data Coverage: Historical price returns (60-day window) and current portfolio positions. Accepts parameters: tickers (ARRAY of stock symbols), shock_percentage (FLOAT for stress scenario, e.g., -15 for 15%% price drop). Returns VaR at 99%% and 95%% confidence levels, both baseline and stressed scenarios. Use for quantitative risk assessment, stress testing portfolios under adverse scenarios, calculating potential losses, and assessing impact of market shocks. When to Use: Questions about stress testing, VaR calculations, scenario analysis, potential losses under price shocks. When NOT to Use: Current exposure queries (use firm_exposure_analyzer), market news (use search_news_articles)."
+        description: "Calculates portfolio Value-at-Risk using historical simulation methodology. Performs sophisticated risk analytics that quantify potential portfolio losses under normal and stressed market conditions. Data Coverage: 60-day historical price returns and current portfolio positions. Methodology: Historical simulation using daily returns distribution to calculate 99%% and 95%% confidence interval VaR. Use Cases: Stress testing portfolios under adverse price scenarios, quantifying downside risk exposure, calculating potential losses from market shocks, assessing portfolio risk during market events. Returns: Baseline VaR (99%% and 95%%), stressed VaR under specified shock scenario, total portfolio value, and methodology description. When to Use: Questions about stress testing, VaR calculations, scenario analysis, potential losses, risk quantification, downside exposure. When NOT to Use: Current exposure queries without stress scenarios (use firm_exposure_analyzer), market news context (use search_news_articles)."
+        input_schema:
+          type: "object"
+          properties:
+            TICKERS:
+              description: "Array of stock ticker symbols to include in the portfolio VaR calculation. Example: ['NVDA', 'AMD', 'TSLA']. Required. Specify all tickers you want included in the risk analysis."
+              type: "array"
+            SHOCK_PERCENTAGE:
+              description: "Price shock percentage to apply for stress testing scenario. Use negative values for price drops (e.g., -15 for 15%% decline, -20 for 20%% decline). Use positive values for price increases. This creates the stressed VaR scenario in addition to baseline VaR. Example: -15 means stress test with 15%% price drop across all tickers."
+              type: "number"
+          required: ["TICKERS", "SHOCK_PERCENTAGE"]
     - tool_spec:
         type: "cortex_search"
         name: "search_news_articles"
@@ -832,7 +842,13 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_RISK_AGENT
         warehouse: "{warehouse_name}"
       semantic_view: "{database_name}.AI.FIRM_EXPOSURE_VIEW"
     calculate_portfolio_var:
-      user_function: "{database_name}.{DemoConfig.SCHEMAS['AI']}.CALCULATE_PORTFOLIO_VAR"
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      identifier: "{database_name}.AI.CALCULATE_PORTFOLIO_VAR"
+      name: "CALCULATE_PORTFOLIO_VAR(ARRAY, FLOAT)"
+      type: "procedure"
     search_news_articles:
       search_service: "{database_name}.AI.NEWS_ARTICLES_SEARCH"
       id_column: "ARTICLE_ID"

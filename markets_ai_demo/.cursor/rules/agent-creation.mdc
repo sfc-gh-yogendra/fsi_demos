@@ -66,6 +66,17 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}_agent
         name: "{tool_name}"
         description: "Comprehensive tool description with Data Coverage, When to Use, When NOT to Use, Query Best Practices"
     - tool_spec:
+        type: "generic"
+        name: "{custom_tool_name}"
+        description: "Comprehensive custom tool description with Methodology, Data Coverage, Use Cases, Returns, When to Use, When NOT to Use"
+        input_schema:
+          type: "object"
+          properties:
+            {PARAMETER_NAME}:
+              description: "Detailed parameter description with examples and guidance"
+              type: "{parameter_type}"
+          required: ["{PARAMETER_NAME}"]
+    - tool_spec:
         type: "cortex_search"
         name: "search_{document_type}"
         description: "Comprehensive search description with Data Sources, When to Use, When NOT to Use, Search Best Practices"
@@ -76,6 +87,14 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}_agent
         type: "warehouse"
         warehouse: "{warehouse_name}"
       semantic_view: "{database_name}.AI.{SEMANTIC_VIEW_NAME}"
+    {custom_tool_name}:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      identifier: "{database_name}.AI.{PROCEDURE_NAME}"
+      name: "{PROCEDURE_NAME}({SIGNATURE})"
+      type: "procedure"
     search_{document_type}:
       search_service: "{database_name}.AI.{SEARCH_SERVICE_NAME}"
       id_column: "{ID_COLUMN}"
@@ -127,6 +146,101 @@ description: |
   - Filter to latest date for current data: ✅ "most recent quarter"
 ```
 
+### Custom Tool (Generic Type) Description Pattern
+
+**MANDATORY**: Include all sections for each custom tool (stored procedures, functions):
+
+```yaml
+- tool_spec:
+    type: "generic"
+    name: "{custom_tool_name}"
+    description: |
+      {One-sentence purpose statement}. {Brief methodology description}.
+      
+      Data Coverage:
+      - Historical Window: {time range used, e.g., "60-day historical price returns"}
+      - Current Data: {what current state is used, e.g., "Latest portfolio positions"}
+      - Sources: {underlying tables, e.g., "CURATED.FACT_STOCK_PRICE_DAILY, CURATED.FACT_FIRM_POSITION"}
+      
+      Methodology:
+      {Brief description of calculation approach, e.g., "Historical simulation using daily returns distribution"}
+      
+      Use Cases:
+      - {Detailed use case 1 with context}
+      - {Detailed use case 2 with context}
+      - {Detailed use case 3 with context}
+      
+      Returns:
+      {Description of what the tool returns, e.g., "Baseline VaR (99% and 95%), stressed VaR under shock scenario, total portfolio value, methodology description"}
+      
+      When to Use:
+      - {Specific scenario 1 with example}
+      - {Specific scenario 2 with example}
+      - {Specific scenario 3 with example}
+      
+      When NOT to Use:
+      - {Anti-pattern 1 with alternative tool}
+      - {Anti-pattern 2 with alternative tool}
+    input_schema:
+      type: "object"
+      properties:
+        {PARAMETER_1_NAME}:
+          description: "{Detailed parameter description}. Example: {concrete example with actual values}. {Usage guidance on format, range, or constraints}."
+          type: "{parameter_type}"  # array, number, string, boolean, object
+        {PARAMETER_2_NAME}:
+          description: "{Detailed parameter description}. {Special instructions, e.g., 'Use negative values for price drops (e.g., -15 for 15% decline)'}. Example: {concrete example}."
+          type: "{parameter_type}"
+      required: ["{PARAMETER_1_NAME}", "{PARAMETER_2_NAME}"]
+```
+
+**Real-World Example - VaR Calculation Tool:**
+
+```yaml
+- tool_spec:
+    type: "generic"
+    name: "calculate_portfolio_var"
+    description: |
+      Calculates portfolio Value-at-Risk using historical simulation methodology. Performs sophisticated risk analytics that quantify potential portfolio losses under normal and stressed market conditions.
+      
+      Data Coverage:
+      - Historical Window: 60-day historical price returns
+      - Current Data: Latest portfolio positions as of most recent trading day
+      - Sources: CURATED.FACT_STOCK_PRICE_DAILY, CURATED.FACT_FIRM_POSITION
+      
+      Methodology:
+      Historical simulation using daily returns distribution to calculate 99% and 95% confidence interval VaR
+      
+      Use Cases:
+      - Stress testing portfolios under adverse price scenarios
+      - Quantifying downside risk exposure
+      - Calculating potential losses from market shocks
+      - Assessing portfolio risk during market events
+      
+      Returns:
+      Baseline VaR (99% and 95%), stressed VaR under specified shock scenario, total portfolio value, and methodology description
+      
+      When to Use:
+      - Questions about stress testing or scenario analysis
+      - Queries about VaR calculations or risk quantification
+      - Assessing potential losses or downside exposure
+      - Understanding impact of market shocks on portfolio
+      
+      When NOT to Use:
+      - Current exposure queries without stress scenarios (use firm_exposure_analyzer)
+      - Market news or event context (use search_news_articles)
+      - Historical performance analysis without risk focus (use appropriate analyst tool)
+    input_schema:
+      type: "object"
+      properties:
+        TICKERS:
+          description: "Array of stock ticker symbols to include in the portfolio VaR calculation. Example: ['NVDA', 'AMD', 'TSLA']. Required. Specify all tickers you want included in the risk analysis."
+          type: "array"
+        SHOCK_PERCENTAGE:
+          description: "Price shock percentage to apply for stress testing scenario. Use negative values for price drops (e.g., -15 for 15% decline, -20 for 20% decline). Use positive values for price increases. This creates the stressed VaR scenario in addition to baseline VaR. Example: -15 means stress test with 15% price drop across all tickers."
+          type: "number"
+      required: ["TICKERS", "SHOCK_PERCENTAGE"]
+```
+
 ### Cortex Search Tool Description Pattern
 
 **MANDATORY**: Include all sections for each Cortex Search tool:
@@ -157,6 +271,45 @@ description: |
   - Include multiple keywords: ✅ "carbon capture technology investment"
   - Use technical terms when appropriate: ✅ "debt-to-equity ratio"
 ```
+
+## Tool Resources Configuration
+
+### Custom Tool Resources Pattern
+
+**MANDATORY**: For custom tools (stored procedures/functions), configure tool_resources as follows:
+
+```yaml
+tool_resources:
+  {custom_tool_name}:
+    execution_environment:
+      query_timeout: 30  # Adjust based on tool complexity
+      type: "warehouse"
+      warehouse: "{warehouse_name}"
+    identifier: "{database_name}.{schema_name}.{PROCEDURE_NAME}"
+    name: "{PROCEDURE_NAME}({SIGNATURE})"  # e.g., "CALCULATE_PORTFOLIO_VAR(ARRAY, FLOAT)"
+    type: "procedure"  # or "function" for UDFs
+```
+
+**Real-World Example:**
+
+```yaml
+tool_resources:
+  calculate_portfolio_var:
+    execution_environment:
+      query_timeout: 30
+      type: "warehouse"
+      warehouse: "MARKETS_AI_DEMO_COMPUTE_WH"
+    identifier: "MARKETS_AI_DEMO.AI.CALCULATE_PORTFOLIO_VAR"
+    name: "CALCULATE_PORTFOLIO_VAR(ARRAY, FLOAT)"
+    type: "procedure"
+```
+
+**Key Requirements:**
+- `execution_environment`: MUST include warehouse for compute
+- `identifier`: Full three-part name (database.schema.object)
+- `name`: Procedure/function name with parameter signature in parentheses
+- `type`: Either "procedure" or "function"
+- `query_timeout`: Set appropriately for tool complexity (default 30 seconds)
 
 ## Agent Registration
 
@@ -220,20 +373,240 @@ def create_ai_components(session, mode):
 
 ### Phase 1 Agents (Build First):
 1. **Earnings Analysis Assistant**: Analyzes quarterly earnings, consensus estimates, management commentary
-   - Tools: earnings_data_analyzer (Cortex Analyst), search_earnings_transcripts (Cortex Search)
+   - Tools: 
+     - earnings_data_analyzer (Cortex Analyst)
+     - search_earnings_transcripts (Cortex Search)
    - Semantic View: AI.EARNINGS_ANALYSIS_VIEW
    - Search Service: AI.EARNINGS_TRANSCRIPTS_SEARCH
 
 2. **Thematic Investment Research Assistant**: Discovers emerging themes and cross-sector trends
-   - Tools: thematic_data_analyzer (Cortex Analyst), search_research_reports, search_news_articles (Cortex Search)
+   - Tools: 
+     - thematic_data_analyzer (Cortex Analyst)
+     - search_research_reports (Cortex Search)
+     - search_news_articles (Cortex Search)
    - Semantic View: AI.THEMATIC_RESEARCH_VIEW
    - Search Services: AI.RESEARCH_REPORTS_SEARCH, AI.NEWS_ARTICLES_SEARCH
 
-### Phase 2 Agents (Future):
+### Phase 2 Agents:
 3. **Global Macro Strategy Assistant**: Analyzes proprietary macroeconomic signals and develops cross-asset strategies
-   - Tools: macro_signals_analyzer (Cortex Analyst), search_research_reports (Cortex Search)
+   - Tools: 
+     - macro_signals_analyzer (Cortex Analyst)
+     - search_research_reports (Cortex Search)
    - Semantic View: AI.GLOBAL_MACRO_SIGNALS_VIEW
    - Search Service: AI.RESEARCH_REPORTS_SEARCH
+
+4. **Market Risk Analysis Assistant**: Real-time market risk assessment with portfolio stress testing
+   - Tools: 
+     - firm_exposure_analyzer (Cortex Analyst)
+     - calculate_portfolio_var (Custom Tool - Stored Procedure)
+     - search_news_articles (Cortex Search)
+   - Semantic View: AI.FIRM_EXPOSURE_VIEW
+   - Custom Tool: AI.CALCULATE_PORTFOLIO_VAR
+   - Search Service: AI.NEWS_ARTICLES_SEARCH
+
+5. **Market Structure Reports Agent**: Hyper-personalizes market structure reports for clients
+   - Tools: 
+     - client_engagement_analyzer (Cortex Analyst)
+     - search_research_reports (Cortex Search)
+   - Semantic View: AI.CLIENT_ENGAGEMENT_VIEW
+   - Search Service: AI.RESEARCH_REPORTS_SEARCH
+
+6. **Client Strategy Agent**: Powers data-driven 1-to-1 strategic client engagements
+   - Tools: 
+     - client_market_impact_analyzer (Cortex Analyst)
+     - search_news_articles (Cortex Search)
+     - search_research_reports (Cortex Search)
+   - Semantic View: AI.CLIENT_MARKET_IMPACT_VIEW
+   - Search Services: AI.NEWS_ARTICLES_SEARCH, AI.RESEARCH_REPORTS_SEARCH
+
+## Creating Custom Tools
+
+### When to Create Custom Tools
+
+Custom tools (stored procedures or UDFs) are appropriate when:
+- Complex calculations beyond SQL aggregations (e.g., VaR, statistical models)
+- Advanced algorithms requiring Python/Java libraries (e.g., scipy, numpy)
+- Multi-step workflows that combine multiple data sources
+- Proprietary calculations or models unique to your business
+
+### Custom Tool Creation Pattern
+
+**File**: `src/ai_components/custom_tools.py`
+
+```python
+def create_{tool_name}_tool(session: Session) -> None:
+    """Create {Tool Name} stored procedure for agent use"""
+    
+    create_procedure_sql = """
+    CREATE OR REPLACE PROCEDURE AI.{PROCEDURE_NAME}(
+        {PARAMETER_1_NAME} {PARAMETER_1_TYPE},
+        {PARAMETER_2_NAME} {PARAMETER_2_TYPE}
+    )
+    RETURNS TABLE(
+        {RETURN_COLUMN_1} {RETURN_TYPE_1},
+        {RETURN_COLUMN_2} {RETURN_TYPE_2}
+    )
+    LANGUAGE PYTHON
+    RUNTIME_VERSION = '3.10'
+    PACKAGES = ('snowflake-snowpark-python', 'pandas', 'numpy')
+    HANDLER = '{handler_function_name}'
+    COMMENT = 'Brief description of what this tool does'
+    AS
+    $$
+import pandas as pd
+import numpy as np
+from snowflake.snowpark import Session
+
+def {handler_function_name}(session: Session, {param1}: {type}, {param2}: {type}):
+    # Implementation
+    # CRITICAL: Use hardcoded schema names in queries (DemoConfig not available in Snowflake runtime)
+    
+    query = '''
+        SELECT column1, column2
+        FROM CURATED.TABLE_NAME
+        WHERE condition = '{}'
+    '''.format(param1)
+    
+    df = session.sql(query).to_pandas()
+    
+    # Perform calculations
+    result = calculate_something(df, param2)
+    
+    # Return as DataFrame
+    return pd.DataFrame([{{
+        'RETURN_COLUMN_1': result['value1'],
+        'RETURN_COLUMN_2': result['value2']
+    }}])
+$$
+    """
+    
+    try:
+        session.sql(create_procedure_sql).collect()
+        print(f"✅ Created custom tool: {PROCEDURE_NAME}")
+    except Exception as e:
+        print(f"❌ Error creating {PROCEDURE_NAME}: {{str(e)}}")
+        raise
+
+def create_all_custom_tools(session: Session) -> None:
+    """Create all custom tools for agents"""
+    print("\n🔧 Creating Custom Tools...")
+    
+    create_{tool_name}_tool(session)
+    # Add more custom tools as needed
+    
+    print("✅ All custom tools created successfully\n")
+```
+
+### Real-World Example - VaR Calculation Tool
+
+```python
+def create_var_calculation_tool(session: Session) -> None:
+    """Create portfolio VaR calculation stored procedure"""
+    
+    create_procedure_sql = """
+    CREATE OR REPLACE PROCEDURE AI.CALCULATE_PORTFOLIO_VAR(
+        TICKERS ARRAY,
+        SHOCK_PERCENTAGE FLOAT
+    )
+    RETURNS TABLE(
+        VAR_99 FLOAT,
+        VAR_95 FLOAT,
+        STRESSED_VAR_99 FLOAT,
+        STRESSED_VAR_95 FLOAT,
+        TOTAL_PORTFOLIO_VALUE FLOAT,
+        METHODOLOGY VARCHAR
+    )
+    LANGUAGE PYTHON
+    RUNTIME_VERSION = '3.10'
+    PACKAGES = ('snowflake-snowpark-python', 'pandas', 'numpy')
+    HANDLER = 'calculate_var'
+    COMMENT = 'Calculate portfolio Value-at-Risk using historical simulation'
+    AS
+    $$
+import pandas as pd
+import numpy as np
+from snowflake.snowpark import Session
+
+def calculate_var(session: Session, tickers: list, shock_percentage: float):
+    # Hardcode schema names (DemoConfig not available in runtime)
+    ticker_list = "', '".join(tickers)
+    
+    # Get current positions
+    positions_query = '''
+        SELECT TICKER, MARKET_VALUE, QUANTITY
+        FROM CURATED.FACT_FIRM_POSITION
+        WHERE AS_OF_DATE = (SELECT MAX(AS_OF_DATE) FROM CURATED.FACT_FIRM_POSITION)
+        AND TICKER IN ('{}')
+    '''.format(ticker_list)
+    
+    positions_df = session.sql(positions_query).to_pandas()
+    
+    # Get historical returns
+    historical_returns_query = '''
+        WITH price_data AS (
+            SELECT 
+                TICKER,
+                PRICE_DATE,
+                CLOSE,
+                LAG(CLOSE, 1) OVER (PARTITION BY TICKER ORDER BY PRICE_DATE) AS PREV_CLOSE
+            FROM CURATED.FACT_STOCK_PRICE_DAILY
+            WHERE TICKER IN ('{}')
+            AND PRICE_DATE >= DATEADD(day, -70, CURRENT_DATE())
+        )
+        SELECT 
+            TICKER,
+            (CLOSE - PREV_CLOSE) / PREV_CLOSE AS DAILY_RETURN
+        FROM price_data
+        WHERE PREV_CLOSE IS NOT NULL
+        LIMIT 60
+    '''.format(ticker_list)
+    
+    returns_df = session.sql(historical_returns_query).to_pandas()
+    
+    # Calculate VaR using historical simulation
+    # ... (calculation logic)
+    
+    return pd.DataFrame([{
+        'VAR_99': var_99,
+        'VAR_95': var_95,
+        'STRESSED_VAR_99': stressed_var_99,
+        'STRESSED_VAR_95': stressed_var_95,
+        'TOTAL_PORTFOLIO_VALUE': total_value,
+        'METHODOLOGY': 'Historical Simulation (60-day window)'
+    }])
+$$
+    """
+    
+    try:
+        session.sql(create_procedure_sql).collect()
+        print("✅ Created custom tool: CALCULATE_PORTFOLIO_VAR")
+    except Exception as e:
+        print(f"❌ Error creating CALCULATE_PORTFOLIO_VAR: {str(e)}")
+        raise
+```
+
+### Custom Tool Best Practices
+
+1. **Hardcode Schema Names**: DemoConfig is not available in Snowflake Python runtime
+2. **Use .format() for SQL**: f-strings can cause syntax errors in embedded Python
+3. **Return DataFrames**: Always return results as pandas DataFrames
+4. **Include Error Handling**: Catch and return meaningful errors
+5. **Document Parameters**: Use detailed COMMENT on procedure
+6. **Test Independently**: Test stored procedure directly before adding to agent
+7. **Query Timeout**: Set appropriate timeout in tool_resources (default 30s)
+
+### Integrating Custom Tools into Setup
+
+In `setup.py`, ensure custom tools are created:
+
+```python
+def create_ai_components(session, mode, ai_type="all"):
+    from ai_components.custom_tools import create_all_custom_tools
+    
+    if ai_type in ["all", "custom-tools"]:
+        print("  🔧 Creating custom tools...")
+        create_all_custom_tools(session)
+```
 
 ## Testing Agent Creation
 
@@ -254,12 +627,33 @@ DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.earnings_analysis_agent;
 
 ## Success Criteria
 
+### Agent Creation:
 - [ ] All agents created without errors
 - [ ] Agents visible in Snowflake Intelligence UI
-- [ ] Agent tool configurations reference correct semantic views and search services
+- [ ] Agent tool configurations reference correct semantic views, search services, and custom tools
 - [ ] Instructions properly formatted (no YAML syntax errors)
 - [ ] Test queries work for each agent
 - [ ] Agent responses follow configured tone and format
+
+### Custom Tool Creation:
+- [ ] All custom tools (stored procedures) created successfully
+- [ ] Tools can be called independently from SQL
+- [ ] Tools return expected results with sample inputs
+- [ ] Tool resources correctly configured in agents
+- [ ] Query timeout set appropriately for tool complexity
+- [ ] Input schema properly defines all parameters with types
+
+### Testing Checklist:
+```sql
+-- Test custom tool directly
+CALL AI.CALCULATE_PORTFOLIO_VAR(ARRAY_CONSTRUCT('NVDA', 'AMD'), -15);
+
+-- Check agent configuration
+DESCRIBE AGENT AI.MR_MARKET_RISK_AGENT;
+
+-- Show all custom tools
+SHOW PROCEDURES IN AI;
+```
 
 ## Benefits of SQL-Based Agent Creation
 
@@ -268,3 +662,122 @@ DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.earnings_analysis_agent;
 3. **Automation**: No manual UI steps, agents ready immediately after setup
 4. **Rapid Iteration**: Quick to update and redeploy agents
 5. **Documentation**: Agent configs serve as implementation documentation
+
+## Common Pitfalls and Troubleshooting
+
+### Custom Tools Issues
+
+#### Problem: "name 'DemoConfig' is not defined"
+**Cause**: Trying to import or use DemoConfig in stored procedure code
+**Solution**: Hardcode schema names directly in SQL queries
+```python
+# ❌ WRONG - DemoConfig not available in Snowflake runtime
+query = f"SELECT * FROM {DemoConfig.SCHEMAS['CURATED']}.TABLE_NAME"
+
+# ✅ CORRECT - Hardcode schema name
+query = "SELECT * FROM CURATED.TABLE_NAME"
+```
+
+#### Problem: "SyntaxError: f-string: empty expression not allowed"
+**Cause**: Using f-strings in embedded Python within SQL
+**Solution**: Use .format() instead of f-strings
+```python
+# ❌ WRONG - f-strings can break in SQL context
+query = f"SELECT * FROM TABLE WHERE ticker IN ({ticker_list})"
+
+# ✅ CORRECT - Use .format()
+query = "SELECT * FROM TABLE WHERE ticker IN ('{}')".format(ticker_list)
+```
+
+#### Problem: "invalid identifier 'MARKET_VALUE'" in tool_spec description
+**Cause**: Tool description references columns that don't exist in referenced tables
+**Solution**: Verify all column names using DESCRIBE TABLE before documenting
+```sql
+-- Always verify columns first
+DESCRIBE TABLE CURATED.FACT_FIRM_POSITION;
+```
+
+#### Problem: Agent doesn't call custom tool
+**Cause**: Missing or incorrect tool_resources configuration
+**Solution**: Ensure all required fields are present
+```yaml
+# Required fields for custom tool resources:
+tool_resources:
+  {custom_tool_name}:
+    execution_environment:  # REQUIRED
+      query_timeout: 30
+      type: "warehouse"
+      warehouse: "{warehouse_name}"
+    identifier: "{database}.{schema}.{PROCEDURE_NAME}"  # REQUIRED
+    name: "{PROCEDURE_NAME}({SIGNATURE})"  # REQUIRED
+    type: "procedure"  # REQUIRED (or "function")
+```
+
+#### Problem: Tool times out
+**Cause**: Query timeout too low or inefficient queries
+**Solution**: Optimize queries and increase timeout
+```yaml
+tool_resources:
+  complex_calculation:
+    execution_environment:
+      query_timeout: 60  # Increase for complex operations
+```
+
+### Agent Creation Issues
+
+#### Problem: "YAML syntax error"
+**Cause**: Unescaped special characters in instructions
+**Solution**: Always use format_instructions_for_yaml() helper
+```python
+# ✅ CORRECT - Use helper function
+response_formatted = format_instructions_for_yaml(config['response_instructions'])
+```
+
+#### Problem: Agent created but tools don't work
+**Cause**: Semantic views or search services not created first
+**Solution**: Verify creation order in setup.py
+```python
+# Correct order:
+1. create_all_semantic_views(session)
+2. create_all_search_services(session)
+3. create_all_custom_tools(session)
+4. create_all_agents(session)
+```
+
+#### Problem: "Object does not exist" when creating agent
+**Cause**: Referenced semantic view/search service/procedure doesn't exist
+**Solution**: Verify all dependencies exist before creating agent
+```sql
+-- Check semantic views
+SHOW VIEWS IN AI;
+
+-- Check search services
+SHOW SEARCH SERVICES IN AI;
+
+-- Check custom tools
+SHOW PROCEDURES IN AI;
+```
+
+### Best Practices Summary
+
+**Custom Tools:**
+1. ✅ Hardcode schema names in stored procedures
+2. ✅ Use .format() instead of f-strings for SQL
+3. ✅ Return pandas DataFrames from handlers
+4. ✅ Test stored procedures independently before adding to agents
+5. ✅ Document all parameters with examples in input_schema
+
+**Agent Configuration:**
+1. ✅ Use format_instructions_for_yaml() for all instructions
+2. ✅ Verify all tool dependencies exist first
+3. ✅ Include comprehensive "When to Use" / "When NOT to Use" guidance
+4. ✅ Set appropriate query timeouts for each tool
+5. ✅ Test agent with sample queries after creation
+
+**Tool Descriptions:**
+1. ✅ Include Data Coverage section
+2. ✅ Include Methodology section (for custom tools)
+3. ✅ Include Use Cases with context
+4. ✅ Include Returns description (for custom tools)
+5. ✅ Include When to Use / When NOT to Use
+6. ✅ Provide concrete examples in parameter descriptions

@@ -23,8 +23,8 @@ def create_var_calculation_tool(session: Session) -> None:
     """
     
     # Create the stored procedure
-    create_procedure_sql = f"""
-CREATE OR REPLACE PROCEDURE {DemoConfig.SCHEMAS['AI']}.CALCULATE_PORTFOLIO_VAR(
+    create_procedure_sql = """
+CREATE OR REPLACE PROCEDURE AI.CALCULATE_PORTFOLIO_VAR(
     TICKERS ARRAY,
     SHOCK_PERCENTAGE FLOAT
 )
@@ -65,12 +65,13 @@ def calculate_var(session: Session, tickers: list, shock_percentage: float):
         tickers = list(tickers)
     
     # Get current positions for specified tickers
-    positions_query = f\"\"\"
+    ticker_list = "', '".join(tickers)
+    positions_query = \"\"\"
         SELECT TICKER, MARKET_VALUE, QUANTITY
-        FROM {DemoConfig.SCHEMAS['CURATED']}.FACT_FIRM_POSITION
-        WHERE AS_OF_DATE = (SELECT MAX(AS_OF_DATE) FROM {DemoConfig.SCHEMAS['CURATED']}.FACT_FIRM_POSITION)
-        AND TICKER IN ('{{}}')
-    \"\"\".format("', '".join(tickers))
+        FROM CURATED.FACT_FIRM_POSITION
+        WHERE AS_OF_DATE = (SELECT MAX(AS_OF_DATE) FROM CURATED.FACT_FIRM_POSITION)
+        AND TICKER IN ({})
+    \"\"\".format(ticker_list)
     
     positions_df = session.sql(positions_query).to_pandas()
     
@@ -88,15 +89,15 @@ def calculate_var(session: Session, tickers: list, shock_percentage: float):
     total_portfolio_value = positions_df['MARKET_VALUE'].sum()
     
     # Get 60 days of historical returns for VaR calculation
-    historical_returns_query = f\"\"\"
+    historical_returns_query = \"\"\"
         WITH price_data AS (
             SELECT 
                 TICKER,
                 PRICE_DATE,
                 CLOSE,
                 LAG(CLOSE, 1) OVER (PARTITION BY TICKER ORDER BY PRICE_DATE) AS PREV_CLOSE
-            FROM {DemoConfig.SCHEMAS['CURATED']}.FACT_STOCK_PRICE_DAILY
-            WHERE TICKER IN ('{{}}')
+            FROM CURATED.FACT_STOCK_PRICE_DAILY
+            WHERE TICKER IN ({})
             AND PRICE_DATE >= DATEADD(day, -70, CURRENT_DATE())
             ORDER BY TICKER, PRICE_DATE DESC
         )
@@ -107,7 +108,7 @@ def calculate_var(session: Session, tickers: list, shock_percentage: float):
         FROM price_data
         WHERE PREV_CLOSE IS NOT NULL
         LIMIT 60
-    \"\"\".format("', '".join(tickers))
+    \"\"\".format(ticker_list)
     
     returns_df = session.sql(historical_returns_query).to_pandas()
     
@@ -131,7 +132,7 @@ def calculate_var(session: Session, tickers: list, shock_percentage: float):
     returns_pivot = returns_df.pivot(index='PRICE_DATE', columns='TICKER', values='DAILY_RETURN').fillna(0)
     
     # Calculate portfolio daily returns
-    portfolio_weights = {{}}
+    portfolio_weights = {}
     for _, row in positions_df.iterrows():
         ticker = row['TICKER']
         weight = row['MARKET_VALUE'] / total_portfolio_value
@@ -174,7 +175,6 @@ def calculate_var(session: Session, tickers: list, shock_percentage: float):
     }}])
 $$
 """
-    
     try:
         session.sql(create_procedure_sql).collect()
         print("   ✅ CALCULATE_PORTFOLIO_VAR stored procedure created successfully")
