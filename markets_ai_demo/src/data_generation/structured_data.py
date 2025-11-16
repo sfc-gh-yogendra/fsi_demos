@@ -103,7 +103,11 @@ def generate_companies(session: Session) -> None:
         {"TICKER": "XOM", "COMPANY_NAME": "Exxon Mobil Corporation", "SECTOR": "Energy", "INDUSTRY": "Oil & Gas", "MARKET_CAP_BILLIONS": 400},
         {"TICKER": "JPM", "COMPANY_NAME": "JPMorgan Chase & Co.", "SECTOR": "Financial Services", "INDUSTRY": "Banking", "MARKET_CAP_BILLIONS": 500},
         {"TICKER": "BAC", "COMPANY_NAME": "Bank of America Corp.", "SECTOR": "Financial Services", "INDUSTRY": "Banking", "MARKET_CAP_BILLIONS": 320},
-        {"TICKER": "WMT", "COMPANY_NAME": "Walmart Inc.", "SECTOR": "Consumer Staples", "INDUSTRY": "Retail", "MARKET_CAP_BILLIONS": 600}
+        {"TICKER": "WMT", "COMPANY_NAME": "Walmart Inc.", "SECTOR": "Consumer Staples", "INDUSTRY": "Retail", "MARKET_CAP_BILLIONS": 600},
+        # Carbon capture technology companies
+        {"TICKER": "LIN", "COMPANY_NAME": "Linde plc", "SECTOR": "Industrials", "INDUSTRY": "Industrial Gases", "MARKET_CAP_BILLIONS": 220},
+        {"TICKER": "SIEGY", "COMPANY_NAME": "Siemens AG", "SECTOR": "Industrials", "INDUSTRY": "Industrial Automation", "MARKET_CAP_BILLIONS": 145},
+        {"TICKER": "JMPLY", "COMPANY_NAME": "Johnson Matthey", "SECTOR": "Industrials", "INDUSTRY": "Specialty Chemicals", "MARKET_CAP_BILLIONS": 4}
     ]
     
     companies_df = session.create_dataframe(company_data)
@@ -144,13 +148,16 @@ def generate_historical_stock_prices(session: Session) -> None:
     # Use dynamic date range covering all historical quarters
     start_date, end_date = get_dynamic_date_range()
     
+    # Fetch all companies once to avoid repeated queries
+    all_companies = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").collect()
+    market_caps = {company['TICKER']: company['MARKET_CAP_BILLIONS'] for company in all_companies}
+    
     for ticker in DemoConfig.TICKER_LIST:
         print(f"     📊 Generating prices for {ticker}...")
         
         # Starting price based on market cap
-        companies_data = session.table(f"{DemoConfig.SCHEMAS['CURATED']}.DIM_COMPANY").filter(col("TICKER") == ticker).collect()
-        if companies_data:
-            market_cap = companies_data[0]['MARKET_CAP_BILLIONS']
+        if ticker in market_caps:
+            market_cap = market_caps[ticker]
             base_price = max(50, min(500, market_cap / 6))  # Rough approximation
         else:
             base_price = 150

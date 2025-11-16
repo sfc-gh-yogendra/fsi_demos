@@ -74,6 +74,9 @@ Examples:
             
             "response_instructions": """You are a world-class equity research assistant specializing in earnings analysis.
 
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
+
 Response Guidelines:
 - Be concise, accurate, and data-driven in all responses
 - Present numerical data clearly in sentences or markdown tables
@@ -127,6 +130,9 @@ Examples:
 - "Stock performance of climate tech companies" → thematic_data_analyzer""",
             
             "response_instructions": """You are an expert thematic investment research assistant focused on identifying emerging trends and cross-sector opportunities.
+
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
 
 Response Guidelines:
 - Think like a senior research analyst looking for alpha-generating insights
@@ -185,6 +191,9 @@ Examples:
 - "Build a sector rotation strategy based on current macro signals" → Both tools""",
             
             "response_instructions": """You are an expert global macro strategist and cross-asset investment advisor at Frost Markets Intelligence.
+
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
 
 Response Guidelines:
 - Think like a senior macro strategist developing actionable investment strategies

@@ -69,9 +69,66 @@ python setup.py --mode=full
 python setup.py --mode=full --connection_name your_connection_name
 
 # Other setup modes:
-python setup.py --mode=data-only      # Just generate data
-python setup.py --mode=ai-only        # Just create AI components  
+python setup.py --mode=data-only      # Regenerate data only (see details below)
+python setup.py --mode=ai-only        # Recreate AI components only (see details below)
 python setup.py --mode=scenario-specific --scenario=equity_research_earnings
+```
+
+### 🔄 Setup Modes Explained
+
+#### Primary Modes
+
+| Mode | What it Does | What it Preserves | When to Use |
+|------|-------------|-------------------|-------------|
+| **`full`** | Complete setup from scratch | Nothing (fresh start) | Initial setup or complete reset |
+| **`data-only`** | Regenerates data tables (use `--data-type` for granular control) | AI components in AI schema | After changing data generation logic |
+| **`ai-only`** | Recreates AI components (use `--ai-type` for granular control) | All data in RAW and CURATED schemas | After modifying AI configurations |
+| **`scenario-specific`** | Setup for specific demo scenario | TBD (Phase 2) | Testing individual scenarios |
+
+#### Granular Data Control (`--data-type`)
+
+Use with `--mode=data-only` to regenerate specific data types:
+
+| Data Type | What it Regenerates | What it Preserves | Example Use Case |
+|-----------|-------------------|-------------------|------------------|
+| **`all`** (default) | All data tables | Search services, agents | Changed company list or event templates |
+| **`structured`** | Companies, prices, clients, estimates | Unstructured data, all AI components | Added new tickers or modified pricing logic |
+| **`unstructured`** | Documents, reports, transcripts, news | Structured data, all AI components | Updated content generation prompts |
+
+#### Granular AI Control (`--ai-type`)
+
+Use with `--mode=ai-only` to recreate specific AI components:
+
+| AI Type | What it Recreates | What it Preserves | Example Use Case |
+|---------|------------------|-------------------|------------------|
+| **`all`** (default) | All AI components | All data tables | After data regeneration or complete AI refresh |
+| **`semantic-views`** | Only semantic views | Search services, agents, all data | Modified semantic view definitions |
+| **`search-services`** | Only Cortex Search services | Semantic views, agents, all data | Updated search service configuration |
+| **`agents`** | Only Snowflake Intelligence agents | Semantic views, search services, all data | Changed agent instructions or added disclaimer |
+
+**Important Notes:**
+- **`data-only` mode**: Semantic views may need recreation if structured data changes (run `--mode=ai-only --ai-type=semantic-views`)
+- **Granular modes**: Allow precise control to minimize regeneration time and preserve specific components
+- For iterative development: Use granular modes to update only what changed
+
+**Example Workflows:**
+```bash
+# Scenario 1: Added new companies to TICKER_LIST
+python setup.py --mode=data-only --data-type=structured
+python setup.py --mode=ai-only --ai-type=semantic-views
+
+# Scenario 2: Updated agent disclaimer instructions
+python setup.py --mode=ai-only --ai-type=agents
+
+# Scenario 3: Modified document generation prompts
+python setup.py --mode=data-only --data-type=unstructured
+
+# Scenario 4: Updated semantic view definitions
+python setup.py --mode=ai-only --ai-type=semantic-views
+
+# Scenario 5: Complete data refresh, preserve AI
+python setup.py --mode=data-only --data-type=all
+python setup.py --mode=ai-only --ai-type=all
 ```
 
 The setup process will:

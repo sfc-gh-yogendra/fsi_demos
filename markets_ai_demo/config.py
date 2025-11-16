@@ -9,7 +9,7 @@ class DemoConfig:
     PROJECT_NAME = "Snowflake AI Demo"
     
     # --- Data Volume and Scope ---
-    NUM_COMPANIES = 15
+    NUM_COMPANIES = 18  # Increased from 15 to include carbon capture companies (LIN, SIEGY, JMPLY)
     NUM_CLIENTS = 25
     
     # --- Helper Functions for SQL Generation ---
