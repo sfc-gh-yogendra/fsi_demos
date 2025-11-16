@@ -130,22 +130,25 @@ def create_ai_components(session, mode, ai_type="all"):
     Args:
         session: Snowpark session
         mode: Setup mode (full or ai-only)
-        ai_type: Type of AI components to create (all, semantic-views, search-services, agents)
+        ai_type: Type of AI components to create (all, semantic-views, search-services, custom-tools, agents)
     """
     print(f"\n🤖 Creating AI components (mode: {mode}, type: {ai_type})...")
     
     if mode == "ai-only":
         print("   ℹ️  AI-only mode: Data tables in RAW and CURATED schemas will be preserved")
         if ai_type == "semantic-views":
-            print("   ℹ️  Preserving: Search services and agents")
+            print("   ℹ️  Preserving: Search services, custom tools, and agents")
         elif ai_type == "search-services":
-            print("   ℹ️  Preserving: Semantic views and agents")
+            print("   ℹ️  Preserving: Semantic views, custom tools, and agents")
+        elif ai_type == "custom-tools":
+            print("   ℹ️  Preserving: Semantic views, search services, and agents")
         elif ai_type == "agents":
-            print("   ℹ️  Preserving: Semantic views and search services")
+            print("   ℹ️  Preserving: Semantic views, search services, and custom tools")
     
     try:
         from ai_components.semantic_views import create_all_semantic_views
         from ai_components.search_services import create_all_search_services
+        from ai_components.custom_tools import create_all_custom_tools
         from ai_components.agents import create_all_agents
         
         # Create based on AI type
@@ -160,6 +163,12 @@ def create_ai_components(session, mode, ai_type="all"):
             create_all_search_services(session)
         else:
             print("  ⏭️  Skipping search services creation")
+        
+        if ai_type in ["all", "custom-tools"]:
+            print("  🔧 Creating custom tools...")
+            create_all_custom_tools(session)
+        else:
+            print("  ⏭️  Skipping custom tools creation")
         
         if ai_type in ["all", "agents"]:
             print("  🤖 Creating Snowflake Intelligence agents...")
@@ -203,13 +212,16 @@ Examples:
   # Regenerate only unstructured data (preserves structured data and AI components)
   python setup.py --mode data-only --data-type unstructured
   
-  # Recreate only semantic views (preserves search services and agents)
+  # Recreate only semantic views (preserves search services, custom tools, and agents)
   python setup.py --mode ai-only --ai-type semantic-views
   
-  # Recreate only search services (preserves semantic views and agents)
+  # Recreate only search services (preserves semantic views, custom tools, and agents)
   python setup.py --mode ai-only --ai-type search-services
   
-  # Recreate only agents (preserves semantic views and search services)
+  # Recreate only custom tools (preserves semantic views, search services, and agents)
+  python setup.py --mode ai-only --ai-type custom-tools
+  
+  # Recreate only agents (preserves semantic views, search services, and custom tools)
   python setup.py --mode ai-only --ai-type agents
         """
     )
@@ -234,12 +246,13 @@ Examples:
     )
     parser.add_argument(
         "--ai-type",
-        choices=["all", "semantic-views", "search-services", "agents"],
+        choices=["all", "semantic-views", "search-services", "custom-tools", "agents"],
         default="all",
         help="""AI components to create (only with --mode=ai-only):
-        - all: All AI components (semantic views + search services + agents)
+        - all: All AI components (semantic views + search services + custom tools + agents)
         - semantic-views: Only semantic views for Cortex Analyst
         - search-services: Only Cortex Search services
+        - custom-tools: Only custom tools (Python stored procedures)
         - agents: Only Snowflake Intelligence agents"""
     )
     parser.add_argument(

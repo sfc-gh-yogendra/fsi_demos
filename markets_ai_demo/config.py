@@ -164,7 +164,8 @@ class DemoConfig:
         "equity_research_thematic",
         "global_macro_strategy",
         "global_research_reports",
-        "global_research_client_strategy"
+        "global_research_client_strategy",
+        "market_risk_analysis"  # Market Risk Analyst scenario with firm exposure and VaR analysis
     ]
     
     # Legacy support for backward compatibility

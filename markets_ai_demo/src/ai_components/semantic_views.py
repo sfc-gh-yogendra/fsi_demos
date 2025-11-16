@@ -40,6 +40,9 @@ def create_all_semantic_views(session: Session) -> None:
     
     print("   🔍 Creating GLOBAL_MACRO_SIGNALS_VIEW semantic view...")
     create_global_macro_signals_semantic_view(session)
+    
+    print("   🔍 Creating FIRM_EXPOSURE_VIEW semantic view...")
+    create_firm_exposure_semantic_view(session)
 
 
 def verify_table_columns(session: Session) -> None:
@@ -380,6 +383,69 @@ CREATE OR REPLACE SEMANTIC VIEW AI.GLOBAL_MACRO_SIGNALS_VIEW
         print("   ✅ GLOBAL_MACRO_SIGNALS_VIEW semantic view created successfully")
     except Exception as e:
         print(f"   ❌ Failed to create GLOBAL_MACRO_SIGNALS_VIEW: {str(e)}")
+        print(f"   📋 Full SQL attempted:")
+        print(semantic_view_sql)
+        print("   ❓ Please help fix the SQL syntax error above")
+        raise
+
+
+def create_firm_exposure_semantic_view(session: Session) -> None:
+    """
+    Create FIRM_EXPOSURE_VIEW semantic view for market risk analysis
+    Supports Market Risk Analyst scenarios
+    """
+    
+    semantic_view_sql = """
+CREATE OR REPLACE SEMANTIC VIEW AI.FIRM_EXPOSURE_VIEW
+	TABLES (
+		POSITIONS AS CURATED.FACT_FIRM_POSITION
+			PRIMARY KEY (PORTFOLIO_ID, TICKER, AS_OF_DATE)
+			WITH SYNONYMS=('firm_positions','portfolio_holdings','firm_holdings')
+			COMMENT='Firm-wide portfolio positions and holdings',
+		COMPANIES AS CURATED.DIM_COMPANY
+			PRIMARY KEY (TICKER)
+			WITH SYNONYMS=('companies_master','company_info','firms')
+			COMMENT='Company master data with sector and industry classification',
+		GEO_REVENUE AS CURATED.DIM_COMPANY_GEO_REVENUE
+			PRIMARY KEY (TICKER, COUNTRY)
+			WITH SYNONYMS=('geographic_revenue','revenue_exposure','country_exposure')
+			COMMENT='Geographic revenue breakdown by country',
+		CREDIT_RATINGS AS CURATED.DIM_COMPANY_CREDIT_RATING
+			PRIMARY KEY (TICKER)
+			WITH SYNONYMS=('credit_quality','sp_ratings','ratings')
+			COMMENT='S&P credit ratings and outlook'
+	)
+	RELATIONSHIPS (
+		POSITIONS_TO_COMPANIES AS POSITIONS(TICKER) REFERENCES COMPANIES(TICKER),
+		GEO_REVENUE_TO_COMPANIES AS GEO_REVENUE(TICKER) REFERENCES COMPANIES(TICKER),
+		CREDIT_RATINGS_TO_COMPANIES AS CREDIT_RATINGS(TICKER) REFERENCES COMPANIES(TICKER)
+	)
+	DIMENSIONS (
+		POSITIONS.PORTFOLIO_ID AS PORTFOLIO_ID WITH SYNONYMS=('portfolio','fund_name','book','portfolio_name') COMMENT='Portfolio identifier',
+		POSITIONS.TICKER AS TICKER WITH SYNONYMS=('symbol','stock_ticker','ticker_symbol','security') COMMENT='Company stock ticker symbol',
+		POSITIONS.AS_OF_DATE AS AS_OF_DATE WITH SYNONYMS=('date','position_date','valuation_date','as_of') COMMENT='Position as-of date',
+		COMPANIES.COMPANY_NAME AS COMPANY_NAME WITH SYNONYMS=('company','firm_name','corporation','name') COMMENT='Company name',
+		COMPANIES.SECTOR AS SECTOR WITH SYNONYMS=('industry_sector','business_sector','sector_name') COMMENT='Business sector classification',
+		COMPANIES.INDUSTRY AS INDUSTRY WITH SYNONYMS=('industry_group','business_line','sub_sector') COMMENT='Industry classification',
+		GEO_REVENUE.COUNTRY AS COUNTRY WITH SYNONYMS=('geography','region','revenue_geography','geographic_exposure') COMMENT='Country for geographic revenue exposure',
+		CREDIT_RATINGS.RATING AS RATING WITH SYNONYMS=('credit_rating','sp_rating','rating_level') COMMENT='S&P credit rating',
+		CREDIT_RATINGS.OUTLOOK AS OUTLOOK WITH SYNONYMS=('rating_outlook','credit_outlook','rating_direction') COMMENT='Credit rating outlook'
+	)
+	METRICS (
+		POSITIONS.TOTAL_MARKET_VALUE AS SUM(MARKET_VALUE) WITH SYNONYMS=('total_exposure','sum_market_value','aggregate_value','total_value','net_exposure') COMMENT='Total market value of positions',
+		POSITIONS.TOTAL_QUANTITY AS SUM(QUANTITY) WITH SYNONYMS=('total_shares','sum_quantity','aggregate_quantity') COMMENT='Total number of shares held',
+		POSITIONS.POSITION_COUNT AS COUNT(TICKER) WITH SYNONYMS=('number_of_positions','holding_count','position_count') COMMENT='Count of distinct positions',
+		GEO_REVENUE.AVG_REVENUE_PCT AS AVG(REVENUE_PERCENTAGE) WITH SYNONYMS=('average_revenue_exposure','mean_geographic_exposure') COMMENT='Average revenue percentage by geography',
+		COMPANIES.TOTAL_MARKET_CAP AS SUM(MARKET_CAP_BILLIONS) WITH SYNONYMS=('sum_market_cap','aggregate_cap') COMMENT='Total market capitalization'
+	)
+	COMMENT='Firm exposure analysis semantic view for market risk assessment and portfolio stress testing';
+    """
+    
+    try:
+        result = session.sql(semantic_view_sql).collect()
+        print("   ✅ FIRM_EXPOSURE_VIEW semantic view created successfully")
+    except Exception as e:
+        print(f"   ❌ Failed to create FIRM_EXPOSURE_VIEW: {str(e)}")
         print(f"   📋 Full SQL attempted:")
         print(semantic_view_sql)
         print("   ❓ Please help fix the SQL syntax error above")

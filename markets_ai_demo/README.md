@@ -102,9 +102,10 @@ Use with `--mode=ai-only` to recreate specific AI components:
 | AI Type | What it Recreates | What it Preserves | Example Use Case |
 |---------|------------------|-------------------|------------------|
 | **`all`** (default) | All AI components | All data tables | After data regeneration or complete AI refresh |
-| **`semantic-views`** | Only semantic views | Search services, agents, all data | Modified semantic view definitions |
-| **`search-services`** | Only Cortex Search services | Semantic views, agents, all data | Updated search service configuration |
-| **`agents`** | Only Snowflake Intelligence agents | Semantic views, search services, all data | Changed agent instructions or added disclaimer |
+| **`semantic-views`** | Only semantic views | Search services, custom tools, agents, all data | Modified semantic view definitions |
+| **`search-services`** | Only Cortex Search services | Semantic views, custom tools, agents, all data | Updated search service configuration |
+| **`custom-tools`** | Only custom tools (Python stored procedures) | Semantic views, search services, agents, all data | Modified VaR calculation logic |
+| **`agents`** | Only Snowflake Intelligence agents | Semantic views, search services, custom tools, all data | Changed agent instructions or added disclaimer |
 
 **Important Notes:**
 - **`data-only` mode**: Semantic views may need recreation if structured data changes (run `--mode=ai-only --ai-type=semantic-views`)
@@ -134,12 +135,13 @@ python setup.py --mode=ai-only --ai-type=all
 The setup process will:
 1. ✅ Create database schemas and warehouse
 2. ✅ Generate master event log for data correlations
-3. ✅ Generate structured data (companies, prices, clients)
+3. ✅ Generate structured data (companies, prices, clients, firm positions)
 4. ✅ Generate unstructured data using Cortex Complete
 5. ✅ Create semantic views for Cortex Analyst
 6. ✅ Create Cortex Search services
-7. ✅ **Create Snowflake Intelligence agents automatically via SQL**
-8. ✅ Validate all components
+7. ✅ Create custom tools (Python stored procedures for VaR calculations)
+8. ✅ **Create Snowflake Intelligence agents automatically via SQL**
+9. ✅ Validate all components
 
 ## 🤖 Agents (Automatically Created)
 
@@ -149,6 +151,9 @@ The setup process **automatically creates** all agents via SQL - no manual confi
 - **Earnings Analysis Assistant** - Analyzes quarterly earnings, consensus estimates, and management commentary
 - **Thematic Investment Research Assistant** - Discovers emerging themes and cross-sector trends
 - **Global Macro Strategy Assistant** - Analyzes proprietary macroeconomic signals and develops investment strategies
+- **Market Structure Research Assistant** - Specializes in market structure analysis, regulatory changes, and institutional client insights
+- **Client Strategy Assistant** - Prepares data-driven client meetings and personalized strategic recommendations
+- **Market Risk Analysis Assistant** - Performs real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis
 
 After setup completes, agents are immediately available in:
 **Snowsight** → **AI & ML** → **Snowflake Intelligence**
@@ -183,16 +188,11 @@ For complete demo scripts, talking points, and delivery guidance:
 ### Database Structure
 ```
 MARKETS_AI_DEMO/
-├── RAW/                # Raw external data and unstructured documents
+├── RAW/                # Raw event/reference data and temporary staging tables
 │   ├── MASTER_EVENT_LOG
-│   ├── PROPRIETARY_SIGNALS
-│   ├── ECONOMIC_REGIONS
-│   ├── SECTOR_MACRO_CORRELATIONS
-│   ├── SEC_FILINGS_CORPUS
-│   ├── EARNINGS_TRANSCRIPTS_CORPUS
-│   ├── NEWS_ARTICLES_CORPUS
-│   └── RESEARCH_REPORTS_CORPUS
+│   └── TEMP_PROMPTS_* (ephemeral tables created during data generation)
 ├── CURATED/            # Industry-standard dimension/fact model
+│   ├── DIM_SECTOR
 │   ├── DIM_COMPANY
 │   ├── DIM_CLIENT
 │   ├── DIM_COMPANY_GEO_REVENUE
@@ -203,15 +203,23 @@ MARKETS_AI_DEMO/
 │   ├── FACT_PORTFOLIO_HOLDING
 │   ├── FACT_CLIENT_ENGAGEMENT
 │   ├── FACT_CLIENT_DISCUSSION
-│   └── FACT_EARNINGS_ACTUAL
-└── AI/                 # Semantic views, Cortex Search services, AI components
+│   ├── FACT_EARNINGS_ACTUAL
+│   ├── FACT_FIRM_POSITION (NEW: firm-wide portfolio holdings for risk analysis)
+│   ├── FACT_MACRO_SIGNAL
+│   ├── SEC_FILINGS_CORPUS
+│   ├── EARNINGS_TRANSCRIPTS_CORPUS
+│   ├── NEWS_ARTICLES_CORPUS
+│   └── RESEARCH_REPORTS_CORPUS
+└── AI/                 # Semantic views, Cortex Search services, custom tools, and agents
     ├── EARNINGS_ANALYSIS_VIEW (semantic view)
     ├── THEMATIC_RESEARCH_VIEW (semantic view)
     ├── CLIENT_MARKET_IMPACT_VIEW (semantic view)
     ├── GLOBAL_MACRO_SIGNALS_VIEW (semantic view)
+    ├── FIRM_EXPOSURE_VIEW (NEW: semantic view for market risk analysis)
     ├── EARNINGS_TRANSCRIPTS_SEARCH (search service)
     ├── RESEARCH_REPORTS_SEARCH (search service)
-    └── NEWS_ARTICLES_SEARCH (search service)
+    ├── NEWS_ARTICLES_SEARCH (search service)
+    └── CALCULATE_PORTFOLIO_VAR (NEW: custom tool - Python stored procedure for VaR calculations)
 ```
 
 ### Key Design Principles

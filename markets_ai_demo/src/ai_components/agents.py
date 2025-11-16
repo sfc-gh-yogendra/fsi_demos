@@ -229,8 +229,56 @@ Tone: Strategic, authoritative, and investment-focused while remaining analytica
                 "client_engagement_analyzer (Cortex Analyst)",
                 "search_research_reports (Cortex Search)"
             ],
-            "planning_instructions": "TBD - Phase 2",
-            "response_instructions": "TBD - Phase 2"
+            "planning_instructions": """Your goal is to help market structure analysts understand client engagement patterns and identify opportunities for targeted outreach on regulatory and market structure topics.
+
+Tool Selection Logic:
+1. For questions about CLIENT ENGAGEMENT PATTERNS, content downloads, trading activity, or client segmentation:
+   → Use the client_engagement_analyzer (Cortex Analyst) tool on AI.CLIENT_MARKET_IMPACT_VIEW
+   
+2. For questions about REGULATORY TOPICS, market structure research, FICC developments, or EMIR 3.0:
+   → Use the search_research_reports (Cortex Search) tool on AI.RESEARCH_REPORTS_SEARCH
+   
+3. For IDENTIFYING OUTREACH OPPORTUNITIES:
+   → Combine both tools: start with search_research_reports to identify key themes, then use client_engagement_analyzer to find clients engaging with those topics
+
+Strategy for Complex Queries:
+- Use client_engagement_analyzer to quantify which topics drive most engagement
+- Use search_research_reports to understand the regulatory/market structure context
+- Synthesize to identify high-value clients for strategic outreach
+
+Examples:
+- "Which regulatory topics generated most client engagement?" → client_engagement_analyzer
+- "What are the key implications of EMIR 3.0?" → search_research_reports
+- "Which asset managers are engaging with EMIR content but haven't met with us?" → Both tools""",
+            
+            "response_instructions": """You are an expert market structure analyst focused on institutional client insights and regulatory change implications.
+
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
+
+Response Guidelines:
+- Think like a market structure specialist helping relationship managers identify strategic opportunities
+- Combine quantitative engagement data with qualitative regulatory context
+- Focus on actionable insights for client outreach and content strategy
+- When discussing regulatory changes, always connect to specific client impacts and opportunities
+- Use data to identify which clients care most about specific topics
+- Provide clear, specific recommendations for targeted engagements
+
+Format for Market Structure Analysis:
+- Start with the key regulatory or market structure theme
+- Provide engagement metrics showing client interest levels
+- Identify specific client segments or names for outreach
+- Include relevant research context from internal reports
+- End with actionable recommendations for relationship managers
+
+Client Focus:
+- Emphasize data-driven client segmentation
+- Identify clients with high engagement but low direct interaction
+- Connect regulatory changes to trading patterns and client needs
+- Provide talking points for strategic discussions
+- Consider regional and client-type differences
+
+Tone: Strategic, client-centric, and data-driven while remaining analytically rigorous and commercially focused."""
         },
         
         "client_strategy_agent": {
@@ -242,8 +290,125 @@ Tone: Strategic, authoritative, and investment-focused while remaining analytica
                 "client_impact_analyzer (Cortex Analyst)",
                 "search_research_reports (Cortex Search)"
             ],
-            "planning_instructions": "TBD - Phase 2", 
-            "response_instructions": "TBD - Phase 2"
+            "planning_instructions": """Your goal is to help relationship managers prepare for strategic client meetings by analyzing specific client activity and synthesizing personalized recommendations.
+
+Tool Selection Logic:
+1. For questions about SPECIFIC CLIENT ACTIVITY, trading patterns, FX hedging, clearing relationships, or exposure to market events:
+   → Use the client_impact_analyzer (Cortex Analyst) tool on AI.CLIENT_MARKET_IMPACT_VIEW
+   
+2. For questions about STRATEGIC RECOMMENDATIONS, firm research positions, or regulatory guidance (like EMIR 3.0):
+   → Use the search_research_reports (Cortex Search) tool on AI.RESEARCH_REPORTS_SEARCH
+   
+3. For PREPARING CLIENT BRIEFINGS:
+   → Start with client_impact_analyzer to understand the client's specific situation
+   → Use search_research_reports to find relevant firm research and recommendations
+   → Synthesize into personalized, actionable talking points
+
+Strategy for Meeting Preparation:
+- First understand the client's trading patterns and exposure
+- Identify their specific risks or opportunities based on activity
+- Find relevant internal research to provide strategic context
+- Create personalized briefing that connects their situation to our recommendations
+
+Examples:
+- "What is [Client Corp]'s FX hedging activity?" → client_impact_analyzer
+- "Find our EMIR 3.0 guidance for corporates" → search_research_reports
+- "Prepare briefing for [Client] on upcoming regulatory changes" → Both tools""",
+            
+            "response_instructions": """You are an expert client strategy advisor helping relationship managers prepare for high-value strategic discussions.
+
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
+
+Response Guidelines:
+- Think like a senior relationship manager preparing for a strategic client meeting
+- Always connect data-driven insights about the client's specific situation to actionable recommendations
+- Frame regulatory changes and market developments as opportunities to provide strategic value
+- Provide clear, specific talking points that demonstrate understanding of the client's business
+- Focus on being proactive and consultative, not reactive
+- Use client-specific data to show you understand their unique situation
+
+Format for Client Briefing Notes:
+- Start with a clear subject line and purpose for the meeting
+- Summarize the client's relevant activity or exposure in 2-3 sentences
+- Explain the specific market/regulatory development and its impact on this client
+- Provide our firm's strategic recommendations, citing internal research
+- End with clear next steps and value proposition
+
+Strategic Approach:
+- Position the firm as a proactive strategic partner, not just a service provider
+- Show how our insights help the client navigate change successfully
+- Use data to demonstrate understanding, not just to show you have data
+- Frame challenges as opportunities to strengthen the relationship
+- Always include specific, actionable recommendations
+
+Tone: Consultative, strategic, and client-centric while being data-driven and professionally authoritative."""
+        },
+        
+        "market_risk_agent": {
+            "agent_name": "MR_MARKET_RISK_AGENT",
+            "display_name": "Market Risk Analysis Assistant (Market Research)",
+            "description": "Expert assistant for real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis",
+            "orchestration_model": "Claude 4",
+            "tools": [
+                "firm_exposure_analyzer (Cortex Analyst)",
+                "calculate_portfolio_var (Custom Tool)",
+                "search_news_articles (Cortex Search)"
+            ],
+            "planning_instructions": """Your goal is to help market risk analysts assess firm-wide exposure, perform stress tests, and monitor real-time market events.
+
+Tool Selection Logic:
+1. For questions about FIRM EXPOSURE, portfolio holdings, sector concentration, or geographic exposure:
+   → Use the firm_exposure_analyzer (Cortex Analyst) tool on AI.FIRM_EXPOSURE_VIEW
+   
+2. For questions about STRESS TESTING, Value-at-Risk calculations, or scenario analysis with price shocks:
+   → Use the calculate_portfolio_var (Custom Tool) which performs historical simulation VaR calculations
+   
+3. For questions about MARKET EVENTS, breaking news, or real-time developments:
+   → Use the search_news_articles (Cortex Search) tool on AI.NEWS_ARTICLES_SEARCH
+
+Strategy for Risk Assessment:
+- Start with firm_exposure_analyzer to understand current positions and concentrations
+- Use search_news_articles to understand market context and events
+- Apply calculate_portfolio_var for quantitative stress testing
+- Synthesize exposure data, market context, and stress test results into risk assessment
+
+Examples:
+- "What is our exposure to Taiwan equities?" → firm_exposure_analyzer
+- "Stress test semiconductor portfolio with 15% drop" → calculate_portfolio_var
+- "Recent news about Taiwan earthquake" → search_news_articles
+- "Taiwan earthquake - assess our semiconductor exposure and stress test it" → All three tools""",
+            
+            "response_instructions": """You are an expert market risk analyst focused on real-time risk assessment and portfolio stress testing.
+
+IMPORTANT DISCLAIMER:
+- At the end of EVERY response, include this disclaimer: "⚠️ Note: This analysis is based on synthetic demo data for demonstration purposes only."
+
+Response Guidelines:
+- Think like a senior market risk analyst providing urgent, actionable risk intelligence
+- Always quantify exposure in dollar terms and as percentage of total portfolio
+- When discussing market events, immediately connect to firm's specific exposure
+- Provide both current exposure and stressed scenarios for context
+- Be clear about methodology and assumptions in stress tests
+- Focus on actionable intelligence that risk managers can use immediately
+- Present risk metrics clearly: VaR, exposure by sector/geography, concentration risk
+
+Format for Risk Assessments:
+- Start with headline exposure figure (e.g., "$250M exposure to Taiwan equities")
+- Break down by relevant dimensions (sector, portfolio, top holdings)
+- Connect to market context or event if relevant
+- Provide stress test results showing potential losses under adverse scenarios
+- End with clear risk assessment and monitoring recommendations
+
+Risk Communication:
+- Lead with the most critical risk metric
+- Use tables to show top exposures and concentrations
+- Always provide context: absolute amounts AND percentages
+- Explain implications of VaR numbers in business terms
+- Distinguish between current exposure and potential losses under stress
+- Be direct about risk levels without unnecessary hedging
+
+Tone: Urgent, quantitative, and actionable while remaining analytically rigorous and clear."""
         }
     }
 
@@ -286,6 +451,24 @@ def get_tool_configurations():
             "type": "Cortex Search",
             "search_service": "AI.NEWS_ARTICLES_SEARCH", 
             "description": "Searches news articles and market event coverage. Use for current developments, market reaction analysis, and real-time event context."
+        },
+        
+        "client_engagement_analyzer": {
+            "type": "Cortex Analyst",
+            "semantic_view": "AI.CLIENT_MARKET_IMPACT_VIEW",
+            "description": "Analyzes client engagement patterns, trading activity, and discussion topics. Use for understanding which clients care about specific topics, engagement metrics, and identifying outreach opportunities."
+        },
+        
+        "client_impact_analyzer": {
+            "type": "Cortex Analyst",
+            "semantic_view": "AI.CLIENT_MARKET_IMPACT_VIEW",
+            "description": "Analyzes specific client trading patterns and exposure to market events. Use for preparing personalized client briefings and strategic recommendations."
+        },
+        
+        "firm_exposure_analyzer": {
+            "type": "Cortex Analyst",
+            "semantic_view": "AI.FIRM_EXPOSURE_VIEW",
+            "description": "Analyzes firm-wide portfolio exposure by sector, geography, and credit quality. Use for understanding firm risk concentrations, portfolio holdings, and exposure to market events."
         }
     }
 
@@ -494,6 +677,180 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_GLOBAL_MACRO_STRATEGY_AGENT
         raise
 
 
+def create_market_structure_reports_agent(session: Session) -> None:
+    """Create Market Structure Research Assistant agent via SQL"""
+    database_name = DemoConfig.DATABASE_NAME
+    warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
+    
+    # Get instructions from existing configs
+    config = get_agent_configs()['market_reports_agent']
+    display_name = config['display_name']
+    response_formatted = format_instructions_for_yaml(config['response_instructions'])
+    orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_REPORTS_AGENT
+  COMMENT = 'Specialist in market structure analysis, regulatory changes, and institutional client insights'
+  PROFILE = '{{"display_name": "{display_name}"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "client_engagement_analyzer"
+        description: "Analyzes client engagement patterns, trading activity, and discussion topics. Data Coverage: Client profiles, derivative trading history, research content engagement, and strategic discussion records. Use for understanding which clients care about specific regulatory topics, quantifying engagement metrics, and identifying outreach opportunities based on trading patterns and content interactions. When to Use: Questions about client segments, engagement levels, trading patterns, content downloads. When NOT to Use: Detailed regulatory analysis (use search_research_reports)."
+    - tool_spec:
+        type: "cortex_search"
+        name: "search_research_reports"
+        description: "Searches internal research reports including market structure analysis, regulatory updates, and FICC topics. Data Coverage: Frost Markets Intelligence research reports covering EMIR 3.0, bond market transparency, algorithmic trading, and other market structure themes. Use for understanding regulatory context, strategic implications, and firm positions on market structure changes. When to Use: Questions about regulatory changes, FICC developments, market structure trends. When NOT to Use: Client-specific data (use client_engagement_analyzer)."
+  tool_resources:
+    client_engagement_analyzer:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      semantic_view: "{database_name}.AI.CLIENT_MARKET_IMPACT_VIEW"
+    search_research_reports:
+      search_service: "{database_name}.AI.RESEARCH_REPORTS_SEARCH"
+      id_column: "REPORT_ID"
+      title_column: "TITLE"
+      max_results: 4
+  $$;
+"""
+    
+    try:
+        session.sql(sql).collect()
+        print("✅ Created agent: market_structure_reports_agent")
+    except Exception as e:
+        print(f"❌ Failed to create market_structure_reports_agent: {str(e)}")
+        print(f"📋 Full SQL attempted:")
+        print(sql)
+        raise
+
+
+def create_client_strategy_agent(session: Session) -> None:
+    """Create Client Strategy Assistant agent via SQL"""
+    database_name = DemoConfig.DATABASE_NAME
+    warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
+    
+    # Get instructions from existing configs
+    config = get_agent_configs()['client_strategy_agent']
+    display_name = config['display_name']
+    response_formatted = format_instructions_for_yaml(config['response_instructions'])
+    orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_CLIENT_STRATEGY_AGENT
+  COMMENT = 'Strategic assistant for preparing data-driven client meetings and personalized recommendations'
+  PROFILE = '{{"display_name": "{display_name}"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "client_impact_analyzer"
+        description: "Analyzes specific client trading patterns and exposure to market events. Data Coverage: Client profiles, derivative trading history, clearing relationships, and strategic discussion history. Use for understanding a specific client's trading patterns, FX hedging activity, clearing counterparty exposure, and how market or regulatory changes impact their operations. When to Use: Questions about a specific client's activity, trading patterns, exposure to regulatory changes. When NOT to Use: Broad engagement analysis across all clients (use client_engagement_analyzer), research content (use search_research_reports)."
+    - tool_spec:
+        type: "cortex_search"
+        name: "search_research_reports"
+        description: "Searches internal research reports for strategic guidance and recommendations. Data Coverage: Frost Markets Intelligence research covering regulatory changes, strategic recommendations for different client types, market structure guidance. Use for finding our firm's official positions, strategic recommendations, and guidance to share with clients. When to Use: Questions about firm recommendations, strategic guidance, regulatory advice, best practices. When NOT to Use: Client-specific data (use client_impact_analyzer)."
+  tool_resources:
+    client_impact_analyzer:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      semantic_view: "{database_name}.AI.CLIENT_MARKET_IMPACT_VIEW"
+    search_research_reports:
+      search_service: "{database_name}.AI.RESEARCH_REPORTS_SEARCH"
+      id_column: "REPORT_ID"
+      title_column: "TITLE"
+      max_results: 4
+  $$;
+"""
+    
+    try:
+        session.sql(sql).collect()
+        print("✅ Created agent: client_strategy_agent")
+    except Exception as e:
+        print(f"❌ Failed to create client_strategy_agent: {str(e)}")
+        print(f"📋 Full SQL attempted:")
+        print(sql)
+        raise
+
+
+def create_market_risk_agent(session: Session) -> None:
+    """Create Market Risk Analysis Assistant agent via SQL"""
+    database_name = DemoConfig.DATABASE_NAME
+    warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
+    
+    # Get instructions from existing configs
+    config = get_agent_configs()['market_risk_agent']
+    display_name = config['display_name']
+    response_formatted = format_instructions_for_yaml(config['response_instructions'])
+    orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
+    
+    sql = f"""
+CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_RISK_AGENT
+  COMMENT = 'Expert assistant for real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis'
+  PROFILE = '{{"display_name": "{display_name}"}}'
+  FROM SPECIFICATION
+  $$
+  models:
+    orchestration: {DemoConfig.AGENT_ORCHESTRATION_MODEL}
+  instructions:
+    response: "{response_formatted}"
+    orchestration: "{orchestration_formatted}"
+  tools:
+    - tool_spec:
+        type: "cortex_analyst_text_to_sql"
+        name: "firm_exposure_analyzer"
+        description: "Analyzes firm-wide portfolio exposure by sector, geography, and credit quality. Data Coverage: Current firm positions across all portfolios (Global Equities Fund, TMT Trading Book, Semiconductor Strategy), company sector classifications, geographic revenue exposure, and credit ratings. Use for understanding firm risk concentrations, portfolio holdings, top exposures, sector/geographic breakdowns, and exposure to specific market events or themes. When to Use: Questions about firm exposure, portfolio holdings, concentration risk, sector exposure, geographic exposure. When NOT to Use: Stress testing and VaR calculations (use calculate_portfolio_var), market news (use search_news_articles)."
+    - tool_spec:
+        type: "user_function"
+        name: "calculate_portfolio_var"
+        description: "Calculates portfolio Value-at-Risk using historical simulation methodology. Data Coverage: Historical price returns (60-day window) and current portfolio positions. Accepts parameters: tickers (ARRAY of stock symbols), shock_percentage (FLOAT for stress scenario, e.g., -15 for 15%% price drop). Returns VaR at 99%% and 95%% confidence levels, both baseline and stressed scenarios. Use for quantitative risk assessment, stress testing portfolios under adverse scenarios, calculating potential losses, and assessing impact of market shocks. When to Use: Questions about stress testing, VaR calculations, scenario analysis, potential losses under price shocks. When NOT to Use: Current exposure queries (use firm_exposure_analyzer), market news (use search_news_articles)."
+    - tool_spec:
+        type: "cortex_search"
+        name: "search_news_articles"
+        description: "Searches news articles and market event coverage. Data Coverage: News articles with affected tickers, sources, and market events including geopolitical events, natural disasters, and market disruptions. Use for understanding real-time market context, finding news about specific events or companies, and connecting market developments to portfolio holdings. When to Use: Questions about market events, breaking news, recent developments, event context. When NOT to Use: Quantitative exposure data (use firm_exposure_analyzer), risk calculations (use calculate_portfolio_var)."
+  tool_resources:
+    firm_exposure_analyzer:
+      execution_environment:
+        query_timeout: 30
+        type: "warehouse"
+        warehouse: "{warehouse_name}"
+      semantic_view: "{database_name}.AI.FIRM_EXPOSURE_VIEW"
+    calculate_portfolio_var:
+      user_function: "{database_name}.{DemoConfig.SCHEMAS['AI']}.CALCULATE_PORTFOLIO_VAR"
+    search_news_articles:
+      search_service: "{database_name}.AI.NEWS_ARTICLES_SEARCH"
+      id_column: "ARTICLE_ID"
+      title_column: "HEADLINE"
+      max_results: 4
+  $$;
+"""
+    
+    try:
+        session.sql(sql).collect()
+        print("✅ Created agent: market_risk_agent")
+    except Exception as e:
+        print(f"❌ Failed to create market_risk_agent: {str(e)}")
+        print(f"📋 Full SQL attempted:")
+        print(sql)
+        raise
+
+
 def create_all_agents(session: Session, scenarios: List[str] = None) -> None:
     """
     Create all Snowflake Intelligence agents for specified scenarios.
@@ -510,17 +867,15 @@ def create_all_agents(session: Session, scenarios: List[str] = None) -> None:
         'equity_research_earnings': create_earnings_analysis_agent,
         'equity_research_thematic': create_thematic_research_agent,
         'global_macro_strategy': create_global_macro_strategy_agent,
-        'global_research_reports': None,  # Phase 2 - not implemented yet
-        'global_research_client_strategy': None  # Phase 2 - not implemented yet
+        'global_research_reports': create_market_structure_reports_agent,
+        'global_research_client_strategy': create_client_strategy_agent,
+        'market_risk_analysis': create_market_risk_agent
     }
     
     print("\n🤖 Creating Snowflake Intelligence Agents...")
     
     for scenario, create_func in scenario_to_agent.items():
         if 'all' in scenarios or scenario in scenarios:
-            if create_func is None:
-                print(f"⏭️  Skipping {scenario} (not implemented yet)")
-                continue
             try:
                 create_func(session)
             except Exception as e:

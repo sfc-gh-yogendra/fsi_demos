@@ -40,6 +40,9 @@ def generate_all_structured_data(session: Session) -> None:
     print("   💼 Generating portfolio and trading data...")
     generate_portfolio_data(session)
     
+    print("   🏦 Generating firm positions for risk analysis...")
+    generate_firm_positions(session)
+    
     print("   🌍 Generating third-party vendor data...")
     generate_vendor_data(session)
     
@@ -447,6 +450,123 @@ def generate_portfolio_data(session: Session) -> None:
     
     holdings_df = session.create_dataframe(holdings_data)
     holdings_df.write.mode("overwrite").save_as_table("CURATED.FACT_PORTFOLIO_HOLDING")
+
+
+def generate_firm_positions(session: Session) -> None:
+    """
+    Generate FACT_FIRM_POSITION table for Market Risk Analyst scenario.
+    Creates firm-wide portfolio holdings with emphasis on Taiwan and semiconductor exposure.
+    """
+    
+    # Create firm positions table
+    create_positions_sql = """
+    CREATE OR REPLACE TABLE CURATED.FACT_FIRM_POSITION (
+        PORTFOLIO_ID VARCHAR(50),
+        TICKER VARCHAR(10),
+        QUANTITY NUMBER(18, 0),
+        MARKET_VALUE NUMBER(20, 4),
+        AS_OF_DATE DATE
+    )
+    """
+    session.sql(create_positions_sql).collect()
+    
+    # Define firm portfolios with specific strategies
+    firm_portfolios = [
+        {
+            "id": "Global Equities Fund",
+            "focus": "diversified",
+            "size_multiplier": 3.0,
+            "taiwan_semiconductor_bias": 1.5  # 50% higher allocation to Taiwan/semiconductor
+        },
+        {
+            "id": "TMT Trading Book",
+            "focus": "technology",
+            "size_multiplier": 2.5,
+            "taiwan_semiconductor_bias": 2.0  # 2x allocation to Taiwan/semiconductor
+        },
+        {
+            "id": "Semiconductor Strategy",
+            "focus": "semiconductors",
+            "size_multiplier": 1.5,
+            "taiwan_semiconductor_bias": 3.0  # 3x allocation to Taiwan/semiconductor
+        }
+    ]
+    
+    # Taiwan and semiconductor tickers for earthquake scenario
+    taiwan_semiconductor_tickers = ["NVDA", "AMD", "TSMC"]  # TSMC would be added if we had it
+    semiconductor_tickers = ["NVDA", "AMD"]  # Companies with high semiconductor exposure
+    
+    # Get latest prices for market value calculation
+    latest_prices = {}
+    price_query = f"""
+        SELECT TICKER, CLOSE 
+        FROM (
+            SELECT TICKER, CLOSE, ROW_NUMBER() OVER (PARTITION BY TICKER ORDER BY PRICE_DATE DESC) as rn
+            FROM {DemoConfig.SCHEMAS['CURATED']}.FACT_STOCK_PRICE_DAILY
+        ) WHERE rn = 1
+    """
+    price_data = session.sql(price_query).collect()
+    for row in price_data:
+        latest_prices[row['TICKER']] = row['CLOSE']
+    
+    # Get current date for AS_OF_DATE
+    _, end_date = get_dynamic_date_range()
+    current_date = end_date.date()
+    
+    positions_data = []
+    
+    for portfolio in firm_portfolios:
+        portfolio_id = portfolio["id"]
+        focus = portfolio["focus"]
+        size_multiplier = portfolio["size_multiplier"]
+        taiwan_semiconductor_bias = portfolio["taiwan_semiconductor_bias"]
+        
+        # Select tickers based on portfolio focus
+        if focus == "technology":
+            ticker_pool = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "NFLX", "AMD"]
+        elif focus == "semiconductors":
+            ticker_pool = ["NVDA", "AMD", "AAPL", "MSFT"]  # Focus on semiconductor-heavy companies
+        else:  # diversified
+            ticker_pool = DemoConfig.TICKER_LIST
+        
+        for ticker in ticker_pool:
+            if ticker not in latest_prices:
+                continue
+                
+            # Determine if this is a semiconductor/Taiwan-exposed company
+            is_semiconductor = ticker in semiconductor_tickers or ticker in taiwan_semiconductor_tickers
+            
+            # Base position size
+            base_quantity = random.randint(50000, 1000000)
+            
+            # Apply portfolio size multiplier
+            quantity = int(base_quantity * size_multiplier)
+            
+            # Apply Taiwan/semiconductor bias
+            if is_semiconductor:
+                quantity = int(quantity * taiwan_semiconductor_bias)
+            
+            # Higher probability to hold semiconductors in relevant portfolios
+            hold_probability = 0.9 if is_semiconductor and focus in ["semiconductors", "technology"] else 0.6
+            
+            if random.random() < hold_probability:
+                market_value = quantity * latest_prices[ticker]
+                
+                positions_data.append({
+                    "PORTFOLIO_ID": portfolio_id,
+                    "TICKER": ticker,
+                    "QUANTITY": quantity,
+                    "MARKET_VALUE": round(market_value, 2),
+                    "AS_OF_DATE": current_date
+                })
+    
+    # Create dataframe and save
+    if positions_data:
+        positions_df = session.create_dataframe(positions_data)
+        positions_df.write.mode("overwrite").save_as_table("CURATED.FACT_FIRM_POSITION")
+        print(f"   ✅ Generated {len(positions_data)} firm positions across {len(firm_portfolios)} portfolios")
+    else:
+        print("   ⚠️ No firm positions generated - check price data availability")
 
 
 def generate_vendor_data(session: Session) -> None:

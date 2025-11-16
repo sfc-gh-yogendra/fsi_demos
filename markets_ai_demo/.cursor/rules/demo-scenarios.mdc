@@ -4,16 +4,92 @@ description: Demo scenario requirements and user interaction patterns
 
 # Demo Scenario Standards
 
-## Phase 1 Scenarios (Build First)
-1. **Equity Research Analyst - Earnings Analysis**
-   - Focus: Accelerating earnings season analysis
-   - Tools: Earnings semantic view + transcripts search
-   - Duration: 15 minutes standalone
+## All Scenarios (Complete Implementation)
 
-2. **Equity Research Analyst - Thematic Research**
-   - Focus: Discovering investment themes from unstructured data
-   - Tools: Research reports search + stock data analysis
-   - Duration: 15 minutes standalone
+### 1. Equity Research Analyst - Earnings Analysis
+- **Focus**: Accelerating earnings season analysis from hours to minutes
+- **Agent**: Earnings Analysis Assistant (Market Research)
+- **Tools**: 
+  - Cortex Analyst: EARNINGS_ANALYSIS_VIEW
+  - Cortex Search: EARNINGS_TRANSCRIPTS_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "Give me a summary of Netflix's latest quarter results"
+  2. "What was management's tone regarding future subscriber growth?"
+  3. "Generate a bar chart comparing revenue, EPS, net adds vs consensus for last 4 quarters"
+  4. "Draft a 'First Take' summary including headline numbers and management tone"
+- **Expected Tools Used**: Cortex Analyst for metrics, Cortex Search for transcripts, synthesis for report generation
+
+### 2. Equity Research Analyst - Thematic Research
+- **Focus**: Discovering emerging investment themes from alternative data sources
+- **Agent**: Thematic Investment Research Assistant (Market Research)
+- **Tools**:
+  - Cortex Analyst: THEMATIC_RESEARCH_VIEW
+  - Cortex Search: RESEARCH_REPORTS_SEARCH, NEWS_ARTICLES_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "What are the emerging trends in carbon capture technology?"
+  2. "Which publicly traded industrial companies are mentioned most in relation to DAC technologies?"
+  3. "Show stock performance of Johnson Matthey (JMPLY), Linde (LIN), Siemens (SIEGY) over last year with carbon capture news overlays"
+  4. "Johnson Matthey underperformed - summarize their involvement and sentiment"
+- **Expected Tools Used**: Cortex Search for research/news, Cortex Analyst for price data, synthesis for sentiment analysis
+
+### 3. Global Research & Market Insights - Market Structure Reports
+- **Focus**: Hyper-personalizing market structure reports with client engagement analytics
+- **Agent**: Market Structure Research Assistant (Market Research)
+- **Tools**:
+  - Cortex Analyst: CLIENT_MARKET_IMPACT_VIEW
+  - Cortex Search: RESEARCH_REPORTS_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "What have been the most significant developments in FICC market structure in EMEA over the past quarter?"
+  2. "Which of these topics has generated the most engagement from our asset manager clients?"
+  3. "Generate a list of asset managers with high EMIR 3.0 engagement but no one-on-one discussion yet"
+  4. "Draft executive summary leading with EMIR 3.0 and implications for asset managers"
+- **Expected Tools Used**: Cortex Search for regulatory content, Cortex Analyst for engagement data, synthesis for personalized content
+
+### 4. Global Research & Market Insights - Macro Strategy Report Generation
+- **Focus**: Leveraging proprietary macroeconomic signals for differentiated investment strategies
+- **Agent**: Global Macro Strategy Assistant (Market Research)
+- **Tools**:
+  - Cortex Analyst: GLOBAL_MACRO_SIGNALS_VIEW
+  - Cortex Search: RESEARCH_REPORTS_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "What is the current level of the Frost Global Shipping Volume Index and how has it trended?"
+  2. "Which sectors have the strongest correlation with the Frost Commodity Price Momentum indicator?"
+  3. "Based on Central Bank Liquidity and Credit Conditions indicators, which sectors to overweight/underweight?"
+  4. "Draft executive summary highlighting strong signals (Shipping, Tech Capex) and defensive positioning from declining liquidity"
+- **Expected Tools Used**: Cortex Analyst for proprietary signals and correlations, Cortex Search for strategic research, synthesis for recommendations
+
+### 5. Market Risk Analyst - Real-Time Market Event Impact Assessment
+- **Focus**: Real-time firm-wide exposure assessment and on-demand stress testing
+- **Agent**: Market Risk Analysis Assistant (Market Research)
+- **Tools**:
+  - Cortex Analyst: FIRM_EXPOSURE_VIEW
+  - Custom Tool: CALCULATE_PORTFOLIO_VAR (Python stored procedure)
+  - Cortex Search: NEWS_ARTICLES_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "A 7.0 earthquake just hit Taiwan. What is our firm's exposure to Taiwanese equities and semiconductor companies?"
+  2. "List the top 10 semiconductor holdings by current market value"
+  3. "Run a stress test on the global semiconductor book assuming a 15% price drop"
+  4. "Draft an initial alert for the CRO summarizing the exposure and stress test results"
+- **Expected Tools Used**: Cortex Analyst for exposure analytics, Custom Tool for VaR calculations, Cortex Search for event context, synthesis for executive communication
+
+### 6. Global Research & Market Insights - Client Strategy Preparation
+- **Focus**: Data-driven preparation for strategic client meetings
+- **Agent**: Client Strategy Assistant (Market Research)
+- **Tools**:
+  - Cortex Analyst: CLIENT_MARKET_IMPACT_VIEW
+  - Cortex Search: RESEARCH_REPORTS_SEARCH
+- **Duration**: 15 minutes standalone
+- **Key Queries**:
+  1. "Pull up a summary of Acme Corp's FX hedging activity over the past year"
+  2. "Based on that activity, what is their single biggest market structure risk on the horizon?"
+  3. "Find our firm's definitive report on EMIR 3.0 and extract key recommendations for corporate clients"
+  4. "Generate a personalized briefing note for Acme Corp meeting including their trading patterns, EMIR 3.0 risk, and our action plan"
+- **Expected Tools Used**: Cortex Analyst for client activity analysis, Cortex Search for firm research, synthesis for personalized briefing generation
 
 ## Scenario Independence Requirements
 - Each scenario must work without prior context
@@ -25,8 +101,8 @@ description: Demo scenario requirements and user interaction patterns
 Each scenario follows a 3-4 question conversation:
 1. **Initial Question**: Broad request that demonstrates core capability
 2. **Follow-up Question**: Drill down or cross-reference data sources
-3. **Visualization Request**: Chart or table generation
-4. **Action Item**: Generate summary, report, or recommendation
+3. **Analysis/Visualization Request**: Chart, table, or deeper analysis
+4. **Action Item**: Generate summary, report, alert, or recommendation
 
 ## Data Requirements Per Scenario
 - All agent questions must have supporting synthetic data
@@ -38,9 +114,33 @@ Each scenario follows a 3-4 question conversation:
   - Market events span realistic timeframes relative to demo date
   - Research reports cite current market conditions
   - Client data reflects recent engagement patterns
+  - Macro signals show current levels and recent trends
+  - Firm positions reflect latest as-of dates
+
+## Agent Tool Configuration Patterns
+
+### Cortex Analyst Tools
+- Use semantic views for structured data analysis
+- Provide clear tool descriptions explaining data coverage and use cases
+- Include "When to Use" and "When NOT to Use" guidance
+- Specify query timeout and warehouse settings
+
+### Cortex Search Tools
+- Use search services for unstructured document retrieval
+- Configure appropriate max_results (typically 4)
+- Specify id_column and title_column for each search service
+- Provide context about document types and coverage
+
+### Custom Tools (Python Stored Procedures)
+- Implement sophisticated analytics not available in SQL
+- Clearly document input parameters and return values
+- Include methodology explanation in tool description
+- Specify execution environment and packages
 
 ## Success Criteria
 - Agents respond within 30 seconds
 - All visualizations render properly in Snowflake Intelligence
 - Responses demonstrate clear business value
 - Scenarios can run independently in any order
+- Tool selection is appropriate for each query type
+- Multi-tool queries synthesize information effectively
