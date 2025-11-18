@@ -54,6 +54,7 @@ This demo creates a fictional financial markets research firm "Frost Markets Int
 
 ### Prerequisites
 - Snowflake account with Cortex features enabled
+- Snowflake Intelligence enabled: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence) **Please make sure the SNowflake user you use when running the setup has USAGE and MODIFY permissions on SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT**
 - Python 3.11+ with pip
 - A `connections.toml` file configured (see [Snowflake docs](https://docs.snowflake.com/en/developer-guide/snowpark/python/creating-session#connect-by-using-the-connections-toml-file))
 
@@ -169,17 +170,20 @@ The setup process will:
 The setup process **automatically creates** all agents via SQL - no manual configuration needed!
 
 **Agents Created:**
-- **Earnings Analysis Assistant** - Analyzes quarterly earnings, consensus estimates, and management commentary
-- **Thematic Investment Research Assistant** - Discovers emerging themes and cross-sector trends
-- **Global Macro Strategy Assistant** - Analyzes proprietary macroeconomic signals and develops investment strategies
-- **Market Structure Research Assistant** - Specializes in market structure analysis, regulatory changes, and institutional client insights
-- **Client Strategy Assistant** - Prepares data-driven client meetings and personalized strategic recommendations
-- **Market Risk Analysis Assistant** - Performs real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis
+
+All agents are created in `MARKETS_AI_DEMO.AI` schema and automatically registered with Snowflake Intelligence:
+
+- **MR_EARNINGS_ANALYSIS_AGENT** - Analyzes quarterly earnings, consensus estimates, and management commentary
+- **MR_THEMATIC_RESEARCH_AGENT** - Discovers emerging themes and cross-sector trends
+- **MR_GLOBAL_MACRO_STRATEGY_AGENT** - Analyzes proprietary macroeconomic signals and develops investment strategies
+- **MR_MARKET_REPORTS_AGENT** - Specializes in market structure analysis, regulatory changes, and institutional client insights
+- **MR_CLIENT_STRATEGY_AGENT** - Prepares data-driven client meetings and personalized strategic recommendations
+- **MR_MARKET_RISK_AGENT** - Performs real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis
 
 After setup completes, agents are immediately available in:
-**Snowsight** → **AI & ML** → **Snowflake Intelligence**
+**Snowsight** → **AI & ML** → **Snowflake Intelligence** → **SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT**
 
-> **Note**: Agents are created using SQL `CREATE AGENT` statements during setup. See `.cursor/rules/agent-creation.mdc` for implementation details.
+> **Note**: Agents are created using SQL `CREATE AGENT` statements during setup, then registered with `ALTER SNOWFLAKE INTELLIGENCE`. See `.cursor/rules/agent-creation.mdc` for implementation details.
 
 ## 🎭 Demo Delivery
 

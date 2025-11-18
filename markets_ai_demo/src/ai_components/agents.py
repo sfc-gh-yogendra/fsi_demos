@@ -22,6 +22,29 @@ from config import DemoConfig
 from typing import List
 
 
+def check_snowflake_intelligence(session: Session) -> bool:
+    """
+    Check if Snowflake Intelligence object exists.
+    User must create this manually in Snowsight before agents can be registered.
+    
+    Returns:
+        True if exists, False if not
+    """
+    try:
+        result = session.sql("SHOW SNOWFLAKE INTELLIGENCES").collect()
+        if len(result) > 0:
+            print("✅ Snowflake Intelligence object found")
+            return True
+        else:
+            print("⚠️  No Snowflake Intelligence object found")
+            print("   Please create one in Snowsight before proceeding:")
+            print("   AI & ML → Snowflake Intelligence → Create New Intelligence")
+            return False
+    except Exception as e:
+        print(f"⚠️  Could not check for Snowflake Intelligence: {str(e)}")
+        return False
+
+
 def format_instructions_for_yaml(text: str) -> str:
     """
     Format multi-line instructions for YAML specification within SQL.
@@ -503,6 +526,7 @@ def get_demo_test_queries():
 def create_earnings_analysis_agent(session: Session) -> None:
     """Create Earnings Analysis Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -512,7 +536,7 @@ def create_earnings_analysis_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_EARNINGS_ANALYSIS_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_EARNINGS_ANALYSIS_AGENT
   COMMENT = 'Specialized assistant for analyzing quarterly earnings results, consensus estimates, and management commentary'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -549,8 +573,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_EARNINGS_ANALYSIS_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: earnings_analysis_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_EARNINGS_ANALYSIS_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create earnings_analysis_agent: {str(e)}")
+        print(f"❌ Failed to create/register earnings_analysis_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -559,6 +592,7 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_EARNINGS_ANALYSIS_AGENT
 def create_thematic_research_agent(session: Session) -> None:
     """Create Thematic Investment Research Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -568,7 +602,7 @@ def create_thematic_research_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_THEMATIC_RESEARCH_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_THEMATIC_RESEARCH_AGENT
   COMMENT = 'Advanced assistant for discovering emerging investment themes and cross-sector trends from alternative data sources'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -614,8 +648,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_THEMATIC_RESEARCH_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: thematic_research_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_THEMATIC_RESEARCH_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create thematic_research_agent: {str(e)}")
+        print(f"❌ Failed to create/register thematic_research_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -624,6 +667,7 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_THEMATIC_RESEARCH_AGENT
 def create_global_macro_strategy_agent(session: Session) -> None:
     """Create Global Macro Strategy Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -633,7 +677,7 @@ def create_global_macro_strategy_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_GLOBAL_MACRO_STRATEGY_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_GLOBAL_MACRO_STRATEGY_AGENT
   COMMENT = 'Expert assistant for analyzing proprietary macroeconomic signals and developing cross-asset investment strategies'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -670,8 +714,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_GLOBAL_MACRO_STRATEGY_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: global_macro_strategy_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_GLOBAL_MACRO_STRATEGY_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create global_macro_strategy_agent: {str(e)}")
+        print(f"❌ Failed to create/register global_macro_strategy_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -680,6 +733,7 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_GLOBAL_MACRO_STRATEGY_AGENT
 def create_market_structure_reports_agent(session: Session) -> None:
     """Create Market Structure Research Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -689,7 +743,7 @@ def create_market_structure_reports_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_REPORTS_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_MARKET_REPORTS_AGENT
   COMMENT = 'Specialist in market structure analysis, regulatory changes, and institutional client insights'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -726,8 +780,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_REPORTS_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: market_structure_reports_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_MARKET_REPORTS_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create market_structure_reports_agent: {str(e)}")
+        print(f"❌ Failed to create/register market_structure_reports_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -736,6 +799,7 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_REPORTS_AGENT
 def create_client_strategy_agent(session: Session) -> None:
     """Create Client Strategy Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -745,7 +809,7 @@ def create_client_strategy_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_CLIENT_STRATEGY_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_CLIENT_STRATEGY_AGENT
   COMMENT = 'Strategic assistant for preparing data-driven client meetings and personalized recommendations'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -782,8 +846,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_CLIENT_STRATEGY_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: client_strategy_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_CLIENT_STRATEGY_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create client_strategy_agent: {str(e)}")
+        print(f"❌ Failed to create/register client_strategy_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -792,6 +865,7 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_CLIENT_STRATEGY_AGENT
 def create_market_risk_agent(session: Session) -> None:
     """Create Market Risk Analysis Assistant agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
@@ -801,7 +875,7 @@ def create_market_risk_agent(session: Session) -> None:
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_RISK_AGENT
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_MARKET_RISK_AGENT
   COMMENT = 'Expert assistant for real-time market risk assessment, portfolio stress testing, and firm-wide exposure analysis'
   PROFILE = '{{"display_name": "{display_name}"}}'
   FROM SPECIFICATION
@@ -860,8 +934,17 @@ CREATE OR REPLACE AGENT {DemoConfig.AGENT_SCHEMA}.MR_MARKET_RISK_AGENT
     try:
         session.sql(sql).collect()
         print("✅ Created agent: market_risk_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_MARKET_RISK_AGENT
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create market_risk_agent: {str(e)}")
+        print(f"❌ Failed to create/register market_risk_agent: {str(e)}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -875,6 +958,10 @@ def create_all_agents(session: Session, scenarios: List[str] = None) -> None:
         session: Snowpark session
         scenarios: List of scenario names to create agents for, or None for all
     """
+    # Check for Snowflake Intelligence object first
+    if not check_snowflake_intelligence(session):
+        raise Exception("Snowflake Intelligence object not found. Please create it in Snowsight first.")
+    
     if scenarios is None:
         scenarios = ['all']
     

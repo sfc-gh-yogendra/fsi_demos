@@ -8,6 +8,44 @@ description: SQL-based agent creation patterns for Snowflake Intelligence
 
 All agents are created automatically using SQL `CREATE AGENT` statements during the build process. This ensures consistent deployment and eliminates manual configuration.
 
+## Snowflake Intelligence Prerequisites
+
+### Before Creating Agents
+
+**MANDATORY**: Snowflake Intelligence object must exist first.
+
+#### Check for Snowflake Intelligence:
+
+```sql
+SHOW SNOWFLAKE INTELLIGENCES;
+```
+
+If this returns no results, create the object manually:
+
+1. Open Snowsight
+2. Navigate to: AI & ML → Snowflake Intelligence
+3. Click "Create New Intelligence"
+4. Name it appropriately (e.g., SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT)
+
+### Agent Creation and Registration Pattern
+
+Agents are created in two steps:
+
+1. **CREATE AGENT** in your database's AI schema (e.g., MARKETS_AI_DEMO.AI)
+2. **ALTER SNOWFLAKE INTELLIGENCE** to register the agent
+
+**Example:**
+
+```python
+# Step 1: Create agent
+CREATE OR REPLACE AGENT MARKETS_AI_DEMO.AI.MR_EARNINGS_ANALYSIS_AGENT
+  ...
+
+# Step 2: Register with Snowflake Intelligence
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+ADD AGENT MARKETS_AI_DEMO.AI.MR_EARNINGS_ANALYSIS_AGENT
+```
+
 ## SQL-Based Agent Creation Pattern
 
 ### Agent Creation Method:
@@ -42,15 +80,17 @@ def format_instructions_for_yaml(text: str) -> str:
 def create_{agent_name}_agent(session: Session) -> None:
     """Create {Agent Display Name} agent via SQL"""
     database_name = DemoConfig.DATABASE_NAME
+    ai_schema = DemoConfig.SCHEMAS['AI']
     warehouse_name = DemoConfig.COMPUTE_WAREHOUSE
     
     # Get instructions from existing configs
-    config = get_phase_X_agent_configs()['{agent_name}_agent']
+    config = get_agent_configs()['{agent_name}_agent']
+    display_name = config['display_name']
     response_formatted = format_instructions_for_yaml(config['response_instructions'])
     orchestration_formatted = format_instructions_for_yaml(config['planning_instructions'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}_agent
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.MR_{AGENT_NAME}
   COMMENT = 'Brief description of agent purpose and capabilities'
   PROFILE = '{{"display_name": "{Agent Display Name} (Frost Markets Intelligence)"}}'
   FROM SPECIFICATION
@@ -106,8 +146,17 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}_agent
     try:
         session.sql(sql).collect()
         print("✅ Created agent: {agent_name}_agent")
+        
+        # Register with Snowflake Intelligence
+        register_sql = f"""
+        ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+        ADD AGENT {database_name}.{ai_schema}.MR_{AGENT_NAME}
+        """
+        session.sql(register_sql).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+        
     except Exception as e:
-        print(f"❌ Failed to create {agent_name}_agent: {{str(e)}}")
+        print(f"❌ Failed to create/register {agent_name}_agent: {{str(e)}}")
         print(f"📋 Full SQL attempted:")
         print(sql)
         raise
@@ -371,53 +420,58 @@ def create_ai_components(session, mode):
 
 ## Frost Markets Intelligence Agent Types
 
-### Phase 1 Agents (Build First):
-1. **Earnings Analysis Assistant**: Analyzes quarterly earnings, consensus estimates, management commentary
+**All agents are created in `MARKETS_AI_DEMO.AI` schema and registered with Snowflake Intelligence.**
+
+### Agent Inventory (6 Total):
+
+1. **MR_EARNINGS_ANALYSIS_AGENT**: Analyzes quarterly earnings, consensus estimates, management commentary
    - Tools: 
      - earnings_data_analyzer (Cortex Analyst)
      - search_earnings_transcripts (Cortex Search)
-   - Semantic View: AI.EARNINGS_ANALYSIS_VIEW
-   - Search Service: AI.EARNINGS_TRANSCRIPTS_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.EARNINGS_ANALYSIS_VIEW
+   - Search Service: MARKETS_AI_DEMO.AI.EARNINGS_TRANSCRIPTS_SEARCH
 
-2. **Thematic Investment Research Assistant**: Discovers emerging themes and cross-sector trends
+2. **MR_THEMATIC_RESEARCH_AGENT**: Discovers emerging themes and cross-sector trends
    - Tools: 
      - thematic_data_analyzer (Cortex Analyst)
      - search_research_reports (Cortex Search)
      - search_news_articles (Cortex Search)
-   - Semantic View: AI.THEMATIC_RESEARCH_VIEW
-   - Search Services: AI.RESEARCH_REPORTS_SEARCH, AI.NEWS_ARTICLES_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.THEMATIC_RESEARCH_VIEW
+   - Search Services: MARKETS_AI_DEMO.AI.RESEARCH_REPORTS_SEARCH, MARKETS_AI_DEMO.AI.NEWS_ARTICLES_SEARCH
 
-### Phase 2 Agents:
-3. **Global Macro Strategy Assistant**: Analyzes proprietary macroeconomic signals and develops cross-asset strategies
+3. **MR_GLOBAL_MACRO_STRATEGY_AGENT**: Analyzes proprietary macroeconomic signals and develops cross-asset strategies
    - Tools: 
      - macro_signals_analyzer (Cortex Analyst)
      - search_research_reports (Cortex Search)
-   - Semantic View: AI.GLOBAL_MACRO_SIGNALS_VIEW
-   - Search Service: AI.RESEARCH_REPORTS_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.GLOBAL_MACRO_SIGNALS_VIEW
+   - Search Service: MARKETS_AI_DEMO.AI.RESEARCH_REPORTS_SEARCH
 
-4. **Market Risk Analysis Assistant**: Real-time market risk assessment with portfolio stress testing
+4. **MR_MARKET_RISK_AGENT**: Real-time market risk assessment with portfolio stress testing
    - Tools: 
      - firm_exposure_analyzer (Cortex Analyst)
      - calculate_portfolio_var (Custom Tool - Stored Procedure)
      - search_news_articles (Cortex Search)
-   - Semantic View: AI.FIRM_EXPOSURE_VIEW
-   - Custom Tool: AI.CALCULATE_PORTFOLIO_VAR
-   - Search Service: AI.NEWS_ARTICLES_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.FIRM_EXPOSURE_VIEW
+   - Custom Tool: MARKETS_AI_DEMO.AI.CALCULATE_PORTFOLIO_VAR
+   - Search Service: MARKETS_AI_DEMO.AI.NEWS_ARTICLES_SEARCH
 
-5. **Market Structure Reports Agent**: Hyper-personalizes market structure reports for clients
+5. **MR_MARKET_REPORTS_AGENT**: Hyper-personalizes market structure reports for clients
    - Tools: 
      - client_engagement_analyzer (Cortex Analyst)
      - search_research_reports (Cortex Search)
-   - Semantic View: AI.CLIENT_ENGAGEMENT_VIEW
-   - Search Service: AI.RESEARCH_REPORTS_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.CLIENT_MARKET_IMPACT_VIEW
+   - Search Service: MARKETS_AI_DEMO.AI.RESEARCH_REPORTS_SEARCH
 
-6. **Client Strategy Agent**: Powers data-driven 1-to-1 strategic client engagements
+6. **MR_CLIENT_STRATEGY_AGENT**: Powers data-driven 1-to-1 strategic client engagements
    - Tools: 
-     - client_market_impact_analyzer (Cortex Analyst)
-     - search_news_articles (Cortex Search)
+     - client_impact_analyzer (Cortex Analyst)
      - search_research_reports (Cortex Search)
-   - Semantic View: AI.CLIENT_MARKET_IMPACT_VIEW
-   - Search Services: AI.NEWS_ARTICLES_SEARCH, AI.RESEARCH_REPORTS_SEARCH
+   - Semantic View: MARKETS_AI_DEMO.AI.CLIENT_MARKET_IMPACT_VIEW
+   - Search Service: MARKETS_AI_DEMO.AI.RESEARCH_REPORTS_SEARCH
+
+**Agent Access:**
+After setup, all agents are available in:
+**Snowsight** → **AI & ML** → **Snowflake Intelligence** → **SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT**
 
 ## Creating Custom Tools
 

@@ -19,6 +19,7 @@ def validate_all_components(session: Session) -> None:
     # Validate AI components
     validate_semantic_views(session)
     validate_search_services(session)
+    validate_agents(session)
     
     # Validate scenarios
     validate_scenario_readiness(session)
@@ -265,6 +266,45 @@ def validate_search_services(session: Session) -> None:
             print(f"     ❌ {service['name']}: Error - {str(e)}")
 
 
+def validate_agents(session: Session) -> None:
+    """Validate agents are created and registered with Snowflake Intelligence"""
+    
+    print("   🤖 Validating agents...")
+    
+    agent_names = [
+        'MR_EARNINGS_ANALYSIS_AGENT',
+        'MR_THEMATIC_RESEARCH_AGENT',
+        'MR_GLOBAL_MACRO_STRATEGY_AGENT',
+        'MR_MARKET_REPORTS_AGENT',
+        'MR_CLIENT_STRATEGY_AGENT',
+        'MR_MARKET_RISK_AGENT'
+    ]
+    
+    ai_schema = DemoConfig.SCHEMAS['AI']
+    
+    # Check agents exist in AI schema
+    for agent_name in agent_names:
+        try:
+            result = session.sql(f"SHOW AGENTS LIKE '{agent_name}' IN SCHEMA {ai_schema}").collect()
+            if len(result) > 0:
+                print(f"     ✅ {agent_name} created in {ai_schema} schema")
+            else:
+                print(f"     ❌ {agent_name} not found in {ai_schema} schema")
+        except Exception as e:
+            print(f"     ❌ {agent_name} check error: {str(e)}")
+    
+    # Check registration with Snowflake Intelligence
+    try:
+        result = session.sql("SHOW AGENTS IN SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT").collect()
+        registered_count = len(result)
+        print(f"     ✅ {registered_count} agents registered with Snowflake Intelligence")
+        
+        if registered_count < len(agent_names):
+            print(f"     ⚠️  Expected {len(agent_names)} agents but found {registered_count}")
+    except Exception as e:
+        print(f"     ⚠️  Could not verify agent registration: {str(e)}")
+
+
 def validate_scenario_readiness(session: Session) -> None:
     """Validate that specific demo scenarios have required data"""
     
@@ -485,6 +525,32 @@ def generate_validation_report(session: Session) -> str:
                 report.append(f"- {service}: ❌ Not found")
         except:
             report.append(f"- {service}: ❌ Error")
+    
+    report.append("\n### Agents")
+    agent_names = [
+        'MR_EARNINGS_ANALYSIS_AGENT',
+        'MR_THEMATIC_RESEARCH_AGENT',
+        'MR_GLOBAL_MACRO_STRATEGY_AGENT',
+        'MR_MARKET_REPORTS_AGENT',
+        'MR_CLIENT_STRATEGY_AGENT',
+        'MR_MARKET_RISK_AGENT'
+    ]
+    ai_schema = DemoConfig.SCHEMAS['AI']
+    for agent_name in agent_names:
+        try:
+            result = session.sql(f"SHOW AGENTS LIKE '{agent_name}' IN SCHEMA {ai_schema}").collect()
+            if len(result) > 0:
+                report.append(f"- {agent_name}: ✅ Created in {ai_schema}")
+            else:
+                report.append(f"- {agent_name}: ❌ Not found")
+        except:
+            report.append(f"- {agent_name}: ❌ Error")
+    
+    try:
+        result = session.sql("SHOW AGENTS IN SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT").collect()
+        report.append(f"\n- Total agents registered with Snowflake Intelligence: {len(result)}")
+    except:
+        report.append(f"\n- Could not verify Snowflake Intelligence registration")
     
     report_text = "\n".join(report)
     print("✅ Validation report generated")

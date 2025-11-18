@@ -108,11 +108,6 @@ class DemoConfig:
         "Corporate Treasurer", "Insurance Company", "Sovereign Wealth Fund"
     ]
     
-    # --- Snowflake AI Configuration ---
-    CORTEX_MODEL_NAME = "llama3.1-70b"
-    AGENT_ORCHESTRATION_MODEL = "claude-sonnet-4-5"
-    AGENT_SCHEMA = "SNOWFLAKE_INTELLIGENCE.AGENTS"
-    
     # --- Snowflake Connection Configuration ---
     # This value can be overridden by command-line argument
     SNOWFLAKE_CONNECTION_NAME = "sfseeurope-mstellwall-aws-us-west3"
@@ -133,6 +128,11 @@ class DemoConfig:
         "CURATED": "CURATED", 
         "AI": "AI"
     }
+    
+    # --- Snowflake AI Configuration ---
+    CORTEX_MODEL_NAME = "llama3.1-70b"
+    AGENT_ORCHESTRATION_MODEL = "claude-sonnet-4-5"
+    AGENT_SCHEMA = f"{DATABASE_NAME}.{SCHEMAS['AI']}"  # Agents created in MARKETS_AI_DEMO.AI
     
     # Legacy aliases for backward compatibility during transition
     RAW_DATA = "RAW"
