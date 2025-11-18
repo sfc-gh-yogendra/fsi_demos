@@ -111,7 +111,6 @@ The four AI agents are created automatically using SQL-based deployment:
 - **Automated Creation**: Agents created via `--scope agents` or `--scope all`
 - **Registration**: After creation, agents are automatically registered with Snowflake Intelligence
 - **Agent Names**: `wam_advisor_copilot`, `wam_analyst_copilot`, `wam_compliance_copilot`, `wam_advisor_manager_copilot`
-- **Setup Guide**: See [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md) for reference (legacy manual process)
 
 ### Run the Demo
 Execute customer demonstration scenarios:
