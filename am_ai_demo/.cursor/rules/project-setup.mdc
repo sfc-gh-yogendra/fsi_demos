@@ -196,13 +196,15 @@ FACT_MARKETDATA_TIMESERIES    -- Enhanced market data with real data integration
 
 ### Current Implementation Status (Updated 2025-01-15)
 
-#### ✅ **All 7 Agents: Automated SQL Creation Complete**
+#### ✅ **All 8 Agents: Automated SQL Creation Complete**
 **Status**: All agents automatically created via `python/create_agents.py` using SQL `CREATE AGENT` statements
 - ✅ **Automated Creation**: Agents created during `python main.py` build process
+- ✅ **Agent Location**: Created in `{DATABASE['name']}.{DATABASE['schemas']['ai']}` schema (e.g., SAM_DEMO.AI)
+- ✅ **Auto-Registration**: Automatically registered with Snowflake Intelligence after creation
 - ✅ **Proper Formatting**: All instructions use YAML escaping (`\n`, `\"`, `''`)
 - ✅ **Full Instructions**: Portfolio Copilot, Research Copilot, Thematic Macro Advisor use complete docs
-- ✅ **Comprehensive Instructions**: ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst fully specified
-- ✅ **Immediate Availability**: Agents appear in `SNOWFLAKE_INTELLIGENCE.AGENTS` after build
+- ✅ **Comprehensive Instructions**: ESG Guardian, Compliance Advisor, Sales Advisor, Quant Analyst, Middle Office Copilot fully specified
+- ✅ **Immediate Availability**: Agents appear in Snowflake Intelligence UI after registration
 
 #### ✅ **Phase 1: Foundation Complete** (portfolio_copilot) - **100% Real Assets**
 **Status**: Fully implemented and operational with 14,000+ real securities

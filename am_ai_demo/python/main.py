@@ -251,7 +251,7 @@ def main():
         print(f"Scenarios: {', '.join(validated_scenarios)}")
         print()
         print("Next steps:")
-        print(f"1. Agents created in SNOWFLAKE_INTELLIGENCE.AGENTS ({len(agents_created)} total)")
+        print(f"1. Agents created in {DATABASE['name']}.AI and registered with Snowflake Intelligence ({len(agents_created)} total)")
         print("2. Test demo scenarios in Snowflake Intelligence UI (see docs/demo_scenarios.md)")
         print("3. Run validation checks (see docs/runbooks.md)")
         print()

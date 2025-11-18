@@ -2,7 +2,7 @@
 Agent Creator for SAM Demo
 
 This module creates Snowflake Intelligence agents using SQL CREATE AGENT syntax.
-All agents are created in SNOWFLAKE_INTELLIGENCE.AGENTS schema.
+All agents are created in the SAM_DEMO.AI schema and registered with Snowflake Intelligence.
 """
 
 from snowflake.snowpark import Session
@@ -19,13 +19,12 @@ def create_all_agents(session: Session, scenarios: List[str] = None):
     """
     print("🤖 Creating Snowflake Intelligence agents...")
     
-    # Validate that SNOWFLAKE_INTELLIGENCE.AGENTS exists
-    if not validate_agent_schema(session):
-        print("⚠️  WARNING: SNOWFLAKE_INTELLIGENCE.AGENTS schema not found")
-        print("   Agents will not be created. Please create the schema first:")
-        print("   CREATE DATABASE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE;")
-        print("   CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_INTELLIGENCE.AGENTS;")
-        return
+    # Step 1: Verify Snowflake Intelligence exists
+    if not verify_snowflake_intelligence(session):
+        raise Exception("Snowflake Intelligence not found. Cannot create agents.")
+    
+    database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     # List of all agent creation functions
     agent_creators = [
@@ -46,9 +45,20 @@ def create_all_agents(session: Session, scenarios: List[str] = None):
     # Create each agent
     for agent_name, creator_func in agent_creators:
         try:
+            print(f"   Creating agent: {agent_name}...")
             creator_func(session)
-            created.append(agent_name)
-            print(f"   ✅ Created agent: {agent_name}")
+            
+            # Get the full agent name with AM_ prefix from config
+            full_agent_name = config.SCENARIO_AGENTS[agent_name]['agent_name']
+            
+            # Register with Snowflake Intelligence
+            if register_agent_with_intelligence(session, database_name, ai_schema, full_agent_name):
+                created.append(agent_name)
+                print(f"   ✅ Created and registered agent: {full_agent_name}")
+            else:
+                created.append(agent_name)
+                print(f"   ⚠️  Agent created but registration failed: {full_agent_name}")
+                
         except Exception as e:
             failed.append((agent_name, str(e)))
             print(f"   ❌ Failed to create agent {agent_name}: {e}")
@@ -64,17 +74,57 @@ def create_all_agents(session: Session, scenarios: List[str] = None):
     return len(created), len(failed)
 
 
-def validate_agent_schema(session: Session) -> bool:
-    """Validate that SNOWFLAKE_INTELLIGENCE.AGENTS schema exists."""
+def verify_snowflake_intelligence(session: Session) -> bool:
+    """
+    Verify that Snowflake Intelligence exists.
+    
+    Returns:
+        True if Snowflake Intelligence exists, False otherwise
+    """
     try:
-        # Try to use the schema
-        session.sql("SHOW SCHEMAS IN SNOWFLAKE_INTELLIGENCE").collect()
-        schemas = session.sql("SHOW SCHEMAS IN SNOWFLAKE_INTELLIGENCE").collect()
-        for schema in schemas:
-            if schema['name'] == 'AGENTS':
-                return True
+        result = session.sql("SHOW SNOWFLAKE INTELLIGENCES").collect()
+        if len(result) == 0:
+            print("=" * 60)
+            print("ERROR: No Snowflake Intelligence found")
+            print("=" * 60)
+            print()
+            print("Before creating agents, you must first create a Snowflake Intelligence object.")
+            print()
+            print("To create a Snowflake Intelligence, run:")
+            print("  CREATE SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;")
+            print()
+            print("For more information, see:")
+            print("  https://docs.snowflake.com/en/user-guide/snowflake-intelligence")
+            print()
+            return False
+        return True
+    except Exception as e:
+        print(f"ERROR: Failed to check for Snowflake Intelligence: {e}")
         return False
-    except Exception:
+
+
+def register_agent_with_intelligence(session: Session, database_name: str, ai_schema: str, agent_name: str) -> bool:
+    """
+    Register an agent with Snowflake Intelligence.
+    
+    Args:
+        session: Snowpark session
+        database_name: Database name where agent was created
+        ai_schema: AI schema name where agent was created
+        agent_name: Name of the agent (e.g., 'AM_portfolio_copilot')
+    
+    Returns:
+        True if registration succeeded, False otherwise
+    """
+    try:
+        full_agent_path = f"{database_name}.{ai_schema}.{agent_name}"
+        session.sql(f"""
+            ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+            ADD AGENT {full_agent_path}
+        """).collect()
+        return True
+    except Exception as e:
+        print(f"   ⚠️  Warning: Failed to register agent {agent_name} with Snowflake Intelligence: {e}")
         return False
 
 
@@ -787,6 +837,7 @@ Workflow:
 def create_portfolio_copilot(session: Session):
     """Create Portfolio Copilot agent with full instructions from documentation."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     # Get instructions from helper functions
     instructions = get_agent_instructions()['portfolio_copilot']
@@ -794,7 +845,7 @@ def create_portfolio_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_portfolio_copilot
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_portfolio_copilot
   COMMENT = 'Expert AI assistant for portfolio managers providing instant access to portfolio analytics, holdings analysis, benchmark comparisons, and supporting research. Helps portfolio managers make informed investment decisions by combining quantitative portfolio data with qualitative market intelligence.'
   PROFILE = '{{"display_name": "Portfolio Co-Pilot (AM Demo)"}}'
   FROM SPECIFICATION
@@ -940,9 +991,10 @@ def create_research_copilot(session: Session):
     # NOTE: This is a simplified implementation based on the docs/agents_setup.md
     # Full configuration details are in that document
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_research_copilot
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_research_copilot
   COMMENT = 'Expert research assistant specializing in document analysis, investment research synthesis, and market intelligence. Provides comprehensive analysis by searching across broker research, earnings transcripts, and press releases to deliver actionable investment insights.'
   PROFILE = '{{"display_name": "Research Co-Pilot (AM Demo)"}}'
   FROM SPECIFICATION
@@ -999,9 +1051,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_research_copilot
 def create_thematic_macro_advisor(session: Session):
     """Create Thematic Macro Advisor agent."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_thematic_macro_advisor
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_thematic_macro_advisor
   COMMENT = 'Expert thematic investment strategist specializing in macro-economic trends, sectoral themes, and strategic asset allocation. Combines portfolio analytics with comprehensive research synthesis to identify and validate thematic investment opportunities across global markets.'
   PROFILE = '{{"display_name": "Thematic Macro Advisor (AM Demo)"}}'
   FROM SPECIFICATION
@@ -1067,9 +1120,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_thematic_macro_advisor
 def create_esg_guardian(session: Session):
     """Create ESG Guardian agent."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_esg_guardian
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_esg_guardian
   COMMENT = 'ESG risk monitoring specialist providing comprehensive analysis of environmental, social, and governance factors across portfolio holdings. Monitors ESG ratings, controversies, and policy compliance to ensure mandate adherence and risk mitigation.'
   PROFILE = '{{"display_name": "ESG Guardian (AM Demo)"}}'
   FROM SPECIFICATION
@@ -1144,9 +1198,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_esg_guardian
 def create_compliance_advisor(session: Session):
     """Create Compliance Advisor agent."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_compliance_advisor
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_compliance_advisor
   COMMENT = 'Compliance monitoring specialist ensuring portfolio mandate adherence and regulatory compliance. Monitors concentration limits, ESG requirements, and investment policy guidelines with automated breach detection and remediation tracking.'
   PROFILE = '{{"display_name": "Compliance Advisor (AM Demo)"}}'
   FROM SPECIFICATION
@@ -1194,9 +1249,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_compliance_advisor
 def create_sales_advisor(session: Session):
     """Create Sales Advisor agent."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_sales_advisor
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_sales_advisor
   COMMENT = 'Client reporting specialist creating professional investment reports and communications. Formats portfolio performance, holdings analysis, and market commentary into client-ready documents following SAM brand guidelines and reporting templates.'
   PROFILE = '{{"display_name": "Sales Advisor (AM Demo)"}}'
   FROM SPECIFICATION
@@ -1253,9 +1309,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_sales_advisor
 def create_quant_analyst(session: Session):
     """Create Quant Analyst agent."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_quant_analyst
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_quant_analyst
   COMMENT = 'Quantitative analysis specialist providing advanced portfolio analytics including factor exposures, performance attribution, and risk decomposition. Delivers sophisticated quantitative insights for portfolio construction and risk management.'
   PROFILE = '{{"display_name": "Quant Analyst (AM Demo)"}}'
   FROM SPECIFICATION
@@ -1289,6 +1346,7 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_quant_analyst
 def create_middle_office_copilot(session: Session):
     """Create Middle Office Copilot agent for operations monitoring and exception management."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     # Comprehensive response instructions
     response_instructions = """Style:
@@ -1856,7 +1914,7 @@ Alternative: Present last known good data and clearly mark current data as suspe
     orchestration_formatted = format_instructions_for_yaml(orchestration_instructions)
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.AM_middle_office_copilot
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_middle_office_copilot
   COMMENT = 'Middle office operations specialist monitoring trade settlements, reconciliations, NAV calculations, corporate actions, and cash management. Provides real-time operational intelligence and exception management for middle office operations teams.'
   PROFILE = '{{"display_name": "Middle Office Co-Pilot (AM Demo)"}}'
   FROM SPECIFICATION

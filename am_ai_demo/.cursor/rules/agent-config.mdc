@@ -23,11 +23,43 @@ This guide provides the exact patterns and procedures for creating Snowflake Int
 - **Compliance-Focused**: ESG Guardian (policy search + ESG analytics)
 
 **Current Implementation Status** (see @project-setup.mdc for details):
-- ✅ **All 7 agents**: Automatically created via SQL during build process
+- ✅ **All 8 agents**: Automatically created via SQL during build process
+- ✅ **Agent Location**: Created in `{DATABASE['name']}.{DATABASE['schemas']['ai']}` schema
+- ✅ **Registration**: Automatically registered with Snowflake Intelligence
 - ✅ **portfolio_copilot**: Full instructions from docs/agents_setup.md
 - ✅ **research_copilot**: Full instructions from docs/agents_setup.md
 - ✅ **thematic_macro_advisor**: Full instructions from docs/agents_setup.md
-- ✅ **esg_guardian, compliance_advisor, sales_advisor, quant_analyst**: Comprehensive instructions
+- ✅ **esg_guardian, compliance_advisor, sales_advisor, quant_analyst, middle_office_copilot**: Comprehensive instructions
+
+## Snowflake Intelligence Prerequisites
+
+**CRITICAL**: Before creating agents, verify Snowflake Intelligence exists.
+
+### Check for Snowflake Intelligence
+```sql
+SHOW SNOWFLAKE INTELLIGENCES;
+```
+
+If no results, create it first:
+```sql
+CREATE SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
+```
+
+For more information, see: https://docs.snowflake.com/en/user-guide/snowflake-intelligence
+
+### Agent Location and Registration
+
+**Agents are created in**: `{DATABASE['name']}.{DATABASE['schemas']['ai']}.{agent_name}`
+
+Example: `SAM_DEMO.AI.AM_portfolio_copilot`
+
+**After creation, agents are registered with Snowflake Intelligence**:
+```sql
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+ADD AGENT SAM_DEMO.AI.AM_portfolio_copilot;
+```
+
+This registration step is handled automatically by `python/create_agents.py`.
 
 ## Step 1: Prerequisites and Preparation
 
@@ -95,7 +127,7 @@ def validate_agent_data_readiness(session: Session):
 
 ### 2.1 Automated Agent Creation via SQL
 
-**All agents are now created automatically using SQL `CREATE AGENT` statements.** The build process executes `python/create_agents.py` which generates and runs SQL for all 7 agents.
+**All agents are now created automatically using SQL `CREATE AGENT` statements.** The build process executes `python/create_agents.py` which generates and runs SQL for all 8 agents.
 
 **Implementation**: See `python/create_agents.py`
 
@@ -104,12 +136,15 @@ def validate_agent_data_readiness(session: Session):
 1. **Agent Creation Functions**: One function per agent (e.g., `create_portfolio_copilot()`)
 2. **Instruction Helpers**: Functions that return properly formatted instructions (e.g., `get_portfolio_copilot_response_instructions()`)
 3. **YAML Formatting**: Helper function `format_instructions_for_yaml()` that escapes instructions for SQL
+4. **Intelligence Verification**: Checks for Snowflake Intelligence existence before creation
+5. **Agent Registration**: Automatically registers each agent with Snowflake Intelligence
 
 **Example Pattern:**
 ```python
 def create_portfolio_copilot(session: Session):
     """Create Portfolio Copilot agent with full instructions from documentation."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     # Get instructions from helper functions
     instructions = get_agent_instructions()['portfolio_copilot']
@@ -117,7 +152,7 @@ def create_portfolio_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.portfolio_copilot
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_portfolio_copilot
   COMMENT = 'Expert AI assistant for portfolio managers...'
   PROFILE = '{{"display_name": "Portfolio Co-Pilot (AM Demo)"}}'
   FROM SPECIFICATION
@@ -144,7 +179,10 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.portfolio_copilot
 """
     
     session.sql(sql).collect()
-    print("✅ Created agent: portfolio_copilot")
+    
+    # Agent is then automatically registered with Snowflake Intelligence via:
+    # ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+    # ADD AGENT {database_name}.{ai_schema}.AM_portfolio_copilot;
 ```
 
 ### 2.2 Critical Formatting Rules for SQL Agent Creation
@@ -188,9 +226,10 @@ Response: "Your portfolio has 10 holdings"
 **When you run `python main.py`:**
 1. Build process creates semantic views and search services
 2. `build_ai.py` calls `create_agents.create_all_agents()`
-3. Each agent creation function executes its `CREATE AGENT` SQL
-4. Agents appear in `SNOWFLAKE_INTELLIGENCE.AGENTS` schema
-5. Agents are immediately available in Snowflake Intelligence UI
+3. System verifies Snowflake Intelligence exists via `SHOW SNOWFLAKE INTELLIGENCES`
+4. Each agent creation function executes its `CREATE AGENT` SQL in `{DATABASE['name']}.{DATABASE['schemas']['ai']}` schema
+5. Each agent is registered with Snowflake Intelligence via `ALTER SNOWFLAKE INTELLIGENCE ADD AGENT`
+6. Agents are immediately available in Snowflake Intelligence UI
 
 **Manual Agent Creation (if needed):**
 ```bash
@@ -340,6 +379,7 @@ Scenario 2: [Different Error]
 def create_new_agent(session: Session):
     """Create new agent with comprehensive tool descriptions."""
     database_name = config.DATABASE['name']
+    ai_schema = config.DATABASE['schemas']['ai']
     
     # Get instructions from helper functions
     instructions = get_agent_instructions()['new_agent']
@@ -347,7 +387,7 @@ def create_new_agent(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.new_agent
+CREATE OR REPLACE AGENT {database_name}.{ai_schema}.AM_new_agent
   COMMENT = '[2-3 sentence description: persona + capabilities + value proposition]'
   PROFILE = '{{"display_name": "[Display Name]"}}'
   FROM SPECIFICATION
