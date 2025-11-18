@@ -26,6 +26,7 @@ Enable cross-region inference for Cortex Complete functionality:
 Enable Snowflake Intelligence for agent configuration:
 - **Documentation**: [Snowflake Intelligence Setup](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
 - **Required for**: Agent configuration and deployment
+- **Please make sure the Snowflake user you use when running the setup has USAGE and MODIFY permissions on SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT**
 
 #### SEC Filings Dataset (Required)
 Access to SEC Filings data from Snowflake Marketplace:
@@ -102,8 +103,13 @@ python main.py --connection your_connection_name --test-mode
 
 ### Agent Configuration
 The four AI agents are created automatically using SQL-based deployment:
+- **Prerequisites**: 
+  - Snowflake Intelligence object must exist: Run `SHOW SNOWFLAKE INTELLIGENCES` to verify
+  - If not found, create with: `CREATE SNOWFLAKE INTELLIGENCE <name>;`
+  - Documentation: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence
+- **Agent Schema**: Agents created in `WAM_AI_DEMO.AI` schema
 - **Automated Creation**: Agents created via `--scope agents` or `--scope all`
-- **No Manual Setup**: SQL-based approach eliminates manual GUI configuration
+- **Registration**: After creation, agents are automatically registered with Snowflake Intelligence
 - **Agent Names**: `wam_advisor_copilot`, `wam_analyst_copilot`, `wam_compliance_copilot`, `wam_advisor_manager_copilot`
 - **Setup Guide**: See [AGENT_SETUP_GUIDE.md](AGENT_SETUP_GUIDE.md) for reference (legacy manual process)
 
@@ -250,10 +256,12 @@ WAM_AI_DEMO/
 - Minimum requirement: AWS_EU enabled
 - Recommended: ANY_REGIONS for best performance
 
-**Error**: `Snowflake Intelligence not available`
+**Error**: `Snowflake Intelligence not available` or `No Snowflake Intelligence object found`
 **Solution**: 
+- Verify Snowflake Intelligence exists: Run `SHOW SNOWFLAKE INTELLIGENCES`
+- Create if not found: `CREATE SNOWFLAKE INTELLIGENCE <name>;`
 - Enable Snowflake Intelligence: [Setup Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence#set-up-sf-intelligence)
-- Required for agent configuration
+- Required for agent creation and registration
 
 ### Build Failures
 **Error**: `Table not found` or `Object does not exist`
@@ -294,7 +302,8 @@ python main.py --connection your_connection --validate-only
 -- Check AI components exist
 SHOW SEMANTIC VIEWS IN WAM_AI_DEMO.AI;
 SHOW CORTEX SEARCH SERVICES IN WAM_AI_DEMO.AI;
-SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS;
+SHOW AGENTS IN WAM_AI_DEMO.AI;
+SHOW SNOWFLAKE INTELLIGENCES;
 
 -- Test semantic view
 SELECT * FROM SEMANTIC_VIEW(

@@ -13,6 +13,7 @@ Usage:
 from snowflake.snowpark import Session
 from typing import List, Dict, Any
 import config
+import sys
 
 
 def format_instructions_for_yaml(text: str) -> str:
@@ -26,6 +27,29 @@ def format_instructions_for_yaml(text: str) -> str:
     formatted = formatted.replace('"', '\\"')
     formatted = formatted.replace("'", "''")
     return formatted
+
+
+def verify_snowflake_intelligence_exists(session: Session) -> bool:
+    """Check if Snowflake Intelligence object exists"""
+    print("→ Checking for Snowflake Intelligence object...")
+    try:
+        result = session.sql("SHOW SNOWFLAKE INTELLIGENCES").collect()
+        if not result:
+            print("❌ No Snowflake Intelligence object found")
+            print("   ")
+            print("   Required: Create Snowflake Intelligence object first")
+            print("   Documentation: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence")
+            print("   ")
+            print("   Run in Snowsight:")
+            print("   CREATE SNOWFLAKE INTELLIGENCE <name>;")
+            print("   ")
+            return False
+        print(f"✅ Snowflake Intelligence object found: {result[0]['name']}")
+        return True
+    except Exception as e:
+        print(f"❌ Error checking Snowflake Intelligence: {e}")
+        print("   Documentation: https://docs.snowflake.com/en/user-guide/snowflake-cortex/snowflake-intelligence")
+        return False
 
 
 def verify_ai_components_for_agent(session: Session, required_services: List[str]) -> bool:
@@ -170,6 +194,11 @@ def create_all_agents(session: Session, scenarios: List[str]) -> None:
     """Create all WAM AI Demo agents using SQL CREATE AGENT statements"""
     
     print("Creating WAM AI Demo agents...")
+    
+    # Verify Snowflake Intelligence object exists
+    if not verify_snowflake_intelligence_exists(session):
+        print("❌ Snowflake Intelligence object required. Please create it first.")
+        sys.exit(1)
     
     # Verify prerequisites
     required_services = ['COMMUNICATIONS_SEARCH', 'RESEARCH_SEARCH', 'REGULATORY_SEARCH', 'PLANNING_SEARCH', 'DEPARTURE_SEARCH']
@@ -444,7 +473,7 @@ def create_advisor_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_advisor_copilot
+CREATE OR REPLACE AGENT {database_name}.AI.wam_advisor_copilot
   COMMENT = 'Expert AI assistant for wealth managers providing comprehensive client insights by combining portfolio analytics with communication history and research intelligence.'
   PROFILE = '{{"display_name": "Wealth Advisory CoPilot (WAM Demo)"}}'
   FROM SPECIFICATION
@@ -702,6 +731,16 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_advisor_copilot
     
     session.sql(sql).collect()
     print("✅ Created agent: wam_advisor_copilot")
+    
+    # Register with Snowflake Intelligence
+    try:
+        session.sql(f"""
+            ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+            ADD AGENT {database_name}.AI.wam_advisor_copilot
+        """).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+    except Exception as e:
+        print(f"⚠️ Agent registration note: {e}")
 
 
 def create_analyst_copilot(session: Session):
@@ -714,7 +753,7 @@ def create_analyst_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_analyst_copilot
+CREATE OR REPLACE AGENT {database_name}.AI.wam_analyst_copilot
   COMMENT = 'Expert AI assistant for portfolio managers providing quantitative analysis, research synthesis, and investment insights across structured and unstructured data sources.'
   PROFILE = '{{"display_name": "Portfolio Analysis CoPilot (WAM Demo)"}}'
   FROM SPECIFICATION
@@ -876,6 +915,16 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_analyst_copilot
     
     session.sql(sql).collect()
     print("✅ Created agent: wam_analyst_copilot")
+    
+    # Register with Snowflake Intelligence
+    try:
+        session.sql(f"""
+            ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+            ADD AGENT {database_name}.AI.wam_analyst_copilot
+        """).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+    except Exception as e:
+        print(f"⚠️ Agent registration note: {e}")
 
 
 def create_compliance_copilot(session: Session):
@@ -888,7 +937,7 @@ def create_compliance_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_compliance_copilot
+CREATE OR REPLACE AGENT {database_name}.AI.wam_compliance_copilot
   COMMENT = 'Expert AI assistant for compliance officers providing comprehensive surveillance, regulatory analysis, and risk monitoring across communications and client interactions.'
   PROFILE = '{{"display_name": "Compliance CoPilot (WAM Demo)"}}'
   FROM SPECIFICATION
@@ -1058,6 +1107,16 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_compliance_copilot
     
     session.sql(sql).collect()
     print("✅ Created agent: wam_compliance_copilot")
+    
+    # Register with Snowflake Intelligence
+    try:
+        session.sql(f"""
+            ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+            ADD AGENT {database_name}.AI.wam_compliance_copilot
+        """).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+    except Exception as e:
+        print(f"⚠️ Agent registration note: {e}")
 
 
 def create_advisor_manager_copilot(session: Session):
@@ -1070,7 +1129,7 @@ def create_advisor_manager_copilot(session: Session):
     orchestration_formatted = format_instructions_for_yaml(instructions['orchestration'])
     
     sql = f"""
-CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_advisor_manager_copilot
+CREATE OR REPLACE AGENT {database_name}.AI.wam_advisor_manager_copilot
   COMMENT = 'Executive benchmarking agent for leadership to assess advisor performance, client outcomes, planning completeness, engagement quality, revenue, and risk signals over rolling 12 months, with quartile benchmarks and actionable coaching insights.'
   PROFILE = '{{"display_name": "Advisor Benchmarking CoPilot (WAM Demo)"}}'
   FROM SPECIFICATION
@@ -1324,6 +1383,16 @@ CREATE OR REPLACE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.wam_advisor_manager_copilo
     
     session.sql(sql).collect()
     print("✅ Created agent: wam_advisor_manager_copilot")
+    
+    # Register with Snowflake Intelligence
+    try:
+        session.sql(f"""
+            ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT 
+            ADD AGENT {database_name}.AI.wam_advisor_manager_copilot
+        """).collect()
+        print("✅ Registered agent with Snowflake Intelligence")
+    except Exception as e:
+        print(f"⚠️ Agent registration note: {e}")
 
 
 if __name__ == "__main__":

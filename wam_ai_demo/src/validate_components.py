@@ -714,9 +714,9 @@ def validate_agents(session: Session):
     print("    → Validating agents...")
     
     try:
-        # Check if agents exist in Snowflake Intelligence
-        agents_query = """
-        SHOW AGENTS IN SNOWFLAKE_INTELLIGENCE.AGENTS
+        # Check if agents exist in WAM_AI_DEMO.AI schema
+        agents_query = f"""
+        SHOW AGENTS IN {config.DATABASE_NAME}.AI
         """
         
         try:
@@ -741,7 +741,7 @@ def validate_agents(session: Session):
                 for agent_name in found_agents[:2]:  # Test first 2 agents to avoid too many calls
                     try:
                         # Basic agent info query
-                        agent_info = session.sql(f"DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS.{agent_name}").collect()
+                        agent_info = session.sql(f"DESCRIBE AGENT {config.DATABASE_NAME}.AI.{agent_name}").collect()
                         if agent_info:
                             print(f"      ✅ Agent accessible: {agent_name}")
                     except Exception as e:
