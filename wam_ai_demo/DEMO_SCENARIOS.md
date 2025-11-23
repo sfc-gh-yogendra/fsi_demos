@@ -848,9 +848,12 @@ Status: Communications approved for client engagement
 
 ### Persona: Regional Sales Manager
 
-### Business Challenge: Need to identify underperforming advisors and prioritize coaching interventions across the team while surfacing actionable insights for performance improvement.
+### Business Challenge: 
 
-### Demo Storyline: *"As a regional sales manager, I need to assess my advisors' performance across multiple dimensions - not just AUM growth, but client retention, engagement quality, planning completeness, and risk management. I want to identify who needs coaching and what specific actions will have the biggest impact on their success."*
+Need to identify underperforming advisors and prioritize coaching interventions across the team while surfacing actionable insights for performance improvement.
+
+### Demo Storyline: 
+*"As a regional sales manager, I need to assess my advisors' performance across multiple dimensions - not just AUM growth, but client retention, engagement quality, planning completeness, and risk management. I want to identify who needs coaching and what specific actions will have the biggest impact on their success."*
 
 ### Step-by-Step Demo Flow:
 
