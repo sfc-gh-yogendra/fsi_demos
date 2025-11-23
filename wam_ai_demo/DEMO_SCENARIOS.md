@@ -844,8 +844,10 @@ Status: Communications approved for client engagement
 
 ---
 
-## Scenario 4: Advisor Benchmarking & Coaching Opportunities
+## Scenario 5: Advisor Benchmarking & Coaching Opportunities
+
 ### Persona: Regional Sales Manager
+
 ### Business Challenge: Need to identify underperforming advisors and prioritize coaching interventions across the team while surfacing actionable insights for performance improvement.
 
 ### Demo Storyline: *"As a regional sales manager, I need to assess my advisors' performance across multiple dimensions - not just AUM growth, but client retention, engagement quality, planning completeness, and risk management. I want to identify who needs coaching and what specific actions will have the biggest impact on their success."*
@@ -853,9 +855,14 @@ Status: Communications approved for client engagement
 ### Step-by-Step Demo Flow:
 
 #### Step 1: Comprehensive Advisor Benchmark Overview
+
 **Demo Operator Says**: *"Let's start with a comprehensive view of advisor performance across all key metrics, broken down by peer groups for fair comparison."*
 
-**User Query**: `"Benchmark all advisors for the last 12 months: AUM growth, client/AUM retention, engagement cadence, planning coverage, revenue, and risk signal rate by peer quartiles. Highlight top and bottom quartiles."`
+**User Query**: 
+
+```
+"Benchmark all advisors for the last 12 months: AUM growth, client/AUM retention, engagement cadence, planning coverage, revenue, and risk signal rate by peer quartiles. Highlight top and bottom quartiles."
+```
 
 **Expected Agent Response**: 
 - Comprehensive table showing all advisors with key metrics
@@ -871,7 +878,11 @@ Status: Communications approved for client engagement
 #### Step 2: Deep Dive on Performance Outliers
 **Demo Operator Says**: *"Now let's drill into the advisors who need immediate attention - those with retention challenges."*
 
-**User Query**: `"Drill into the bottom two advisors by client retention and AUM retention. Show root causes from interactions and planning coverage, with client lists at risk."`
+**User Query**: 
+
+```
+"Drill into the bottom two advisors by client retention and AUM retention. Show root causes from interactions and planning coverage, with client lists at risk."
+```
 
 **Expected Agent Response**:
 - Detailed analysis of specific advisors' challenges
@@ -887,7 +898,11 @@ Status: Communications approved for client engagement
 #### Step 3: Actionable Coaching Opportunities
 **Demo Operator Says**: *"Instead of just identifying problems, let's get specific coaching recommendations with expected impact."*
 
-**User Query**: `"Identify 10 quick wins for advisors below the median engagement to improve next quarter KPIs: who to contact, plan updates needed, and expected impact."`
+**User Query**: 
+
+```
+"Identify 10 quick wins for advisors below the median engagement to improve next quarter KPIs: who to contact, plan updates needed, and expected impact."
+```
 
 **Expected Agent Response**:
 - Prioritized list of specific client actions
@@ -903,7 +918,11 @@ Status: Communications approved for client engagement
 #### Step 4: Executive Summary for Leadership
 **Demo Operator Says**: *"Finally, let's create an executive brief that summarizes everything for senior leadership."*
 
-**User Query**: `"Create a one-page leadership brief summarizing advisor performance by quartiles with the top actions, owners, and timelines."`
+**User Query**: 
+
+```
+"Create a one-page leadership brief summarizing advisor performance by quartiles with the top actions, owners, and timelines."
+```
 
 **Expected Agent Response**:
 - Executive summary with key findings
